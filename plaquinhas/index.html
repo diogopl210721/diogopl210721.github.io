@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plaquinha de Avaliações Google — DDS Inovação</title>
+  <meta name="description" content="Plaquinha com QR Code e NFC para o seu negócio receber mais avaliações 5 estrelas no Google. Fabricada e vendida pela DDS Inovação.">
+  <meta name="theme-color" content="#070d1a">
+  <meta property="og:title" content="Plaquinha de Avaliações Google — DDS Inovação"><meta property="og:description" content="Aproxime o celular ou escaneie o QR Code: seu cliente cai direto na sua avaliação do Google."><meta property="og:type" content="website">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css">
+  <style>
+    .plaq-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:center;padding-top:70px}
+    .plaq-copy .eyebrow{color:var(--accent)}
+    .plaq-copy h1{font-size:clamp(38px,5vw,58px);font-weight:500;letter-spacing:-.04em;line-height:1.06;margin:18px 0 22px}
+    .plaq-copy h1 em{font-family:Georgia,serif;font-style:italic;color:var(--accent)}
+    .plaq-copy>p{color:var(--muted);font-size:16px;max-width:460px;margin-bottom:30px}
+    .plaq-cta{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+    .plaq-cta .button span{font-size:20px}
+    .plaq-note{font-size:12px;color:var(--muted);margin-top:18px}
+    .plaq-stage{position:relative;display:flex;justify-content:center;perspective:1200px}
+    .plaq-glow{position:absolute;inset:-15%;background:radial-gradient(circle at 50% 40%,#399cff45,transparent 65%);filter:blur(10px);animation:plaq-pulse 5s ease-in-out infinite}
+    .plaq-card{position:relative;width:min(380px,80vw);border-radius:28px;overflow:hidden;box-shadow:0 40px 90px #00000090,0 0 0 1px #ffffff14;transition:transform .25s ease-out;transform:rotateX(6deg) rotateY(-8deg)}
+    .plaq-card img{display:block;width:100%;height:auto}
+    .plaq-shine{position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,#ffffff2e 45%,transparent 60%);background-size:250% 250%;animation:plaq-shine 4.5s linear infinite;pointer-events:none}
+    @keyframes plaq-pulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:.9;transform:scale(1.08)}}
+    @keyframes plaq-shine{0%{background-position:200% 0}100%{background-position:-50% 0}}
+    .plaq-features{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:20px}
+    .plaq-feature{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px}
+    .plaq-feature span{font-size:26px;color:var(--accent)}
+    .plaq-feature h3{font-size:17px;font-weight:600;margin:16px 0 8px}
+    .plaq-feature p{font-size:13px;color:var(--muted);line-height:1.6}
+    .plaq-band{background:var(--accent);color:var(--bg);text-align:center;padding:70px 0}
+    .plaq-band h2{font-size:clamp(28px,4vw,42px);font-weight:500;letter-spacing:-.03em;margin-bottom:18px}
+    .plaq-band p{font-size:15px;margin-bottom:30px;opacity:.85}
+    .plaq-band .button{background:var(--bg);color:var(--ink)}
+    .plaq-back{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:8px;margin-bottom:18px}
+    @media(max-width:900px){.plaq-hero{grid-template-columns:1fr;gap:40px;padding-top:30px}.plaq-stage{order:-1}.plaq-card{width:min(300px,70vw)}.plaq-features{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header class="header"><a class="brand" href="../#inicio" aria-label="DDS, início"><img class="brand-full" src="../logo-branca.png" width="2000" height="1125" alt="DDS Sites & Sistemas — logo com lente colorida"></a><nav aria-label="Principal"><a href="../#sistemas">Meus sistemas</a><a href="../#contato">Vamos conversar</a></nav><a class="nav-cta" href="../#contato">Voltar ao início <span>↗</span></a></header>
+<main>
+<section class="section wrap">
+<div class="plaq-hero">
+  <div class="plaq-copy reveal">
+    <a class="plaq-back" href="../">← DDS Inovação</a>
+    <p class="eyebrow">DDS INOVAÇÃO · NOVO PRODUTO</p>
+    <h1>Cada cliente satisfeito,<br>uma <em>avaliação 5 estrelas</em><br>a um toque.</h1>
+    <p>A plaquinha com QR Code e NFC que leva seu cliente direto para deixar uma avaliação no Google — sem digitar nada, sem procurar seu negócio na busca. Fabricada e vendida pela DDS Inovação.</p>
+    <div class="plaq-cta">
+      <a class="button primary" href="https://wa.me/5541991542931?text=Ol%C3%A1%21%20Vi%20a%20plaquinha%20de%20avalia%C3%A7%C3%B5es%20Google%20da%20DDS%20Inova%C3%A7%C3%A3o%20no%20site%20e%20quero%20saber%20mais%20para%20o%20meu%20neg%C3%B3cio." target="_blank" rel="noopener noreferrer">Quero a minha plaquinha <span>↗</span></a>
+    </div>
+    <p class="plaq-note">Fale direto comigo pelo WhatsApp — te conto tamanhos, prazos e como funciona a compra.</p>
+  </div>
+  <div class="plaq-stage reveal">
+    <div class="plaq-glow" aria-hidden="true"></div>
+    <div class="plaq-card" id="plaq-card">
+      <img src="placa-google.png" alt="Plaquinha DDS Inovação: 'Sua opinião é muito importante, avalie no Google', com ícone de NFC (aproxime o celular) e QR Code (escaneie o QR Code)" width="1181" height="1181">
+      <div class="plaq-shine" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="section wrap">
+<div class="section-heading reveal"><div><p class="eyebrow">COMO FUNCIONA</p><h2>Simples pro seu cliente,<br><span class="serif">direto ao ponto.</span></h2></div><p>Dois jeitos de usar a mesma plaquinha — o cliente escolhe o que for mais prático na hora.</p></div>
+<div class="plaq-features">
+<div class="plaq-feature reveal"><span>◉</span><h3>Aproxime o celular</h3><p>Tecnologia NFC: é só encostar o celular na plaquinha que a avaliação do Google abre na hora, sem aplicativo.</p></div>
+<div class="plaq-feature reveal"><span>▦</span><h3>Ou escaneie o QR Code</h3><p>Pra quem prefere a câmera do celular — aponta, escaneia e cai direto na sua página de avaliações.</p></div>
+<div class="plaq-feature reveal"><span>★</span><h3>Mais avaliações 5 estrelas</h3><p>Menos fricção pro cliente satisfeito avaliar significa mais avaliações reais chegando toda semana.</p></div>
+</div>
+</section>
+
+<div class="plaq-band">
+<div class="wrap">
+<h2>Quer uma plaquinha para o seu negócio?</h2>
+<p>Fabricação e venda direto com a DDS Inovação. Me chama que eu te explico tudo.</p>
+<a class="button" href="https://wa.me/5541991542931?text=Ol%C3%A1%21%20Vi%20a%20plaquinha%20de%20avalia%C3%A7%C3%B5es%20Google%20da%20DDS%20Inova%C3%A7%C3%A3o%20no%20site%20e%20quero%20saber%20mais%20para%20o%20meu%20neg%C3%B3cio." target="_blank" rel="noopener noreferrer">Falar no WhatsApp <span>↗</span></a>
+</div>
+</div>
+</main>
+<footer class="footer wrap"><div><a class="brand" href="../#inicio"><img class="brand-full" src="../logo-branca.png" width="2000" height="1125" alt="DDS Sites & Sistemas — logo com lente colorida"></a><p>Ideias que viram soluções.</p></div><div class="footer-links"><a href="../#contato">Vamos conversar ↗</a><a href="tel:+5541991542931">(41) 99154-2931</a></div><div class="footer-bottom"><span>© <span id="year">2026</span> DDS Inovação.</span><span>Plaquinhas de avaliação Google — QR Code + NFC.</span></div></footer>
+<script>
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if ('IntersectionObserver' in window && !reducedMotion) {
+  const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+    if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
+  }), {threshold: 0.08});
+  document.querySelectorAll('.reveal').forEach(el => { el.classList.add('will-reveal'); observer.observe(el); });
+}
+document.querySelector('#year').textContent = new Date().getFullYear();
+const card = document.querySelector('#plaq-card');
+if (card && !reducedMotion && window.matchMedia('(pointer: fine)').matches) {
+  card.addEventListener('pointermove', event => {
+    const r = card.getBoundingClientRect();
+    const rx = ((event.clientY - r.top - r.height / 2) / r.height) * -14;
+    const ry = ((event.clientX - r.left - r.width / 2) / r.width) * 14;
+    card.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+  });
+  card.addEventListener('pointerleave', () => { card.style.transform = 'rotateX(6deg) rotateY(-8deg)'; });
+}
+</script>
+</body></html>
