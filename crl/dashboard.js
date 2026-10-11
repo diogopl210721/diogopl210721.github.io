@@ -19,16 +19,17 @@ export async function loadDashboard({db,member,stays,el,esc,fmt,localTime,setVie
    db.from('crl_vehicle_trips').select('id',{count:'exact',head:true}).eq('institution_id',institution).is('arrival_at',null),
    db.from('crl_tasks').select('title,due_at,status,stay_id').eq('institution_id',institution).gte('due_at',start).lt('due_at',end).order('due_at',{ascending:true}).limit(8),
    db.from('crl_activities').select('title,presenter,starts_at').eq('institution_id',institution).eq('type','devocional').order('starts_at',{ascending:false}).limit(1),
-   db.from('crl_records').select('id',{count:'exact',head:true}).eq('institution_id',institution).gte('created_at',start).lt('created_at',end)
+   db.from('crl_records').select('id',{count:'exact',head:true}).eq('institution_id',institution).gte('created_at',start).lt('created_at',end),
+   db.from('crl_resocializations').select('id',{count:'exact',head:true}).eq('institution_id',institution).is('actual_return_at',null)
  ];
  if(admin){
    queries.push(db.from('crl_contributions').select('amount,paid_amount,due_date').eq('institution_id',institution).lt('due_date',day).limit(1000));
-   queries.push(db.from('crl_medication_records').select('id',{count:'exact',head:true}).eq('institution_id',institution).is('verified_by',null));
+   queries.push(db.from('crl_medication_requests').select('id',{count:'exact',head:true}).eq('institution_id',institution).eq('request_status','pending'));
  }
  const settled=await Promise.allSettled(queries);
  const get=i=>settled[i]?.status==='fulfilled'?settled[i].value:{error:true};
  const [devs,trips,tasks,last,records]=[get(0),get(1),get(2),get(3),get(4)];
- const contributions=admin?get(5):null,medications=admin?get(6):null;
+ const resocializations=get(5),contributions=admin?get(6):null,medications=admin?get(7):null;
  if(!root.isConnected)return;
  const overdue=contributions?.error?'—':String((contributions?.data||[]).filter(c=>Number(c.amount)>Number(c.paid_amount||0)).length);
  const metrics=[
@@ -36,7 +37,8 @@ export async function loadDashboard({db,member,stays,el,esc,fmt,localTime,setVie
  metric('▤','Devocionais hoje',integer(devs),'Sessões registradas'),
  metric('▣','Viagens abertas',integer(trips),'Aguardando retorno'),
  admin?metric('R$','Contribuições em atraso',overdue,'Competências vencidas'):metric('☷','Tarefas hoje',tasks.error?'—':String(tasks.data?.length??0),'Atividades programadas'),
- admin?metric('✚','Prescrições a conferir',integer(medications),'Conferência do ADM'):metric('✎','Registros hoje',integer(records),'Anotações realizadas')
+ admin?metric('✚','Receitas pendentes',integer(medications),'Conferência do ADM'):metric('✎','Registros hoje',integer(records),'Anotações realizadas'),
+ metric('↗','Ressocializações em andamento',integer(resocializations),'Saídas aguardando retorno')
  ];
  const taskRows=tasks.error?'<p class="dash-empty">Não foi possível carregar a escala.</p>':
  (tasks.data?.length?tasks.data.map(t=>{
@@ -49,6 +51,7 @@ export async function loadDashboard({db,member,stays,el,esc,fmt,localTime,setVie
  if(admin&&!contributions?.error&&Number(overdue)>0) notices.push(row(overdue+' contribuições vencidas','Verificar no financeiro',esc));
  if(admin&&!medications?.error&&Number(medications.count)>0) notices.push(row(integer(medications)+' prescrições sem conferência','Requer avaliação do ADM',esc));
  if(!trips?.error&&Number(trips.count)>0) notices.push(row(integer(trips)+' viagens em aberto','Conferir horário e quilometragem',esc));
+ if(!resocializations?.error&&Number(resocializations.count)>0) notices.push(row(integer(resocializations)+' ressocializações sem retorno registrado','Consultar horários e justificativas',esc));
  const alerts=notices.length?notices.join(''):'<p class="dash-empty">Nenhuma pendência identificada nos indicadores disponíveis.</p>';
  root.innerHTML='<div class="dash-stats">'+metrics.join('')+'</div>'+
  '<div class="dash-blocks">'+
@@ -56,7 +59,7 @@ export async function loadDashboard({db,member,stays,el,esc,fmt,localTime,setVie
  '<section class="panel"><div class="row"><h2>Última devocional</h2><button class="dash-link" data-go="devotionals">Ver todas →</button></div>'+lastDev+'</section>'+
  '<section class="panel"><div class="row"><h2>Alertas e pendências</h2><button class="dash-link" data-go="'+(admin?'contributions':'trips')+'">Consultar →</button></div>'+alerts+'</section></div>'+
  '<section class="panel"><div class="row"><div><h2>Ações rápidas</h2><p class="dash-subtle">Acesso às atividades diárias</p></div></div>'+
- '<div class="dash-actions"><button data-go="students">Novo acolhimento</button><button data-go="devotionals">Nova devocional</button><button data-go="notes">Registrar rotina</button><button data-go="trips">Abrir viagem</button>'+
+ '<div class="dash-actions"><button data-go="students">Novo acolhimento</button><button data-go="devotionals">Nova devocional</button><button data-go="notes">Registrar rotina</button><button data-go="trips">Abrir viagem</button><button data-go="resocialization">Ressocialização</button><button data-go="medications">Medicamentos</button>'+
  (admin?'<button data-go="documents">Gerar declaração</button><button data-go="stats">Dashboard mensal</button><button data-go="monitors">Monitores</button>':'')+'</div></section>'+
  '<section class="panel"><div class="row"><h2>Resumo inteligente</h2><span class="muted">IA ainda não conectada</span></div><p class="dash-subtle">A análise de desenvolvimento será exibida apenas quando houver dados suficientes, acesso autorizado e revisão humana.</p></section>';
  root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setView(b.dataset.go));
