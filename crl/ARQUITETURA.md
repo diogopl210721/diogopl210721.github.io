@@ -38,3 +38,17 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - **Limitação:** o fechamento via RLS atual está disponível ao autor original da viagem; revisão/retificação por ADM precisa de operação auditada própria.
 - Primeiro usuário ADM não foi provisionado; login, sessões, arquivos privados, IA e PDFs assinados não estão operacionais.
 - Não usar dados reais nesta fase.
+
+
+## Iteração operacional — devocionais, viagens e retificações
+
+- Página de acesso restrito `/crl/acesso.html` recebeu as abas **Devocionais** e **Veículo**, com lista de viagens e botão de finalização.
+- `crl_complete_devotional` salva tema, ministrante, horários e lista completa de acolhidos ativos em uma transação. Falta exige justificativa.
+- `crl_finish_trip` conclui viagem com hora de chegada, estado de limpeza e KM calculados pelo banco.
+- `crl_protect_trip_history` impede alterações retroativas da viagem original após encerramento.
+- `crl_rectify_trip` cria retificação administrativa auditável sem substituir o registro original.
+- `crl_amend_record` cria retificação textual do prontuário, mantendo o original.
+- `crl_admit_resident` agora realiza uma operação transacional protegida com verificação explícita de membro, gerando evento de auditoria.
+- A sincronização offline, armazenamento privado, autorização de assinatura e criação da primeira conta ADM ainda estão pendentes.
+
+**Verificação:** migrações aplicadas e sintaxe do JavaScript publicada verificada; ainda não ocorreram testes ponta a ponta autenticados porque não há ADM/monitor provisionados. Não inserir dados reais.
