@@ -1,3 +1,16 @@
+# CRL — Sistema de Gestão
+
+**Comece por [REVISAO_CLAUDE_CODE.md](./REVISAO_CLAUDE_CODE.md) para entender o estado ATUAL, os módulos, os riscos e os arquivos de backend exportados.**
+
+- Painel: [acesso.html](./acesso.html)
+- Diagnóstico e testes: [VALIDACAO_FINAL.md](./VALIDACAO_FINAL.md)
+- Funções Supabase: [supabase/functions/](./supabase/functions/)
+- Estrutura e RPCs reais (snapshot): [supabase/exports/](./supabase/exports/)
+
+> **Aviso importante:** o texto abaixo e o arquivo `schema.sql` são históricos/preliminares. O banco atualmente implantado está nas tabelas `public.crl_*` de um projeto Supabase compartilhado. **Não execute o arquivo `schema.sql` como migração do banco atual.** O sistema ainda requer homologação funcional completa e revisão de segurança/LGPD antes do uso amplo de dados de saúde.
+
+---
+
 # CRL | Próxima etapa técnica
 
 **Estado:** protótipo publicado em `/crl/`, dados fictícios. Projeto Supabase independente NÃO criado: a conta atingiu o limite de projetos gratuitos.
