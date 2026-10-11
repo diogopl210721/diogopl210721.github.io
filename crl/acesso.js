@@ -5,6 +5,7 @@ import {prontuarioForm,loadProntuario} from './prontuario.js';
 import {careForm,bindCare,loadCareList,submitCare} from './care.js';
 import {evolutionForm,loadEvolution,prepareEvolution} from './evolution.js';
 import {operationsForm,loadOperations,submitOperations} from './operations.js';
+import {auditForm,loadAudit} from './auditoria.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',openTrips=[],lastMetrics=null;
@@ -32,6 +33,7 @@ async function init(){
  el('tabDocuments').style.display=member.role==='admin'?'':'none';
  el('tabEvolution').style.display=member.role==='admin'?'':'none';
  el('tabCash').style.display=member.role==='admin'?'':'none';
+ el('tabAudit').style.display=member.role==='admin'?'':'none';
  view='dashboard';
  await refresh();
 }
@@ -78,6 +80,7 @@ function draw(){
  meals:'<h2>Registrar refeições servidas</h2><form id="dataForm"><label>Tipo de refeição</label><select id="mealType"><option value="cafe">Café da manhã</option><option value="almoco">Almoço</option><option value="jantar">Jantar</option><option value="lanche">Lanche</option><option value="outro">Outros</option></select>'+field('Quantidade de refeições servidas','servings','number')+field('Data e hora','servedAt','datetime-local',true,localTime())+field('Observações','mealNotes','text',false)+'<p class="muted">Registrar o número realmente servido, não uma estimativa.</p><button>Salvar refeições</button></form>',
  documents:documentForm(stays),
  evolution:evolutionForm(stays),
+ audit:auditForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
  monitors:'<h2>Gerenciar monitores (ADM)</h2><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" required><label>Usuário para login</label><input id="monitorUsername" type="text" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button>Cadastrar monitor</button></form>',
@@ -85,7 +88,7 @@ function draw(){
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({stock:'Estoque e consumo',cash:'Caixa institucional',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({audit:'Eventos de auditoria',stock:'Estoque e consumo',cash:'Caixa institucional',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
  if(view==='medications'||view==='resocialization')void bindCare({db,member,el,kind:view,status});
  if(view==='documents')void bindDocuments({db,member,el,status,stays});
@@ -97,6 +100,7 @@ async function loadList(){
   return;
  }
  const root=el('listArea');root.replaceChildren();
+ if(view==='audit'){await loadAudit({db,member,el,root,status});return}
  if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,root});return}
  if(view==='evolution'){await loadEvolution({db,member,stays,root,status});return}
  if(view==='medications'||view==='resocialization'){await loadCareList({db,member,stays,root,kind:view,status});return}
@@ -426,10 +430,10 @@ function viewTitle(id){
  return ({dashboard:'Painel Geral',students:'Acolhidos',profile:'Prontuários',files:'Arquivos e fotos',
  history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',medications:'Medicamentos e receitas',resocialization:'Ressocialização',
  tasks:'Escala de tarefas',meals:'Refeições',contributions:'Contribuições',
- monitors:'Usuários e monitores',documents:'Declarações',evolution:'Evolução mensal',stock:'Estoque',cash:'Caixa da casa',stats:'Estatísticas gerais'})[id]||'CRL';
+ monitors:'Usuários e monitores',documents:'Declarações',evolution:'Evolução mensal',stock:'Estoque',cash:'Caixa da casa',audit:'Auditoria',stats:'Estatísticas gerais'})[id]||'CRL';
 }
 async function setView(next){
- if(['history','stats','contributions','monitors','documents','evolution','cash'].includes(next)&&member?.role!=='admin')return;
+ if(['history','stats','contributions','monitors','documents','evolution','cash','audit'].includes(next)&&member?.role!=='admin')return;
  if(!authenticated())return;
  view=next;
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
@@ -542,7 +546,9 @@ async function submit(e){
  e.preventDefault();if(!authenticated())return;const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
   let result;
-  if(view==='stock'||view==='cash'){
+  if(view==='audit'){
+   await loadAudit({db,member,el,root:el('listArea'),status});return;
+  }else if(view==='stock'||view==='cash'){
    await submitOperations({db,kind:view,member,user,el,status,refresh:loadList});return;
   }else if(view==='evolution'){
    await prepareEvolution({db,member,el,stays,status,refresh:loadList});return;
