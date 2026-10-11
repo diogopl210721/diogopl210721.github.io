@@ -134,7 +134,8 @@ function draw(){
   const activate=el('activateDiogo');
   activate.onclick=async()=>{
    if(member?.role!=='admin'||monitorPreview)return;
-   if(!confirm('Ativar Diogo como monitor ('+el('quickMonitorVinculo').selectedOptions[0].textContent+')?'))return;
+   if(el('quickMonitorVinculo').value!=='voluntario'){status('Para aluno ou contratado, use o cadastro completo abaixo.',true);return}
+   if(!confirm('Ativar Diogo como monitor voluntário?'))return;
    const password=makeSecureMonitorPassword();
    activate.disabled=true;
    el('monitorQuickStatus').textContent='Criando usuário monitor no Supabase...';
