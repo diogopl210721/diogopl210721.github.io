@@ -98,6 +98,8 @@ function draw(){
  el('moduleGrid').classList.toggle('hide',isDashboard);
  el('welcomeTitle').textContent=isDashboard?(member?.role==='admin'?'Painel Geral':'Resumo do dia'):viewTitle(view);
  el('welcomeText').textContent=isDashboard?'Acompanhamento diário da CRL':'Registros organizados conforme seu perfil de acesso';
+ const quickSearch=document.querySelector('#welcome .quick-search');
+ if(quickSearch)quickSearch.style.display=(isDashboard||view==='students')?'':'none';
  document.querySelectorAll('[data-jump]').forEach(b=>b.classList.toggle('current',b.dataset.jump===view));
  if(isDashboard)return;
  const forms={
@@ -119,17 +121,36 @@ function draw(){
  diagnostic:diagnosticForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
- monitors:'<h2>Gerenciar monitores (ADM)</h2><p class="muted">Para criar o acesso de Diogo, confirme o nome e o usuário já preenchidos e defina uma senha forte diretamente nesta tela. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
+ monitors:'<div id="monitorQuickCard"><h3>Ativar o monitor Diogo</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. Somente a Francielly (ADM) pode autorizar.</p><button id="activateDiogo" type="button">Ativar Diogo e gerar acesso</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Gerenciar monitores (ADM)</h2><p class="muted">Para criar o acesso de Diogo, confirme o nome e o usuário já preenchidos e defina uma senha forte diretamente nesta tela. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
 
  if(view==='monitors'){
+  const activate=el('activateDiogo');
+  activate.onclick=async()=>{
+   if(member?.role!=='admin'||monitorPreview)return;
+   if(!confirm('A Francielly autoriza a criação do monitor Diogo com acesso à CRL?'))return;
+   const password=makeSecureMonitorPassword();
+   activate.disabled=true;
+   el('monitorQuickStatus').textContent='Criando usuário monitor no Supabase...';
+   try{
+    const r=await adminMonitors({action:'create',username:'diogo',display_name:'Diogo',password});
+    if(!r.success)throw Error('O servidor não confirmou a criação do usuário.');
+    showMonitorCredentials('diogo',password);
+    activate.textContent='Monitor Diogo ativado';
+    el('monitorQuickStatus').textContent='Monitor criado. Copie a senha antes de sair desta tela.';
+    status('Usuário diogo ativado! Copie e guarde a senha gerada.');
+    await loadMonitors();
+   }catch(e){
+    el('monitorQuickStatus').textContent=e.message||'Falha na ativação';
+    status(e.message||'Não foi possível ativar o monitor.',true);
+    activate.disabled=false;
+   }
+  };
   el('generateMonitorPassword').onclick=()=>{
-   const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*-_';
-   const random=new Uint32Array(20);crypto.getRandomValues(random);
-   const generated='Aa7!'+Array.from(random,x=>alphabet[x%alphabet.length]).join('');
+   const generated=makeSecureMonitorPassword();
    el('monitorPassword').value=generated;
    el('monitorConfirm').value=generated;
    el('monitorPassword').type='text';
@@ -320,6 +341,30 @@ async function uploadAttachment(){
 
 
 const passwordStrong=s=>s.length>=12&&s.length<=128&&/[a-z]/.test(s)&&/[A-Z]/.test(s)&&/\d/.test(s)&&/[^A-Za-z0-9]/.test(s);
+function makeSecureMonitorPassword(){
+ const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*-_';
+ const random=new Uint32Array(20);
+ crypto.getRandomValues(random);
+ return 'Aa7!'+Array.from(random,x=>alphabet[x%alphabet.length]).join('');
+}
+function showMonitorCredentials(username,password){
+ const root=el('monitorCreatedCredentials');
+ if(!root)return;
+ root.replaceChildren();
+ const title=document.createElement('strong');title.textContent='Acesso criado com sucesso';
+ const login=document.createElement('p');login.textContent='Usuário: '+username;
+ const pwd=document.createElement('p');pwd.textContent='Senha inicial: ';
+ const span=document.createElement('code');span.textContent=password;pwd.append(span);
+ const note=document.createElement('p');note.textContent='Guarde agora: esta senha não fica salva em texto no sistema e será ocultada ao sair da tela.';
+ const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar usuário e senha';
+ copy.onclick=async()=>{
+  try{
+   await navigator.clipboard.writeText('Usuário: '+username+'\\nSenha: '+password);
+   status('Acesso copiado. Guarde em um local seguro.');
+  }catch(_){status('Selecione e copie o texto da senha exibida acima.',true)}
+ };
+ root.append(title,login,pwd,note,copy);
+}
 async function adminMonitors(body){
  if(member?.role!=='admin')throw Error('Acesso restrito ao ADM');
  const {data,error}=await db.functions.invoke('crl-admin-monitors',{body});
@@ -334,7 +379,10 @@ async function loadMonitors(){
  try{
   const result=await adminMonitors({action:'list'});
   root.replaceChildren();
-  if(!result.monitors?.length){root.textContent='Nenhum monitor cadastrado.';return}
+  if(!result.monitors?.length){root.textContent='Nenhum monitor cadastrado. Utilize “Ativar Diogo e gerar acesso” acima.';return}
+  const diogo=result.monitors.find(m=>m.username==='diogo');
+  if(diogo){const quickBtn=el('activateDiogo');if(quickBtn){quickBtn.disabled=true;quickBtn.textContent=diogo.active?'Diogo já está ativo':'Diogo bloqueado — reative pela lista';}}
+
   for(const m of result.monitors){
    const item=addItem(m.display_name,m.active?'Ativo':'Bloqueado');
    const username=document.createElement('div');username.className='code-label';username.textContent='Login: '+m.username;item.append(username);
@@ -512,7 +560,8 @@ async function setView(next,filter='all'){
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
  el('appPanel').querySelector('.tabs').classList.remove('expanded');
  draw();await loadList();
- window.scrollTo({top:0,behavior:'smooth'});
+ if(next==='monitors')el('formArea').scrollIntoView({behavior:'smooth',block:'start'});
+ else window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>setView(b.dataset.jump));
