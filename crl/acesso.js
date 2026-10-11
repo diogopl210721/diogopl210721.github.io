@@ -177,13 +177,26 @@ async function loadList(){
 
 async function loadTasks(){
  const root=el('listArea');root.replaceChildren();
- const r=await db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status')
+ const r=await db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status,completed_at')
   .eq('institution_id',member.institution_id).order('due_at',{ascending:true}).limit(100);
  if(r.error){root.textContent='Não foi possível carregar as tarefas.';return}
  if(!r.data?.length){root.textContent='Nenhuma tarefa cadastrada.';return}
  for(const t of r.data){
    const resident=stays.find(s=>s.id===t.stay_id)?.crl_residents?.full_name||(t.stay_id?'Acolhido não ativo':'Equipe / geral');
-   addItem(t.title,'Responsável: '+resident+' · '+fmt(t.due_at)+' · '+(t.recurrence||'Única')+' · '+(t.status||'Programada'));
+   const item=addItem(t.title,'Responsável: '+resident+' · '+fmt(t.due_at)+' · '+(t.recurrence||'Única')+' · '+(t.status==='done'?'Concluída':'Programada'));
+   if(t.status==='planned'){
+    const button=document.createElement('button');button.type='button';button.textContent='Concluir tarefa';
+    button.onclick=async()=>{
+     if(!confirm('Confirmar conclusão desta tarefa?'))return;
+     button.disabled=true;
+     const note=prompt('Observação da conclusão (opcional):')||'';
+     const result=await db.rpc('crl_complete_task',{p_task:t.id,p_notes:note});
+     if(result.error){status('Não foi possível concluir: '+result.error.message,true);button.disabled=false;return}
+     status('Tarefa concluída e próximo agendamento criado quando recorrente.');
+     await loadTasks();
+    };
+    item.append(button);
+   }
  }
 }
 
