@@ -30,3 +30,11 @@ Usuário autorizou utilizar infraestrutura existente temporariamente. Migração
 ## Revisão RLS — continuação
 
 Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supabase DDS Avaliações. Corrigida a visibilidade de residentes ativos vinculados ao ID da pessoa, impedido perfil de membro inativo de consultar a própria linha, e criadas verificações de pertencimento à instituição em nove tabelas vinculadas. **A autenticação de produção e o primeiro ADM continuam pendentes**, portanto o site segue somente demonstração. Antes da operação real, testar políticas com identidades ADM/monitor, autorização em documentos, integridade de referências múltiplas (atividades e anexos), e provisionamento protegido; nenhum dado real deve ser inserido ainda.
+
+## Progresso de implementação — 11/10/2026
+
+- Instituição CRL registrada no projeto Supabase temporário.
+- Migração `crl_atomic_admission_and_trip_closure` aplicada. Função `crl_admit_resident` insere cadastro e período de acolhimento em uma única transação, verificando associação à instituição; `crl_finish_trip` calcula a distância e valida KM final e horário antes de encerrar uma viagem.
+- **Limitação:** o fechamento via RLS atual está disponível ao autor original da viagem; revisão/retificação por ADM precisa de operação auditada própria.
+- Primeiro usuário ADM não foi provisionado; login, sessões, arquivos privados, IA e PDFs assinados não estão operacionais.
+- Não usar dados reais nesta fase.
