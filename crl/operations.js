@@ -14,10 +14,10 @@ export async function submitOperations({db,kind,member,user,el,status,refresh}){
  if(kind==='stock'){
   const quantity=Number(el('opQuantity').value);
   if(!Number.isFinite(quantity)||quantity<=0){status('Quantidade inválida.',true);return}
-  result=await db.from('crl_inventory_movements').insert({
-    institution_id:member.institution_id,product:el('opProduct').value.trim(),
-    unit:el('opUnit').value,quantity,direction:el('opDirection').value,
-    source:el('opSource').value.trim(),occurred_at:new Date().toISOString(),created_by:user.id
+  result=await db.rpc('crl_register_stock_movement',{
+    p_institution:member.institution_id,p_product:el('opProduct').value.trim(),
+    p_unit:el('opUnit').value,p_quantity:quantity,p_direction:el('opDirection').value,
+    p_source:el('opSource').value.trim()
   });
  }else if(kind==='cash'&&member.role==='admin'){
   const amount=Number(el('opAmount').value);
@@ -27,7 +27,7 @@ export async function submitOperations({db,kind,member,user,el,status,refresh}){
     entry_type:el('opType').value,amount,date:el('opDate').value,created_by:user.id
   });
  }else{status('Acesso não autorizado.',true);return}
- if(result.error){status('Não foi possível salvar o lançamento. Confira as informações.',true);return}
+ if(result.error){status(result.error.message||'Não foi possível salvar o lançamento. Confira as informações.',true);return}
  status('Lançamento registrado no sistema.');await refresh();
 }
 export async function loadOperations({db,kind,member,root}){
