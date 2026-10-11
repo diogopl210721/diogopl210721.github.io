@@ -3,6 +3,18 @@ const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'
 const friendly=d=>d?String(d).slice(0,10).split('-').reverse().join('/'):'—';
 const monthValue=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
 const count=(s,v)=>Number(s?.counts?.[v]||0);
+const practicalSuggestions=snap=>{
+ const c=snap?.counts||{},tips=[];
+ const total=(c.present||0)+(c.late||0)+(c.absent||0)+(c.excused||0);
+ if(total===0)tips.push('Não há marcações de devocionais neste período: conferir se as atividades e presenças foram lançadas.');
+ else tips.push('Conferir as '+total+' marcações de devocionais e as justificativas de ausências antes de interpretar frequência.');
+ if((c.records||0)===0)tips.push('Não há registros individuais do mês: solicitar à equipe a conferência de lançamentos, sem criar fatos retroativos.');
+ else tips.push('Conferir os '+c.records+' registros individuais, inclusive retificações, usando os identificadores das fontes.');
+ if((c.resocializations_started||0)>0)tips.push('Verificar as datas e justificativas das '+c.resocializations_started+' ressocializações iniciadas, inclusive retornos lançados posteriormente.');
+ if((c.tasks_planned||0)===0)tips.push('Não há tarefas individuais com vencimento no mês: verificar se a escala foi atribuída corretamente.');
+ tips.push('Descrever somente fatos observáveis e próximos acompanhamentos. Não inferir diagnóstico, recuperação, personalidade ou causa a partir de contagens.');
+ return tips;
+};
 const stayOptions=stays=>stays.map(s=>'<option value="'+safe(s.id)+'">'+safe(s.crl_residents?.full_name||'Acolhido')+'</option>').join('');
 export function evolutionForm(stays){
  return '<div class="row"><h2>Relatório mensal de evolução</h2><span class="admin-only-tag">Somente ADM</span></div>'+
@@ -15,7 +27,7 @@ export function evolutionForm(stays){
 export async function loadEvolution({db,member,stays,root,status}){
  root.replaceChildren();
  if(member?.role!=='admin'){root.textContent='Relatórios completos disponíveis somente para ADM.';return}
- const r=await db.from('crl_evolution_reports').select('id,stay_id,month_start,report_status,source_snapshot,generated_text,approved_text,created_at,approved_at')
+ const r=await db.from('crl_evolution_reports').select('id,stay_id,month_start,report_status,source_snapshot,generated_text,approved_text,reviewed_draft_text,reviewed_draft_at,created_at,approved_at')
  .eq('institution_id',member.institution_id).order('month_start',{ascending:false}).limit(60);
  if(r.error){root.textContent='Não foi possível consultar os relatórios.';return}
  if(!r.data?.length){root.textContent='Nenhum relatório preparado.';return}
@@ -40,12 +52,36 @@ export async function loadEvolution({db,member,stays,root,status}){
   }
   if(item.source_snapshot?.evidence_truncated){const notice=document.createElement('p');notice.textContent='Mais registros existem no prontuário; consulte o histórico completo antes de aprovar.';evidence.append(notice)}
   container.append(evidence);
-  const textarea=document.createElement('textarea');textarea.rows=11;textarea.maxLength=15000;textarea.value=item.approved_text||item.generated_text||'';
+  const help=document.createElement('details');help.className='evolution-help';
+  const summary=document.createElement('summary');summary.textContent='Sugestões de verificação (sem IA externa)';help.append(summary);
+  const note=document.createElement('p');note.className='muted';note.textContent='Lista de conferência produzida apenas com as contagens armazenadas. Nenhum dado foi enviado a um modelo externo.';help.append(note);
+  const suggestions=document.createElement('ul');
+  for(const tip of practicalSuggestions(item.source_snapshot)){
+   const li=document.createElement('li');li.textContent=tip;suggestions.append(li);
+  }
+  help.append(suggestions);container.append(help);
+  if(item.reviewed_draft_at&&item.report_status!=='approved'){
+   const saved=document.createElement('p');saved.className='muted';saved.textContent='Rascunho revisado salvo em '+new Date(item.reviewed_draft_at).toLocaleString('pt-BR');container.append(saved)
+  }
+  const textarea=document.createElement('textarea');textarea.rows=11;textarea.maxLength=15000;textarea.value=item.approved_text||item.reviewed_draft_text||item.generated_text||'';
   textarea.readOnly=item.report_status==='approved';
   textarea.setAttribute('aria-label','Texto do relatório mensal');
   container.append(textarea);
   const buttons=document.createElement('div');buttons.className='care-actions';
   if(item.report_status!=='approved'){
+   const save=document.createElement('button');save.type='button';save.textContent='Salvar revisão sem aprovar';
+   save.onclick=async()=>{
+    if(textarea.value.trim().length<40){status('Revise o texto antes de salvar (mínimo 40 caracteres).',true);return}
+    save.disabled=true;
+    try{
+     const r=await db.rpc('crl_save_evolution_review_draft',{p_report:item.id,p_text:textarea.value.trim()});
+     if(r.error)throw r.error;
+     status('Revisão salva. O relatório continua não aprovado.');
+     await loadEvolution({db,member,stays,root,status});
+    }catch(e){status(e.message||'Não foi possível salvar o rascunho.',true)}
+    finally{save.disabled=false}
+   };
+   buttons.append(save);
    const approve=document.createElement('button');approve.type='button';approve.textContent='Revisar e aprovar definitivamente';
    approve.onclick=async()=>{
     if(textarea.value.trim().length<40){status('Revise e complete o texto antes de aprovar.',true);return}
