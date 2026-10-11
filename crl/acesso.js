@@ -1,6 +1,7 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {loadDashboard} from './dashboard.js';
 import {documentForm,bindDocuments,listDocuments,issueDocument} from './documents.js';
+import {prontuarioForm,loadProntuario} from './prontuario.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',openTrips=[],lastMetrics=null;
@@ -50,6 +51,7 @@ async function refresh(){
 }
 function draw(){
  const isDashboard=view==='dashboard';
+ el('moduleGrid').classList.toggle('profile-layout',view==='profile');
  el('dashboardArea').classList.toggle('hide',!isDashboard);
  el('moduleGrid').classList.toggle('hide',isDashboard);
  el('welcomeTitle').textContent=isDashboard?(member?.role==='admin'?'Painel Geral':'Resumo do dia'):viewTitle(view);
@@ -59,6 +61,7 @@ function draw(){
  const forms={
  history:'<h2>Buscar ex-acolhidos</h2><p class="muted">Somente ADM. Pesquise o cadastro permanente por nome, confira as passagens e abra um novo período sem apagar o anterior.</p><form id="dataForm">'+field('Nome ou parte do nome','searchName','text',true)+'<button>Pesquisar histórico</button></form>',
  files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado, acessível somente ao pessoal autorizado.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
+ profile:prontuarioForm(stays),
  students:'<h2>Novo acolhimento</h2><form id="dataForm">'+field('Nome completo','name')+field('Data de entrada','date','date',true,localTime().slice(0,10))+field('CPF (opcional)','cpf','text',false)+field('Responsável (opcional)','responsible','text',false)+field('Telefone do responsável','phone','tel',false)+'<button>Cadastrar acolhido</button></form>',
  tasks:'<h2>Programar tarefa</h2><form id="dataForm"><label>Descrição da atividade</label><input id="taskTitle" maxlength="200" placeholder="Ex.: limpeza da cozinha" required><label>Acolhido responsável</label><select id="taskStay"><option value="">Equipe / geral</option>'+stayOptions()+'</select>'+field('Data e hora programada','taskDue','datetime-local',true,localTime())+'<label>Periodicidade</label><select id="taskRecurrence"><option value="unica">Única</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select><p class="muted">Nesta etapa, o agendamento registra uma ocorrência. A repetição automática será adicionada após testes.</p><button>Agendar tarefa</button></form>',
  notes:'<h2>Registro individual</h2><form id="dataForm"><label>Acolhido</label><select id="stay" required>'+stayOptions()+'</select><label>Tipo</label><select id="category"><option value="rotina">Rotina</option><option value="ocorrencia">Ocorrência</option><option value="observacao">Observação</option></select><label>Relato</label><textarea id="description" required maxlength="10000"></textarea><p class="muted">Pode utilizar o ditado do teclado do celular. O texto original será preservado.</p><button>Registrar</button></form>',
@@ -72,7 +75,7 @@ function draw(){
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
  if(view==='documents')void bindDocuments({db,member,el,status,stays});
 }
@@ -84,6 +87,7 @@ async function loadList(){
  }
  const root=el('listArea');root.replaceChildren();
  if(view==='tasks'){await loadTasks();return}
+ if(view==='profile'){await loadProntuario({db,member,stays,stayId:el('profileStay')?.value,root,status});return}
  if(view==='documents'){await listDocuments({db,member,el,status,stays});return}
  if(view==='monitors'){await loadMonitors();return}
  if(view==='files'){await loadAttachments();return}
@@ -92,6 +96,10 @@ async function loadList(){
   const term=el('globalSearch').value.trim().toLocaleLowerCase('pt-BR');
   for(const st of stays.filter(st=>(st.crl_residents?.full_name||'').toLocaleLowerCase('pt-BR').includes(term))){
     const item=addItem(st.crl_residents?.full_name||'Acolhido','Entrada: '+st.admission_date);
+    const profileButton=document.createElement('button');profileButton.type='button';profileButton.textContent='Abrir prontuário';
+    profileButton.style.marginRight='7px';
+    profileButton.onclick=async()=>{await setView('profile');if(el('profileStay')){el('profileStay').value=st.id;await loadList()}};
+    item.append(profileButton);
     if(member.role==='admin'){
       const doc=document.createElement('button');doc.type='button';doc.textContent='Gerar declaração';
       doc.style.marginRight='7px';doc.onclick=async()=>{
@@ -307,6 +315,22 @@ async function searchHistory(query){
     (history.data||[]).map(st=>st.admission_date+' → '+(st.departure_date||'ativo')+' · '+({
       active:'Ativo',concluded:'Concluiu',requested:'Alta pedida',administrative:'Administrativa',abandoned:'Abandono',other:'Outra saída'
     }[st.status]||st.status)).join(' | ')||'Sem passagens';
+  if(!history.error && member.role==='admin'){
+   for(const historical of history.data||[]){
+    const b=document.createElement('button');b.type='button';
+    b.textContent='Prontuário '+historical.admission_date+(historical.status==='active'?' (atual)':' (histórico)');
+    b.style.margin='5px 5px 0 0';
+    b.onclick=async()=>{
+      await setView('profile');
+      const selector=el('profileStay');
+      if(selector&&!Array.from(selector.options).some(opt=>opt.value===historical.id)){
+       const option=document.createElement('option');option.value=historical.id;
+       option.textContent=person.full_name+' — '+historical.admission_date;selector.append(option);
+      }
+      if(selector){selector.value=historical.id;await loadList()}
+    };item.append(b);
+   }
+  }
   if(!history.error && !(history.data||[]).some(st=>st.status==='active')){
    const b=document.createElement('button');b.type='button';b.textContent='Iniciar nova passagem';b.onclick=()=>showReadmission(person,item);item.append(b)
   }
@@ -370,7 +394,7 @@ function showTripFinish(trip,item){
  }
 }
 function viewTitle(id){
- return ({dashboard:'Painel Geral',students:'Acolhidos',files:'Arquivos e fotos',
+ return ({dashboard:'Painel Geral',students:'Acolhidos',profile:'Prontuários',files:'Arquivos e fotos',
  history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',
  tasks:'Escala de tarefas',meals:'Refeições',contributions:'Contribuições',
  monitors:'Usuários e monitores',documents:'Declarações',stats:'Estatísticas gerais'})[id]||'CRL';
@@ -502,6 +526,8 @@ async function submit(e){
   }else if(view==='history'){
    if(member.role!=='admin')throw Error('permission');
    await searchHistory(el('searchName').value.trim());status('Pesquisa concluída.');return;
+  }else if(view==='profile'){
+   await loadProntuario({db,member,stays,stayId:el('profileStay')?.value,root:el('listArea'),status});return;
   }else if(view==='students'){
    result=await db.rpc('crl_admit_resident',{p_institution:member.institution_id,p_name:el('name').value.trim(),p_date:el('date').value,p_cpf:el('cpf').value.trim()||null,p_responsible:el('responsible').value.trim()||null,p_phone:el('phone').value.trim()||null});
   }else if(view==='tasks'){
