@@ -68,6 +68,9 @@ async function init(){
  el('tabDiagnostic').style.display=member.role==='admin'?'':'none';
  view='dashboard';
  await refresh();
+ const requestedView=new URLSearchParams(window.location.search).get('view');
+ if(member.role==='admin'&&['monitors','diagnostic'].includes(requestedView))
+  await setView(requestedView);
 }
 el('loginForm').onsubmit=async e=>{
  e.preventDefault();
