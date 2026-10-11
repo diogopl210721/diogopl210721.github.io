@@ -51,3 +51,12 @@ Testes feitos por simulação autenticada de ADM e alteração temporária do pa
 - As tentativas de abrir os domínios `www.ddsinovacao.com.br` e `diogopl210721.github.io` a partir dos ambientes externos falharam por DNS ou acesso. Verificação pelo navegador do usuário é necessária.
 - Até concluir o teste pelo navegador, iniciar piloto com dados operacionais **sem identificação de pessoas** (como inventário ou quantidades de refeições). Não começar com cadastro de acolhidos, saúde, CPF, telefones ou assinatura.
 - Se o diagnóstico apresentar falhas, interromper a inserção de dados e revisar os resultados; não enviar senhas nem informações de prontuários pela conversa.
+
+## Dashboard interativo (11/10/2026)
+- Nova RPC `crl_dashboard_cards(institution_id)`: calcula os totais reais, incluindo devocionais no mês, tarefas pendentes de hoje, refeições servidas no mês, ressocializações abertas, viagens, quilômetros, movimentações de estoque, kg recebidos/consumidos, além dos indicadores ADM de contribuições vencidas, conferência de medicamentos, despesas e encerramentos.
+- Permissões dentro da função: verifica usuário autenticado e instituição; campos financeiros e de resultados individuais só retornam ao ADM. A consulta foi executada como ADM e retornou zeros coerentes com a base vazia.
+- `crl/dashboard.js`: seis indicadores principais convertidos em cartões-botão; indicadores extras abaixo e atalhos operacionais; sem dados artificiais.
+- `crl/acesso.js`, `crl/operations.js` e `crl/care.js`: navegação contextual com filtro para tarefas de hoje, devocionais do mês, refeições do mês, viagens do mês, entradas/consumos de estoque, despesas do mês, contribuições vencidas, ressocializações abertas, pendências de medicamentos, conclusões/desistências mensais e proximidade dos nove meses.
+- `crl/acesso.html`: cartões responsivos com duas colunas no celular, padrão de cores CRL, estados de hover/foco, cabeçalho branco preservado.
+- Verificações realizadas: sintaxe JavaScript de cinco módulos; consulta RPC autenticada no banco; smoke-test simulado do Dashboard com 16 cards ADM e eventos de clique gerando navegação com filtros.
+- Pendente: validação direta pelo Safari/iPhone e navegador desktop com sessão real; conferir lista de dados reais e limites de exibição antes de homologar operação sensível.
