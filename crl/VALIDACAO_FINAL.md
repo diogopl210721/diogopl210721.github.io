@@ -29,3 +29,16 @@ A revisão dos sete arquivos JavaScript foi sintática, sem testes completos de 
 - **Segundo teste autenticado como ADM, transação revertida:** admissão fictícia, devocional com presença, abertura e fechamento de viagem com 7 km calculados, preparação do relatório mensal foram executados sem erro.
 - Verificação de ausência de resíduos após as duas transações: `crl_residents`, `crl_stays`, `crl_activities`, `crl_tasks`, `crl_evolution_reports` com zero registros.
 - **Ainda pendente:** E2E por navegador autenticado, monitor ativo e bloqueado, armazenamento privado, geração de documento com assinatura, medicação e financeiro. A simulação SQL não substitui testes do navegador nem revisão jurídica dos dados sensíveis.
+
+## Bateria adicional de integração e segurança (11/10/2026)
+
+Testes feitos por simulação autenticada de ADM e alteração temporária do papel para monitor dentro de transações SQL com `ROLLBACK`. Nenhuma conta de monitor permanente foi criada nem foram inseridos dados reais.
+
+- **Ressocialização:** entrada fictícia, autorização de saída com responsável, encerramento do retorno e confirmação no banco passaram.
+- **Financeiro:** caixa fictício, estoque de teste, contribuição mensal e pagamento parcial de R$ 75 sobre R$ 200 passaram, com verificação do total.
+- **Monitor:** papel alterado somente dentro de transação revertida. `crl_is_admin()` retornou `false`; `crl_is_member(...,false)` retornou `true`; `crl_cash_summary` recusou acesso.
+- **Medicamentos:** vinculação de metadado de receita fictícia em caminho com formato válido, solicitação, conferência ADM e registro de ocorrência passaram no banco. **Não houve envio real de arquivo ao Storage** nem teste de decisão clínica.
+- **Estoque:** nova RPC `crl_register_stock_movement` valida unidade e quantidade, audita entradas/saídas, serializa movimentos concorrentes e impede saída superior ao saldo. Teste com 10 kg de entrada, 7 kg de saída e tentativa de 5 kg adicional: saída excessiva rejeitada. Interface passou a usar a RPC. Gravação direta do cliente autenticado foi bloqueada.
+- **Segurança de funções:** Supabase Advisor identificou que RPCs privilegiadas da CRL podiam ser invocadas pelo papel `anon`. Migração `crl_lock_security_definer_function_execution_to_authenticated` revogou `EXECUTE` público/anônimo das 27 funções `crl_*` com `SECURITY DEFINER`, preservando concessão ao papel `authenticated`. Verificação posterior confirmou 0 funções do grupo executáveis por `anon` e administração ainda reconhecida.
+- **Outros avisos do Advisor:** há avisos de segurança relativos ao produto DDS Avaliações no projeto Supabase compartilhado; eles não foram modificados nesta etapa para não comprometer esse produto.
+- **Acesso via navegador:** ainda não homologado externamente neste ambiente; requisições ao domínio `www.ddsinovacao.com.br` não puderam ser verificadas. Validação de Edge Function de PDF com assinatura real/autorizada, entrega de arquivos privados e interface móvel depende desse teste.
