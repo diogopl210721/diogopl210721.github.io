@@ -123,3 +123,25 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - Resumo de frequência é **descritivo**, sem diagnóstico, classificação de recuperação ou conclusões causais atribuídas a IA.
 - **Limites desta iteração:** carregamento de até 250 registros/tarefas/presenças por seção, até 200 anexos e até 100 históricos e contribuições; exporta somente os itens carregados e não inclui bytes de anexos privados. Exportação histórica integral com paginação, sincronização offline, geração por IA e testes automatizados de RLS ainda pendentes.
 - Arquivos `crl/acesso.html`, `crl/acesso.js` e `crl/prontuario.js` atualizados no GitHub; sintaxe JavaScript conferida. Sem homologação end-to-end em navegador autenticado; **não inserir dados reais ainda**.
+
+
+## Iteração — medicação e ressocialização (11/10/2026)
+
+### Banco de dados e autorização
+- Migração `crl_medication_monitor_logs_and_resocialization_audit`: RPCs `crl_register_verified_medication` (ADM com receita associada), `crl_record_medication_event` (ADM/monitor de acolhido ativo) e tabela `crl_resocializations` com abertura, fechamento e auditoria.
+- Migração `crl_medication_requests_monitor_to_admin_review`: `crl_medication_requests` armazena transcrição de receita feita pelo monitor; `crl_review_medication_request` limita aprovação/rejeição ao ADM. Nenhuma administração pode ser registrada antes da conferência.
+- `crl_resocializations` permite uma única saída em aberto por passagem; exige finalidade, justificativa e responsável ou marcação de ausência de responsável.
+- Inserções diretas pelo perfil `authenticated` em pedidos de medicamento, medicações conferidas e ressocializações ficam negadas; só funções autenticadas e auditadas efetuam gravações.
+- `crl_medication_administrations` preserva eventos como histórico, com justificativa obrigatória para eventos diferentes de administração.
+
+### Interface
+- `crl/care.js` contém as telas de **Medicamentos** e **Ressocialização**, integradas a `acesso.html` / `acesso.js`.
+- Monitor registra dados que constam na foto/PDF da receita e aguarda conferência ADM; ADM pode abrir a receita privada, aprovar ou rejeitar com justificativa. Eventos subsequentes podem ser registrados pelos perfis autorizados.
+- O monitor registra saída de ressocialização, justificativa, responsável que busca ou ausência dele, previsão e retorno efetivo. Relatórios em CSV e impressão do que estiver carregado.
+- `prontuario.js` reúne solicitações de medicamento, prescrições conferidas, eventos de administração e histórico de ressocializações; `dashboard.js` inclui pendências de conferência e saídas sem retorno.
+- **Sem prescrição automática nem sugestões de dose pela IA**. É um registro operacional, não substitui prescrição, decisão clínica, equipe de saúde nem procedimentos de emergência.
+
+### Verificações e pendências
+- Aplicação SQL concluída; conferidos RLS e ausência de permissão de inserção direta em tabelas sensíveis.
+- Sintaxe dos módulos JS `acesso.js`, `care.js`, `prontuario.js` e `dashboard.js` validada no repositório.
+- **Pendente:** testes integrados autenticados (ADM, monitor e bloqueado), verificação no navegador e revisão de responsabilidade profissional antes de usar medicamentos reais. Ainda não liberar operação com acolhidos reais.
