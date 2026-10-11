@@ -1,0 +1,26 @@
+name: CRL - pacote para revisao do codigo
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crl/**"
+      - ".github/workflows/crl-review-package.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export-crl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Empacotar somente o projeto CRL
+        run: |
+          zip -q -r CRL-CODIGO-COMPLETO.zip crl -x '**/.DS_Store'
+          unzip -t CRL-CODIGO-COMPLETO.zip
+      - name: Publicar ZIP do projeto como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: CRL-CODIGO-COMPLETO
+          path: CRL-CODIGO-COMPLETO.zip
+          retention-days: 90
