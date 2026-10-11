@@ -359,7 +359,7 @@ function showMonitorCredentials(username,password){
  const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar usuário e senha';
  copy.onclick=async()=>{
   try{
-   await navigator.clipboard.writeText('Usuário: '+username+'\\nSenha: '+password);
+   await navigator.clipboard.writeText('Usuário: '+username+'\nSenha: '+password);
    status('Acesso copiado. Guarde em um local seguro.');
   }catch(_){status('Selecione e copie o texto da senha exibida acima.',true)}
  };
@@ -386,7 +386,16 @@ async function loadMonitors(){
   for(const m of result.monitors){
    const item=addItem(m.display_name,m.active?'Ativo':'Bloqueado');
    const username=document.createElement('div');username.className='code-label';username.textContent='Login: '+m.username;item.append(username);
-   if(!m.active)continue;
+   if(!m.active){
+    const activate=document.createElement('button');activate.type='button';activate.textContent='Reativar monitor';
+    activate.onclick=async()=>{
+     if(!confirm('Reativar o acesso de '+m.display_name+'?'))return;
+     activate.disabled=true;
+     try{await adminMonitors({action:'unblock',member_id:m.id});status('Monitor reativado.');await loadMonitors()}
+     catch(e){status(e.message||'Reativação não concluída.',true);activate.disabled=false}
+    };
+    item.append(activate);continue;
+   }
    const controls=document.createElement('div');controls.className='manager-actions';
    const reset=document.createElement('button');reset.type='button';reset.textContent='Redefinir senha';reset.onclick=()=>showMonitorReset(m,item);
    const block=document.createElement('button');block.type='button';block.className='warn';block.textContent='Bloquear monitor';
