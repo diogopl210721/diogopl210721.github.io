@@ -7,13 +7,14 @@ import {evolutionForm,loadEvolution,prepareEvolution} from './evolution.js';
 import {operationsForm,loadOperations,submitOperations} from './operations.js';
 import {auditForm,loadAudit} from './auditoria.js';
 import {diagnosticForm,runDiagnostic} from './diagnostico.js';
+import {backupForm,loadBackupList,runBackup,backupReminder} from './backup.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',moduleFilter='all',openTrips=[],lastMetrics=null;
 let monitorPreview=false,originalAdminMember=null;
 // Quem vê o quê. Para mudar o acesso de um perfil, altere só estas duas listas
 // (o banco aplica as mesmas regras; a tela apenas esconde o que não está liberado).
-const ADMIN_ONLY=['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic'];
+const ADMIN_ONLY=['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic','backup'];
 const NOT_FOR_STUDENT_MONITOR=['profile','files','notes','medications','resocialization'];
 const isStudentMonitor=()=>member?.role==='monitor'&&member?.monitor_vinculo==='aluno';
 function canView(v){
@@ -124,6 +125,7 @@ function draw(){
  evolution:evolutionForm(stays),
  audit:auditForm(),
  diagnostic:diagnosticForm(),
+ backup:backupForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
  monitors:'<div id="monitorQuickCard"><h3>Acesso rápido: Diogo (voluntário)</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Cadastrar monitor</h2><p class="muted">Escolha Aluno (vinculado ao cadastro do acolhido), Voluntário ou Contratado (com salário mensal). Todos terão perfil de acesso Monitor. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><div id="monitorStudentBox" style="display:none"><label>Aluno existente</label><select id="monitorResident">'+stays.map(st=>'<option value="'+st.crl_residents?.id+'">'+esc(st.crl_residents?.full_name||'')+'</option>').join('')+'</select></div><div id="monitorSalaryBox" style="display:none"><label>Salário mensal (R$)</label><input id="monitorSalary" type="number" min="0.01" step="0.01"></div><label>Telefone</label><input id="monitorPhone" type="tel" maxlength="40"><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
@@ -180,7 +182,7 @@ function draw(){
   };
  }
 
- el('listTitle').textContent=({diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque e consumo',cash:'Caixa institucional',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque e consumo',cash:'Caixa institucional',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  const dataForm=el('dataForm');if(dataForm)dataForm.onsubmit=submit;
  if(view==='medications'||view==='resocialization')void bindCare({db,member,el,kind:view,status});
  if(view==='documents')void bindDocuments({db,member,el,status,stays});
@@ -188,7 +190,7 @@ function draw(){
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
 async function loadList(){
  if(view==='dashboard'){
-  await loadDashboard({db,member,user,stays,el,esc,fmt,localTime,setView,canView});
+  await loadDashboard({db,member,user,stays,el,esc,fmt,localTime,setView,canView,backupReminder});
   return;
  }
  const root=el('listArea');root.replaceChildren();
@@ -201,6 +203,7 @@ async function loadList(){
  }
  if(view==='diagnostic'){root.textContent='Clique em “Verificar conexões agora” para iniciar os testes sem alterar dados.';return}
  if(view==='audit'){await loadAudit({db,member,el,root,status});return}
+ if(view==='backup'){await loadBackupList({db,member,root});return}
  if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,root,filter:moduleFilter});return}
  if(view==='evolution'){await loadEvolution({db,member,stays,root,status});return}
  if(view==='medications'||view==='resocialization'){await loadCareList({db,member,stays,root,kind:view,status,filter:moduleFilter});return}
@@ -702,7 +705,7 @@ function viewTitle(id){
  return ({dashboard:'Painel Geral',students:'Acolhidos',profile:'Prontuários',files:'Arquivos e fotos',
  history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',medications:'Medicamentos e receitas',resocialization:'Ressocialização',
  tasks:'Escala de tarefas',meals:'Refeições',contributions:'Contribuições',
- monitors:'Usuários e monitores',documents:'Declarações',evolution:'Evolução mensal',stock:'Estoque',cash:'Caixa da casa',audit:'Auditoria',diagnostic:'Verificar sistema',stats:'Estatísticas gerais'})[id]||'CRL';
+ monitors:'Usuários e monitores',backup:'Backup dos dados',documents:'Declarações',evolution:'Evolução mensal',stock:'Estoque',cash:'Caixa da casa',audit:'Auditoria',diagnostic:'Verificar sistema',stats:'Estatísticas gerais'})[id]||'CRL';
 }
 async function setView(next,filter='all'){
  if(!authenticated()||!canView(next))return;
@@ -823,7 +826,9 @@ async function submit(e){
  if(monitorPreview){status('Prévia apenas visual: volte ao ADM para salvar dados.',true);return}const form=el('dataForm'),btn=form.querySelector('button[type="submit"]')||form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
   let result;
-  if(view==='diagnostic'){
+  if(view==='backup'){
+   await runBackup({db,member,status,root:el('listArea'),refresh:loadList});return;
+  }else if(view==='diagnostic'){
    await runDiagnostic({db,member,user,root:el('listArea'),status});return;
   }else if(view==='audit'){
    await loadAudit({db,member,el,root:el('listArea'),status});return;

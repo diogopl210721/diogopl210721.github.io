@@ -8,17 +8,18 @@ const card=(icon,title,value,caption,go,filter='all')=>
  '<span class="stat-icon">'+icon+'</span><span class="stat-label">'+esc(title)+'</span><strong>'+esc(value)+'</strong>'+
  '<span class="stat-detail">'+esc(caption)+' <span class="dash-chevron">↗</span></span></button>';
 const row=(name,detail)=>'<div class="dash-activity"><span class="dot"></span><div><b>'+esc(name)+'</b><small>'+esc(detail)+'</small></div></div>';
-export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,canView=()=>true}){
+export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,canView=()=>true,backupReminder=null}){
  const root=el('dashboardArea');root.innerHTML='<section class="panel">Consultando indicadores...</section>';
  if(!member?.institution_id)return;
  const admin=member.role==='admin',tenant=member.institution_id;
  const day=localTime().slice(0,10);
  const dayStart=new Date(day+'T00:00:00').toISOString();
  const dayEnd=new Date(new Date(day+'T00:00:00').getTime()+86400000).toISOString();
- const [totals,tasks,last]=await Promise.all([
+ const [totals,tasks,last,backup]=await Promise.all([
   db.rpc('crl_dashboard_cards',{p_institution:tenant}),
   db.from('crl_tasks').select('title,due_at,status').eq('institution_id',tenant).gte('due_at',dayStart).lt('due_at',dayEnd).neq('status','done').order('due_at',{ascending:true}).limit(8),
-  db.from('crl_activities').select('title,presenter,starts_at').eq('institution_id',tenant).eq('type','devocional').order('starts_at',{ascending:false}).limit(1)
+  db.from('crl_activities').select('title,presenter,starts_at').eq('institution_id',tenant).eq('type','devocional').order('starts_at',{ascending:false}).limit(1),
+  admin&&backupReminder?backupReminder({db,member}):Promise.resolve(null)
  ]);
  if(!root.isConnected)return;
  if(totals.error||!totals.data){root.innerHTML='<section class="panel"><h2>Indicadores indisponíveis</h2><p>Não foi possível consultar os totais. Entre em Verificar sistema (ADM) para diagnosticar a conexão.</p></section>';return}
@@ -52,6 +53,19 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
   '<div class="dash-highlight"><b>'+esc(last.data[0].title)+'</b><p class="dash-subtle">Ministrante: '+esc(last.data[0].presenter||'Não informado')+' · '+esc(fmt(last.data[0].starts_at))+'</p></div>':
   '<p class="dash-empty">Nenhuma devocional registrada.</p>';
  const alerts=[];
+ // Lembrete de backup (ADM): vermelho a partir de 3 dias sem backup
+ let backupHtml='';
+ if(admin&&backup&&!backup.error){
+  const lastTxt=backup.last?new Date(backup.last).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):null;
+  if(backup.overdue){
+   const msg=backup.last?'Último backup em '+lastTxt+' (há '+backup.days+' dias).':'Nenhum backup feito ainda.';
+   backupHtml='<section class="backup-banner late" role="alert"><div><b>Hora de fazer o backup</b>'+esc(msg)+' Faça a cada 3 dias.</div><button type="button" data-go="backup">Fazer backup agora</button></section>';
+   alerts.push(row('Backup atrasado',backup.last?'Há '+backup.days+' dias':'Nenhum backup ainda'));
+  }else{
+   const next=3-backup.days;
+   backupHtml='<section class="backup-banner ok"><div><b>Backup em dia</b>Último em '+esc(lastTxt)+' · próximo '+(next<=1?'amanhã':'em '+next+' dias')+'.</div><button type="button" data-go="backup">Ver backups</button></section>';
+  }
+ }
  if(admin&&Number(m.contributions_overdue)>0)alerts.push(row(m.contributions_overdue+' contribuições vencidas','Consultar financeiro'));
  if(admin&&Number(m.medications_pending)>0)alerts.push(row(m.medications_pending+' receitas pendentes','Conferência administrativa'));
  if(canView('resocialization')&&Number(m.resocializations_open)>0)alerts.push(row(m.resocializations_open+' ressocializações abertas','Conferir retornos'));
@@ -60,7 +74,7 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
   ['notes','Rotina'],['trips','Veículos'],['resocialization','Ressocialização'],['stock','Estoque'],
   ...(admin?[['contributions','Contribuições'],['cash','Caixa'],['documents','Declarações'],['evolution','Evolução mensal'],['diagnostic','Verificar sistema']]:[])
  ].map(([go,label])=>'<button type="button" data-go="'+go+'">'+label+'</button>').join('')+'</div>';
- root.innerHTML=
+ root.innerHTML=backupHtml+
  '<section class="dash-section"><div class="dash-section-header"><h2>Visão geral</h2><p>Toque em qualquer indicador para consultar os registros</p></div><div class="dash-stats">'+main.join('')+'</div></section>'+
  '<section class="dash-section"><div class="dash-section-header"><h2>Indicadores complementares</h2><p>Gestão, movimentações e consumo</p></div><div class="dash-stats dash-stats-extra">'+extras.join('')+'</div></section>'+
  '<div class="dash-blocks">'+
