@@ -77,7 +77,7 @@ export async function runBackup({db,member,status,root,refresh}){
  const residentName=new Map((T.crl_residents||[]).map(r=>[r.id,r.full_name]));
  const stayPerson=new Map((T.crl_stays||[]).map(s=>[s.id,residentName.get(s.resident_id)]));
  const files=[
-  ...(T.crl_files||[]).map(f=>({bucket:'crl-private',path:f.storage_path,folder:safeName(stayPerson.get(f.stay_id)),name:(f.category||'arquivo')+'_'+String(f.created_at||'').slice(0,10)+'_'+String(f.id).slice(0,8)})),
+  ...(T.crl_files||[]).filter(f=>!f.deleted_at).map(f=>({bucket:'crl-private',path:f.storage_path,folder:safeName(stayPerson.get(f.stay_id)),name:(f.category||'arquivo')+'_'+String(f.created_at||'').slice(0,10)+'_'+String(f.id).slice(0,8)})),
   ...(T.crl_documents||[]).filter(d=>d.pdf_storage_path).map(d=>({bucket:'crl-documents',path:d.pdf_storage_path,folder:safeName(stayPerson.get(d.stay_id)),name:'declaracao_'+(d.document_number||String(d.id).slice(0,8))}))
  ];
  const failed=[];let done=0;

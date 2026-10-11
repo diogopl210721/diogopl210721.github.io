@@ -8,6 +8,7 @@ import {operationsForm,loadOperations,submitOperations} from './operations.js';
 import {auditForm,loadAudit} from './auditoria.js';
 import {diagnosticForm,runDiagnostic} from './diagnostico.js';
 import {backupForm,loadBackupList,runBackup,backupReminder} from './backup.js';
+import {attachChanges,canChange,changeNote} from './changes.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',moduleFilter='all',openTrips=[],lastMetrics=null;
@@ -27,6 +28,12 @@ function applyTabs(){
  document.querySelectorAll('[data-view]').forEach(b=>{b.style.display=canView(b.dataset.view)?'':'none'});
  document.querySelectorAll('[data-jump]').forEach(b=>{b.style.display=canView(b.dataset.jump)?'':'none'});
 }
+const MEAL_LABEL={cafe:'Café da manhã',almoco:'Almoço',jantar:'Jantar',lanche:'Lanche',outro:'Outros'};
+const NOTE_LABEL={rotina:'Rotina',ocorrencia:'Ocorrência',observacao:'Observação'};
+const REC_LABEL={unica:'Única',semanal:'Semanal',quinzenal:'Quinzenal',mensal:'Mensal'};
+const TRIP_PURPOSES=['Buscar doações','Culto','Consulta médica','Ressocialização','Compras','Serviços','Outros'];
+const FILE_CATS=[['documento','RG / CPF / documento'],['receita','Receita médica'],['pertences','Pertences'],['foto','Fotografia'],['outro','Outro anexo']];
+const dateBR=v=>v?String(v).slice(0,10).split('-').reverse().join('/'):'—';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
 const localTime=(date=new Date())=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -91,7 +98,7 @@ el('loginForm').onsubmit=async e=>{
 };
 async function refresh(){
  if(!authenticated())return;
- const r=await db.from('crl_stays').select('id,resident_id,admission_date,crl_residents(id,full_name)').eq('institution_id',member.institution_id).eq('status','active').order('admission_date',{ascending:false});
+ const r=await db.from('crl_stays').select('id,resident_id,admission_date,crl_residents(id,full_name,responsible_name)').eq('institution_id',member.institution_id).eq('status','active').order('admission_date',{ascending:false});
  if(r.error){status('Não foi possível consultar os acolhidos.',true);return}
  stays=r.data||[];
  draw();
@@ -204,11 +211,11 @@ async function loadList(){
  if(view==='diagnostic'){root.textContent='Clique em “Verificar conexões agora” para iniciar os testes sem alterar dados.';return}
  if(view==='audit'){await loadAudit({db,member,el,root,status});return}
  if(view==='backup'){await loadBackupList({db,member,root});return}
- if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,root,filter:moduleFilter});return}
+ if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,user,root,filter:moduleFilter,status,refresh:loadList});return}
  if(view==='evolution'){await loadEvolution({db,member,stays,root,status});return}
- if(view==='medications'||view==='resocialization'){await loadCareList({db,member,stays,root,kind:view,status,filter:moduleFilter});return}
+ if(view==='medications'||view==='resocialization'){await loadCareList({db,member,user,stays,root,kind:view,status,filter:moduleFilter});return}
  if(view==='tasks'){await loadTasks();return}
- if(view==='profile'){await loadProntuario({db,member,stays,stayId:el('profileStay')?.value,root,status});return}
+ if(view==='profile'){await loadProntuario({db,member,user,stays,stayId:el('profileStay')?.value,root,status});return}
  if(view==='documents'){await listDocuments({db,member,el,status,stays});return}
  if(view==='monitors'){await loadMonitors();return}
  if(view==='files'){await loadAttachments();return}
@@ -216,7 +223,7 @@ async function loadList(){
   if(!stays.length)root.textContent='Nenhum acolhido ativo cadastrado.';
   const term=el('globalSearch').value.trim().toLocaleLowerCase('pt-BR');
   for(const st of stays.filter(st=>(st.crl_residents?.full_name||'').toLocaleLowerCase('pt-BR').includes(term)&&(moduleFilter!=='near9'||(()=>{const due=new Date(st.admission_date+'T12:00:00Z');due.setUTCMonth(due.getUTCMonth()+9);const remaining=(due-new Date())/86400000;return remaining>=-1&&remaining<=30})()))){
-    const item=addItem(st.crl_residents?.full_name||'Acolhido','Entrada: '+st.admission_date);
+    const item=addItem(st.crl_residents?.full_name||'Acolhido','Entrada: '+dateBR(st.admission_date));
     const profileButton=document.createElement('button');profileButton.type='button';profileButton.textContent='Abrir prontuário';
     profileButton.style.marginRight='7px';
     profileButton.onclick=async()=>{await setView('profile');if(el('profileStay')){el('profileStay').value=st.id;await loadList()}};
@@ -230,6 +237,23 @@ async function loadList(){
       item.append(doc);
       const b=document.createElement('button');b.textContent='Encerrar acolhimento';b.type='button';
       b.onclick=()=>showCloseStay(st,item);item.append(b);
+      attachChanges(item,{db,status,entity:'admission',id:st.id,onDone:refresh,
+       edit:{label:'Editar cadastro',loadFields:async()=>{
+        const [p,f]=await Promise.all([db.rpc('crl_residents_private',{p_residents:[st.resident_id]}),db.rpc('crl_stay_finance',{p_stay:st.id})]);
+        if(p.error||f.error){status('Não foi possível carregar o cadastro.',true);return null}
+        const d=(p.data||[])[0]||{},fin=(f.data||[])[0]||{};
+        return [{key:'full_name',label:'Nome completo',value:st.crl_residents?.full_name,required:true},
+         {key:'admission_date',label:'Data de entrada',type:'date',value:st.admission_date,required:true},
+         {key:'birth_date',label:'Data de nascimento',type:'date',value:d.birth_date},
+         {key:'cpf',label:'CPF',value:d.cpf},{key:'rg',label:'RG',value:d.rg},
+         {key:'phone',label:'Telefone do acolhido',type:'tel',value:d.phone},{key:'address',label:'Endereço',value:d.address},
+         {key:'responsible_name',label:'Nome do responsável',value:st.crl_residents?.responsible_name},
+         {key:'responsible_phone',label:'Telefone do responsável',type:'tel',value:d.responsible_phone},
+         {key:'notes',label:'Observações da entrada',type:'textarea',value:d.notes,max:4000},
+         {key:'monthly_contribution',label:'Contribuição mensal em R$ (0 = G5)',type:'number',step:'0.01',min:0,value:fin.monthly_contribution},
+         {key:'due_day',label:'Dia do vencimento',type:'number',min:1,value:fin.due_day}];
+       }},
+       del:{label:'Excluir cadastro',hint:'Só para cadastro feito por engano, sem registros no prontuário. Para quem saiu da casa, use Encerrar acolhimento.'}});
     }
   }
   return;
@@ -252,11 +276,18 @@ async function loadList(){
  if(view==='stats'){root.textContent='Selecione mês e ano e consulte os indicadores administrativos.';return}
  if(view==='contributions'){await loadContributions();return}
  if(view==='meals'){
-  const base=db.from('crl_meals').select('meal_type,servings,served_at').eq('institution_id',member.institution_id);
+  const base=db.from('crl_meals').select('id,meal_type,servings,served_at,notes,recorded_by,created_at').eq('institution_id',member.institution_id).is('deleted_at',null);
   const r=await (moduleFilter==='month'?base.gte('served_at',new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()).lt('served_at',new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toISOString()):base).order('served_at',{ascending:false}).limit(100);
   if(r.error){root.textContent='Falha ao consultar refeições.';return}
   if(!r.data.length)root.textContent='Nenhuma refeição registrada.';
-  for(const m of r.data)addItem(m.meal_type+' • '+m.servings+' refeições',fmt(m.served_at));
+  for(const m of r.data){
+   const item=addItem((MEAL_LABEL[m.meal_type]||m.meal_type)+' • '+m.servings+' refeições',fmt(m.served_at)+(m.notes?' — '+m.notes:''));
+   if(canChange(member,user,m.recorded_by,m.created_at))attachChanges(item,{db,status,entity:'meal',id:m.id,onDone:loadList,
+    edit:{fields:[{key:'meal_type',label:'Tipo de refeição',type:'select',value:m.meal_type,options:Object.entries(MEAL_LABEL)},
+     {key:'servings',label:'Quantidade servida',type:'number',min:1,value:m.servings,required:true},
+     {key:'served_at',label:'Data e hora',type:'datetime-local',value:m.served_at,required:true},
+     {key:'notes',label:'Observações',value:m.notes}]},del:{}});
+  }
   return;
  }
  if(view==='notes'){
@@ -264,32 +295,48 @@ async function loadList(){
   const r=await db.from('crl_records').select('id,category,original_text,created_at,stay_id,author_id,correction_of,correction_reason').eq('institution_id',member.institution_id).in('stay_id',stays.map(s=>s.id)).order('created_at',{ascending:false}).limit(25);
   if(r.error){root.textContent='Falha ao consultar registros.';return}
   if(!r.data.length)root.textContent='Nenhuma rotina registrada.';
-  for(const x of r.data){const name=stays.find(s=>s.id===x.stay_id)?.crl_residents?.full_name||'Acolhido';const item=addItem(name+' • '+x.category+(x.correction_of?' (retificação)':''),fmt(x.created_at)+' — '+x.original_text+(x.correction_reason?' | Motivo: '+x.correction_reason:''));if(x.author_id===user.id||member.role==='admin'){const b=document.createElement('button');b.type='button';b.textContent='Retificar registro';b.onclick=()=>showNoteCorrection(x,item);item.append(b)}}
+  for(const x of r.data){const name=stays.find(s=>s.id===x.stay_id)?.crl_residents?.full_name||'Acolhido';const item=addItem(name+' • '+(NOTE_LABEL[x.category]||x.category)+(x.correction_of?' (corrigido)':''),fmt(x.created_at)+' — '+x.original_text+(x.correction_reason?' | Motivo: '+x.correction_reason:''));if(x.author_id===user.id||member.role==='admin'){const b=document.createElement('button');b.type='button';b.textContent='Corrigir registro';b.onclick=()=>showNoteCorrection(x,item);item.append(b)}}
   return;
  }
  if(view==='devotionals'){
-  const base=db.from('crl_activities').select('title,presenter,starts_at,ends_at').eq('institution_id',member.institution_id).eq('type','devocional');
+  const base=db.from('crl_activities').select('id,title,presenter,starts_at,ends_at,created_by,created_at').eq('institution_id',member.institution_id).eq('type','devocional').is('deleted_at',null);
   const r=await (moduleFilter==='month'?base.gte('starts_at',new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()).lt('starts_at',new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toISOString()):base).order('starts_at',{ascending:false}).limit(100);
   if(r.error){root.textContent='Falha ao consultar devocionais.';return}
   if(!r.data.length)root.textContent='Nenhuma devocional finalizada.';
-  for(const a of r.data)addItem(a.title,(a.presenter||'Ministrante não informado')+' • '+fmt(a.starts_at)+' a '+fmt(a.ends_at));
+  for(const a of r.data){
+   const item=addItem(a.title,(a.presenter||'Ministrante não informado')+' • '+fmt(a.starts_at)+' a '+fmt(a.ends_at));
+   if(canChange(member,user,a.created_by,a.created_at))attachChanges(item,{db,status,entity:'devotional',id:a.id,onDone:loadList,
+    edit:{hint:'Para mudar a presença de alguém, use Corrigir presença no prontuário da pessoa.',fields:[{key:'title',label:'Tema / passagem bíblica',value:a.title,required:true},
+     {key:'presenter',label:'Quem ministrou',value:a.presenter,required:true},
+     {key:'starts_at',label:'Início',type:'datetime-local',value:a.starts_at,required:true},
+     {key:'ends_at',label:'Término',type:'datetime-local',value:a.ends_at,required:true}]},
+    del:{hint:'A devocional e as presenças dela saem das listas e dos totais, mas ficam na Auditoria.'}});
+  }
   return;
  }
  if(view==='trips'){
-  const base=db.from('crl_vehicle_trips').select('id,driver_name,purpose,destination,departure_at,arrival_at,km_initial,km_final,km_driven,created_by').eq('institution_id',member.institution_id);
+  const base=db.from('crl_vehicle_trips').select('id,driver_name,purpose,destination,companions,departure_at,arrival_at,km_initial,km_final,km_driven,created_by,created_at').eq('institution_id',member.institution_id).is('deleted_at',null);
   const r=await (moduleFilter==='month'?base.gte('departure_at',new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()).lt('departure_at',new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toISOString()):base).order('departure_at',{ascending:false}).limit(100);
   if(r.error){root.textContent='Falha ao consultar viagens.';return}
   if(!r.data.length)root.textContent='Nenhuma viagem cadastrada.';
   for(const t of r.data){
    const distance=t.km_driven==null?'Em andamento':Number(t.km_driven).toLocaleString('pt-BR')+' km';
    const item=addItem(t.purpose+' — '+t.driver_name,fmt(t.departure_at)+' • '+distance);
-   if(!t.arrival_at && t.created_by===user.id){
+   // Qualquer pessoa da equipe pode fechar a viagem (quem devolveu o carro), não só quem abriu
+   if(!t.arrival_at){
     const bt=document.createElement('button');bt.textContent='Finalizar viagem';bt.type='button';
     bt.onclick=()=>showTripFinish(t,item);item.append(bt);
    }
    if(t.arrival_at && member.role==='admin'){
-    const b=document.createElement('button');b.type='button';b.textContent='Retificar viagem (ADM)';b.onclick=()=>showTripRectification(t,item);item.append(b);
+    const b=document.createElement('button');b.type='button';b.textContent='Retificar KM/chegada (ADM)';b.onclick=()=>showTripRectification(t,item);item.append(b);
    }
+   if(canChange(member,user,t.created_by,t.created_at))attachChanges(item,{db,status,entity:'trip',id:t.id,onDone:loadList,
+    edit:t.arrival_at?null:{label:'Editar saída',fields:[{key:'driver_name',label:'Motorista',value:t.driver_name,required:true},
+     {key:'purpose',label:'Finalidade',type:'select',value:t.purpose,options:[...new Set([t.purpose,...TRIP_PURPOSES])].map(x=>[x,x])},
+     {key:'destination',label:'Destino',value:t.destination},{key:'companions',label:'Acompanhantes',value:t.companions},
+     {key:'km_initial',label:'KM inicial',type:'number',step:'0.1',min:0,value:t.km_initial,required:true},
+     {key:'departure_at',label:'Saída',type:'datetime-local',value:t.departure_at,required:true}]},
+    del:{hint:'Use para viagem lançada por engano. Ela sai das listas e dos totais de KM, mas fica na Auditoria.'}});
   }
  }
 }
@@ -298,13 +345,13 @@ async function loadList(){
 
 async function loadTasks(){
  const root=el('listArea');root.replaceChildren();
- const base=db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status,completed_at').eq('institution_id',member.institution_id);
+ const base=db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status,completed_at,created_by,created_at').eq('institution_id',member.institution_id).is('deleted_at',null);
  const r=await (moduleFilter==='today'?base.gte('due_at',new Date(new Date().toDateString()).toISOString()).lt('due_at',new Date(new Date(new Date().toDateString()).getTime()+86400000).toISOString()).neq('status','done'):base).order('due_at',{ascending:moduleFilter==='today'}).limit(100);
  if(r.error){root.textContent='Não foi possível carregar as tarefas.';return}
  if(!r.data?.length){root.textContent='Nenhuma tarefa cadastrada.';return}
  for(const t of r.data){
    const resident=stays.find(s=>s.id===t.stay_id)?.crl_residents?.full_name||(t.stay_id?'Acolhido não ativo':'Equipe / geral');
-   const item=addItem(t.title,'Responsável: '+resident+' · '+fmt(t.due_at)+' · '+(t.recurrence||'Única')+' · '+(t.status==='done'?'Concluída':'Programada'));
+   const item=addItem(t.title,'Responsável: '+resident+' · '+fmt(t.due_at)+' · '+(REC_LABEL[t.recurrence]||'Única')+' · '+(t.status==='done'?'Concluída':'Programada'));
    if(t.status==='planned'){
     const button=document.createElement('button');button.type='button';button.textContent='Concluir tarefa';
     button.onclick=async()=>{
@@ -320,20 +367,25 @@ async function loadTasks(){
     };
     item.append(button);
    }
+   if(canChange(member,user,t.created_by,t.created_at))attachChanges(item,{db,status,entity:'task',id:t.id,onDone:loadTasks,
+    edit:t.status==='done'?null:{fields:[{key:'title',label:'Descrição da atividade',value:t.title,required:true},
+     {key:'stay_id',label:'Acolhido responsável',type:'select',value:t.stay_id||'',options:[['','Equipe / geral'],...stays.map(s=>[s.id,s.crl_residents?.full_name||'Acolhido'])]},
+     {key:'due_at',label:'Data e hora',type:'datetime-local',value:t.due_at,required:true},
+     {key:'recurrence',label:'Periodicidade',type:'select',value:t.recurrence||'unica',options:Object.entries(REC_LABEL)}]},del:{}});
  }
 }
 
 async function loadAttachments(){
  const root=el('listArea');root.replaceChildren();
  if(!stays.length){root.textContent='Nenhum acolhido ativo com acesso a arquivos.';return}
- const r=await db.from('crl_files').select('id,stay_id,category,storage_path,created_at')
- .eq('institution_id',member.institution_id).in('stay_id',stays.map(x=>x.id))
+ const r=await db.from('crl_files').select('id,stay_id,category,storage_path,created_at,uploaded_by')
+ .eq('institution_id',member.institution_id).in('stay_id',stays.map(x=>x.id)).is('deleted_at',null)
  .order('created_at',{ascending:false}).limit(60);
  if(r.error){root.textContent='Não foi possível consultar os anexos.';return}
  if(!r.data.length){root.textContent='Nenhum arquivo anexado.';return}
  for(const file of r.data){
   const name=stays.find(st=>st.id===file.stay_id)?.crl_residents?.full_name||'Acolhido';
-  const item=addItem(name+' — '+file.category,fmt(file.created_at));
+  const item=addItem(name+' — '+((FILE_CATS.find(c=>c[0]===file.category)||[,file.category])[1]),fmt(file.created_at));
   const b=document.createElement('button');b.type='button';b.textContent='Abrir documento (5 minutos)';
   b.onclick=async()=>{
    b.disabled=true;const signed=await db.storage.from('crl-private').createSignedUrl(file.storage_path,300);
@@ -341,6 +393,9 @@ async function loadAttachments(){
    if(signed.error||!signed.data?.signedUrl){status('Acesso ao arquivo não autorizado.',true);return}
    window.open(signed.data.signedUrl,'_blank','noopener,noreferrer');
   };item.append(b);
+  if(canChange(member,user,file.uploaded_by,file.created_at))attachChanges(item,{db,status,entity:'file',id:file.id,onDone:loadAttachments,
+   edit:{label:'Mudar categoria',fields:[{key:'category',label:'Categoria',type:'select',value:file.category,options:FILE_CATS}]},
+   del:{hint:'Use para foto ou documento enviado errado. Ele sai do prontuário, mas fica guardado para o ADM na Auditoria.'}});
  }
 }
 // Cadastro completo do acolhido: feito pelo ADM ou pelo monitor da equipe (não pelo monitor aluno).
@@ -749,8 +804,8 @@ async function loadContributions(){
  const root=el('listArea');root.replaceChildren();
  if(member?.role!=='admin'){root.textContent='Acesso reservado ao ADM.';return}
  const r=await db.from('crl_contributions')
- .select('id,stay_id,amount,paid_amount,due_date,crl_stays(resident_id,crl_residents(full_name))')
- .eq('institution_id',member.institution_id).order('due_date',{ascending:false}).limit(moduleFilter==='overdue'?500:60);
+ .select('id,stay_id,amount,paid_amount,due_date,notes,crl_stays(resident_id,crl_residents(full_name))')
+ .eq('institution_id',member.institution_id).is('deleted_at',null).order('due_date',{ascending:false}).limit(moduleFilter==='overdue'?500:60);
  if(r.error){root.textContent='Não foi possível consultar contribuições.';return}
  if(!r.data.length){root.textContent='Nenhuma contribuição lançada.';return}
  const residentIds=[...new Set(r.data.map(c=>c.crl_stays?.resident_id).filter(Boolean))];
@@ -761,7 +816,7 @@ async function loadContributions(){
   const balance=Number(c.amount)-Number(c.paid_amount||0);
   if(moduleFilter==='overdue'&&!(c.due_date<localTime().slice(0,10)&&balance>0))continue;
   const name=c.crl_stays?.crl_residents?.full_name||'Acolhido';
-  const details='Vencimento: '+c.due_date+' · Mensal: '+brl(c.amount)+' · Diária: '+brl(Number(c.amount)/30)+' · Recebido: '+brl(c.paid_amount)+' · Saldo: '+brl(balance);
+  const details='Vencimento: '+dateBR(c.due_date)+' · Mensal: '+brl(c.amount)+' · Diária: '+brl(Number(c.amount)/30)+' · Recebido: '+brl(c.paid_amount)+' · Saldo: '+brl(balance);
   const item=addItem(name,details+(Number(c.amount)===0?' · G5 (vaga sustentada)':''));
   if(balance>0){
    const button=document.createElement('button');button.textContent='Registrar recebimento';button.type='button';
@@ -771,11 +826,36 @@ async function loadContributions(){
     const whats=document.createElement('button');whats.textContent='WhatsApp do responsável';whats.type='button';
     whats.onclick=()=>{
       let digits=phone;if(!digits.startsWith('55'))digits='55'+digits;
-      const msg='Olá! Gostaríamos de conversar sobre a contribuição com vencimento em '+c.due_date+'. Valor pendente: '+brl(balance)+'.';
+      const msg='Olá! Gostaríamos de conversar sobre a contribuição com vencimento em '+dateBR(c.due_date)+'. Valor pendente: '+brl(balance)+'.';
       window.open('https://wa.me/'+digits+'?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');
     };item.append(whats);
    }
   }
+  if(Number(c.paid_amount)>0){
+   const hist=document.createElement('button');hist.type='button';hist.textContent='Recebimentos';
+   hist.onclick=()=>showPayments(c,item);item.append(hist);
+  }
+  attachChanges(item,{db,status,entity:'contribution',id:c.id,onDone:loadContributions,
+   edit:{fields:[{key:'amount',label:'Valor do mês em R$ (0 = G5)',type:'number',step:'0.01',min:0,value:c.amount,required:true},
+    {key:'due_date',label:'Vencimento',type:'date',value:c.due_date,required:true},
+    {key:'notes',label:'Observações',value:c.notes}]},
+   del:{hint:'Só é possível excluir sem recebimentos. Se já houve pagamento, estorne em Recebimentos primeiro.'}});
+ }
+}
+// Recebimentos de uma contribuição, com estorno (ADM)
+async function showPayments(c,item){
+ const old=item.querySelector('.payments-box');if(old){old.remove();return}
+ const box=document.createElement('div');box.className='payments-box';box.textContent='Carregando recebimentos...';item.append(box);
+ const r=await db.from('crl_contribution_payments').select('id,amount,paid_on,payment_method,notes').eq('contribution_id',c.id).is('deleted_at',null).order('paid_on',{ascending:false});
+ box.replaceChildren();
+ if(r.error){box.textContent='Não foi possível consultar os recebimentos.';return}
+ if(!r.data.length){box.textContent='Nenhum recebimento ativo.';return}
+ for(const p of r.data){
+  const line=document.createElement('div');line.className='item';
+  line.textContent=Number(p.amount).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})+' · '+dateBR(p.paid_on)+' · '+(p.payment_method||'—')+(p.notes?' · '+p.notes:'');
+  attachChanges(line,{db,status,entity:'payment',id:p.id,onDone:loadContributions,
+   del:{label:'Estornar',hint:'O valor volta a ficar pendente na contribuição. O recebimento estornado fica na Auditoria.'}});
+  box.append(line);
  }
 }
 function showPayment(c,item){
@@ -852,7 +932,7 @@ async function submit(e){
    if(member.role!=='admin')throw Error('permission');
    await searchHistory(el('searchName').value.trim());status('Pesquisa concluída.');return;
   }else if(view==='profile'){
-   await loadProntuario({db,member,stays,stayId:el('profileStay')?.value,root:el('listArea'),status});return;
+   await loadProntuario({db,member,user,stays,stayId:el('profileStay')?.value,root:el('listArea'),status});return;
   }else if(view==='students'){
    await submitAdmission();return;
   }else if(view==='tasks'){

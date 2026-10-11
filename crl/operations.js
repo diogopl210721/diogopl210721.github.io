@@ -1,4 +1,5 @@
 // Módulos CRL de estoque e caixa. Caixa somente para administradores.
+import {attachChanges,canChange} from './changes.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=v=>Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const date=v=>v?new Date(v).toLocaleString('pt-BR'):'—';
@@ -30,12 +31,13 @@ export async function submitOperations({db,kind,member,user,el,status,refresh}){
  if(result.error){status(result.error.message||'Não foi possível salvar o lançamento. Confira as informações.',true);return}
  status('Lançamento registrado no sistema.');await refresh();
 }
-export async function loadOperations({db,kind,member,root,filter='all'}){
+export async function loadOperations({db,kind,member,user,root,filter='all',status=()=>{},refresh=null}){
+ const again=refresh||(()=>loadOperations({db,kind,member,user,root,filter,status}));
  root.replaceChildren();if(!member?.institution_id)return;
  if(kind==='cash'&&member.role!=='admin'){root.textContent='Disponível somente ao ADM.';return}
  if(kind==='stock'){
   let q=db.from('crl_inventory_movements')
-    .select('product,unit,quantity,direction,source,occurred_at').eq('institution_id',member.institution_id);
+    .select('id,product,unit,quantity,direction,source,occurred_at,created_by').eq('institution_id',member.institution_id).is('deleted_at',null);
   if(filter.startsWith('month_')){
    const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),1).toISOString(),end=new Date(now.getFullYear(),now.getMonth()+1,1).toISOString();
    q=q.gte('occurred_at',start).lt('occurred_at',end);
@@ -55,11 +57,22 @@ export async function loadOperations({db,kind,member,root,filter='all'}){
   const warning=document.createElement('p');warning.className='muted';warning.textContent='Saldo consolidado a partir de todos os lançamentos no banco. A lista abaixo mostra somente os 300 movimentos mais recentes.';root.append(warning);
   for(const p of products.values()){const row=document.createElement('div');row.className='item';row.textContent=p.name+' · '+fmt(p.total)+' '+p.unit;root.append(row)}
   const history=document.createElement('h3');history.textContent='Últimas movimentações';root.append(history);
-  for(const x of r.data||[]){const row=document.createElement('div');row.className='item';row.textContent=(x.direction==='in'?'Entrada: ':'Saída: ')+x.product+' · '+fmt(x.quantity)+' '+x.unit+' · '+date(x.occurred_at)+' · '+(x.source||'');root.append(row)}
+  for(const x of r.data||[]){
+   const row=document.createElement('div');row.className='item';
+   const t=document.createElement('div');t.textContent=(x.direction==='in'?'Entrada: ':'Saída: ')+x.product+' · '+fmt(x.quantity)+' '+x.unit+' · '+date(x.occurred_at)+' · '+(x.source||'');row.append(t);
+   if(canChange(member,user,x.created_by,x.occurred_at))attachChanges(row,{db,status,entity:'stock',id:x.id,onDone:again,
+    edit:{fields:[{key:'product',label:'Produto',value:x.product,required:true},
+     {key:'unit',label:'Unidade',type:'select',value:x.unit,options:options.map(u=>[u,u])},
+     {key:'direction',label:'Movimentação',type:'select',value:x.direction,options:[['in','Entrada / doação'],['out','Saída / consumo']]},
+     {key:'quantity',label:'Quantidade',type:'number',step:'0.01',min:0.01,value:x.quantity,required:true},
+     {key:'source',label:'Origem / motivo',value:x.source,required:true}]},
+    del:{hint:'A movimentação sai do saldo e das listas, mas fica na Auditoria. Se deixar o saldo negativo, o sistema avisa.'}});
+   root.append(row);
+  }
   if(!r.data?.length)root.append(document.createTextNode('Nenhum movimento registrado.'));
   return;
  }
- let q=db.from('crl_financial_entries').select('description,entry_type,amount,date').eq('institution_id',member.institution_id);
+ let q=db.from('crl_financial_entries').select('id,description,entry_type,amount,date').eq('institution_id',member.institution_id).is('deleted_at',null);
  if(filter==='month_expense'){
   const now=new Date(),start=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
   const next=new Date(now.getFullYear(),now.getMonth()+1,1),end=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-01';
@@ -74,6 +87,16 @@ export async function loadOperations({db,kind,member,root,filter='all'}){
  const intro=document.createElement('p');intro.className='muted';
  intro.textContent='Totais de todos os lançamentos: receitas R$ '+fmt(inTotal)+' · despesas R$ '+fmt(outTotal)+' · diferença R$ '+fmt(inTotal-outTotal)+'. Histórico abaixo limitado aos últimos 300 registros.';
  root.append(intro);
- for(const x of r.data||[]){const row=document.createElement('div');row.className='item';row.textContent=(x.entry_type==='income'?'Receita':'Despesa')+' · '+x.description+' · R$ '+fmt(x.amount)+' · '+x.date;root.append(row)}
+ for(const x of r.data||[]){
+  const row=document.createElement('div');row.className='item';
+  const t=document.createElement('div');t.textContent=(x.entry_type==='income'?'Receita':'Despesa')+' · '+x.description+' · R$ '+fmt(x.amount)+' · '+String(x.date).split('-').reverse().join('/');row.append(t);
+  attachChanges(row,{db,status,entity:'cash',id:x.id,onDone:again,
+   edit:{fields:[{key:'description',label:'Descrição',value:x.description,required:true},
+    {key:'entry_type',label:'Tipo',type:'select',value:x.entry_type,options:[['income','Receita'],['expense','Despesa']]},
+    {key:'amount',label:'Valor em R$',type:'number',step:'0.01',min:0.01,value:x.amount,required:true},
+    {key:'date',label:'Data',type:'date',value:x.date,required:true}]},
+   del:{hint:'O lançamento sai dos totais do caixa, mas fica na Auditoria. Se for salário de monitor, a competência pode ser lançada de novo.'}});
+  root.append(row);
+ }
  if(!r.data?.length)root.append(document.createTextNode('Nenhum lançamento registrado.'));
 }

@@ -17,8 +17,8 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
  const dayEnd=new Date(new Date(day+'T00:00:00').getTime()+86400000).toISOString();
  const [totals,tasks,last,backup]=await Promise.all([
   db.rpc('crl_dashboard_cards',{p_institution:tenant}),
-  db.from('crl_tasks').select('title,due_at,status').eq('institution_id',tenant).gte('due_at',dayStart).lt('due_at',dayEnd).neq('status','done').order('due_at',{ascending:true}).limit(8),
-  db.from('crl_activities').select('title,presenter,starts_at').eq('institution_id',tenant).eq('type','devocional').order('starts_at',{ascending:false}).limit(1),
+  db.from('crl_tasks').select('title,due_at,status').eq('institution_id',tenant).is('deleted_at',null).gte('due_at',dayStart).lt('due_at',dayEnd).neq('status','done').order('due_at',{ascending:true}).limit(8),
+  db.from('crl_activities').select('title,presenter,starts_at').eq('institution_id',tenant).eq('type','devocional').is('deleted_at',null).order('starts_at',{ascending:false}).limit(1),
   admin&&backupReminder?backupReminder({db,member}):Promise.resolve(null)
  ]);
  if(!root.isConnected)return;

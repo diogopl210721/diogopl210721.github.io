@@ -1,5 +1,8 @@
 // CRL: controle administrativo de receitas e acompanhamento de ressocialização.
 // Registros são históricos; a tela não prescreve medicamentos ou doses.
+import {attachChanges,canChange,changeNote} from './changes.js';
+const MED_STATUS=[['administrado','Administrado conforme receita'],['recusado','Recusado'],['nao_administrado','Não administrado'],['indisponivel','Medicamento indisponível']];
+const RESOC_PURPOSES=['Visita familiar','Ressocialização programada','Compromisso pessoal autorizado','Culto','Outra atividade autorizada'];
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const when=s=>s?new Date(s).toLocaleString('pt-BR'):'—';
 const optionStays=stays=>stays.map(st=>'<option value="'+h(st.id)+'">'+h(st.crl_residents?.full_name||'Acolhido')+'</option>').join('');
@@ -53,7 +56,7 @@ async function loadPrescriptions({db,member,el,status}){
  if(!stay)return;
  const {data,error}=await db.from('crl_files')
   .select('id,created_at,category').eq('institution_id',member.institution_id)
-  .eq('stay_id',stay).eq('category','receita').order('created_at',{ascending:false}).limit(100);
+  .eq('stay_id',stay).eq('category','receita').is('deleted_at',null).order('created_at',{ascending:false}).limit(100);
  if(error){status('Não foi possível consultar as receitas anexadas.',true);return}
  for(const file of data||[]){
   const opt=document.createElement('option');opt.value=file.id;
@@ -118,17 +121,18 @@ function exportControls(root,name,rows,member){
  const print=actionButton(bar,'Imprimir / salvar PDF',()=>window.print());
  root.prepend(bar);
 }
-export async function loadCareList({db,member,stays,root,kind,status,filter='all'}){
+export async function loadCareList({db,member,user,stays,root,kind,status,filter='all'}){
  root.replaceChildren();
- if(kind==='medications')return loadMedicationList({db,member,stays,root,status,filter});
- if(kind==='resocialization')return loadResocializationList({db,member,stays,root,status,filter});
+ if(kind==='medications')return loadMedicationList({db,member,user,stays,root,status,filter});
+ if(kind==='resocialization')return loadResocializationList({db,member,user,stays,root,status,filter});
 }
-async function loadMedicationList({db,member,stays,root,status,filter='all'}){
+async function loadMedicationList({db,member,user,stays,root,status,filter='all'}){
+ const reload=()=>loadCareList({db,member,user,stays,root,kind:'medications',status});
  if(!stays.length){root.textContent='Cadastre um acolhido ativo para acompanhar medicamentos.';return}
  const ids=stays.map(s=>s.id),lookup=id=>stays.find(s=>s.id===id)?.crl_residents?.full_name||'Acolhido';
  const [a,b]=await Promise.all([
   db.from('crl_medication_requests').select('id,stay_id,medication_name,dose_text,schedule_text,request_status,created_at,review_notes,prescription_file_id').eq('institution_id',member.institution_id).in('stay_id',ids).order('created_at',{ascending:false}).limit(100),
-  db.from('crl_medication_records').select('id,stay_id,medication_name,dose_text,schedule_text,verified_by,created_at').eq('institution_id',member.institution_id).in('stay_id',ids).order('created_at',{ascending:false}).limit(100)
+  db.from('crl_medication_records').select('id,stay_id,medication_name,dose_text,schedule_text,verified_by,created_at,corrected_at,correction_reason,suspended_at,suspension_reason').eq('institution_id',member.institution_id).in('stay_id',ids).order('created_at',{ascending:false}).limit(100)
  ]);
  if(a.error||b.error){root.textContent='Não foi possível consultar os medicamentos.';return}
  const requests=a.data||[],medications=b.data||[];
@@ -142,19 +146,34 @@ async function loadMedicationList({db,member,stays,root,status,filter='all'}){
  }
  if(filter==='pending')return;
  const approved=section(root,'Prescrições conferidas e acompanhamento');
- if(!medications.length)approved.append(document.createTextNode('Nenhuma prescrição conferida ainda.'));
- for(const med of medications){
-  const div=item(approved,lookup(med.stay_id)+' · '+med.medication_name,'Conforme receita: '+med.dose_text+' · '+med.schedule_text,med.verified_by?'Conferido pelo ADM':'Sem conferência');
-  if(med.verified_by)actionButton(div,'Registrar administração / ocorrência',()=>logMedication({db,med,container:div,status,refresh:()=>loadCareList({db,member,stays,root,kind:'medications',status})}));
+ const activeMeds=medications.filter(m=>!m.suspended_at),suspendedMeds=medications.filter(m=>m.suspended_at);
+ if(!activeMeds.length)approved.append(document.createTextNode('Nenhuma prescrição ativa.'));
+ for(const med of activeMeds){
+  const div=item(approved,lookup(med.stay_id)+' · '+med.medication_name,'Conforme receita: '+med.dose_text+' · '+med.schedule_text,(med.verified_by?'Conferido pelo ADM':'Sem conferência')+(med.corrected_at?' · '+changeNote(med):''));
+  if(med.verified_by)actionButton(div,'Registrar administração / ocorrência',()=>logMedication({db,med,container:div,status,refresh:reload}));
+  if(member.role==='admin')attachChanges(div,{db,status,entity:'medication',id:med.id,onDone:reload,
+   edit:{label:'Corrigir',action:'correct',hint:'Corrija conforme a receita. O texto anterior fica guardado na Auditoria.',fields:[
+    {key:'medication_name',label:'Nome do medicamento',value:med.medication_name,required:true},
+    {key:'dose_text',label:'Dose conforme a receita',value:med.dose_text,required:true},
+    {key:'schedule_text',label:'Horário / frequência',value:med.schedule_text,required:true}]},
+   extra:[{label:'Suspender',action:'suspend',hint:'O medicamento deixa de aparecer para administração. O histórico continua no prontuário.',done:'Medicamento suspenso.'}]});
+ }
+ if(suspendedMeds.length){
+  const susp=section(root,'Medicamentos suspensos');
+  for(const med of suspendedMeds)item(susp,lookup(med.stay_id)+' · '+med.medication_name,med.dose_text+' · '+med.schedule_text,changeNote(med));
  }
  const recent=section(root,'Ocorrências recentes de medicamentos');
  if(medications.length){
-  const {data,error}=await db.from('crl_medication_administrations').select('status,notes,occurred_at,medication_record_id')
+  const {data,error}=await db.from('crl_medication_administrations').select('id,status,notes,occurred_at,medication_record_id,recorded_by,corrected_at,correction_reason')
    .eq('institution_id',member.institution_id).in('medication_record_id',medications.map(x=>x.id)).order('occurred_at',{ascending:false}).limit(60);
   if(!error){
    if(!data?.length)recent.append(document.createTextNode('Nenhuma ocorrência registrada.'));
    for(const evt of data||[]){const med=medications.find(x=>x.id===evt.medication_record_id);
-    item(recent,(med?lookup(med.stay_id)+' · '+med.medication_name:'Medicamento')+' · '+evt.status,evt.notes||'Sem observação',when(evt.occurred_at));
+    const label=(MED_STATUS.find(s=>s[0]===evt.status)||[,evt.status])[1];
+    const div=item(recent,(med?lookup(med.stay_id)+' · '+med.medication_name:'Medicamento')+' · '+label,evt.notes||'Sem observação',when(evt.occurred_at)+(evt.corrected_at?' · '+changeNote(evt):''));
+    if(canChange(member,user,evt.recorded_by,evt.occurred_at))attachChanges(div,{db,status,entity:'medication_event',id:evt.id,onDone:reload,
+     edit:{label:'Corrigir',action:'correct',fields:[{key:'status',label:'O que aconteceu?',type:'select',value:evt.status,options:MED_STATUS},
+      {key:'notes',label:'Observações ou justificativa',type:'textarea',value:evt.notes,max:1500}]}});
    }
   }else recent.append(document.createTextNode('Ocorrências indisponíveis.'));
  }
@@ -207,11 +226,12 @@ function logMedication({db,med,container,status,refresh}){
   finally{b.disabled=false}
  };
 }
-async function loadResocializationList({db,member,stays,root,status,filter='all'}){
+async function loadResocializationList({db,member,user,stays,root,status,filter='all'}){
+ const reload=()=>loadCareList({db,member,user,stays,root,kind:'resocialization',status});
  const ids=stays.map(x=>x.id);
  if(!ids.length){root.textContent='Não há acolhidos ativos.';return}
  const r=await db.from('crl_resocializations')
-  .select('id,stay_id,purpose,justification,departure_at,expected_return_at,actual_return_at,picked_up_by,no_responsible_pickup,return_notes')
+  .select('id,stay_id,purpose,justification,departure_at,expected_return_at,actual_return_at,picked_up_by,no_responsible_pickup,return_notes,authorization_by,created_at,corrected_at,correction_reason')
   .eq('institution_id',member.institution_id).in('stay_id',ids).order('departure_at',{ascending:false}).limit(120);
  if(r.error){root.textContent='Não foi possível consultar as ressocializações.';return}
  const lookup=id=>stays.find(s=>s.id===id)?.crl_residents?.full_name||'Acolhido';
@@ -224,8 +244,18 @@ async function loadResocializationList({db,member,stays,root,status,filter='all'
   const target=out.actual_return_at?closed:open;
   const el=item(target,lookup(out.stay_id)+' · '+out.purpose,
    'Saída: '+when(out.departure_at)+' · Previsto: '+when(out.expected_return_at)+' · '+responsible,
-   'Justificativa: '+out.justification+(out.actual_return_at?' · Retorno: '+when(out.actual_return_at):''));
-  if(!out.actual_return_at)actionButton(el,'Registrar retorno',()=>showReturn({db,out,container:el,status,refresh:()=>loadCareList({db,member,stays,root,kind:'resocialization',status})}));
+   'Justificativa: '+out.justification+(out.actual_return_at?' · Retorno: '+when(out.actual_return_at):'')+(out.corrected_at?' · '+changeNote(out):''));
+  if(!out.actual_return_at)actionButton(el,'Registrar retorno',()=>showReturn({db,out,container:el,status,refresh:reload}));
+  if(canChange(member,user,out.authorization_by,out.created_at)){
+   const fields=[{key:'purpose',label:'Finalidade',type:'select',value:out.purpose,options:[...new Set([out.purpose,...RESOC_PURPOSES])].map(x=>[x,x])},
+    {key:'justification',label:'Justificativa',type:'textarea',value:out.justification,required:true},
+    {key:'departure_at',label:'Saída',type:'datetime-local',value:out.departure_at,required:true},
+    {key:'expected_return_at',label:'Previsão de retorno',type:'datetime-local',value:out.expected_return_at},
+    {key:'picked_up_by',label:'Quem buscou',value:out.picked_up_by},
+    {key:'no_responsible_pickup',label:'Sem responsável para buscar',type:'checkbox',value:out.no_responsible_pickup}];
+   if(out.actual_return_at)fields.push({key:'actual_return_at',label:'Retorno',type:'datetime-local',value:out.actual_return_at,required:true},{key:'return_notes',label:'Como foi o retorno',type:'textarea',value:out.return_notes});
+   attachChanges(el,{db,status,entity:'resocialization',id:out.id,onDone:reload,edit:{label:'Corrigir',action:'correct',fields}});
+  }
  }
  const rows=[['Acolhido','Finalidade','Saída','Retorno previsto','Retorno real','Responsável pela busca','Justificativa','Observações'],...list.map(x=>[
   lookup(x.stay_id),x.purpose,when(x.departure_at),when(x.expected_return_at),when(x.actual_return_at),
