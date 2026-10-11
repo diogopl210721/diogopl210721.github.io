@@ -22,6 +22,7 @@ async function init(){
  el('tabStats').style.display=member.role==='admin'?'':'none';
  el('tabHistory').style.display=member.role==='admin'?'':'none';
  el('tabContributions').style.display=member.role==='admin'?'':'none';
+ el('tabMonitors').style.display=member.role==='admin'?'':'none';
  await refresh();
 }
 el('loginForm').onsubmit=async e=>{
@@ -53,16 +54,18 @@ function draw(){
  devotionals:'<h2>Nova devocional</h2><form id="dataForm">'+field('Tema / passagem bíblica','theme')+field('Quem ministrou','presenter')+field('Início','start','datetime-local',true,localTime())+field('Término','end','datetime-local',true,localTime(new Date(Date.now()+45*60000)))+'<h3>Presença dos acolhidos ativos</h3>'+(
  stays.length?stays.map(s=>'<div class="item"><b>'+esc(s.crl_residents?.full_name||'Acolhido')+'</b><div class="radio-group"><label><input type="radio" name="status_'+esc(s.id)+'" value="present" checked> Presente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="absent"> Ausente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="late"> Atrasou</label></div><input data-reason="'+esc(s.id)+'" placeholder="Justificativa quando houver falta"></div>').join(''):'<p>Nenhum acolhido ativo encontrado.</p>')+'<button '+(!stays.length?'disabled':'')+'>Finalizar e registrar presenças</button></form>',
  meals:'<h2>Registrar refeições servidas</h2><form id="dataForm"><label>Tipo de refeição</label><select id="mealType"><option value="cafe">Café da manhã</option><option value="almoco">Almoço</option><option value="jantar">Jantar</option><option value="lanche">Lanche</option><option value="outro">Outros</option></select>'+field('Quantidade de refeições servidas','servings','number')+field('Data e hora','servedAt','datetime-local',true,localTime())+field('Observações','mealNotes','text',false)+'<p class="muted">Registrar o número realmente servido, não uma estimativa.</p><button>Salvar refeições</button></form>',
+ monitors:'<h2>Gerenciar monitores (ADM)</h2><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" required><label>Usuário para login</label><input id="monitorUsername" type="text" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button>Cadastrar monitor</button></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
 async function loadList(){
  const root=el('listArea');root.replaceChildren();
+ if(view==='monitors'){await loadMonitors();return}
  if(view==='files'){await loadAttachments();return}
  if(view==='students'){
   if(!stays.length)root.textContent='Nenhum acolhido ativo cadastrado.';
@@ -162,6 +165,76 @@ async function uploadAttachment(){
  if(row.error){status('Foto enviada, mas vínculo pendente. Não envie novamente; peça conferência ao ADM.',true);return}
  status('Arquivo privado associado ao prontuário.');
  await refresh();
+}
+
+
+const passwordStrong=s=>s.length>=12&&s.length<=128&&/[a-z]/.test(s)&&/[A-Z]/.test(s)&&/\d/.test(s)&&/[^A-Za-z0-9]/.test(s);
+async function adminMonitors(body){
+ if(member?.role!=='admin')throw Error('Acesso restrito ao ADM');
+ const {data,error}=await db.functions.invoke('crl-admin-monitors',{body});
+ if(error)throw Error(data?.error||'Serviço administrativo indisponível');
+ if(data?.error)throw Error(data.error);
+ return data;
+}
+async function loadMonitors(){
+ const root=el('listArea');root.replaceChildren();
+ if(member?.role!=='admin'){root.textContent='Acesso exclusivo do ADM.';return}
+ root.textContent='Consultando monitores...';
+ try{
+  const result=await adminMonitors({action:'list'});
+  root.replaceChildren();
+  if(!result.monitors?.length){root.textContent='Nenhum monitor cadastrado.';return}
+  for(const m of result.monitors){
+   const item=addItem(m.display_name,m.active?'Ativo':'Bloqueado');
+   const username=document.createElement('div');username.className='code-label';username.textContent='Login: '+m.username;item.append(username);
+   if(!m.active)continue;
+   const controls=document.createElement('div');controls.className='manager-actions';
+   const reset=document.createElement('button');reset.type='button';reset.textContent='Redefinir senha';reset.onclick=()=>showMonitorReset(m,item);
+   const block=document.createElement('button');block.type='button';block.className='warn';block.textContent='Bloquear monitor';
+   block.onclick=async()=>{
+    if(!confirm('Bloquear o acesso de '+m.display_name+'? O histórico permanecerá arquivado.'))return;
+    block.disabled=true;
+    try{
+     const result=await adminMonitors({action:'block',member_id:m.id});
+     status(result.auth_ban_applied?'Monitor bloqueado.':'Perfil CRL bloqueado; verifique a suspensão de sessão no Supabase.');
+     await loadMonitors();
+    }catch(e){status(e.message,true)}finally{block.disabled=false}
+   };
+   controls.append(reset,block);item.append(controls);
+  }
+ }catch(e){root.textContent='Não foi possível carregar a equipe.';status(e.message||'Erro administrativo',true)}
+}
+async function createMonitor(){
+ if(member?.role!=='admin')throw Error('Sem autorização');
+ const fullName=el('monitorName').value.trim();
+ const username=el('monitorUsername').value.trim().toLowerCase();
+ const pwd=el('monitorPassword').value;
+ const confirmation=el('monitorConfirm').value;
+ if(!/^[a-z][a-z0-9._-]{2,39}$/.test(username)||fullName.length<3){status('Nome ou usuário inválido.',true);return}
+ if(!passwordStrong(pwd)||pwd!==confirmation){status('Senhas diferentes ou fora do padrão mínimo de segurança.',true);return}
+ try{
+  const r=await adminMonitors({action:'create',username,display_name:fullName,password:pwd});
+  el('monitorPassword').value='';el('monitorConfirm').value='';
+  if(!r.success)throw Error('Cadastro não confirmado');
+  status('Monitor '+username+' cadastrado.');await loadMonitors();
+ }catch(e){status(e.message||'Não foi possível cadastrar.',true)}
+}
+function showMonitorReset(m,item){
+ const old=item.querySelector('form');if(old){old.remove();return}
+ const form=document.createElement('form');
+ form.innerHTML='<label>Nova senha de '+esc(m.display_name)+'</label><input type="password" name="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input type="password" name="confirm" autocomplete="new-password" required><p class="muted">Inclua maiúscula, minúscula, número e símbolo.</p><button>Salvar nova senha</button>';
+ item.append(form);
+ form.onsubmit=async e=>{
+  e.preventDefault();
+  const password=form.elements.password.value;
+  if(password!==form.elements.confirm.value||!passwordStrong(password)){status('Confira a confirmação e o padrão da senha.',true);return}
+  const button=form.querySelector('button');button.disabled=true;
+  try{
+   await adminMonitors({action:'reset_password',member_id:m.id,password});
+   form.remove();status('Senha redefinida com sucesso.');
+  }catch(e){status(e.message||'Redefinição não concluída.',true)}
+  finally{button.disabled=false}
+ };
 }
 
 function showCloseStay(st,item){
@@ -356,7 +429,9 @@ async function submit(e){
  e.preventDefault();if(!authenticated())return;const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
   let result;
-  if(view==='files'){
+  if(view==='monitors'){
+   await createMonitor();return;
+  }else if(view==='files'){
    await uploadAttachment();return;
   }else if(view==='contributions'){
    if(member.role!=='admin')throw Error('permission');
