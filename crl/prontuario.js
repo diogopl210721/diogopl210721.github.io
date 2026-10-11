@@ -26,7 +26,11 @@ const listBox=rows=>{
  rows.forEach(x=>box.append(x));
  return box;
 };
-const csvCell=v=>'"'+String(v??'').replace(/"/g,'""').replace(/\r?\n/g,' ')+'"';
+const csvCell=v=>{
+ const raw=String(v??'').replace(/\r?\n/g,' ');
+ const safe=/^[\s]*[=+@-]/.test(raw)?"'"+raw:raw;
+ return '"'+safe.replace(/"/g,'""')+'"';
+};
 function saveCsv(filename,items){
  const content='\uFEFF'+items.map(row=>row.map(csvCell).join(';')).join('\r\n');
  const url=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'}));
@@ -166,7 +170,9 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
   const w=window.open('about:blank','_blank');
   if(!w){status('Permita janelas pop-up para imprimir o prontuário.',true);return}
   try{w.opener=null}catch(_ignored){}
-  const html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prontuário CRL</title><style>body{font:13px Arial,sans-serif;margin:35px;color:#1f2937}h1{color:#dd2536}.print-entry{page-break-inside:avoid;border-bottom:1px solid #eee;padding:6px 0}.print-entry p{white-space:pre-wrap;margin:4px 0}</style></head><body><h1>CRL — Prontuário</h1><p>Uso interno. Contém dados pessoais. Não compartilhar sem autorização.</p>'+cells+'</body></html>';
+  const branding=document.querySelector('body > header img')?.src||'';
+ const brand=branding.startsWith('data:image/png;base64,')?'<img alt="CRL" style="display:block;max-width:350px;height:auto;margin-bottom:10px" src="'+branding+'">':'';
+ const html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prontuário CRL</title><style>body{font:13px Arial,sans-serif;margin:35px;color:#1f2937}h1{color:#dd2536}.print-entry{page-break-inside:avoid;border-bottom:1px solid #eee;padding:6px 0}.print-entry p{white-space:pre-wrap;margin:4px 0}</style></head><body>'+brand+'<h1>CRL — Prontuário</h1><p>Uso interno. Contém dados pessoais. Não compartilhar sem autorização.</p>'+cells+'</body></html>';
   w.document.open();w.document.write(html);w.document.close();w.focus();w.print();
  };
 }
