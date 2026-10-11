@@ -121,7 +121,7 @@ function draw(){
  diagnostic:diagnosticForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
- monitors:'<div id="monitorQuickCard"><h3>Ativar o monitor Diogo</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. Somente a Francielly (ADM) pode autorizar.</p><button id="activateDiogo" type="button">Ativar Diogo e gerar acesso</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Gerenciar monitores (ADM)</h2><p class="muted">Para criar o acesso de Diogo, confirme o nome e o usuário já preenchidos e defina uma senha forte diretamente nesta tela. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
+ monitors:'<div id="monitorQuickCard"><h3>Ativação rápida do monitor Diogo</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Gerenciar monitores (ADM)</h2><p class="muted">Para criar o acesso de Diogo, confirme o nome e o usuário já preenchidos e defina uma senha forte diretamente nesta tela. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
@@ -131,12 +131,12 @@ function draw(){
   const activate=el('activateDiogo');
   activate.onclick=async()=>{
    if(member?.role!=='admin'||monitorPreview)return;
-   if(!confirm('A Francielly autoriza a criação do monitor Diogo com acesso à CRL?'))return;
+   if(!confirm('Ativar Diogo como monitor ('+el('quickMonitorVinculo').selectedOptions[0].textContent+')?'))return;
    const password=makeSecureMonitorPassword();
    activate.disabled=true;
    el('monitorQuickStatus').textContent='Criando usuário monitor no Supabase...';
    try{
-    const r=await adminMonitors({action:'create',username:'diogo',display_name:'Diogo',password});
+    const r=await adminMonitors({action:'create',username:'diogo',display_name:'Diogo',monitor_vinculo:el('quickMonitorVinculo').value,password});
     if(!r.success)throw Error('O servidor não confirmou a criação do usuário.');
     showMonitorCredentials('diogo',password);
     activate.textContent='Monitor Diogo ativado';
@@ -384,8 +384,15 @@ async function loadMonitors(){
   if(diogo){const quickBtn=el('activateDiogo');if(quickBtn){quickBtn.disabled=true;quickBtn.textContent=diogo.active?'Diogo já está ativo':'Diogo bloqueado — reative pela lista';}}
 
   for(const m of result.monitors){
-   const item=addItem(m.display_name,m.active?'Ativo':'Bloqueado');
+   const label={aluno:'Aluno',voluntario:'Voluntário',contratado:'Contratado'}[m.monitor_vinculo]||'Vínculo não informado';
+   const item=addItem(m.display_name,(m.active?'Ativo':'Bloqueado')+' · '+label);
    const username=document.createElement('div');username.className='code-label';username.textContent='Login: '+m.username;item.append(username);
+   const vinculo=document.createElement('select');vinculo.setAttribute('aria-label','Vínculo de '+m.display_name);
+   [['aluno','Aluno'],['voluntario','Voluntário'],['contratado','Contratado']].forEach(([value,label])=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;vinculo.append(opt)});
+   vinculo.value=m.monitor_vinculo||'voluntario';
+   const saveLink=document.createElement('button');saveLink.type='button';saveLink.textContent='Salvar vínculo';
+   saveLink.onclick=async()=>{saveLink.disabled=true;try{await adminMonitors({action:'change_vinculo',member_id:m.id,monitor_vinculo:vinculo.value});status('Vínculo atualizado.');await loadMonitors()}catch(e){status(e.message,true);saveLink.disabled=false}};
+   item.append(vinculo,saveLink);
    if(!m.active){
     const activate=document.createElement('button');activate.type='button';activate.textContent='Reativar monitor';
     activate.onclick=async()=>{
@@ -421,7 +428,7 @@ async function createMonitor(){
  if(!/^[a-z][a-z0-9._-]{2,39}$/.test(username)||fullName.length<3){status('Nome ou usuário inválido.',true);return}
  if(!passwordStrong(pwd)||pwd!==confirmation){status('Senhas diferentes ou fora do padrão mínimo de segurança.',true);return}
  try{
-  const r=await adminMonitors({action:'create',username,display_name:fullName,password:pwd});
+  const r=await adminMonitors({action:'create',username,display_name:fullName,monitor_vinculo:el('monitorVinculo').value,password:pwd});
   el('monitorPassword').value='';el('monitorConfirm').value='';
   el('monitorPassword').type='password';
   el('monitorGeneratedHint').textContent='A senha foi definida. Guarde-a em local seguro; o sistema não a exibe novamente.';
