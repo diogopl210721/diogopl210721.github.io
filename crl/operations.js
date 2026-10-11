@@ -30,13 +30,20 @@ export async function submitOperations({db,kind,member,user,el,status,refresh}){
  if(result.error){status(result.error.message||'Não foi possível salvar o lançamento. Confira as informações.',true);return}
  status('Lançamento registrado no sistema.');await refresh();
 }
-export async function loadOperations({db,kind,member,root}){
+export async function loadOperations({db,kind,member,root,filter='all'}){
  root.replaceChildren();if(!member?.institution_id)return;
  if(kind==='cash'&&member.role!=='admin'){root.textContent='Disponível somente ao ADM.';return}
  if(kind==='stock'){
-  const r=await db.from('crl_inventory_movements')
-    .select('product,unit,quantity,direction,source,occurred_at').eq('institution_id',member.institution_id)
-    .order('occurred_at',{ascending:false}).limit(300);
+  let q=db.from('crl_inventory_movements')
+    .select('product,unit,quantity,direction,source,occurred_at').eq('institution_id',member.institution_id);
+  if(filter.startsWith('month_')){
+   const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),1).toISOString(),end=new Date(now.getFullYear(),now.getMonth()+1,1).toISOString();
+   q=q.gte('occurred_at',start).lt('occurred_at',end);
+   if(filter==='month_in'||filter==='month_in_kg')q=q.eq('direction','in');
+   if(filter==='month_out_kg')q=q.eq('direction','out');
+   if(filter.endsWith('_kg'))q=q.eq('unit','kg');
+  }
+  const r=await q.order('occurred_at',{ascending:false}).limit(300);
   if(r.error){root.textContent='Não foi possível consultar o estoque.';return}
   const balances=await db.rpc('crl_stock_balances',{p_institution:member.institution_id});
   if(balances.error){root.textContent='Não foi possível calcular os saldos completos.';return}
@@ -52,9 +59,13 @@ export async function loadOperations({db,kind,member,root}){
   if(!r.data?.length)root.append(document.createTextNode('Nenhum movimento registrado.'));
   return;
  }
- const r=await db.from('crl_financial_entries')
- .select('description,entry_type,amount,date').eq('institution_id',member.institution_id)
- .order('date',{ascending:false}).limit(300);
+ let q=db.from('crl_financial_entries').select('description,entry_type,amount,date').eq('institution_id',member.institution_id);
+ if(filter==='month_expense'){
+  const now=new Date(),start=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
+  const next=new Date(now.getFullYear(),now.getMonth()+1,1),end=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-01';
+  q=q.eq('entry_type','expense').gte('date',start).lt('date',end);
+ }
+ const r=await q.order('date',{ascending:false}).limit(300);
  if(r.error){root.textContent='Não foi possível consultar o caixa.';return}
  const summary=await db.rpc('crl_cash_summary',{p_institution:member.institution_id});
  if(summary.error){root.textContent='Não foi possível consultar o resumo do caixa.';return}
