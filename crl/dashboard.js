@@ -60,7 +60,7 @@ export async function loadDashboard({db,member,stays,el,esc,fmt,localTime,setVie
  '<section class="panel"><div class="row"><h2>Alertas e pendências</h2><button class="dash-link" data-go="'+(admin?'contributions':'trips')+'">Consultar →</button></div>'+alerts+'</section></div>'+
  '<section class="panel"><div class="row"><div><h2>Ações rápidas</h2><p class="dash-subtle">Acesso às atividades diárias</p></div></div>'+
  '<div class="dash-actions"><button data-go="students">Novo acolhimento</button><button data-go="devotionals">Nova devocional</button><button data-go="notes">Registrar rotina</button><button data-go="trips">Abrir viagem</button><button data-go="resocialization">Ressocialização</button><button data-go="medications">Medicamentos</button>'+
- (admin?'<button data-go="documents">Gerar declaração</button><button data-go="stats">Dashboard mensal</button><button data-go="monitors">Monitores</button>':'')+'</div></section>'+
+ (admin?'<button data-go="documents">Gerar declaração</button><button data-go="evolution">Relatório de evolução</button><button data-go="stats">Dashboard mensal</button><button data-go="monitors">Monitores</button>':'')+'</div></section>'+
  '<section class="panel"><div class="row"><h2>Resumo inteligente</h2><span class="muted">IA ainda não conectada</span></div><p class="dash-subtle">A análise de desenvolvimento será exibida apenas quando houver dados suficientes, acesso autorizado e revisão humana.</p></section>';
  root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setView(b.dataset.go));
 }
