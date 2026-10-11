@@ -2,11 +2,12 @@
 // Monitores visualizam somente a passagem ativa; ADM pode consultar o histórico.
 // Só o ADM corrige o prontuário. O monitor pode enviar a foto da receita dizendo o que é.
 import {attachChanges,changeNote} from './changes.js';
+import {signaturePadHtml,bindSignaturePad} from './assinatura.js';
 const ATT_LABEL={present:'Presente',absent:'Falta',late:'Atrasou',excused:'Falta justificada'};
 const NOTE_LABEL={rotina:'Rotina',ocorrencia:'Ocorrência',observacao:'Observação'};
 const MED_LABEL={administrado:'Administrado',recusado:'Recusado',nao_administrado:'Não administrado',indisponivel:'Indisponível'};
 const REQ_LABEL={pending:'Aguardando ADM',approved:'Aprovada',rejected:'Rejeitada'};
-const FILE_LABEL={documento:'Documento',receita:'Receita médica',pertences:'Pertences',foto:'Fotografia',outro:'Anexo'};
+const FILE_LABEL={documento:'Documento',receita:'Receita médica',remedio:'Foto do remédio',assinatura:'Assinatura do acolhido',pertences:'Pertences',foto:'Fotografia',outro:'Anexo'};
 const STAY_LABEL={active:'Ativo',concluded:'Concluiu',requested:'Alta pedida',administrative:'Alta administrativa',abandoned:'Abandono',other:'Outra saída'};
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -76,6 +77,42 @@ function receiptBox({db,member,user,stayId,status,reload}){
    await reload();
   }finally{btn.disabled=false}
  };
+ return box;
+}
+// Assinatura do acolhido: o monitor vê só se já assinou; a imagem aparece só para o ADM.
+function signatureSection({db,member,user,stayId,person,active,files,status,reload}){
+ const box=node('section',null,'prontuario-section');box.append(node('h3','Assinatura do acolhido'));
+ const body=node('div');body.append(node('p','Verificando...','muted'));box.append(body);
+ db.rpc('crl_stay_signature',{p_stay:stayId}).then(async r=>{
+  body.replaceChildren();
+  if(r.error||!r.data){body.append(node('p','Assinatura indisponível no momento.','muted'));return}
+  if(r.data.signed){
+   body.append(node('p','✓ Assinada em '+new Date(r.data.signed_at).toLocaleDateString('pt-BR')+(member.role==='admin'?'':' (a imagem fica visível só para o ADM)'),'sig-done'));
+   const file=member.role==='admin'?(files||[]).find(f=>f.category==='assinatura'):null;
+   if(file){
+    const u=await db.storage.from('crl-private').createSignedUrl(file.storage_path,300);
+    if(u.data?.signedUrl){const img=document.createElement('img');img.src=u.data.signedUrl;img.alt='Assinatura de '+person.full_name;img.className='sig-image';body.append(img)}
+   }
+   return;
+  }
+  if(!active){body.append(node('p','Sem assinatura registrada.','muted'));return}
+  const wrap=node('div');wrap.innerHTML='<p class="muted">Ainda não assinou. Peça para assinar com o dedo (celular) ou com o mouse (computador).</p>'+signaturePadHtml('profSign',{name:person.full_name})+'<button type="button" id="profSignSave">Salvar assinatura</button>';
+  body.append(wrap);
+  const pad=bindSignaturePad('profSign');
+  wrap.querySelector('#profSignSave').onclick=async e=>{
+   if(!pad||pad.isEmpty()){status('Peça para o acolhido assinar no quadro antes de salvar.',true);return}
+   const btn=e.target;btn.disabled=true;status('Salvando a assinatura...');
+   try{
+    const f=await pad.toFile('assinatura.png');
+    const path=member.institution_id+'/'+stayId+'/'+crypto.randomUUID()+'.png';
+    const up=await db.storage.from('crl-private').upload(path,f,{contentType:'image/png',upsert:false});
+    if(up.error){status('Não foi possível enviar a assinatura. Confira a internet.',true);return}
+    const row=await db.from('crl_files').insert({institution_id:member.institution_id,stay_id:stayId,storage_path:path,category:'assinatura',description:'Assinatura do acolhido',uploaded_by:user.id});
+    if(row.error){status('A assinatura subiu, mas não foi ligada ao prontuário. Avise o ADM.',true);return}
+    status('Assinatura salva.');await reload();
+   }finally{btn.disabled=false}
+  };
+ });
  return box;
 }
 export async function loadProntuario({db,member,user,stays,stayId,root,status}){
@@ -164,6 +201,7 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
   else basic.push('CPF: '+(privateData.cpf||'Não informado')+'  |  RG: '+(privateData.rg||'Não informado')+'  |  Telefone do responsável: '+(privateData.responsible_phone||'Não informado')+(privateData.birth_date?'  |  Nascimento: '+dateOnly(privateData.birth_date):''));
  }
  card.append(detail('Identificação e vínculo',basic.join('\n')));
+ card.append(signatureSection({db,member,user,stayId,person,active:st.status==='active',files:results.files,status,reload}));
  const records=results.records.map(x=>line((x.correction_of?'Correção — ':'')+(NOTE_LABEL[x.category]||x.category||'Registro'),x.original_text+(x.correction_reason?'\nMotivo da correção: '+x.correction_reason:''),dateTime(x.created_at)));
  card.append(detail('Registros do prontuário',records.length?listBox(records):null));
  const attend=results.attendance.map(x=>{

@@ -12,11 +12,12 @@ import {attachChanges,canChange,changeNote} from './changes.js';
 import {callFunction} from './fn.js';
 import {escalaForm,loadEscala} from './escala.js';
 import {dosesForm,loadDoses} from './remedios.js';
+import {signaturePadHtml,bindSignaturePad} from './assinatura.js';
 import {mealsForm,bindMeals,submitMealsDay,loadMealsList,MEAL_LABEL} from './refeicoes.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',moduleFilter='all',openTrips=[],lastMetrics=null;
-let monitorPreview=false,originalAdminMember=null;
+let monitorPreview=false,originalAdminMember=null,admissionPad=null;
 // Quem vê o quê. Para mudar o acesso de um perfil, altere só estas duas listas
 // (o banco aplica as mesmas regras; a tela apenas esconde o que não está liberado).
 const ADMIN_ONLY=['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic','backup'];
@@ -35,7 +36,7 @@ function applyTabs(){
 const NOTE_LABEL={rotina:'Rotina',ocorrencia:'Ocorrência',observacao:'Observação'};
 const REC_LABEL={unica:'Única',semanal:'Semanal',quinzenal:'Quinzenal',mensal:'Mensal'};
 const TRIP_PURPOSES=['Buscar doações','Culto','Consulta médica','Ressocialização','Compras','Serviços','Outros'];
-const FILE_CATS=[['documento','RG / CPF / documento'],['receita','Receita médica'],['remedio','Foto do remédio (caixa)'],['pertences','Pertences'],['foto','Fotografia'],['outro','Outro anexo']];
+const FILE_CATS=[['documento','RG / CPF / documento'],['receita','Receita médica'],['remedio','Foto do remédio (caixa)'],['assinatura','Assinatura do acolhido'],['pertences','Pertences'],['foto','Fotografia'],['outro','Outro anexo']];
 const dateBR=v=>v?String(v).slice(0,10).split('-').reverse().join('/'):'—';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
@@ -209,6 +210,11 @@ function draw(){
 
  el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque do mês',cash:'Extrato do caixa',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',doses:'Remédios por horário',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Como está a semana',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições por dia',stats:'Resumo do período'})[view];
  const dataForm=el('dataForm');if(dataForm)dataForm.onsubmit=submit;
+ admissionPad=null;
+ if(view==='students'&&el('admSign')){
+  admissionPad=bindSignaturePad('admSign');
+  el('name')?.addEventListener('input',()=>{el('admSignName').textContent=el('name').value.trim()||'Assinatura do acolhido'});
+ }
  if(view==='medications'||view==='resocialization')void bindCare({db,member,el,kind:view,status});
  if(view==='documents')void bindDocuments({db,member,el,status,stays});
  if(view==='meals')void bindMeals({db,member,el});
@@ -388,17 +394,18 @@ function admissionForm(){
  '<label for="admDocs">Documentos (RG, CPF, outros) — pode escolher vários</label><input id="admDocs" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple>'+
  '<p class="muted">JPG, PNG, WebP ou PDF até 10 MB cada. A foto do acolhido aparece no prontuário; documentos ficam visíveis só para o ADM.</p>'+
  '<label for="admNotes">Observações da entrada</label><textarea id="admNotes" maxlength="4000" placeholder="Pertences, como chegou, informações importantes"></textarea>'+
+ '<h3 class="form-section">Assinatura do acolhido</h3><p class="muted">Peça para o acolhido assinar com o dedo (celular) ou com o mouse (computador). Se não der agora, dá para colher depois no Prontuário.</p>'+signaturePadHtml('admSign')+
  (admin?'<h3 class="form-section">Contribuição (ADM)</h3><div class="two">'+field('Valor mensal em R$ (0 = vaga G5)','monthly','number',false)+field('Dia do vencimento','dueday','number',false)+'</div>':'')+
  '<button type="submit">Cadastrar acolhido</button></form>';
 }
 const FILE_TYPES={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'};
-async function storeFile(f,stayId,category){
+async function storeFile(f,stayId,category,description=null){
  const ext=FILE_TYPES[f.type];
  if(!ext||f.size<=0||f.size>10*1024*1024)return {ok:false,reason:f.name+': use JPG, PNG, WebP ou PDF até 10 MB'};
  const path=member.institution_id+'/'+stayId+'/'+crypto.randomUUID()+'.'+ext;
  const up=await db.storage.from('crl-private').upload(path,f,{contentType:f.type,upsert:false});
  if(up.error)return {ok:false,reason:f.name+': falha no envio'};
- const row=await db.from('crl_files').insert({institution_id:member.institution_id,stay_id:stayId,storage_path:path,category,uploaded_by:user.id});
+ const row=await db.from('crl_files').insert({institution_id:member.institution_id,stay_id:stayId,storage_path:path,category,uploaded_by:user.id,...(description?{description}:{})});
  if(row.error)return {ok:false,reason:f.name+': enviado, mas sem vínculo (avise o ADM)'};
  return {ok:true};
 }
@@ -420,14 +427,16 @@ async function submitAdmission(){
  const stayId=r.data?.stay_id;
  const failures=[];let sent=0;
  const uploads=[...(photo?[[photo,'foto']]:[]),...docs.map(d=>[d,'documento'])];
- for(const [f,cat] of uploads){
+ const signature=admissionPad&&!admissionPad.isEmpty()?await admissionPad.toFile('assinatura.png'):null;
+ if(signature)uploads.push([signature,'assinatura','Assinatura do acolhido no cadastro']);
+ for(const [f,cat,desc] of uploads){
   status('Enviando arquivos... ('+(sent+failures.length+1)+' de '+uploads.length+')');
-  const res=await storeFile(f,stayId,cat);
+  const res=await storeFile(f,stayId,cat,desc);
   if(res.ok)sent++;else failures.push(res.reason);
  }
  await refresh();
  if(failures.length)status('Acolhido cadastrado. '+sent+' arquivo(s) enviado(s); não enviados: '+failures.join('; ')+'. Reenvie pela aba Arquivos.',true);
- else status('Acolhido cadastrado'+(sent?' com '+sent+' arquivo(s)':'')+'.');
+ else status('Acolhido cadastrado'+(sent?' com '+sent+' arquivo(s)':'')+(signature?', incluindo a assinatura':'')+'.');
 }
 async function uploadAttachment(){
  if(!authenticated()||!stays.length)throw Error('no_stay');
