@@ -143,6 +143,17 @@ async function loadList(){
   return;
  }
  if(view==='history'){
+  if(moduleFilter==='concluded_month'||moduleFilter==='departures_month'){
+   const beginning=new Date(),year=beginning.getFullYear(),month=String(beginning.getMonth()+1).padStart(2,'0');
+   const first=year+'-'+month+'-01',next=new Date(year,beginning.getMonth()+1,1).toISOString().slice(0,10);
+   let q=db.from('crl_stays').select('admission_date,departure_date,status,crl_residents(full_name)').eq('institution_id',member.institution_id).gte('departure_date',first).lt('departure_date',next);
+   q=moduleFilter==='concluded_month'?q.eq('status','concluded'):q.in('status',['requested','abandoned']);
+   const r=await q.order('departure_date',{ascending:false}).limit(100);
+   if(r.error){root.textContent='Não foi possível consultar as saídas.';return}
+   if(!r.data?.length)root.textContent='Nenhum registro de saída no mês.';
+   for(const row of r.data||[])addItem(row.crl_residents?.full_name||'Acolhido',row.status+' · Saída: '+row.departure_date);
+   return;
+  }
   root.textContent='Digite um nome para pesquisar as passagens anteriores.';
   return;
  }
@@ -196,7 +207,7 @@ async function loadList(){
 async function loadTasks(){
  const root=el('listArea');root.replaceChildren();
  const base=db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status,completed_at').eq('institution_id',member.institution_id);
- const r=await (moduleFilter==='today'?base.gte('due_at',new Date(new Date().toDateString()).toISOString()).lt('due_at',new Date(new Date().toDateString()).getTime()+86400000===0?'':new Date(new Date(new Date().toDateString()).getTime()+86400000).toISOString()).neq('status','done'):base).order('due_at',{ascending:moduleFilter==='today'}).limit(100);
+ const r=await (moduleFilter==='today'?base.gte('due_at',new Date(new Date().toDateString()).toISOString()).lt('due_at',new Date(new Date(new Date().toDateString()).getTime()+86400000).toISOString()).neq('status','done'):base).order('due_at',{ascending:moduleFilter==='today'}).limit(100);
  if(r.error){root.textContent='Não foi possível carregar as tarefas.';return}
  if(!r.data?.length){root.textContent='Nenhuma tarefa cadastrada.';return}
  for(const t of r.data){
