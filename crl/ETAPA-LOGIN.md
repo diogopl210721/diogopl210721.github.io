@@ -21,3 +21,9 @@ Nenhuma senha nem assinatura institucional estão publicadas.
 
 ## Estado da interface
 `/crl/` é uma demonstração sem persistência. Não inserir dados reais.
+
+## Atualização — 11/10/2026
+- Usuário técnico de Francielly criado e confirmado em Supabase Auth.
+- Vínculo CRL com `username=francielly`, `role=admin`, `active=true` registrado na tabela `public.crl_members` e consultado após inserção.
+- Não existe senha no GitHub; ela foi definida diretamente no Supabase pelo responsável.
+- **Login de navegador e testes de permissões ainda não homologados**, assim como a operação com dados reais.
