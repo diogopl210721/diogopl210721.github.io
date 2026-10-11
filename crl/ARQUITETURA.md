@@ -52,3 +52,24 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - A sincronização offline, armazenamento privado, autorização de assinatura e criação da primeira conta ADM ainda estão pendentes.
 
 **Verificação:** migrações aplicadas e sintaxe do JavaScript publicada verificada; ainda não ocorreram testes ponta a ponta autenticados porque não há ADM/monitor provisionados. Não inserir dados reais.
+
+
+## Iteração: módulos operacionais e indicadores — 11/10/2026
+
+### GitHub
+- `/crl/acesso.html` e `/crl/acesso.js` publicados com abas Acolhidos, Rotina, Veículo, Devocionais, Refeições e Estatísticas (esta última somente para ADM habilitado).
+- Devocionais exigem todos os acolhidos ativos marcados e justificativa para falta; gravação pela função transacional `crl_complete_devotional`.
+- Viagens: visualizar abertas e encerradas, registrar KM final e horário, e apresentar a distância automaticamente.
+- Retificação: relato original preservado, somente autor ou ADM pode corrigir; viagens encerradas recebem retificação auditada exclusiva do ADM, sem sobrescrever o registro.
+- Refeições: novo lançamento de quantidade servida por tipo e data, sem estimar valores automaticamente.
+
+### Supabase
+- Migrações: `crl_devotional_atomic_attendance_tenant_checks_v1`, `crl_immutable_trips_and_audited_rectifications_v1`, `crl_record_correction_author_or_admin_only`, `crl_meal_reporting_and_admin_consolidated_metrics`, `crl_dashboard_accurate_active_at_end_v2`.
+- Novo controle `crl_meals` com RLS; `crl_trip_rectifications` com RLS e inserção bloqueada diretamente.
+- `crl_dashboard_summary` retorna indicadores consolidados apenas para ADM autenticado, incluindo conclusão de nove meses. Denominador = acolhimentos encerrados no período; a interpretação causal não é feita automaticamente.
+- Falta separar datas de pagamentos efetivos das competências de contribuição, finalizar os relatórios de pagamentos e testar segurança/integração com contas de teste.
+
+### Status de homologação
+- Arquivos do GitHub verificados e JavaScript compilado sintaticamente sem erros.
+- As migrações foram aplicadas; ainda **não há ADM/monitor autenticado** para teste ponta a ponta.
+- **Não inserir dados reais de pessoas ou medicamentos até validação e liberação explícita.**
