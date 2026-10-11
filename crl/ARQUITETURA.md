@@ -84,3 +84,19 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - Aba **Contribuições (ADM)** permite lançar contribuição mensal (R$ 0 = G5), conferir diária dividida por 30, registrar pagamento parcial e abrir WhatsApp do responsável com texto pronto, sem envio automático.
 - Tela de **Estatísticas ADM** adicionou exportação CSV e impressão/Salvar PDF do navegador, ambas sujeitas a autorização da sessão.
 - Atenção: ajustes/cancelamento auditável de pagamentos, provisionamento do primeiro ADM, testes completos de RLS, assinatura privada, IA e modo offline ainda não foram homologados. Usar apenas dados fictícios até aprovação.
+
+
+## Iteração — anexos privados e ligação com o prontuário (11/10/2026)
+
+- Buckets Supabase `crl-private` (privado, máximo 10 MB, JPG/PNG/WebP/PDF) e `crl-signatures` (privado, máximo 2 MB, PNG/WebP) criados e conferidos como **não públicos**.
+- Políticas no `storage.objects` restringem leitura e upload pelo identificador de instituição e acolhimento ativo, ou ao ADM; assinatura institucional restrita a ADM.
+- `crl_files` agora permite inserção de metadados vinculados ao acolhimento sob RLS, com caminho de arquivo compatível e autor autenticado.
+- Tela restrita **Arquivos** aceita arquivos pela câmera ou seleção do dispositivo, salva no bucket privado, associa ao período e permite link de leitura com validade curta (5 minutos).
+- Upload e vínculo de metadados ainda não são uma transação indivisível: uma falha de conexão após o upload pode exigir conciliação administrativa de arquivos órfãos.
+- Nenhuma assinatura da Francielly foi publicada ou copiada para os buckets nesta iteração.
+
+## Bloqueios antes de homologar dados reais
+
+- `crl_members` permanece sem usuários; a primeira conta ADM ainda não foi provisionada em Supabase Auth por canal seguro.
+- Testes com usuários reais de teste (ADM, monitor, monitor bloqueado) e revisão do isolamento entre instituições e das políticas de arquivos ainda pendentes.
+- Implementação dos modelos documentais, aprovação de assinatura, exportações completas, ajustes auditados de recebimentos, IA e sincronização offline permanecem pendentes.
