@@ -169,3 +169,14 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - Os sete arquivos de script foram analisados quanto à sintaxe e integração de imports; não foram realizados testes reais de cadastro e acesso autenticado.
 - A migração destinada a conclusão e repetição automática de tarefas foi bloqueada pela infraestrutura antes da execução. **Não anunciar recorrência e conclusão auditada como prontas**; agendamento atual cria somente uma ocorrência.
 - O projeto permanece em homologação; abertura da URL pública pelo verificador externo não foi possível, portanto a publicação efetiva pelo domínio ainda precisa de checagem manual. Nunca inserir prontuários ou receitas reais antes de ensaio com perfis ADM/monitor e revisão de segurança/LGPD.
+
+
+## Iteração — monitor aluno, voluntário e contratado (11/10/2026)
+- A função de acesso é **monitor** nos três casos. O vínculo `monitor_vinculo` guarda `aluno`, `voluntario` ou `contratado`.
+- **Aluno:** `crl_members.resident_id` aponta ao cadastro permanente `crl_residents.id`; Edge Function confirma acolhimento ativo, carrega o nome do cadastro e impede duplicar monitor do mesmo aluno.
+- **Voluntário:** cadastro de monitor independente, com nome, login, telefone opcional e data de início.
+- **Contratado:** cadastro independente com `salary_monthly`; lançamento mensal com confirmação ADM via `crl_register_monitor_salary`, gera `crl_financial_entries` como despesa, cria `crl_monitor_payroll` e registra auditoria. Índice único por monitor e competência impede lançamento duplicado.
+- Vínculo e salário são editáveis apenas pela Edge Function ADM `crl-admin-monitors`, v5, com verificações da instituição; papel anônimo não tem execução da função de salário.
+- UI `acesso.js`: selecionar aluno existente (incluindo ID recuperado), campos condicionais, salário mensal em R$, botão de lançamento por competência e histórico de salários lançados.
+- **Não há pagamento bancário automático nem obrigação trabalhista automatizada**: é controle de despesas; lançamento de competência é operação explícita do ADM.
+- Código e migrações publicados; testes de sintaxe, permissões e implantação feitos. Fluxo de cadastro/pagamento em navegador autenticado ainda depende de teste da instituição.
