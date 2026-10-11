@@ -10,6 +10,7 @@ import {diagnosticForm,runDiagnostic} from './diagnostico.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',moduleFilter='all',openTrips=[],lastMetrics=null;
+let monitorPreview=false,originalAdminMember=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
 const localTime=(date=new Date())=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -17,14 +18,43 @@ function status(s,error=false){let n=el('notice');n.textContent=s;n.className=er
 function field(label,id,type='text',required=true,value=''){return '<label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+type+'" '+(required?'required':'')+' value="'+esc(value)+'">'}
 function stayOptions(){return stays.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.crl_residents?.full_name||'Acolhido')+'</option>').join('')}
 function authenticated(){return Boolean(member?.active!==false && member?.institution_id && user?.id)}
-async function signOut(){await db.auth.signOut();member=null;user=null;stays=[];el('appPanel').classList.add('hide');el('loginPanel').classList.remove('hide');el('password').value=''}
+async function signOut(){await db.auth.signOut();monitorPreview=false;originalAdminMember=null;member=null;user=null;stays=[];el('appPanel').classList.add('hide');el('loginPanel').classList.remove('hide');el('password').value=''}
 el('logout').onclick=signOut;
+
+async function toggleMonitorPreview(){
+ if(!authenticated()||(!monitorPreview&&member.role!=='admin'))return;
+ if(!monitorPreview){
+  originalAdminMember=member;
+  member={...member,role:'monitor',display_name:'Diogo — prévia'};
+  monitorPreview=true;
+ }else{
+  member=originalAdminMember;
+  originalAdminMember=null;
+  monitorPreview=false;
+ }
+ const admin=member.role==='admin';
+ for(const id of ['tabStats','tabHistory','tabContributions','tabMonitors','tabDocuments','tabEvolution','tabCash','tabAudit','tabDiagnostic'])
+  el(id).style.display=admin?'':'none';
+ el('identity').textContent=monitorPreview?'PRÉVIA: Diogo · Monitor (sessão ADM)':
+  member.display_name+' · Administrador';
+ el('monitorPreviewButton').textContent=monitorPreview?'Voltar ao ADM':'Ver tela do monitor';
+ el('monitorPreviewButton').setAttribute('aria-pressed',String(monitorPreview));
+ el('monitorPreviewNotice').classList.toggle('hide',!monitorPreview);
+ el('appPanel').classList.toggle('monitor-preview',monitorPreview);
+ view='dashboard';moduleFilter='all';
+ await refresh();
+}
+el('monitorPreviewButton').onclick=toggleMonitorPreview;
+
 async function init(){
  const {data:{user:current},error}=await db.auth.getUser();
  if(error||!current)return;
  const m=await db.from('crl_members').select('institution_id,display_name,role,active').eq('auth_user_id',current.id).eq('active',true).maybeSingle();
  if(m.error||!m.data){await signOut();el('loginMessage').textContent='Conta não habilitada para a CRL. Procure o ADM.';return}
- user=current;member=m.data;
+ user=current;member=m.data;monitorPreview=false;originalAdminMember=null;
+ el('appPanel').classList.remove('monitor-preview');el('monitorPreviewNotice').classList.add('hide');
+ el('monitorPreviewButton').style.display=member.role==='admin'?'':'none';
+ el('monitorPreviewButton').textContent='Ver tela do monitor';
  el('loginPanel').classList.add('hide');el('appPanel').classList.remove('hide');
  el('identity').textContent=member.display_name+' · '+(member.role==='admin'?'Administrador':'Monitor');
  el('tabStats').style.display=member.role==='admin'?'':'none';
@@ -86,7 +116,7 @@ function draw(){
  diagnostic:diagnosticForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
- monitors:'<h2>Gerenciar monitores (ADM)</h2><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" required><label>Usuário para login</label><input id="monitorUsername" type="text" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button>Cadastrar monitor</button></form>',
+ monitors:'<h2>Gerenciar monitores (ADM)</h2><p class="muted">Para criar o acesso de Diogo, confirme o nome e o usuário já preenchidos e defina uma senha forte diretamente nesta tela. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button>Cadastrar monitor</button></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
@@ -569,7 +599,8 @@ function renderSummary(d){
 }
 
 async function submit(e){
- e.preventDefault();if(!authenticated())return;const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
+ e.preventDefault();if(!authenticated())return;
+ if(monitorPreview){status('Prévia apenas visual: volte ao ADM para salvar dados.',true);return}const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
   let result;
   if(view==='diagnostic'){
