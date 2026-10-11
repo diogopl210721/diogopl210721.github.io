@@ -63,6 +63,7 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  };
  if(member.role==='admin'){
   queries.history=db.from('crl_stays').select('admission_date,departure_date,status,departure_reason').eq('institution_id',tenant).eq('resident_id',person.id).order('admission_date',{ascending:false}).limit(100);
+  queries.documents=db.from('crl_documents').select('document_number,issued_on,pdf_storage_path,template_type').eq('institution_id',tenant).eq('stay_id',stayId).eq('status','approved').order('issued_on',{ascending:false}).limit(100);
   queries.contributions=db.from('crl_contributions').select('amount,paid_amount,due_date').eq('institution_id',tenant).eq('stay_id',stayId).order('due_date',{ascending:false}).limit(100);
  }
  const entries=Object.entries(queries);
@@ -72,6 +73,7 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
   const a=promises[i];const result=a.status==='fulfilled'?a.value:{error:{message:'Falha de conexão'}};
   if(result.error){failed.push(key);results[key]=[]}else results[key]=result.data||[]
  });
+ if(!root.isConnected||document.getElementById('profileStay')?.value!==stayId)return;
  root.replaceChildren();
  const card=node('div',null,'prontuario-card');
  const heading=node('div',null,'prontuario-top');
@@ -104,6 +106,12 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
   return line(activity?.title||'Devocional',x.status+(x.justification?' · Justificativa: '+x.justification:''),dateTime(activity?.starts_at)+' · '+(activity?.presenter||''));
  });
  card.append(detail('Participação em devocionais',attend.length?listBox(attend):null));
+ if(!failed.includes('attendance')&&results.attendance.length){
+   const statuses=results.attendance.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{});
+   const p=(statuses.present||0),l=(statuses.late||0),a=(statuses.absent||0),e=(statuses.excused||0);
+   const fraction=Math.round(100*(p+l)/results.attendance.length);
+   card.append(node('p','Resumo das marcações consultadas: '+(p+l)+' de '+results.attendance.length+' presenças ('+fraction+'%). Faltas: '+a+'; justificadas: '+e+'. Este indicador não é uma avaliação clínica.','profile-warning'));
+ }
  const tasks=results.tasks.map(x=>line(x.title,x.status||'Programada',dateTime(x.due_at)+(x.recurrence?' · '+x.recurrence:'')));
  card.append(detail('Tarefas atribuídas',tasks.length?listBox(tasks):null));
  const med=results.medications.map(x=>line(x.medication_name,(x.dose_text||'Dose não informada')+' · '+(x.schedule_text||'Horário não informado'),x.verified_by?'Conferido pelo ADM':'Pendente de conferência ADM'));
@@ -120,6 +128,18 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  });
  card.append(detail('Documentos e fotografias',results.files.length?files:null));
  if(member.role==='admin'){
+  const pdfList=node('div',null,'profile-files');
+  results.documents.forEach(d=>{
+   const b=node('button',(d.document_number||'Declaração')+' · '+dateOnly(d.issued_on));b.type='button';
+   b.onclick=async()=>{
+    const r=await db.storage.from('crl-documents').createSignedUrl(d.pdf_storage_path,180);
+    if(r.error||!r.data?.signedUrl){status('PDF não encontrado ou acesso negado.',true);return}
+    window.open(r.data.signedUrl,'_blank','noopener,noreferrer');
+   };pdfList.append(b);
+  });
+  card.append(detail('Declarações oficiais (ADM)',results.documents.length?pdfList:null));
+ }
+ if(member.role==='admin'){
   const hist=results.history.map(x=>line('Entrada: '+dateOnly(x.admission_date),(x.departure_date?'Saída: '+dateOnly(x.departure_date):'Em andamento')+(x.departure_reason?' · '+x.departure_reason:''),x.status));
   card.append(detail('Histórico de passagens (ADM)',hist.length?listBox(hist):null));
   const cont=results.contributions.map(x=>line('Vencimento '+dateOnly(x.due_date),'Mensalidade: '+money(x.amount)+' · Recebido: '+money(x.paid_amount)+' · Saldo: '+money(Number(x.amount)-Number(x.paid_amount))));
@@ -131,8 +151,10 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  results.attendance.forEach(x=>{const ac=Array.isArray(x.crl_activities)?x.crl_activities[0]:x.crl_activities;exportRows.push(['Devocional',dateTime(ac?.starts_at),ac?.title,x.status+(x.justification?' | '+x.justification:'')])});
  results.tasks.forEach(x=>exportRows.push(['Tarefa',dateTime(x.due_at),x.title,x.status]));
  results.files.forEach(x=>exportRows.push(['Arquivo',dateTime(x.created_at),x.category,'Arquivo privado; não incluído na exportação CSV']));
+ results.medications.forEach(x=>exportRows.push(['Medicamento — registro operacional','',x.medication_name,(x.dose_text||'')+' · '+(x.schedule_text||'')+(x.verified_by?' · Conferido ADM':' · Não conferido pelo ADM')]));
  if(member.role==='admin'){
   results.history.forEach(x=>exportRows.push(['Passagem',dateOnly(x.admission_date),x.status,dateOnly(x.departure_date)]));
+  results.documents.forEach(x=>exportRows.push(['Declaração oficial',dateOnly(x.issued_on),x.document_number,'Arquivo PDF em armazenamento privado']));
   results.contributions.forEach(x=>exportRows.push(['Contribuição',dateOnly(x.due_date),money(x.amount),money(x.paid_amount)]));
  }
  csv.onclick=()=>{
@@ -141,8 +163,9 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  };
  print.onclick=()=>{
   const cells=exportRows.map(row=>'<div class="print-entry">'+row.map(x=>'<p>'+esc(x)+'</p>').join('')+'</div>').join('');
-  const w=window.open('','_blank','noopener,noreferrer');
+  const w=window.open('about:blank','_blank');
   if(!w){status('Permita janelas pop-up para imprimir o prontuário.',true);return}
+  try{w.opener=null}catch(_ignored){}
   const html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prontuário CRL</title><style>body{font:13px Arial,sans-serif;margin:35px;color:#1f2937}h1{color:#dd2536}.print-entry{page-break-inside:avoid;border-bottom:1px solid #eee;padding:6px 0}.print-entry p{white-space:pre-wrap;margin:4px 0}</style></head><body><h1>CRL — Prontuário</h1><p>Uso interno. Contém dados pessoais. Não compartilhar sem autorização.</p>'+cells+'</body></html>';
   w.document.open();w.document.write(html);w.document.close();w.focus();w.print();
  };
