@@ -62,10 +62,10 @@ async function loadList(){
  }
  if(view==='notes'){
   if(!stays.length){root.textContent='Nenhum registro ainda.';return}
-  const r=await db.from('crl_records').select('category,original_text,created_at,stay_id').eq('institution_id',member.institution_id).in('stay_id',stays.map(s=>s.id)).order('created_at',{ascending:false}).limit(25);
+  const r=await db.from('crl_records').select('id,category,original_text,created_at,stay_id,author_id,correction_of,correction_reason').eq('institution_id',member.institution_id).in('stay_id',stays.map(s=>s.id)).order('created_at',{ascending:false}).limit(25);
   if(r.error){root.textContent='Falha ao consultar registros.';return}
   if(!r.data.length)root.textContent='Nenhuma rotina registrada.';
-  for(const x of r.data){const name=stays.find(s=>s.id===x.stay_id)?.crl_residents?.full_name||'Acolhido';addItem(name+' • '+x.category,fmt(x.created_at)+' — '+x.original_text)}
+  for(const x of r.data){const name=stays.find(s=>s.id===x.stay_id)?.crl_residents?.full_name||'Acolhido';const item=addItem(name+' • '+x.category+(x.correction_of?' (retificação)':''),fmt(x.created_at)+' — '+x.original_text+(x.correction_reason?' | Motivo: '+x.correction_reason:''));if(x.author_id===user.id||member.role==='admin'){const b=document.createElement('button');b.type='button';b.textContent='Retificar registro';b.onclick=()=>showNoteCorrection(x,item);item.append(b)}}
   return;
  }
  if(view==='devotionals'){
@@ -86,9 +86,34 @@ async function loadList(){
     const bt=document.createElement('button');bt.textContent='Finalizar viagem';bt.type='button';
     bt.onclick=()=>showTripFinish(t,item);item.append(bt);
    }
+   if(t.arrival_at && member.role==='admin'){
+    const b=document.createElement('button');b.type='button';b.textContent='Retificar viagem (ADM)';b.onclick=()=>showTripRectification(t,item);item.append(b);
+   }
   }
  }
 }
+
+function showNoteCorrection(record,item){
+ const existing=item.querySelector('form');if(existing){existing.remove();return}
+ const f=document.createElement('form');
+ f.innerHTML='<label>Relato corrigido</label><textarea name="amendedText" required maxlength="10000"></textarea><label>Motivo da retificação</label><textarea name="reason" required maxlength="1200"></textarea><p class="muted">O registro anterior será preservado. Esta correção terá autor e horário próprios.</p><button>Salvar retificação</button>';
+ f.elements.amendedText.value=record.original_text;item.append(f);
+ f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button');b.disabled=true;
+ const r=await db.rpc('crl_amend_record',{p_record:record.id,p_text:f.elements.amendedText.value.trim(),p_reason:f.elements.reason.value.trim()});
+ b.disabled=false;if(r.error){status('Retificação não autorizada ou inválida.',true);return}status('Retificação registrada e original preservado.');await loadList();
+ };
+}
+function showTripRectification(trip,item){
+ const existing=item.querySelector('form');if(existing){existing.remove();return}
+ const f=document.createElement('form');
+ f.innerHTML='<label>KM final corrigido (opcional)</label><input name="km" type="number" step="0.1" min="0" placeholder="Informe somente se precisar corrigir"><label>Chegada corrigida (opcional)</label><input name="arrival" type="datetime-local"><label>Observação corrigida (opcional)</label><textarea name="notes"></textarea><label>Justificativa da retificação</label><textarea name="reason" required></textarea><p class="muted">O histórico original não será apagado. A retificação fica separada e auditável.</p><button>Registrar retificação</button>';
+ item.append(f);
+ f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button');b.disabled=true;
+ const km=f.elements.km.value.trim();const arrival=f.elements.arrival.value;const r=await db.rpc('crl_rectify_trip',{p_trip:trip.id,p_reason:f.elements.reason.value.trim(),p_km_final:km===''?null:Number(km),p_arrival:arrival?new Date(arrival).toISOString():null,p_notes:f.elements.notes.value.trim()||null});
+ b.disabled=false;if(r.error){status('Não foi possível registrar a retificação.',true);return}status('Retificação registrada; viagem original preservada.');await loadList();
+ };
+}
+
 function showTripFinish(trip,item){
  const existing=item.querySelector('form');if(existing){existing.remove();return}
  const f=document.createElement('form');
