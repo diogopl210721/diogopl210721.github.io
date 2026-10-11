@@ -85,7 +85,7 @@ el('loginForm').onsubmit=async e=>{
 };
 async function refresh(){
  if(!authenticated())return;
- const r=await db.from('crl_stays').select('id,resident_id,admission_date,crl_residents(full_name)').eq('institution_id',member.institution_id).eq('status','active').order('admission_date',{ascending:false});
+ const r=await db.from('crl_stays').select('id,resident_id,admission_date,crl_residents(id,full_name)').eq('institution_id',member.institution_id).eq('status','active').order('admission_date',{ascending:false});
  if(r.error){status('Não foi possível consultar os acolhidos.',true);return}
  stays=r.data||[];
  draw();
@@ -396,7 +396,7 @@ async function loadMonitors(){
  try{
   const result=await adminMonitors({action:'list'});
   root.replaceChildren();
-  if(!result.monitors?.length){root.textContent='Nenhum monitor cadastrado. Utilize “Ativar Diogo e gerar acesso” acima.';return}
+  if(!result.monitors?.length){root.textContent='Nenhum monitor cadastrado. Utilize o formulário Cadastrar monitor acima.';return}
   const diogo=result.monitors.find(m=>m.username==='diogo');
   if(diogo){const quickBtn=el('activateDiogo');if(quickBtn){quickBtn.disabled=true;quickBtn.textContent=diogo.active?'Diogo já está ativo':'Diogo bloqueado — reative pela lista';}}
 
