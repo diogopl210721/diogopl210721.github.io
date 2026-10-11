@@ -11,6 +11,21 @@ const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',moduleFilter='all',openTrips=[],lastMetrics=null;
 let monitorPreview=false,originalAdminMember=null;
+// Quem vê o quê. Para mudar o acesso de um perfil, altere só estas duas listas
+// (o banco aplica as mesmas regras; a tela apenas esconde o que não está liberado).
+const ADMIN_ONLY=['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic'];
+const NOT_FOR_STUDENT_MONITOR=['profile','files','notes','medications','resocialization'];
+const isStudentMonitor=()=>member?.role==='monitor'&&member?.monitor_vinculo==='aluno';
+function canView(v){
+ if(member?.role==='admin')return true;
+ if(ADMIN_ONLY.includes(v))return false;
+ if(isStudentMonitor()&&NOT_FOR_STUDENT_MONITOR.includes(v))return false;
+ return true;
+}
+function applyTabs(){
+ document.querySelectorAll('[data-view]').forEach(b=>{b.style.display=canView(b.dataset.view)?'':'none'});
+ document.querySelectorAll('[data-jump]').forEach(b=>{b.style.display=canView(b.dataset.jump)?'':'none'});
+}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
 const localTime=(date=new Date())=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -25,17 +40,15 @@ async function toggleMonitorPreview(){
  if(!authenticated()||(!monitorPreview&&member.role!=='admin'))return;
  if(!monitorPreview){
   originalAdminMember=member;
-  member={...member,role:'monitor',display_name:'Diogo — prévia'};
+  member={...member,role:'monitor',monitor_vinculo:null,display_name:'Prévia do monitor'};
   monitorPreview=true;
  }else{
   member=originalAdminMember;
   originalAdminMember=null;
   monitorPreview=false;
  }
- const admin=member.role==='admin';
- for(const id of ['tabStats','tabHistory','tabContributions','tabMonitors','tabDocuments','tabEvolution','tabCash','tabAudit','tabDiagnostic'])
-  el(id).style.display=admin?'':'none';
- el('identity').textContent=monitorPreview?'PRÉVIA: Diogo · Monitor (sessão ADM)':
+ applyTabs();
+ el('identity').textContent=monitorPreview?'PRÉVIA: tela do monitor (sessão ADM)':
   member.display_name+' · Administrador';
  el('monitorPreviewButton').textContent=monitorPreview?'Voltar ao ADM':'Ver tela do monitor';
  el('monitorPreviewButton').setAttribute('aria-pressed',String(monitorPreview));
@@ -49,23 +62,15 @@ el('monitorPreviewButton').onclick=toggleMonitorPreview;
 async function init(){
  const {data:{user:current},error}=await db.auth.getUser();
  if(error||!current)return;
- const m=await db.from('crl_members').select('institution_id,display_name,role,active').eq('auth_user_id',current.id).eq('active',true).maybeSingle();
+ const m=await db.from('crl_members').select('institution_id,display_name,role,active,monitor_vinculo').eq('auth_user_id',current.id).eq('active',true).maybeSingle();
  if(m.error||!m.data){await signOut();el('loginMessage').textContent='Conta não habilitada para a CRL. Procure o ADM.';return}
  user=current;member=m.data;monitorPreview=false;originalAdminMember=null;
  el('appPanel').classList.remove('monitor-preview');el('monitorPreviewNotice').classList.add('hide');
  el('monitorPreviewButton').style.display=member.role==='admin'?'':'none';
  el('monitorPreviewButton').textContent='Ver tela do monitor';
  el('loginPanel').classList.add('hide');el('appPanel').classList.remove('hide');
- el('identity').textContent=member.display_name+' · '+(member.role==='admin'?'Administrador':'Monitor');
- el('tabStats').style.display=member.role==='admin'?'':'none';
- el('tabHistory').style.display=member.role==='admin'?'':'none';
- el('tabContributions').style.display=member.role==='admin'?'':'none';
- el('tabMonitors').style.display=member.role==='admin'?'':'none';
- el('tabDocuments').style.display=member.role==='admin'?'':'none';
- el('tabEvolution').style.display=member.role==='admin'?'':'none';
- el('tabCash').style.display=member.role==='admin'?'':'none';
- el('tabAudit').style.display=member.role==='admin'?'':'none';
- el('tabDiagnostic').style.display=member.role==='admin'?'':'none';
+ el('identity').textContent=member.display_name+' · '+(member.role==='admin'?'Administrador':isStudentMonitor()?'Monitor (aluno)':'Monitor');
+ applyTabs();
  view='dashboard';
  await refresh();
  const requestedView=new URLSearchParams(window.location.search).get('view');
@@ -104,7 +109,7 @@ function draw(){
  if(isDashboard)return;
  const forms={
  history:'<h2>Buscar ex-acolhidos</h2><p class="muted">Somente ADM. Pesquise o cadastro permanente por nome, confira as passagens e abra um novo período sem apagar o anterior.</p><form id="dataForm">'+field('Nome ou parte do nome','searchName','text',true)+'<button>Pesquisar histórico</button></form>',
- files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado, acessível somente ao pessoal autorizado.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
+ files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado. Fotos de RG/CPF (categoria documento) ficam visíveis só para o ADM.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
  profile:prontuarioForm(stays),
  medications:careForm('medications',stays),
  resocialization:careForm('resocialization',stays),
@@ -183,7 +188,7 @@ function draw(){
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
 async function loadList(){
  if(view==='dashboard'){
-  await loadDashboard({db,member,user,stays,el,esc,fmt,localTime,setView});
+  await loadDashboard({db,member,user,stays,el,esc,fmt,localTime,setView,canView});
   return;
  }
  const root=el('listArea');root.replaceChildren();
@@ -212,7 +217,7 @@ async function loadList(){
     const profileButton=document.createElement('button');profileButton.type='button';profileButton.textContent='Abrir prontuário';
     profileButton.style.marginRight='7px';
     profileButton.onclick=async()=>{await setView('profile');if(el('profileStay')){el('profileStay').value=st.id;await loadList()}};
-    item.append(profileButton);
+    if(canView('profile'))item.append(profileButton);
     if(member.role==='admin'){
       const doc=document.createElement('button');doc.type='button';doc.textContent='Gerar declaração';
       doc.style.marginRight='7px';doc.onclick=async()=>{
@@ -643,8 +648,7 @@ function viewTitle(id){
  monitors:'Usuários e monitores',documents:'Declarações',evolution:'Evolução mensal',stock:'Estoque',cash:'Caixa da casa',audit:'Auditoria',diagnostic:'Verificar sistema',stats:'Estatísticas gerais'})[id]||'CRL';
 }
 async function setView(next,filter='all'){
- if(['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic'].includes(next)&&member?.role!=='admin')return;
- if(!authenticated())return;
+ if(!authenticated()||!canView(next))return;
  view=next;moduleFilter=filter;
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
  el('appPanel').querySelector('.tabs').classList.remove('expanded');
@@ -685,10 +689,13 @@ async function loadContributions(){
  const root=el('listArea');root.replaceChildren();
  if(member?.role!=='admin'){root.textContent='Acesso reservado ao ADM.';return}
  const r=await db.from('crl_contributions')
- .select('id,stay_id,amount,paid_amount,due_date,crl_stays(crl_residents(full_name,responsible_phone))')
+ .select('id,stay_id,amount,paid_amount,due_date,crl_stays(resident_id,crl_residents(full_name))')
  .eq('institution_id',member.institution_id).order('due_date',{ascending:false}).limit(moduleFilter==='overdue'?500:60);
  if(r.error){root.textContent='Não foi possível consultar contribuições.';return}
  if(!r.data.length){root.textContent='Nenhuma contribuição lançada.';return}
+ const residentIds=[...new Set(r.data.map(c=>c.crl_stays?.resident_id).filter(Boolean))];
+ const priv=residentIds.length?await db.rpc('crl_residents_private',{p_residents:residentIds}):{data:[]};
+ const phoneOf=new Map((priv.data||[]).map(p=>[p.id,p.responsible_phone]));
  const brl=x=>Number(x).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
  for(const c of r.data){
   const balance=Number(c.amount)-Number(c.paid_amount||0);
@@ -699,7 +706,7 @@ async function loadContributions(){
   if(balance>0){
    const button=document.createElement('button');button.textContent='Registrar recebimento';button.type='button';
    button.onclick=()=>showPayment(c,item);item.append(button);
-   const phone=String(c.crl_stays?.crl_residents?.responsible_phone||'').replace(/\D/g,'');
+   const phone=String(phoneOf.get(c.crl_stays?.resident_id)||'').replace(/\D/g,'');
    if(phone.length>=10){
     const whats=document.createElement('button');whats.textContent='WhatsApp do responsável';whats.type='button';
     whats.onclick=()=>{

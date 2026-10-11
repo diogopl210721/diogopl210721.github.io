@@ -55,11 +55,16 @@ async function loadPreview({db,member,el,status}){
  const box=el('docPreview');if(!box)return;
  box.replaceChildren();
  if(!id){box.textContent='Cadastre ou selecione um acolhido ativo.';return}
- const r=await db.from('crl_stays').select('id,resident_id,admission_date,crl_residents(full_name,cpf,rg)')
+ const r=await db.from('crl_stays').select('id,resident_id,admission_date,crl_residents(full_name)')
    .eq('id',id).eq('institution_id',member.institution_id).eq('status','active').maybeSingle();
  if(r.error||!r.data){box.textContent='Prontuário não encontrado ou sem permissão.';return}
- const res=Array.isArray(r.data.crl_residents)?r.data.crl_residents[0]:r.data.crl_residents;
- if(!res){box.textContent='Dados do acolhido indisponíveis.';return}
+ const named=Array.isArray(r.data.crl_residents)?r.data.crl_residents[0]:r.data.crl_residents;
+ if(!named){box.textContent='Dados do acolhido indisponíveis.';return}
+ // CPF e RG só chegam ao navegador do ADM, pela função crl_residents_private.
+ const priv=await db.rpc('crl_residents_private',{p_residents:[r.data.resident_id]});
+ if(priv.error){box.textContent='Não foi possível consultar CPF/RG.';return}
+ const docs=(priv.data||[])[0]||{};
+ const res={full_name:named.full_name,cpf:docs.cpf||null,rg:docs.rg||null};
  const label=res.cpf?'CPF nº '+res.cpf:res.rg?'RG nº '+res.rg:'CPF/RG não cadastrado';
  el('docIdentity').value=label;el('docAdmission').value=ptDate(r.data.admission_date);
  el('docIdentityType').value=res.cpf?'cpf':res.rg?'rg':'cpf';el('docIdentityValue').value=res.cpf||res.rg||'';

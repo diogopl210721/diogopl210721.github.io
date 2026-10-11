@@ -107,7 +107,9 @@ function item(root,title,body,detail){
 function actionButton(container,label,callback){
  const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=callback;container.append(b);return b;
 }
-function exportControls(root,name,rows){
+function exportControls(root,name,rows,member){
+ // Exportar/imprimir dados de saúde: somente ADM.
+ if(member?.role!=='admin')return;
  const bar=document.createElement('div');bar.className='care-actions';
  const exp=actionButton(bar,'Exportar CSV',()=>{
   if(!confirm('Exportar dados pessoais e informações de saúde para este dispositivo?'))return;
@@ -159,7 +161,7 @@ async function loadMedicationList({db,member,stays,root,status,filter='all'}){
  const exportRows=[['Acolhido','Medicamento','Dose transcrita','Horários','Situação','Registrado em'],
   ...requests.map(x=>[lookup(x.stay_id),x.medication_name,x.dose_text,x.schedule_text,'Solicitação: '+x.request_status,when(x.created_at)]),
   ...medications.map(x=>[lookup(x.stay_id),x.medication_name,x.dose_text,x.schedule_text,'Conferido ADM',when(x.created_at)])];
- medicationExport=exportRows;exportControls(root,'CRL_medicamentos.csv',medicationExport);
+ medicationExport=exportRows;exportControls(root,'CRL_medicamentos.csv',medicationExport,member);
 }
 function reviewMedication({db,member,req,container,status,refresh}){
  const prev=container.querySelector('form');if(prev){prev.remove();return}
@@ -229,7 +231,7 @@ async function loadResocializationList({db,member,stays,root,status,filter='all'
   lookup(x.stay_id),x.purpose,when(x.departure_at),when(x.expected_return_at),when(x.actual_return_at),
   x.no_responsible_pickup?'Sem responsável':x.picked_up_by,x.justification,x.return_notes
  ])];
- resocializationExport=rows;exportControls(root,'CRL_ressocializacoes.csv',resocializationExport);
+ resocializationExport=rows;exportControls(root,'CRL_ressocializacoes.csv',resocializationExport,member);
 }
 function showReturn({db,out,container,status,refresh}){
  const previous=container.querySelector('form');if(previous){previous.remove();return}

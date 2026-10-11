@@ -52,12 +52,18 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  if(!active&&member.role!=='admin'){root.textContent='Prontuário de passagem encerrada: acesso restrito ao ADM.';return}
  root.append(node('p','Carregando registros autorizados...','muted'));
  const tenant=member.institution_id;
- const stayRes=await db.from('crl_stays').select('id,resident_id,admission_date,departure_date,status,departure_reason,monthly_contribution,crl_residents(id,full_name,birth_date,cpf,rg,responsible_name,responsible_phone)').eq('id',stayId).eq('institution_id',tenant).maybeSingle();
+ // Monitor recebe só nome e responsável; documentos e telefones chegam apenas ao ADM (crl_residents_private).
+ const stayRes=await db.from('crl_stays').select('id,resident_id,admission_date,departure_date,status,departure_reason,crl_residents(id,full_name,responsible_name)').eq('id',stayId).eq('institution_id',tenant).maybeSingle();
  if(stayRes.error||!stayRes.data){root.textContent='Prontuário não encontrado ou acesso não autorizado.';return}
  const st=stayRes.data;
  if(member.role!=='admin'&&st.status!=='active'){root.textContent='Acesso restrito ao ADM.';return}
  const person=Array.isArray(st.crl_residents)?st.crl_residents[0]:st.crl_residents;
  if(!person){root.textContent='Cadastro não encontrado.';return}
+ let privateData=null;
+ if(member.role==='admin'){
+  const priv=await db.rpc('crl_residents_private',{p_residents:[person.id]});
+  privateData=priv.error?null:(priv.data||[])[0]||null;
+ }
  const queries={
   records:db.from('crl_records').select('id,category,original_text,created_at,correction_of,correction_reason').eq('institution_id',tenant).eq('stay_id',stayId).order('created_at',{ascending:false}).limit(250),
   attendance:db.from('crl_attendance').select('status,justification,crl_activities(title,type,starts_at,presenter)').eq('institution_id',tenant).eq('stay_id',stayId).limit(250),
@@ -97,7 +103,9 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  const controls=node('div',null,'prontuario-controls');const csv=node('button','Exportar registros (CSV)');
  const print=node('button','Imprimir / salvar PDF');
  csv.type='button';print.type='button';
- controls.append(csv,print);heading.append(desc,controls);card.append(heading);
+ // Exportar e imprimir levam dados de saúde para fora do sistema: somente ADM.
+ if(member.role==='admin')controls.append(csv,print);
+ heading.append(desc,controls);card.append(heading);
  const days=Math.max(0,Math.floor((new Date((st.departure_date||new Date().toISOString().slice(0,10))+'T12:00:00Z')-new Date(st.admission_date+'T12:00:00Z'))/86400000));
  const count=(key)=>failed.includes(key)?'Indisponível':String(results[key].length);
  const kpis=[
@@ -113,7 +121,10 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  card.append(grid);
  if(failed.length)card.append(node('p','Algumas seções não puderam ser carregadas: '+failed.join(', ')+'. Exportações também poderão estar incompletas.','profile-warning'));
  let basic=['Responsável: '+(person.responsible_name||'Não informado')];
- if(member.role==='admin')basic.push('CPF: '+(person.cpf||'Não informado')+'  |  RG: '+(person.rg||'Não informado')+'  |  Telefone do responsável: '+(person.responsible_phone||'Não informado'));
+ if(member.role==='admin'){
+  if(!privateData)basic.push('Documentos e telefones indisponíveis no momento.');
+  else basic.push('CPF: '+(privateData.cpf||'Não informado')+'  |  RG: '+(privateData.rg||'Não informado')+'  |  Telefone do responsável: '+(privateData.responsible_phone||'Não informado')+(privateData.birth_date?'  |  Nascimento: '+dateOnly(privateData.birth_date):''));
+ }
  card.append(detail('Identificação e vínculo',basic.join('\n')));
  const records=results.records.map(x=>line((x.correction_of?'Retificação — ':'')+(x.category||'Registro'),x.original_text+(x.correction_reason?'\nMotivo da correção: '+x.correction_reason:''),dateTime(x.created_at)));
  card.append(detail('Registros do prontuário',records.length?listBox(records):null));

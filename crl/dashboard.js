@@ -8,7 +8,7 @@ const card=(icon,title,value,caption,go,filter='all')=>
  '<span class="stat-icon">'+icon+'</span><span class="stat-label">'+esc(title)+'</span><strong>'+esc(value)+'</strong>'+
  '<span class="stat-detail">'+esc(caption)+' <span class="dash-chevron">↗</span></span></button>';
 const row=(name,detail)=>'<div class="dash-activity"><span class="dot"></span><div><b>'+esc(name)+'</b><small>'+esc(detail)+'</small></div></div>';
-export async function loadDashboard({db,member,stays,el,fmt,localTime,setView}){
+export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,canView=()=>true}){
  const root=el('dashboardArea');root.innerHTML='<section class="panel">Consultando indicadores...</section>';
  if(!member?.institution_id)return;
  const admin=member.role==='admin',tenant=member.institution_id;
@@ -54,7 +54,7 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView}){
  const alerts=[];
  if(admin&&Number(m.contributions_overdue)>0)alerts.push(row(m.contributions_overdue+' contribuições vencidas','Consultar financeiro'));
  if(admin&&Number(m.medications_pending)>0)alerts.push(row(m.medications_pending+' receitas pendentes','Conferência administrativa'));
- if(Number(m.resocializations_open)>0)alerts.push(row(m.resocializations_open+' ressocializações abertas','Conferir retornos'));
+ if(canView('resocialization')&&Number(m.resocializations_open)>0)alerts.push(row(m.resocializations_open+' ressocializações abertas','Conferir retornos'));
  const quick='<div class="dash-actions">'+[
   ['students','Acolhidos'],['tasks','Escalas de tarefas'],['devotionals','Devocionais'],['meals','Refeições'],
   ['notes','Rotina'],['trips','Veículos'],['resocialization','Ressocialização'],['stock','Estoque'],
@@ -69,5 +69,7 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView}){
  '<section class="panel"><div class="row"><h2>Alertas e pendências</h2><button type="button" class="dash-link" data-go="'+(admin?'contributions':'resocialization')+'">Consultar →</button></div>'+
  (alerts.length?alerts.join(''):'<p class="dash-empty">Nenhuma pendência nos indicadores consultados.</p>')+'</section></div>'+
  '<section class="panel"><div class="row"><h2>Acesso rápido</h2><span class="dash-subtle">Todos os módulos</span></div>'+quick+'</section>';
+ // Cartões e atalhos de módulos que o perfil não acessa não aparecem.
+ root.querySelectorAll('[data-go]').forEach(b=>{if(!canView(b.dataset.go))b.remove()});
  root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setView(b.dataset.go,b.dataset.filter||'all'));
 }
