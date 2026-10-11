@@ -1,5 +1,6 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {loadDashboard} from './dashboard.js';
+import {documentForm,bindDocuments,listDocuments,issueDocument} from './documents.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',openTrips=[],lastMetrics=null;
@@ -24,6 +25,7 @@ async function init(){
  el('tabHistory').style.display=member.role==='admin'?'':'none';
  el('tabContributions').style.display=member.role==='admin'?'':'none';
  el('tabMonitors').style.display=member.role==='admin'?'':'none';
+ el('tabDocuments').style.display=member.role==='admin'?'':'none';
  view='dashboard';
  await refresh();
 }
@@ -64,13 +66,15 @@ function draw(){
  devotionals:'<h2>Nova devocional</h2><form id="dataForm">'+field('Tema / passagem bíblica','theme')+field('Quem ministrou','presenter')+field('Início','start','datetime-local',true,localTime())+field('Término','end','datetime-local',true,localTime(new Date(Date.now()+45*60000)))+'<h3>Presença dos acolhidos ativos</h3>'+(
  stays.length?stays.map(s=>'<div class="item"><b>'+esc(s.crl_residents?.full_name||'Acolhido')+'</b><div class="radio-group"><label><input type="radio" name="status_'+esc(s.id)+'" value="present" checked> Presente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="absent"> Ausente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="late"> Atrasou</label></div><input data-reason="'+esc(s.id)+'" placeholder="Justificativa quando houver falta"></div>').join(''):'<p>Nenhum acolhido ativo encontrado.</p>')+'<button '+(!stays.length?'disabled':'')+'>Finalizar e registrar presenças</button></form>',
  meals:'<h2>Registrar refeições servidas</h2><form id="dataForm"><label>Tipo de refeição</label><select id="mealType"><option value="cafe">Café da manhã</option><option value="almoco">Almoço</option><option value="jantar">Jantar</option><option value="lanche">Lanche</option><option value="outro">Outros</option></select>'+field('Quantidade de refeições servidas','servings','number')+field('Data e hora','servedAt','datetime-local',true,localTime())+field('Observações','mealNotes','text',false)+'<p class="muted">Registrar o número realmente servido, não uma estimativa.</p><button>Salvar refeições</button></form>',
+ documents:documentForm(stays),
  monitors:'<h2>Gerenciar monitores (ADM)</h2><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" required><label>Usuário para login</label><input id="monitorUsername" type="text" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button>Cadastrar monitor</button></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
+ if(view==='documents')void bindDocuments({db,member,el,status,stays});
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
 async function loadList(){
@@ -80,6 +84,7 @@ async function loadList(){
  }
  const root=el('listArea');root.replaceChildren();
  if(view==='tasks'){await loadTasks();return}
+ if(view==='documents'){await listDocuments({db,member,el,status,stays});return}
  if(view==='monitors'){await loadMonitors();return}
  if(view==='files'){await loadAttachments();return}
  if(view==='students'){
@@ -88,6 +93,12 @@ async function loadList(){
   for(const st of stays.filter(st=>(st.crl_residents?.full_name||'').toLocaleLowerCase('pt-BR').includes(term))){
     const item=addItem(st.crl_residents?.full_name||'Acolhido','Entrada: '+st.admission_date);
     if(member.role==='admin'){
+      const doc=document.createElement('button');doc.type='button';doc.textContent='Gerar declaração';
+      doc.style.marginRight='7px';doc.onclick=async()=>{
+       await setView('documents');
+       if(el('docStay')){el('docStay').value=st.id;el('docStay').dispatchEvent(new Event('change'));}
+      };
+      item.append(doc);
       const b=document.createElement('button');b.textContent='Encerrar acolhimento';b.type='button';
       b.onclick=()=>showCloseStay(st,item);item.append(b);
     }
@@ -362,10 +373,10 @@ function viewTitle(id){
  return ({dashboard:'Painel Geral',students:'Acolhidos',files:'Arquivos e fotos',
  history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',
  tasks:'Escala de tarefas',meals:'Refeições',contributions:'Contribuições',
- monitors:'Usuários e monitores',stats:'Estatísticas gerais'})[id]||'CRL';
+ monitors:'Usuários e monitores',documents:'Declarações',stats:'Estatísticas gerais'})[id]||'CRL';
 }
 async function setView(next){
- if(['history','stats','contributions','monitors'].includes(next)&&member?.role!=='admin')return;
+ if(['history','stats','contributions','monitors','documents'].includes(next)&&member?.role!=='admin')return;
  if(!authenticated())return;
  view=next;
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
@@ -478,7 +489,9 @@ async function submit(e){
  e.preventDefault();if(!authenticated())return;const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
   let result;
-  if(view==='monitors'){
+  if(view==='documents'){
+   await issueDocument({db,member,el,status,loadDocuments:()=>listDocuments({db,member,el,status,stays})});return;
+  }else if(view==='monitors'){
    await createMonitor();return;
   }else if(view==='files'){
    await uploadAttachment();return;
