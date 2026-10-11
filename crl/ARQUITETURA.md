@@ -100,3 +100,15 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - `crl_members` permanece sem usuários; a primeira conta ADM ainda não foi provisionada em Supabase Auth por canal seguro.
 - Testes com usuários reais de teste (ADM, monitor, monitor bloqueado) e revisão do isolamento entre instituições e das políticas de arquivos ainda pendentes.
 - Implementação dos modelos documentais, aprovação de assinatura, exportações completas, ajustes auditados de recebimentos, IA e sincronização offline permanecem pendentes.
+
+
+## Iteração — declarações oficiais e assinatura privada (11/10/2026)
+- Migração `crl_official_declarations_signature_registry_and_approval`: registro de assinatura por instituição, data de emissão, snapshot dos dados, número do documento, aprovação pelo ADM; gravações diretas de documentos bloqueadas para usuários comuns.
+- Migração `crl_pdf_bucket_private_admin_access_20261011`: bucket `crl-documents` privado, com leitura controlada por instituição, vínculo ao período e papel ADM. Bucket `crl-signatures` permanece privado e separado.
+- Edge Function `crl-official-documents`, com JWT exigido, verifica usuário ADM ativo, valida período e CPF/RG e exige aprovação explícita antes de criar PDF; obtém a assinatura privada no servidor, incorpora a logomarca oficial e grava PDF no bucket privado com rastro de auditoria.
+- O texto segue a declaração fornecida: "Declaro para devidos fins..." / "em Programa Terapêutico nesta Comunidade" / "em regime integral" / "Sem previsão de alta" / "Estamos à disposição para quaisquer esclarecimentos".
+- Arquivo `crl/documents.js`: seleção de acolhido ativo, prévia preenchida, atualização auditada de CPF/RG, upload autorizado de assinatura PNG, aprovação pelo ADM, consulta de documentos arquivados, acesso temporário ao PDF e compartilhamento manual quando suportado pelo navegador.
+- Migração `crl_approval_identity_document_audited_updates`: CPF/RG corrigidos somente via operação autenticada do ADM, com auditoria; atualização direta do cadastro foi bloqueada.
+- A aba "Declarações (ADM)" está integrada ao `acesso.html`/`acesso.js` e ao atalho administrativo do painel.
+- Correção de marcação duplicada no menu "Acolhidos"; cabeçalho permanece branco com logo CRL.
+- **Validação parcial:** migrações aplicadas, Edge Function declarada ACTIVE e sintaxe dos scripts verificada. Geração/assinatura/compartilhamento exigem teste fim a fim no navegador com usuário ADM e dados fictícios; não usar documentos reais antes dessa homologação.
