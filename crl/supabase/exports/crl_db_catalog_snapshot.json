@@ -1,0 +1,3906 @@
+{
+  "snapshot_description": "Metadados do projeto CRL no Supabase. Sem dados pessoais nem linhas reais. Somente para auditoria, nao substitui migracoes completas. Projeto compartilhado com DDS Avaliacoes.",
+  "tables": [
+    {
+      "table_name": "crl_activities",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_activities",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_activities",
+      "column_name": "type",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_activities",
+      "column_name": "title",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_activities",
+      "column_name": "presenter",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_activities",
+      "column_name": "starts_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_activities",
+      "column_name": "ends_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_activities",
+      "column_name": "created_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_activities",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_attendance",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_attendance",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_attendance",
+      "column_name": "activity_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_attendance",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_attendance",
+      "column_name": "status",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_attendance",
+      "column_name": "justification",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_attendance",
+      "column_name": "entered_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_audit_events",
+      "column_name": "id",
+      "data_type": "bigint",
+      "udt_name": "int8",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_audit_events",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_audit_events",
+      "column_name": "actor_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_audit_events",
+      "column_name": "action",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_audit_events",
+      "column_name": "entity_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_audit_events",
+      "column_name": "entity_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_audit_events",
+      "column_name": "data",
+      "data_type": "jsonb",
+      "udt_name": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_audit_events",
+      "column_name": "occurred_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "contribution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "amount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "paid_on",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "payment_method",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "registered_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "column_name": "recorded_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_contributions",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_contributions",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_contributions",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_contributions",
+      "column_name": "amount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_contributions",
+      "column_name": "due_date",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_contributions",
+      "column_name": "paid_amount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": "0",
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_contributions",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_contributions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "template_type",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "status",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": "'draft'::text",
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "pdf_storage_path",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "approved_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "approved_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "issued_on",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "snapshot",
+      "data_type": "jsonb",
+      "udt_name": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "signature_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 12
+    },
+    {
+      "table_name": "crl_documents",
+      "column_name": "document_number",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 13
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "month_start",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "report_status",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": "'draft'::text",
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "source_snapshot",
+      "data_type": "jsonb",
+      "udt_name": "jsonb",
+      "is_nullable": "NO",
+      "column_default": "'{}'::jsonb",
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "generated_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": "''::text",
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "approved_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "prepared_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "approved_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "approved_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 12
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 13
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "reviewed_draft_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 14
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "reviewed_draft_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 15
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "column_name": "reviewed_draft_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 16
+    },
+    {
+      "table_name": "crl_files",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_files",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_files",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_files",
+      "column_name": "record_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_files",
+      "column_name": "category",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_files",
+      "column_name": "storage_path",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_files",
+      "column_name": "uploaded_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_files",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "column_name": "description",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "column_name": "entry_type",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "column_name": "amount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "column_name": "date",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": "CURRENT_DATE",
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "column_name": "created_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_institutions",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_institutions",
+      "column_name": "name",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_institutions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "product",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "unit",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "quantity",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "direction",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "source",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "occurred_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": "now()",
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "column_name": "created_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_meals",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_meals",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_meals",
+      "column_name": "meal_type",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_meals",
+      "column_name": "servings",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_meals",
+      "column_name": "served_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_meals",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_meals",
+      "column_name": "recorded_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_meals",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "column_name": "medication_record_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "column_name": "occurred_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "column_name": "status",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "column_name": "recorded_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "prescription_file_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "medication_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "schedule_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "dose_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "verified_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_medication_records",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "prescription_file_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "medication_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "dose_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "schedule_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "monitor_notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "request_status",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": "'pending'::text",
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "requested_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "reviewed_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "reviewed_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 12
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "review_notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 13
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "linked_medication_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 14
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 15
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "auth_user_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "username",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "display_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "role",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "active",
+      "data_type": "boolean",
+      "udt_name": "bool",
+      "is_nullable": "NO",
+      "column_default": "true",
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "monitor_vinculo",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "resident_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "monitor_phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "monitor_started_on",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 12
+    },
+    {
+      "table_name": "crl_members",
+      "column_name": "salary_monthly",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 13
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "column_name": "member_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "column_name": "competence",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "column_name": "amount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "column_name": "financial_entry_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "column_name": "created_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "category",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "original_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "suggested_text",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "correction_of",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "author_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_records",
+      "column_name": "correction_reason",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "full_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "birth_date",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "cpf",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "rg",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "address",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "responsible_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "responsible_phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_residents",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 12
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "purpose",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "justification",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "departure_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "expected_return_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "actual_return_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "picked_up_by",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "no_responsible_pickup",
+      "data_type": "boolean",
+      "udt_name": "bool",
+      "is_nullable": "NO",
+      "column_default": "false",
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "authorization_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "closed_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 12
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "return_notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 13
+    },
+    {
+      "table_name": "crl_resocializations",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 14
+    },
+    {
+      "table_name": "crl_signatures",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_signatures",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_signatures",
+      "column_name": "storage_path",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_signatures",
+      "column_name": "uploaded_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_signatures",
+      "column_name": "active",
+      "data_type": "boolean",
+      "udt_name": "bool",
+      "is_nullable": "NO",
+      "column_default": "true",
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_signatures",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_signatures",
+      "column_name": "revoked_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "resident_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "admission_date",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": "CURRENT_DATE",
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "departure_date",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "departure_reason",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "status",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": "'active'::text",
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "monthly_contribution",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": "0",
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "due_day",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "created_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_stays",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "title",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "stay_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "recurrence",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "due_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "status",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": "'planned'::text",
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "created_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "completed_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "completion_notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_tasks",
+      "column_name": "previous_task_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 12
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "trip_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "author_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "new_km_final",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "new_arrival_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "new_notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "justification",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "ordinal_position": 1
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "institution_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 2
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "driver_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 3
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "purpose",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 4
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "destination",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 5
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "companions",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 6
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "departure_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 7
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "arrival_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 8
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "km_initial",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "ordinal_position": 9
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "km_final",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 10
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "km_driven",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 11
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "clean_return",
+      "data_type": "boolean",
+      "udt_name": "bool",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 12
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "damage_reported",
+      "data_type": "boolean",
+      "udt_name": "bool",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 13
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 14
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "created_by",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null,
+      "ordinal_position": 15
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "ordinal_position": 16
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "crl_activities",
+      "conname": "crl_activities_created_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_activities",
+      "conname": "crl_activities_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_activities",
+      "conname": "crl_activities_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_attendance",
+      "conname": "crl_attendance_activity_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (activity_id) REFERENCES crl_activities(id)"
+    },
+    {
+      "table_name": "crl_attendance",
+      "conname": "crl_attendance_activity_id_stay_id_key",
+      "contype": "u",
+      "definition": "UNIQUE (activity_id, stay_id)"
+    },
+    {
+      "table_name": "crl_attendance",
+      "conname": "crl_attendance_entered_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (entered_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_attendance",
+      "conname": "crl_attendance_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_attendance",
+      "conname": "crl_attendance_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_attendance",
+      "conname": "crl_attendance_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['present'::text, 'absent'::text, 'late'::text, 'excused'::text])))"
+    },
+    {
+      "table_name": "crl_attendance",
+      "conname": "crl_attendance_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_audit_events",
+      "conname": "crl_audit_events_actor_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (actor_id) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_audit_events",
+      "conname": "crl_audit_events_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_audit_events",
+      "conname": "crl_audit_events_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "conname": "crl_contribution_payments_amount_check",
+      "contype": "c",
+      "definition": "CHECK ((amount > (0)::numeric))"
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "conname": "crl_contribution_payments_contribution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (contribution_id) REFERENCES crl_contributions(id)"
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "conname": "crl_contribution_payments_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "conname": "crl_contribution_payments_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_contribution_payments",
+      "conname": "crl_contribution_payments_registered_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (registered_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_contributions",
+      "conname": "crl_contributions_amount_check",
+      "contype": "c",
+      "definition": "CHECK ((amount >= (0)::numeric))"
+    },
+    {
+      "table_name": "crl_contributions",
+      "conname": "crl_contributions_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_contributions",
+      "conname": "crl_contributions_paid_amount_check",
+      "contype": "c",
+      "definition": "CHECK ((paid_amount >= (0)::numeric))"
+    },
+    {
+      "table_name": "crl_contributions",
+      "conname": "crl_contributions_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_contributions",
+      "conname": "crl_contributions_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_documents",
+      "conname": "crl_documents_approved_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (approved_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_documents",
+      "conname": "crl_documents_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_documents",
+      "conname": "crl_documents_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_documents",
+      "conname": "crl_documents_signature_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (signature_id) REFERENCES crl_signatures(id)"
+    },
+    {
+      "table_name": "crl_documents",
+      "conname": "crl_documents_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['draft'::text, 'approved'::text, 'void'::text])))"
+    },
+    {
+      "table_name": "crl_documents",
+      "conname": "crl_documents_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_approved_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (approved_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_check",
+      "contype": "c",
+      "definition": "CHECK ((((report_status = 'draft'::text) AND (approved_at IS NULL) AND (approved_by IS NULL) AND (approved_text IS NULL)) OR ((report_status = 'approved'::text) AND (approved_at IS NOT NULL) AND (approved_by IS NOT NULL) AND (approved_text IS NOT NULL))))"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_month_start_check",
+      "contype": "c",
+      "definition": "CHECK ((month_start = (date_trunc('month'::text, (month_start)::timestamp with time zone))::date))"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_prepared_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (prepared_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_report_status_check",
+      "contype": "c",
+      "definition": "CHECK ((report_status = ANY (ARRAY['draft'::text, 'approved'::text])))"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_reviewed_draft_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (reviewed_draft_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "conname": "crl_evolution_reports_stay_id_month_start_key",
+      "contype": "u",
+      "definition": "UNIQUE (stay_id, month_start)"
+    },
+    {
+      "table_name": "crl_files",
+      "conname": "crl_files_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_files",
+      "conname": "crl_files_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_files",
+      "conname": "crl_files_record_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (record_id) REFERENCES crl_records(id)"
+    },
+    {
+      "table_name": "crl_files",
+      "conname": "crl_files_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_files",
+      "conname": "crl_files_uploaded_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (uploaded_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "conname": "crl_financial_entries_amount_check",
+      "contype": "c",
+      "definition": "CHECK ((amount >= (0)::numeric))"
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "conname": "crl_financial_entries_created_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "conname": "crl_financial_entries_entry_type_check",
+      "contype": "c",
+      "definition": "CHECK ((entry_type = ANY (ARRAY['income'::text, 'expense'::text])))"
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "conname": "crl_financial_entries_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_financial_entries",
+      "conname": "crl_financial_entries_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_institutions",
+      "conname": "crl_institutions_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "conname": "crl_inventory_movements_created_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "conname": "crl_inventory_movements_direction_check",
+      "contype": "c",
+      "definition": "CHECK ((direction = ANY (ARRAY['in'::text, 'out'::text])))"
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "conname": "crl_inventory_movements_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "conname": "crl_inventory_movements_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_inventory_movements",
+      "conname": "crl_inventory_movements_quantity_check",
+      "contype": "c",
+      "definition": "CHECK ((quantity > (0)::numeric))"
+    },
+    {
+      "table_name": "crl_meals",
+      "conname": "crl_meals_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_meals",
+      "conname": "crl_meals_meal_type_check",
+      "contype": "c",
+      "definition": "CHECK ((meal_type = ANY (ARRAY['cafe'::text, 'almoco'::text, 'jantar'::text, 'lanche'::text, 'outro'::text])))"
+    },
+    {
+      "table_name": "crl_meals",
+      "conname": "crl_meals_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_meals",
+      "conname": "crl_meals_recorded_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (recorded_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_meals",
+      "conname": "crl_meals_servings_check",
+      "contype": "c",
+      "definition": "CHECK (((servings >= 1) AND (servings <= 10000)))"
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "conname": "crl_medication_administrations_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "conname": "crl_medication_administrations_medication_record_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (medication_record_id) REFERENCES crl_medication_records(id)"
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "conname": "crl_medication_administrations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "conname": "crl_medication_administrations_recorded_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (recorded_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_medication_records",
+      "conname": "crl_medication_records_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_medication_records",
+      "conname": "crl_medication_records_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_medication_records",
+      "conname": "crl_medication_records_prescription_file_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (prescription_file_id) REFERENCES crl_files(id)"
+    },
+    {
+      "table_name": "crl_medication_records",
+      "conname": "crl_medication_records_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_medication_records",
+      "conname": "crl_medication_records_verified_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (verified_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "conname": "crl_medication_requests_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "conname": "crl_medication_requests_linked_medication_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (linked_medication_id) REFERENCES crl_medication_records(id)"
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "conname": "crl_medication_requests_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "conname": "crl_medication_requests_prescription_file_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (prescription_file_id) REFERENCES crl_files(id)"
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "conname": "crl_medication_requests_request_status_check",
+      "contype": "c",
+      "definition": "CHECK ((request_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))"
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "conname": "crl_medication_requests_requested_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (requested_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "conname": "crl_medication_requests_reviewed_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (reviewed_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_medication_requests",
+      "conname": "crl_medication_requests_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_members_auth_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_members_auth_user_id_key",
+      "contype": "u",
+      "definition": "UNIQUE (auth_user_id)"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_members_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_members_institution_id_username_key",
+      "contype": "u",
+      "definition": "UNIQUE (institution_id, username)"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_members_monitor_vinculo_check",
+      "contype": "c",
+      "definition": "CHECK (((monitor_vinculo IS NULL) OR ((role = 'monitor'::text) AND (monitor_vinculo = ANY (ARRAY['aluno'::text, 'voluntario'::text, 'contratado'::text])))))"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_members_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_members_resident_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (resident_id) REFERENCES crl_residents(id)"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_members_role_check",
+      "contype": "c",
+      "definition": "CHECK ((role = ANY (ARRAY['admin'::text, 'monitor'::text])))"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_monitor_link_consistency",
+      "contype": "c",
+      "definition": "CHECK (((monitor_vinculo IS NULL) OR (role <> 'monitor'::text) OR (((monitor_vinculo = 'aluno'::text) AND (resident_id IS NOT NULL) AND (salary_monthly IS NULL)) OR ((monitor_vinculo = 'voluntario'::text) AND (resident_id IS NULL) AND (salary_monthly IS NULL)) OR ((monitor_vinculo = 'contratado'::text) AND (resident_id IS NULL) AND ((salary_monthly IS NULL) OR (salary_monthly > (0)::numeric))))))"
+    },
+    {
+      "table_name": "crl_members",
+      "conname": "crl_monitor_salary_positive",
+      "contype": "c",
+      "definition": "CHECK (((salary_monthly IS NULL) OR ((salary_monthly > (0)::numeric) AND (salary_monthly <= (9999999)::numeric))))"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_amount_check",
+      "contype": "c",
+      "definition": "CHECK ((amount > (0)::numeric))"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_competence_check",
+      "contype": "c",
+      "definition": "CHECK ((competence = (date_trunc('month'::text, (competence)::timestamp with time zone))::date))"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_created_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_financial_entry_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (financial_entry_id) REFERENCES crl_financial_entries(id)"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_financial_entry_id_key",
+      "contype": "u",
+      "definition": "UNIQUE (financial_entry_id)"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_member_id_competence_key",
+      "contype": "u",
+      "definition": "UNIQUE (member_id, competence)"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_member_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (member_id) REFERENCES crl_members(id)"
+    },
+    {
+      "table_name": "crl_monitor_payroll",
+      "conname": "crl_monitor_payroll_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_records",
+      "conname": "crl_records_author_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (author_id) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_records",
+      "conname": "crl_records_correction_of_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (correction_of) REFERENCES crl_records(id)"
+    },
+    {
+      "table_name": "crl_records",
+      "conname": "crl_records_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_records",
+      "conname": "crl_records_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_records",
+      "conname": "crl_records_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_residents",
+      "conname": "crl_residents_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_residents",
+      "conname": "crl_residents_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_authorization_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (authorization_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_check",
+      "contype": "c",
+      "definition": "CHECK (((expected_return_at IS NULL) OR (expected_return_at >= departure_at)))"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_check1",
+      "contype": "c",
+      "definition": "CHECK (((actual_return_at IS NULL) OR (actual_return_at >= departure_at)))"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_closed_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (closed_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_justification_check",
+      "contype": "c",
+      "definition": "CHECK (((char_length(TRIM(BOTH FROM justification)) >= 3) AND (char_length(TRIM(BOTH FROM justification)) <= 2000)))"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_purpose_check",
+      "contype": "c",
+      "definition": "CHECK (((char_length(TRIM(BOTH FROM purpose)) >= 3) AND (char_length(TRIM(BOTH FROM purpose)) <= 500)))"
+    },
+    {
+      "table_name": "crl_resocializations",
+      "conname": "crl_resocializations_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_signatures",
+      "conname": "crl_signatures_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_signatures",
+      "conname": "crl_signatures_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_signatures",
+      "conname": "crl_signatures_storage_path_key",
+      "contype": "u",
+      "definition": "UNIQUE (storage_path)"
+    },
+    {
+      "table_name": "crl_signatures",
+      "conname": "crl_signatures_uploaded_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (uploaded_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_stays",
+      "conname": "crl_stays_created_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_stays",
+      "conname": "crl_stays_due_day_check",
+      "contype": "c",
+      "definition": "CHECK (((due_day >= 1) AND (due_day <= 31)))"
+    },
+    {
+      "table_name": "crl_stays",
+      "conname": "crl_stays_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_stays",
+      "conname": "crl_stays_monthly_contribution_check",
+      "contype": "c",
+      "definition": "CHECK ((monthly_contribution >= (0)::numeric))"
+    },
+    {
+      "table_name": "crl_stays",
+      "conname": "crl_stays_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_stays",
+      "conname": "crl_stays_resident_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (resident_id) REFERENCES crl_residents(id)"
+    },
+    {
+      "table_name": "crl_stays",
+      "conname": "crl_stays_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'concluded'::text, 'requested'::text, 'administrative'::text, 'abandoned'::text, 'other'::text])))"
+    },
+    {
+      "table_name": "crl_tasks",
+      "conname": "crl_tasks_completed_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (completed_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_tasks",
+      "conname": "crl_tasks_created_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_tasks",
+      "conname": "crl_tasks_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_tasks",
+      "conname": "crl_tasks_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_tasks",
+      "conname": "crl_tasks_previous_task_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (previous_task_id) REFERENCES crl_tasks(id)"
+    },
+    {
+      "table_name": "crl_tasks",
+      "conname": "crl_tasks_stay_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (stay_id) REFERENCES crl_stays(id)"
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "conname": "crl_trip_rectifications_author_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (author_id) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "conname": "crl_trip_rectifications_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "conname": "crl_trip_rectifications_justification_check",
+      "contype": "c",
+      "definition": "CHECK ((length(TRIM(BOTH FROM justification)) >= 3))"
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "conname": "crl_trip_rectifications_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "crl_trip_rectifications",
+      "conname": "crl_trip_rectifications_trip_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (trip_id) REFERENCES crl_vehicle_trips(id)"
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "conname": "crl_vehicle_trips_check",
+      "contype": "c",
+      "definition": "CHECK (((km_final IS NULL) OR (km_final >= km_initial)))"
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "conname": "crl_vehicle_trips_created_by_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "conname": "crl_vehicle_trips_institution_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (institution_id) REFERENCES crl_institutions(id)"
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "conname": "crl_vehicle_trips_km_initial_check",
+      "contype": "c",
+      "definition": "CHECK ((km_initial >= (0)::numeric))"
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "conname": "crl_vehicle_trips_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    }
+  ],
+  "indexes": [
+    {
+      "tablename": "crl_activities",
+      "indexname": "crl_activities_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_activities_pkey ON public.crl_activities USING btree (id)"
+    },
+    {
+      "tablename": "crl_attendance",
+      "indexname": "crl_attendance_activity_id_stay_id_key",
+      "indexdef": "CREATE UNIQUE INDEX crl_attendance_activity_id_stay_id_key ON public.crl_attendance USING btree (activity_id, stay_id)"
+    },
+    {
+      "tablename": "crl_attendance",
+      "indexname": "crl_attendance_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_attendance_pkey ON public.crl_attendance USING btree (id)"
+    },
+    {
+      "tablename": "crl_audit_events",
+      "indexname": "crl_audit_events_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_audit_events_pkey ON public.crl_audit_events USING btree (id)"
+    },
+    {
+      "tablename": "crl_contribution_payments",
+      "indexname": "crl_contribution_payments_contribution_idx",
+      "indexdef": "CREATE INDEX crl_contribution_payments_contribution_idx ON public.crl_contribution_payments USING btree (contribution_id, paid_on)"
+    },
+    {
+      "tablename": "crl_contribution_payments",
+      "indexname": "crl_contribution_payments_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_contribution_payments_pkey ON public.crl_contribution_payments USING btree (id)"
+    },
+    {
+      "tablename": "crl_contributions",
+      "indexname": "crl_contributions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_contributions_pkey ON public.crl_contributions USING btree (id)"
+    },
+    {
+      "tablename": "crl_documents",
+      "indexname": "crl_document_number_per_institution",
+      "indexdef": "CREATE UNIQUE INDEX crl_document_number_per_institution ON public.crl_documents USING btree (institution_id, document_number) WHERE (document_number IS NOT NULL)"
+    },
+    {
+      "tablename": "crl_documents",
+      "indexname": "crl_documents_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_documents_pkey ON public.crl_documents USING btree (id)"
+    },
+    {
+      "tablename": "crl_evolution_reports",
+      "indexname": "crl_evolution_reports_month_index",
+      "indexdef": "CREATE INDEX crl_evolution_reports_month_index ON public.crl_evolution_reports USING btree (institution_id, month_start DESC)"
+    },
+    {
+      "tablename": "crl_evolution_reports",
+      "indexname": "crl_evolution_reports_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_evolution_reports_pkey ON public.crl_evolution_reports USING btree (id)"
+    },
+    {
+      "tablename": "crl_evolution_reports",
+      "indexname": "crl_evolution_reports_stay_id_month_start_key",
+      "indexdef": "CREATE UNIQUE INDEX crl_evolution_reports_stay_id_month_start_key ON public.crl_evolution_reports USING btree (stay_id, month_start)"
+    },
+    {
+      "tablename": "crl_files",
+      "indexname": "crl_files_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_files_pkey ON public.crl_files USING btree (id)"
+    },
+    {
+      "tablename": "crl_financial_entries",
+      "indexname": "crl_financial_entries_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_financial_entries_pkey ON public.crl_financial_entries USING btree (id)"
+    },
+    {
+      "tablename": "crl_institutions",
+      "indexname": "crl_institutions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_institutions_pkey ON public.crl_institutions USING btree (id)"
+    },
+    {
+      "tablename": "crl_inventory_movements",
+      "indexname": "crl_inventory_movements_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_inventory_movements_pkey ON public.crl_inventory_movements USING btree (id)"
+    },
+    {
+      "tablename": "crl_meals",
+      "indexname": "crl_meals_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_meals_pkey ON public.crl_meals USING btree (id)"
+    },
+    {
+      "tablename": "crl_medication_administrations",
+      "indexname": "crl_medication_administrations_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_medication_administrations_pkey ON public.crl_medication_administrations USING btree (id)"
+    },
+    {
+      "tablename": "crl_medication_records",
+      "indexname": "crl_medication_records_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_medication_records_pkey ON public.crl_medication_records USING btree (id)"
+    },
+    {
+      "tablename": "crl_medication_requests",
+      "indexname": "crl_med_requests_institution_created",
+      "indexdef": "CREATE INDEX crl_med_requests_institution_created ON public.crl_medication_requests USING btree (institution_id, created_at DESC)"
+    },
+    {
+      "tablename": "crl_medication_requests",
+      "indexname": "crl_medication_requests_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_medication_requests_pkey ON public.crl_medication_requests USING btree (id)"
+    },
+    {
+      "tablename": "crl_members",
+      "indexname": "crl_members_auth_user_id_key",
+      "indexdef": "CREATE UNIQUE INDEX crl_members_auth_user_id_key ON public.crl_members USING btree (auth_user_id)"
+    },
+    {
+      "tablename": "crl_members",
+      "indexname": "crl_members_institution_id_username_key",
+      "indexdef": "CREATE UNIQUE INDEX crl_members_institution_id_username_key ON public.crl_members USING btree (institution_id, username)"
+    },
+    {
+      "tablename": "crl_members",
+      "indexname": "crl_members_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_members_pkey ON public.crl_members USING btree (id)"
+    },
+    {
+      "tablename": "crl_members",
+      "indexname": "crl_monitor_one_login_per_resident",
+      "indexdef": "CREATE UNIQUE INDEX crl_monitor_one_login_per_resident ON public.crl_members USING btree (institution_id, resident_id) WHERE ((role = 'monitor'::text) AND (resident_id IS NOT NULL))"
+    },
+    {
+      "tablename": "crl_monitor_payroll",
+      "indexname": "crl_monitor_payroll_financial_entry_id_key",
+      "indexdef": "CREATE UNIQUE INDEX crl_monitor_payroll_financial_entry_id_key ON public.crl_monitor_payroll USING btree (financial_entry_id)"
+    },
+    {
+      "tablename": "crl_monitor_payroll",
+      "indexname": "crl_monitor_payroll_member_id_competence_key",
+      "indexdef": "CREATE UNIQUE INDEX crl_monitor_payroll_member_id_competence_key ON public.crl_monitor_payroll USING btree (member_id, competence)"
+    },
+    {
+      "tablename": "crl_monitor_payroll",
+      "indexname": "crl_monitor_payroll_org_period_idx",
+      "indexdef": "CREATE INDEX crl_monitor_payroll_org_period_idx ON public.crl_monitor_payroll USING btree (institution_id, competence)"
+    },
+    {
+      "tablename": "crl_monitor_payroll",
+      "indexname": "crl_monitor_payroll_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_monitor_payroll_pkey ON public.crl_monitor_payroll USING btree (id)"
+    },
+    {
+      "tablename": "crl_records",
+      "indexname": "crl_records_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_records_pkey ON public.crl_records USING btree (id)"
+    },
+    {
+      "tablename": "crl_residents",
+      "indexname": "crl_residents_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_residents_pkey ON public.crl_residents USING btree (id)"
+    },
+    {
+      "tablename": "crl_resocializations",
+      "indexname": "crl_one_open_resocialization_per_stay",
+      "indexdef": "CREATE UNIQUE INDEX crl_one_open_resocialization_per_stay ON public.crl_resocializations USING btree (stay_id) WHERE (actual_return_at IS NULL)"
+    },
+    {
+      "tablename": "crl_resocializations",
+      "indexname": "crl_resocialization_institution_dates",
+      "indexdef": "CREATE INDEX crl_resocialization_institution_dates ON public.crl_resocializations USING btree (institution_id, departure_at DESC)"
+    },
+    {
+      "tablename": "crl_resocializations",
+      "indexname": "crl_resocializations_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_resocializations_pkey ON public.crl_resocializations USING btree (id)"
+    },
+    {
+      "tablename": "crl_signatures",
+      "indexname": "crl_one_active_signature_per_institution",
+      "indexdef": "CREATE UNIQUE INDEX crl_one_active_signature_per_institution ON public.crl_signatures USING btree (institution_id) WHERE (active = true)"
+    },
+    {
+      "tablename": "crl_signatures",
+      "indexname": "crl_signatures_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_signatures_pkey ON public.crl_signatures USING btree (id)"
+    },
+    {
+      "tablename": "crl_signatures",
+      "indexname": "crl_signatures_storage_path_key",
+      "indexdef": "CREATE UNIQUE INDEX crl_signatures_storage_path_key ON public.crl_signatures USING btree (storage_path)"
+    },
+    {
+      "tablename": "crl_stays",
+      "indexname": "crl_stays_one_active",
+      "indexdef": "CREATE UNIQUE INDEX crl_stays_one_active ON public.crl_stays USING btree (resident_id) WHERE (status = 'active'::text)"
+    },
+    {
+      "tablename": "crl_stays",
+      "indexname": "crl_stays_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_stays_pkey ON public.crl_stays USING btree (id)"
+    },
+    {
+      "tablename": "crl_tasks",
+      "indexname": "crl_tasks_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_tasks_pkey ON public.crl_tasks USING btree (id)"
+    },
+    {
+      "tablename": "crl_trip_rectifications",
+      "indexname": "crl_trip_rectifications_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_trip_rectifications_pkey ON public.crl_trip_rectifications USING btree (id)"
+    },
+    {
+      "tablename": "crl_vehicle_trips",
+      "indexname": "crl_vehicle_trips_pkey",
+      "indexdef": "CREATE UNIQUE INDEX crl_vehicle_trips_pkey ON public.crl_vehicle_trips USING btree (id)"
+    }
+  ],
+  "triggers": [
+    {
+      "table_name": "crl_attendance",
+      "trigger_name": "crl_tenant_attendance",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_attendance",
+      "trigger_name": "crl_tenant_attendance",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_contributions",
+      "trigger_name": "crl_contribution_opening_check",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_contribution_opening_guard()"
+    },
+    {
+      "table_name": "crl_contributions",
+      "trigger_name": "crl_tenant_contributions",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_contributions",
+      "trigger_name": "crl_tenant_contributions",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_documents",
+      "trigger_name": "crl_tenant_documents",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_documents",
+      "trigger_name": "crl_tenant_documents",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_evolution_reports",
+      "trigger_name": "crl_evolution_immutable",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_preserve_approved_evolution()"
+    },
+    {
+      "table_name": "crl_files",
+      "trigger_name": "crl_tenant_files",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_files",
+      "trigger_name": "crl_tenant_files",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "trigger_name": "crl_tenant_med_admin",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_medication_administrations",
+      "trigger_name": "crl_tenant_med_admin",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_medication_records",
+      "trigger_name": "crl_tenant_medications",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_medication_records",
+      "trigger_name": "crl_tenant_medications",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_records",
+      "trigger_name": "crl_tenant_records",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_records",
+      "trigger_name": "crl_tenant_records",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_stays",
+      "trigger_name": "crl_stay_history_guard",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_keep_closed_stays_immutable()"
+    },
+    {
+      "table_name": "crl_stays",
+      "trigger_name": "crl_tenant_stays",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_stays",
+      "trigger_name": "crl_tenant_stays",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_tasks",
+      "trigger_name": "crl_tenant_tasks",
+      "action_timing": "BEFORE",
+      "event_manipulation": "INSERT",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_tasks",
+      "trigger_name": "crl_tenant_tasks",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_check_tenant_reference()"
+    },
+    {
+      "table_name": "crl_vehicle_trips",
+      "trigger_name": "crl_trip_immutable_after_closure",
+      "action_timing": "BEFORE",
+      "event_manipulation": "UPDATE",
+      "action_statement": "EXECUTE FUNCTION crl_protect_trip_history()"
+    }
+  ],
+  "policies": [
+    {
+      "schemaname": "public",
+      "tablename": "crl_activities",
+      "policyname": "crl_activities_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(crl_is_member(institution_id, false) AND (created_by = ( SELECT auth.uid() AS uid)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_activities",
+      "policyname": "crl_activities_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, false)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_attendance",
+      "policyname": "crl_attendance_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(crl_is_member(institution_id, false) AND crl_can_access_stay(stay_id) AND (entered_by = ( SELECT auth.uid() AS uid)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_attendance",
+      "policyname": "crl_attendance_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR (crl_is_member(institution_id, false) AND crl_can_access_stay(stay_id)))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_audit_events",
+      "policyname": "crl_audit_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_contribution_payments",
+      "policyname": "crl_payments_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_contributions",
+      "policyname": "crl_contributions_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "crl_is_member(institution_id, true)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_contributions",
+      "policyname": "crl_contributions_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_documents",
+      "policyname": "crl_documents_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "crl_is_member(institution_id, true)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_documents",
+      "policyname": "crl_documents_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_evolution_reports",
+      "policyname": "crl_evolution_reports_adm_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_files",
+      "policyname": "crl_files_register_upload",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((stay_id IS NOT NULL) AND (uploaded_by = ( SELECT auth.uid() AS uid)) AND ((length(category) >= 1) AND (length(category) <= 80)) AND crl_can_access_storage_path(storage_path) AND (storage_path ~~ ((((institution_id)::text || '/'::text) || (stay_id)::text) || '/%'::text)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_files",
+      "policyname": "crl_files_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR ((stay_id IS NOT NULL) AND crl_is_member(institution_id, false) AND crl_can_access_stay(stay_id)))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_financial_entries",
+      "policyname": "crl_financial_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(crl_is_member(institution_id, true) AND (created_by = ( SELECT auth.uid() AS uid)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_financial_entries",
+      "policyname": "crl_financial_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_institutions",
+      "policyname": "crl_institutions_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(id, false)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_inventory_movements",
+      "policyname": "crl_inventory_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(crl_is_member(institution_id, false) AND (created_by = ( SELECT auth.uid() AS uid)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_inventory_movements",
+      "policyname": "crl_inventory_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, false)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_meals",
+      "policyname": "crl_meals_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(crl_is_member(institution_id, false) AND (recorded_by = ( SELECT auth.uid() AS uid)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_meals",
+      "policyname": "crl_meals_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, false)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_medication_administrations",
+      "policyname": "crl_administration_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR (EXISTS ( SELECT 1\n   FROM crl_medication_records m\n  WHERE ((m.id = crl_medication_administrations.medication_record_id) AND crl_can_access_stay(m.stay_id)))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_medication_records",
+      "policyname": "crl_admin_medication_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "crl_is_member(institution_id, true)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_medication_records",
+      "policyname": "crl_medications_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR (crl_is_member(institution_id, false) AND crl_can_access_stay(stay_id)))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_medication_requests",
+      "policyname": "crl_med_request_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR (crl_is_member(institution_id, false) AND crl_can_access_stay(stay_id)))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_members",
+      "policyname": "crl_members_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(((auth_user_id = ( SELECT auth.uid() AS uid)) AND active) OR crl_is_member(institution_id, true))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_monitor_payroll",
+      "policyname": "crl_payroll_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_records",
+      "policyname": "crl_records_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(crl_is_member(institution_id, false) AND crl_can_access_stay(stay_id) AND (author_id = ( SELECT auth.uid() AS uid)) AND (correction_of IS NULL))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_records",
+      "policyname": "crl_records_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR (crl_is_member(institution_id, false) AND crl_can_access_stay(stay_id)))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_residents",
+      "policyname": "crl_residents_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "crl_is_member(institution_id, false)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_residents",
+      "policyname": "crl_residents_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR (EXISTS ( SELECT 1\n   FROM crl_stays s\n  WHERE ((s.resident_id = crl_residents.id) AND (s.institution_id = crl_residents.institution_id) AND (s.status = 'active'::text) AND crl_is_member(s.institution_id, false)))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_residents",
+      "policyname": "crl_residents_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": "crl_is_member(institution_id, true)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_resocializations",
+      "policyname": "crl_resoc_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR (crl_is_member(institution_id, false) AND crl_can_access_stay(stay_id)))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_signatures",
+      "policyname": "crl_signatures_admin_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_stays",
+      "policyname": "crl_stays_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "crl_is_member(institution_id, false)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_stays",
+      "policyname": "crl_stays_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR ((status = 'active'::text) AND crl_is_member(institution_id, false)))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_stays",
+      "policyname": "crl_stays_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": "crl_is_member(institution_id, true)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_tasks",
+      "policyname": "crl_tasks_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(crl_is_member(institution_id, false) AND ((stay_id IS NULL) OR crl_can_access_stay(stay_id)) AND (created_by = ( SELECT auth.uid() AS uid)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_tasks",
+      "policyname": "crl_tasks_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(crl_is_member(institution_id, true) OR (crl_is_member(institution_id, false) AND ((stay_id IS NULL) OR crl_can_access_stay(stay_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_trip_rectifications",
+      "policyname": "crl_trip_rectifications_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "false"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_trip_rectifications",
+      "policyname": "crl_trip_rectifications_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_vehicle_trips",
+      "policyname": "crl_vehicle_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(crl_is_member(institution_id, false) AND (created_by = ( SELECT auth.uid() AS uid)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_vehicle_trips",
+      "policyname": "crl_vehicle_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "crl_is_member(institution_id, false)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "crl_vehicle_trips",
+      "policyname": "crl_vehicle_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(crl_is_member(institution_id, false) AND (created_by = ( SELECT auth.uid() AS uid)) AND (arrival_at IS NULL))",
+      "with_check": "(crl_is_member(institution_id, false) AND (created_by = ( SELECT auth.uid() AS uid)) AND (km_final >= km_initial))"
+    }
+  ],
+  "storage": [
+    {
+      "id": "crl-documents",
+      "name": "crl-documents",
+      "public": false,
+      "file_size_limit": 10485760,
+      "allowed_mime_types": [
+        "application/pdf"
+      ]
+    },
+    {
+      "id": "crl-private",
+      "name": "crl-private",
+      "public": false,
+      "file_size_limit": 10485760,
+      "allowed_mime_types": [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "application/pdf"
+      ]
+    },
+    {
+      "id": "crl-signatures",
+      "name": "crl-signatures",
+      "public": false,
+      "file_size_limit": 2097152,
+      "allowed_mime_types": [
+        "image/png",
+        "image/webp"
+      ]
+    }
+  ]
+}
