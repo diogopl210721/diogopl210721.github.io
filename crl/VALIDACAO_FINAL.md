@@ -21,3 +21,11 @@ A revisão dos sete arquivos JavaScript foi sintática, sem testes completos de 
 - Tentativa de teste transacional com acolhido fictício: uma chamada inicialmente falhou por incompatibilidade de tipo; a execução da sequência corrigida foi bloqueada antes de rodar. Portanto não houve homologação end-to-end nem registro fictício persistido.
 - Nova aba **Auditoria (ADM)**, que consulta eventos armazenados sem alterar registros; script validado sintaticamente. Confirmação no navegador continua pendente.
 - Residentes no banco: zero na última verificação; não usar dados reais antes dos testes funcionais.
+
+## Testes transacionais de integração (11/10/2026 — segunda rodada)
+
+- Falha real descoberta no cadastro: `crl_check_tenant_reference()` tentava acessar `NEW.record_id` em tabelas que não possuem essa coluna, resultando em `record "new" has no field "record_id"`. Migração `crl_fix_tenant_trigger_table_specific_columns` corrigiu o gatilho, separando as verificações por tabela e mantendo isolamento institucional.
+- **Teste autenticado como ADM, transação revertida:** `crl_admit_resident`, criação de registro de rotina, criação e conclusão de tarefa semanal com próxima ocorrência foram executados sem erro.
+- **Segundo teste autenticado como ADM, transação revertida:** admissão fictícia, devocional com presença, abertura e fechamento de viagem com 7 km calculados, preparação do relatório mensal foram executados sem erro.
+- Verificação de ausência de resíduos após as duas transações: `crl_residents`, `crl_stays`, `crl_activities`, `crl_tasks`, `crl_evolution_reports` com zero registros.
+- **Ainda pendente:** E2E por navegador autenticado, monitor ativo e bloqueado, armazenamento privado, geração de documento com assinatura, medicação e financeiro. A simulação SQL não substitui testes do navegador nem revisão jurídica dos dados sensíveis.
