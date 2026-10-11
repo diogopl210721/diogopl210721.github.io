@@ -60,3 +60,11 @@ Testes feitos por simulação autenticada de ADM e alteração temporária do pa
 - `crl/acesso.html`: cartões responsivos com duas colunas no celular, padrão de cores CRL, estados de hover/foco, cabeçalho branco preservado.
 - Verificações realizadas: sintaxe JavaScript de cinco módulos; consulta RPC autenticada no banco; smoke-test simulado do Dashboard com 16 cards ADM e eventos de clique gerando navegação com filtros.
 - Pendente: validação direta pelo Safari/iPhone e navegador desktop com sessão real; conferir lista de dados reais e limites de exibição antes de homologar operação sensível.
+
+## Acesso Diogo como monitor e início operacional (11/10/2026)
+- A área Monitores (ADM) agora apresenta os campos `Diogo` / `diogo` como valores iniciais e inclui um gerador criptograficamente aleatório de senha forte executado no navegador. A senha não fica gravada no GitHub.
+- Login `diogo` **ainda não criado**: o fluxo seguro exige uma sessão autenticada da Francielly (ADM) para chamar a Edge Function `crl-admin-monitors`. A senha curta indicada pelo solicitante não satisfaz a validação de 12 caracteres, maiúscula, minúscula, número e símbolo. Não desabilitar essa validação.
+- Link direto para cadastro (somente após autenticação ADM): `acesso.html?view=monitors`. A sessão do usuário responsável aciona a Edge Function, que cria o usuário de Auth e a associação como monitor à instituição.
+- Botão de **Prévia de monitor** no topo do sistema ADM, reversível. Apenas altera a apresentação, oculta as abas ADM e desabilita escrita pela tela; a sessão permanece ADM no backend, portanto a prévia **não comprova as políticas RLS de uma conta de monitor real**.
+- Substituídos avisos de “somente dados fictícios” por orientações de operação responsável. NÃO remover isolamento, RLS, auditoria ou proteções de dados sensíveis. Garantir backup e aprovações institucionais antes do cadastro de prontuários/receitas reais.
+- Checagens estáticas: inicialização com link direto para Monitores e ida/volta na prévia simuladas com êxito; sintaxe do `acesso.js` validada.
