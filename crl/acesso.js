@@ -58,6 +58,7 @@ function draw(){
  history:'<h2>Buscar ex-acolhidos</h2><p class="muted">Somente ADM. Pesquise o cadastro permanente por nome, confira as passagens e abra um novo período sem apagar o anterior.</p><form id="dataForm">'+field('Nome ou parte do nome','searchName','text',true)+'<button>Pesquisar histórico</button></form>',
  files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado, acessível somente ao pessoal autorizado.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
  students:'<h2>Novo acolhimento</h2><form id="dataForm">'+field('Nome completo','name')+field('Data de entrada','date','date',true,localTime().slice(0,10))+field('CPF (opcional)','cpf','text',false)+field('Responsável (opcional)','responsible','text',false)+field('Telefone do responsável','phone','tel',false)+'<button>Cadastrar acolhido</button></form>',
+ tasks:'<h2>Programar tarefa</h2><form id="dataForm"><label>Descrição da atividade</label><input id="taskTitle" maxlength="200" placeholder="Ex.: limpeza da cozinha" required><label>Acolhido responsável</label><select id="taskStay"><option value="">Equipe / geral</option>'+stayOptions()+'</select>'+field('Data e hora programada','taskDue','datetime-local',true,localTime())+'<label>Periodicidade</label><select id="taskRecurrence"><option value="unica">Única</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select><p class="muted">Nesta etapa, o agendamento registra uma ocorrência. A repetição automática será adicionada após testes.</p><button>Agendar tarefa</button></form>',
  notes:'<h2>Registro individual</h2><form id="dataForm"><label>Acolhido</label><select id="stay" required>'+stayOptions()+'</select><label>Tipo</label><select id="category"><option value="rotina">Rotina</option><option value="ocorrencia">Ocorrência</option><option value="observacao">Observação</option></select><label>Relato</label><textarea id="description" required maxlength="10000"></textarea><p class="muted">Pode utilizar o ditado do teclado do celular. O texto original será preservado.</p><button>Registrar</button></form>',
  trips:'<h2>Abrir viagem</h2><form id="dataForm">'+field('Motorista','driver')+'<label>Finalidade</label><select id="purpose"><option>Buscar doações</option><option>Culto</option><option>Consulta médica</option><option>Ressocialização</option><option>Compras</option><option>Serviços</option><option>Outros</option></select>'+field('Destino','destination','text',false)+field('Acompanhantes','companions','text',false)+field('KM inicial','km','number')+field('Saída','departure','datetime-local',true,localTime())+'<button>Abrir viagem</button></form>',
  devotionals:'<h2>Nova devocional</h2><form id="dataForm">'+field('Tema / passagem bíblica','theme')+field('Quem ministrou','presenter')+field('Início','start','datetime-local',true,localTime())+field('Término','end','datetime-local',true,localTime(new Date(Date.now()+45*60000)))+'<h3>Presença dos acolhidos ativos</h3>'+(
@@ -68,7 +69,7 @@ function draw(){
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
@@ -78,6 +79,7 @@ async function loadList(){
   return;
  }
  const root=el('listArea');root.replaceChildren();
+ if(view==='tasks'){await loadTasks();return}
  if(view==='monitors'){await loadMonitors();return}
  if(view==='files'){await loadAttachments();return}
  if(view==='students'){
@@ -139,6 +141,18 @@ async function loadList(){
 }
 
 
+
+async function loadTasks(){
+ const root=el('listArea');root.replaceChildren();
+ const r=await db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status')
+  .eq('institution_id',member.institution_id).order('due_at',{ascending:true}).limit(100);
+ if(r.error){root.textContent='Não foi possível carregar as tarefas.';return}
+ if(!r.data?.length){root.textContent='Nenhuma tarefa cadastrada.';return}
+ for(const t of r.data){
+   const resident=stays.find(s=>s.id===t.stay_id)?.crl_residents?.full_name||(t.stay_id?'Acolhido não ativo':'Equipe / geral');
+   addItem(t.title,'Responsável: '+resident+' · '+fmt(t.due_at)+' · '+(t.recurrence||'Única')+' · '+(t.status||'Programada'));
+ }
+}
 
 async function loadAttachments(){
  const root=el('listArea');root.replaceChildren();
@@ -477,6 +491,16 @@ async function submit(e){
    await searchHistory(el('searchName').value.trim());status('Pesquisa concluída.');return;
   }else if(view==='students'){
    result=await db.rpc('crl_admit_resident',{p_institution:member.institution_id,p_name:el('name').value.trim(),p_date:el('date').value,p_cpf:el('cpf').value.trim()||null,p_responsible:el('responsible').value.trim()||null,p_phone:el('phone').value.trim()||null});
+  }else if(view==='tasks'){
+   const title=el('taskTitle').value.trim();
+   if(title.length<3||!el('taskDue').value){status('Informe atividade e horário.',true);return}
+   result=await db.from('crl_tasks').insert({
+    institution_id:member.institution_id,title,
+    stay_id:el('taskStay').value||null,
+    recurrence:el('taskRecurrence').value,
+    due_at:new Date(el('taskDue').value).toISOString(),
+    status:'planned',created_by:user.id
+   });
   }else if(view==='notes'){
    result=await db.from('crl_records').insert({institution_id:member.institution_id,stay_id:el('stay').value,category:el('category').value,original_text:el('description').value.trim(),author_id:user.id});
   }else if(view==='trips'){
