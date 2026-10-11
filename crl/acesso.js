@@ -1,7 +1,7 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
-let member=null,user=null,stays=[],view='students',openTrips=[];
+let member=null,user=null,stays=[],view='students',openTrips=[],lastMetrics=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
 const localTime=(date=new Date())=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -21,6 +21,7 @@ async function init(){
  el('identity').textContent=member.display_name+' · '+(member.role==='admin'?'Administrador':'Monitor');
  el('tabStats').style.display=member.role==='admin'?'':'none';
  el('tabHistory').style.display=member.role==='admin'?'':'none';
+ el('tabContributions').style.display=member.role==='admin'?'':'none';
  await refresh();
 }
 el('loginForm').onsubmit=async e=>{
@@ -45,16 +46,17 @@ async function refresh(){
 function draw(){
  const forms={
  history:'<h2>Buscar ex-acolhidos</h2><p class="muted">Somente ADM. Pesquise o cadastro permanente por nome, confira as passagens e abra um novo período sem apagar o anterior.</p><form id="dataForm">'+field('Nome ou parte do nome','searchName','text',true)+'<button>Pesquisar histórico</button></form>',
- students:'<h2>Novo acolhimento</h2><form id="dataForm">'+field('Nome completo','name')+field('Data de entrada','date','date',true,new Date().toISOString().slice(0,10))+'<button>Cadastrar acolhido</button></form>',
+ students:'<h2>Novo acolhimento</h2><form id="dataForm">'+field('Nome completo','name')+field('Data de entrada','date','date',true,localTime().slice(0,10))+field('CPF (opcional)','cpf','text',false)+field('Responsável (opcional)','responsible','text',false)+field('Telefone do responsável','phone','tel',false)+'<button>Cadastrar acolhido</button></form>',
  notes:'<h2>Registro individual</h2><form id="dataForm"><label>Acolhido</label><select id="stay" required>'+stayOptions()+'</select><label>Tipo</label><select id="category"><option value="rotina">Rotina</option><option value="ocorrencia">Ocorrência</option><option value="observacao">Observação</option></select><label>Relato</label><textarea id="description" required maxlength="10000"></textarea><p class="muted">Pode utilizar o ditado do teclado do celular. O texto original será preservado.</p><button>Registrar</button></form>',
  trips:'<h2>Abrir viagem</h2><form id="dataForm">'+field('Motorista','driver')+'<label>Finalidade</label><select id="purpose"><option>Buscar doações</option><option>Culto</option><option>Consulta médica</option><option>Ressocialização</option><option>Compras</option><option>Serviços</option><option>Outros</option></select>'+field('Destino','destination','text',false)+field('Acompanhantes','companions','text',false)+field('KM inicial','km','number')+field('Saída','departure','datetime-local',true,localTime())+'<button>Abrir viagem</button></form>',
  devotionals:'<h2>Nova devocional</h2><form id="dataForm">'+field('Tema / passagem bíblica','theme')+field('Quem ministrou','presenter')+field('Início','start','datetime-local',true,localTime())+field('Término','end','datetime-local',true,localTime(new Date(Date.now()+45*60000)))+'<h3>Presença dos acolhidos ativos</h3>'+(
  stays.length?stays.map(s=>'<div class="item"><b>'+esc(s.crl_residents?.full_name||'Acolhido')+'</b><div class="radio-group"><label><input type="radio" name="status_'+esc(s.id)+'" value="present" checked> Presente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="absent"> Ausente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="late"> Atrasou</label></div><input data-reason="'+esc(s.id)+'" placeholder="Justificativa quando houver falta"></div>').join(''):'<p>Nenhum acolhido ativo encontrado.</p>')+'<button '+(!stays.length?'disabled':'')+'>Finalizar e registrar presenças</button></form>',
  meals:'<h2>Registrar refeições servidas</h2><form id="dataForm"><label>Tipo de refeição</label><select id="mealType"><option value="cafe">Café da manhã</option><option value="almoco">Almoço</option><option value="jantar">Jantar</option><option value="lanche">Lanche</option><option value="outro">Outros</option></select>'+field('Quantidade de refeições servidas','servings','number')+field('Data e hora','servedAt','datetime-local',true,localTime())+field('Observações','mealNotes','text',false)+'<p class="muted">Registrar o número realmente servido, não uma estimativa.</p><button>Salvar refeições</button></form>',
+ contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({history:'Resultados da busca',students:'Acolhidos ativos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({history:'Resultados da busca',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
@@ -76,6 +78,7 @@ async function loadList(){
   return;
  }
  if(view==='stats'){root.textContent='Selecione mês e ano e consulte os indicadores administrativos.';return}
+ if(view==='contributions'){await loadContributions();return}
  if(view==='meals'){
   const r=await db.from('crl_meals').select('meal_type,servings,served_at').eq('institution_id',member.institution_id).order('served_at',{ascending:false}).limit(40);
   if(r.error){root.textContent='Falha ao consultar refeições.';return}
@@ -211,7 +214,79 @@ function showTripFinish(trip,item){
  }
 }
 document.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=async()=>{view=btn.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===btn));draw();await loadList()});
+
+function exportSummaryCsv(){
+ if(member?.role!=='admin'||!lastMetrics)return;
+ const d=lastMetrics;
+ const keys=[
+ ['Período inicial',d.period_start],['Período final',d.period_end],
+ ['Acolhidos ativos ao final',d.active_at_end],['Entradas',d.admissions],
+ ['Acolhimentos encerrados',d.closed],['Conclusões',d.concluded],
+ ['Conclusões após nove meses',d.concluded_nine_months],
+ ['Desistências a pedido',d.requested_departures],['Abandonos',d.abandonments],
+ ['Saídas administrativas',d.administrative_departures],
+ ['Taxa de conclusão (% dos encerrados)',d.nine_month_completion_rate??'Não calculável'],
+ ['Concluem a cada 10 encerrados',d.nine_months_per_ten??'Não calculável'],
+ ['KM rodados',d.kilometers],['Kg recebidos',d.received_kg],
+ ['Kg consumidos',d.consumed_kg],['Refeições servidas',d.meals_served],
+ ['Devocionais',d.devotionals],['Contribuições recebidas (R$)',d.paid_contributions]
+ ];
+ const quote=v=>'"'+String(v??'').replaceAll('"','""')+'"';
+ const text='\uFEFFIndicador;Valor\r\n'+keys.map(a=>a.map(quote).join(';')).join('\r\n');
+ const blob=new Blob([text],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');a.href=url;a.download='CRL_indicadores_'+d.period_start+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+async function loadContributions(){
+ const root=el('listArea');root.replaceChildren();
+ if(member?.role!=='admin'){root.textContent='Acesso reservado ao ADM.';return}
+ const r=await db.from('crl_contributions')
+ .select('id,stay_id,amount,paid_amount,due_date,crl_stays(crl_residents(full_name,responsible_phone))')
+ .eq('institution_id',member.institution_id).order('due_date',{ascending:false}).limit(60);
+ if(r.error){root.textContent='Não foi possível consultar contribuições.';return}
+ if(!r.data.length){root.textContent='Nenhuma contribuição lançada.';return}
+ const brl=x=>Number(x).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+ for(const c of r.data){
+  const balance=Number(c.amount)-Number(c.paid_amount||0);
+  const name=c.crl_stays?.crl_residents?.full_name||'Acolhido';
+  const details='Vencimento: '+c.due_date+' · Mensal: '+brl(c.amount)+' · Diária: '+brl(Number(c.amount)/30)+' · Recebido: '+brl(c.paid_amount)+' · Saldo: '+brl(balance);
+  const item=addItem(name,details+(Number(c.amount)===0?' · G5 (vaga sustentada)':''));
+  if(balance>0){
+   const button=document.createElement('button');button.textContent='Registrar recebimento';button.type='button';
+   button.onclick=()=>showPayment(c,item);item.append(button);
+   const phone=String(c.crl_stays?.crl_residents?.responsible_phone||'').replace(/\D/g,'');
+   if(phone.length>=10){
+    const whats=document.createElement('button');whats.textContent='WhatsApp do responsável';whats.type='button';
+    whats.onclick=()=>{
+      let digits=phone;if(!digits.startsWith('55'))digits='55'+digits;
+      const msg='Olá! Gostaríamos de conversar sobre a contribuição com vencimento em '+c.due_date+'. Valor pendente: '+brl(balance)+'.';
+      window.open('https://wa.me/'+digits+'?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');
+    };item.append(whats);
+   }
+  }
+ }
+}
+function showPayment(c,item){
+ if(member?.role!=='admin')return;
+ const old=item.querySelector('form');if(old){old.remove();return}
+ const max=Number(c.amount)-Number(c.paid_amount||0);
+ const f=document.createElement('form');
+ f.innerHTML='<label>Valor recebido (R$)</label><input name="value" type="number" min="0.01" step="0.01" required><label>Data do pagamento</label><input name="date" type="date" required><label>Forma de pagamento</label><select name="method"><option>PIX</option><option>Dinheiro</option><option>Transferência</option><option>Outros</option></select><label>Observações</label><textarea name="notes"></textarea><p class="muted">Pagamento parcial permitido. Saldo disponível: '+max.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})+'.</p><button type="submit">Confirmar recebimento</button>';
+ f.elements.date.value=localTime().slice(0,10);f.elements.value.max=String(max.toFixed(2));item.append(f);
+ f.onsubmit=async e=>{
+  e.preventDefault();const amount=Number(f.elements.value.value);
+  if(!Number.isFinite(amount)||amount<=0||amount>max){status('Valor acima do saldo pendente.',true);return}
+  const b=f.querySelector('button');b.disabled=true;
+  const r=await db.rpc('crl_register_contribution_payment',{
+   p_contribution:c.id,p_amount:amount,p_paid_on:f.elements.date.value,
+   p_method:f.elements.method.value,p_notes:f.elements.notes.value.trim()
+  });b.disabled=false;
+  if(r.error){status('Não foi possível registrar o pagamento.',true);return}
+  status('Pagamento registrado. Saldo recalculado.');await loadContributions();
+ };
+}
+
 function renderSummary(d){
+ lastMetrics=d;
  const list=el('listArea');list.replaceChildren();
  const rows=[
   ['Acolhidos ativos ao final do período',d.active_at_end],['Novas entradas',d.admissions],
@@ -220,7 +295,7 @@ function renderSummary(d){
   ['Desistências a pedido',d.requested_departures],['Abandonos',d.abandonments],
   ['Saídas administrativas',d.administrative_departures],['Quilômetros percorridos',d.kilometers+' km'],
   ['Alimentos recebidos',d.received_kg+' kg'],['Alimentos consumidos',d.consumed_kg+' kg'],
-  ['Refeições servidas',d.meals_served],['Devocionais',d.devotionals]
+  ['Refeições servidas',d.meals_served],['Devocionais',d.devotionals],['Contribuições recebidas',Number(d.paid_contributions||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})]
  ];
  const grid=document.createElement('div');grid.className='metric-grid';
  for(const [label,val] of rows){const box=document.createElement('div');box.className='metric';const b=document.createElement('b');b.textContent=String(val??'—');const small=document.createElement('small');small.textContent=label;box.append(b,small);grid.append(box)}list.append(grid);
@@ -228,17 +303,24 @@ function renderSummary(d){
  rate.textContent=d.closed===0?'Ainda não há acolhimentos encerrados no período para calcular a taxa.':'A cada 10 acolhimentos encerrados, '+d.nine_months_per_ten+' concluíram os nove meses ('+d.nine_month_completion_rate+'%).';
  list.append(rate);
  const note=document.createElement('p');note.className='muted';note.textContent='Taxa descritiva baseada em acolhimentos encerrados; não prevê a recuperação de ninguém. A interpretação por IA ainda não está conectada. Valores de contribuições exigem controle das datas efetivas de pagamento.';list.append(note);
+ const actions=document.createElement('div');actions.className='row';
+ const csv=document.createElement('button');csv.type='button';csv.textContent='Exportar CSV';csv.onclick=exportSummaryCsv;
+ const print=document.createElement('button');print.type='button';print.textContent='Imprimir / salvar PDF';print.onclick=()=>window.print();actions.append(csv,print);list.append(actions);
 }
 
 async function submit(e){
  e.preventDefault();if(!authenticated())return;const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
   let result;
-  if(view==='history'){
+  if(view==='contributions'){
+   if(member.role!=='admin')throw Error('permission');
+   const value=Number(el('amount').value);if(!Number.isFinite(value)||value<0)throw Error('amount');
+   result=await db.from('crl_contributions').insert({institution_id:member.institution_id,stay_id:el('stay').value,amount:value,due_date:el('dueDate').value});
+  }else if(view==='history'){
    if(member.role!=='admin')throw Error('permission');
    await searchHistory(el('searchName').value.trim());status('Pesquisa concluída.');return;
   }else if(view==='students'){
-   result=await db.rpc('crl_admit_resident',{p_institution:member.institution_id,p_name:el('name').value.trim(),p_date:el('date').value});
+   result=await db.rpc('crl_admit_resident',{p_institution:member.institution_id,p_name:el('name').value.trim(),p_date:el('date').value,p_cpf:el('cpf').value.trim()||null,p_responsible:el('responsible').value.trim()||null,p_phone:el('phone').value.trim()||null});
   }else if(view==='notes'){
    result=await db.from('crl_records').insert({institution_id:member.institution_id,stay_id:el('stay').value,category:el('category').value,original_text:el('description').value.trim(),author_id:user.id});
   }else if(view==='trips'){
