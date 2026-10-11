@@ -22,3 +22,7 @@ O banco de dados independente ainda não foi criado: a organização SystemDDS a
 5. Habilitar dados reais somente após validação de LGPD, isolamento, permissões, auditoria e backups.
 
 **Segurança:** não subir a assinatura de Francielly a este repositório público e não reutilizar banco de outro sistema sem uma decisão explícita.
+
+## Implantação temporária — 11/10/2026
+
+Usuário autorizou utilizar infraestrutura existente temporariamente. Migração `crl_isolated_foundation_closed_by_default_20261011` aplicada com sucesso ao projeto Supabase **DDS Avaliações** (`kwadhzmdaakxkztggigm`). Foram verificadas **17 tabelas `public.crl_*`**, vazias, todas com RLS habilitado e permissões diretas revogadas de `anon` e `authenticated`. As tabelas existentes de outros aplicativos não foram alteradas deliberadamente. A CRL ainda **não está operativa**: falta provisionamento seguro de usuários e bootstrap de ADM, políticas específicas, backend de escrita, armazenamento privado, migração de identidade, geração autorizada de PDFs, sincronização e testes. **Não inserir dados reais ainda.** O projeto atual é compartilhado temporariamente e a futura migração deve incluir auth, arquivos privados e auditoria.
