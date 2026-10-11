@@ -112,3 +112,14 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - A aba "Declarações (ADM)" está integrada ao `acesso.html`/`acesso.js` e ao atalho administrativo do painel.
 - Correção de marcação duplicada no menu "Acolhidos"; cabeçalho permanece branco com logo CRL.
 - **Validação parcial:** migrações aplicadas, Edge Function declarada ACTIVE e sintaxe dos scripts verificada. Geração/assinatura/compartilhamento exigem teste fim a fim no navegador com usuário ADM e dados fictícios; não usar documentos reais antes dessa homologação.
+
+
+## Iteração — prontuário integrado e exportação (11/10/2026)
+- Novo módulo `crl/prontuario.js` adicionado ao sistema autenticado e à barra de navegação (aba **Prontuários**).
+- Lista de acolhidos ativos ganhou botão **Abrir prontuário**. Busca administrativa de histórico ganhou acesso à passagem específica.
+- Visualização consolida vínculo, datas e tempo de permanência, registros com retificações, presenças nas devocionais, tarefas, medicamentos cadastrados, anexos privados e, para ADM, histórico de passagens, contribuições e PDFs oficiais.
+- Exportação CSV de dados consultados e opção de impressão/Salvar PDF pelo navegador, incluindo a logomarca original. CSV protegido contra fórmulas comuns de planilhas.
+- Consultas passam por RLS existente; monitor consulta apenas passagem ativa e não recebe blocos de histórico/financeiro, enquanto ADM pode abrir passagens encerradas.
+- Resumo de frequência é **descritivo**, sem diagnóstico, classificação de recuperação ou conclusões causais atribuídas a IA.
+- **Limites desta iteração:** carregamento de até 250 registros/tarefas/presenças por seção, até 200 anexos e até 100 históricos e contribuições; exporta somente os itens carregados e não inclui bytes de anexos privados. Exportação histórica integral com paginação, sincronização offline, geração por IA e testes automatizados de RLS ainda pendentes.
+- Arquivos `crl/acesso.html`, `crl/acesso.js` e `crl/prontuario.js` atualizados no GitHub; sintaxe JavaScript conferida. Sem homologação end-to-end em navegador autenticado; **não inserir dados reais ainda**.
