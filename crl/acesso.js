@@ -121,16 +121,29 @@ function draw(){
  diagnostic:diagnosticForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
- monitors:'<div id="monitorQuickCard"><h3>Ativação rápida do monitor Diogo</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Gerenciar monitores (ADM)</h2><p class="muted">Para criar o acesso de Diogo, confirme o nome e o usuário já preenchidos e defina uma senha forte diretamente nesta tela. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><div id="monitorStudentBox" style="display:none"><label>Aluno existente</label><select id="monitorResident">'+stays.map(st=>'<option value="'+st.crl_residents?.id+'">'+esc(st.crl_residents?.full_name||'')+'</option>').join('')+'</select></div><div id="monitorSalaryBox" style="display:none"><label>Salário mensal (R$)</label><input id="monitorSalary" type="number" min="0.01" step="0.01"></div><label>Telefone</label><input id="monitorPhone" type="tel" maxlength="40"><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
+ monitors:'<div id="monitorQuickCard"><h3>Acesso rápido: Diogo (voluntário)</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Cadastrar monitor</h2><p class="muted">Escolha Aluno (vinculado ao cadastro do acolhido), Voluntário ou Contratado (com salário mensal). Todos terão perfil de acesso Monitor. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><div id="monitorStudentBox" style="display:none"><label>Aluno existente</label><select id="monitorResident">'+stays.map(st=>'<option value="'+st.crl_residents?.id+'">'+esc(st.crl_residents?.full_name||'')+'</option>').join('')+'</select></div><div id="monitorSalaryBox" style="display:none"><label>Salário mensal (R$)</label><input id="monitorSalary" type="number" min="0.01" step="0.01"></div><label>Telefone</label><input id="monitorPhone" type="tel" maxlength="40"><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
 
  if(view==='monitors'){
-  const toggle=()=>{el('monitorStudentBox').style.display=el('monitorVinculo').value==='aluno'?'':'none';el('monitorSalaryBox').style.display=el('monitorVinculo').value==='contratado'?'':'none'};
+  const syncResident=()=>{
+   const st=stays.find(x=>x.crl_residents?.id===el('monitorResident').value);
+   if(st){
+    el('monitorName').value=st.crl_residents.full_name;
+    el('monitorUsername').value='aluno.'+st.id.slice(0,8);
+   }
+  };
+  const toggle=()=>{
+   const v=el('monitorVinculo').value;
+   el('monitorStudentBox').style.display=v==='aluno'?'':'none';
+   el('monitorSalaryBox').style.display=v==='contratado'?'':'none';
+   el('monitorName').readOnly=v==='aluno';
+   if(v==='aluno')syncResident();
+  };
   el('monitorVinculo').onchange=toggle;toggle();
-  el('monitorResident').onchange=()=>{const st=stays.find(x=>x.crl_residents?.id===el('monitorResident').value);if(st){el('monitorName').value=st.crl_residents.full_name;el('monitorUsername').value='aluno.'+st.id.slice(0,8)}};
+  el('monitorResident').onchange=syncResident;
   const activate=el('activateDiogo');
   activate.onclick=async()=>{
    if(member?.role!=='admin'||monitorPreview)return;
@@ -450,9 +463,17 @@ async function loadMonitors(){
    };
    if(m.monitor_vinculo==='contratado'){
     const pay=document.createElement('button');pay.type='button';pay.textContent='Lançar salário nas despesas';
-    pay.onclick=async()=>{const competency=new Date().toISOString().slice(0,7)+'-01';if(!confirm('Lançar salário de '+m.display_name+' na competência '+competency.slice(0,7)+'?'))return;
-      pay.disabled=true;const r=await db.rpc('crl_register_monitor_salary',{p_member:m.id,p_competence:competency});
-      if(r.error){status(r.error.message||'Não foi possível lançar.',true);pay.disabled=false}else status('Salário registrado nas despesas sem duplicidade.');
+    pay.onclick=async()=>{
+     const suggested=new Date().toISOString().slice(0,7);
+     const selected=prompt('Competência do salário (AAAA-MM):',suggested);
+     if(selected===null)return;
+     if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(selected)){status('Use o formato AAAA-MM.',true);return}
+     const competency=selected+'-01';
+     if(!confirm('Registrar a despesa de salário de '+m.display_name+' da competência '+selected+'?'))return;
+     pay.disabled=true;
+     const r=await db.rpc('crl_register_monitor_salary',{p_member:m.id,p_competence:competency});
+     if(r.error){status(r.error.message||'Não foi possível lançar salário.',true);pay.disabled=false}
+     else {status('Salário lançado nas despesas sem duplicidade.');await loadMonitors()}
     };controls.append(pay);
    }
    controls.append(reset,block);item.append(controls);
