@@ -73,3 +73,14 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - Arquivos do GitHub verificados e JavaScript compilado sintaticamente sem erros.
 - As migrações foram aplicadas; ainda **não há ADM/monitor autenticado** para teste ponta a ponta.
 - **Não inserir dados reais de pessoas ou medicamentos até validação e liberação explícita.**
+
+
+## Iteração — encerramentos, retornos e contribuições (11/10/2026)
+- Migração `crl_stay_completion_readmission_and_immutability_20261011`: fechamento somente por ADM e com justificativa; nova passagem vinculada à pessoa, com nove meses contados desde a nova entrada.
+- Migração `crl_force_audited_period_transitions_and_prevent_overlap`: usuários autenticados não podem inserir/editar períodos diretamente; criação e encerramento ocorrem por procedimentos auditados. Datas anteriores ao último desligamento são recusadas para reingresso.
+- Nova aba **Histórico e retornos (ADM)** na área restrita: busca por nome, lista de passagens, encerramento e reingresso em formulário próprio, com histórico preservado.
+- Migração `crl_admin_payment_ledger_partial_payments_20261011`: `crl_contribution_payments` armazena recebimentos parciais e recalcula saldo por função autorizada. Gravação direta de pagamentos bloqueada.
+- Migração `crl_dashboard_use_actual_received_contributions_20261011`: indicador financeiro soma pagamentos por data de recebimento, e não vencimentos.
+- Aba **Contribuições (ADM)** permite lançar contribuição mensal (R$ 0 = G5), conferir diária dividida por 30, registrar pagamento parcial e abrir WhatsApp do responsável com texto pronto, sem envio automático.
+- Tela de **Estatísticas ADM** adicionou exportação CSV e impressão/Salvar PDF do navegador, ambas sujeitas a autorização da sessão.
+- Atenção: ajustes/cancelamento auditável de pagamentos, provisionamento do primeiro ADM, testes completos de RLS, assinatura privada, IA e modo offline ainda não foram homologados. Usar apenas dados fictícios até aprovação.
