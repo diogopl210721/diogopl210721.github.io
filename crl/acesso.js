@@ -20,6 +20,7 @@ async function init(){
  el('loginPanel').classList.add('hide');el('appPanel').classList.remove('hide');
  el('identity').textContent=member.display_name+' · '+(member.role==='admin'?'Administrador':'Monitor');
  el('tabStats').style.display=member.role==='admin'?'':'none';
+ el('tabHistory').style.display=member.role==='admin'?'':'none';
  await refresh();
 }
 el('loginForm').onsubmit=async e=>{
@@ -43,6 +44,7 @@ async function refresh(){
 }
 function draw(){
  const forms={
+ history:'<h2>Buscar ex-acolhidos</h2><p class="muted">Somente ADM. Pesquise o cadastro permanente por nome, confira as passagens e abra um novo período sem apagar o anterior.</p><form id="dataForm">'+field('Nome ou parte do nome','searchName','text',true)+'<button>Pesquisar histórico</button></form>',
  students:'<h2>Novo acolhimento</h2><form id="dataForm">'+field('Nome completo','name')+field('Data de entrada','date','date',true,new Date().toISOString().slice(0,10))+'<button>Cadastrar acolhido</button></form>',
  notes:'<h2>Registro individual</h2><form id="dataForm"><label>Acolhido</label><select id="stay" required>'+stayOptions()+'</select><label>Tipo</label><select id="category"><option value="rotina">Rotina</option><option value="ocorrencia">Ocorrência</option><option value="observacao">Observação</option></select><label>Relato</label><textarea id="description" required maxlength="10000"></textarea><p class="muted">Pode utilizar o ditado do teclado do celular. O texto original será preservado.</p><button>Registrar</button></form>',
  trips:'<h2>Abrir viagem</h2><form id="dataForm">'+field('Motorista','driver')+'<label>Finalidade</label><select id="purpose"><option>Buscar doações</option><option>Culto</option><option>Consulta médica</option><option>Ressocialização</option><option>Compras</option><option>Serviços</option><option>Outros</option></select>'+field('Destino','destination','text',false)+field('Acompanhantes','companions','text',false)+field('KM inicial','km','number')+field('Saída','departure','datetime-local',true,localTime())+'<button>Abrir viagem</button></form>',
@@ -52,7 +54,7 @@ function draw(){
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({students:'Acolhidos ativos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({history:'Resultados da busca',students:'Acolhidos ativos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
@@ -60,7 +62,17 @@ async function loadList(){
  const root=el('listArea');root.replaceChildren();
  if(view==='students'){
   if(!stays.length)root.textContent='Nenhum acolhido ativo cadastrado.';
-  for(const s of stays)addItem(s.crl_residents?.full_name||'Acolhido','Entrada: '+s.admission_date);
+  for(const st of stays){
+    const item=addItem(st.crl_residents?.full_name||'Acolhido','Entrada: '+st.admission_date);
+    if(member.role==='admin'){
+      const b=document.createElement('button');b.textContent='Encerrar acolhimento';b.type='button';
+      b.onclick=()=>showCloseStay(st,item);item.append(b);
+    }
+  }
+  return;
+ }
+ if(view==='history'){
+  root.textContent='Digite um nome para pesquisar as passagens anteriores.';
   return;
  }
  if(view==='stats'){root.textContent='Selecione mês e ano e consulte os indicadores administrativos.';return}
@@ -102,6 +114,62 @@ async function loadList(){
    }
   }
  }
+}
+
+
+function showCloseStay(st,item){
+ if(member?.role!=='admin')return;
+ const old=item.querySelector('form');if(old){old.remove();return}
+ const form=document.createElement('form');
+ form.innerHTML='<label>Tipo de saída</label><select name="exitType" required><option value="concluded">Conclusão de 9 meses</option><option value="requested">Alta pedida / desistência</option><option value="administrative">Alta administrativa</option><option value="abandoned">Fuga ou abandono</option><option value="other">Outro encerramento</option></select><label>Data de saída</label><input type="date" name="exitDate" required><label>Justificativa e informações da saída</label><textarea name="reason" required minlength="5" maxlength="4000"></textarea><p class="muted">Somente o ADM pode confirmar. A passagem encerrada e seus registros serão preservados.</p><button type="submit">Confirmar encerramento</button>';
+ form.elements.exitDate.value=new Date().toISOString().slice(0,10);item.append(form);
+ form.onsubmit=async e=>{
+  e.preventDefault();if(!confirm('Confirma o encerramento deste período? O histórico não poderá ser apagado.'))return;
+  const button=form.querySelector('button');button.disabled=true;
+  try{
+   const r=await db.rpc('crl_close_stay',{p_stay:st.id,p_status:form.elements.exitType.value,p_date:form.elements.exitDate.value,p_reason:form.elements.reason.value.trim()});
+   if(r.error)throw r.error;
+   status('Acolhimento encerrado; histórico preservado.');await refresh();
+  }catch(e){status('Encerramento não realizado: '+(e?.message||'erro de validação'),true)}
+  finally{button.disabled=false}
+ };
+}
+async function searchHistory(query){
+ if(member?.role!=='admin')return;
+ const root=el('listArea');root.replaceChildren();
+ if(query.length<3){root.textContent='Digite pelo menos três letras.';return}
+ const r=await db.from('crl_residents').select('id,full_name').eq('institution_id',member.institution_id).ilike('full_name','%'+query+'%').order('full_name').limit(25);
+ if(r.error){root.textContent='Não foi possível consultar o histórico.';return}
+ if(!r.data?.length){root.textContent='Nenhum cadastro encontrado.';return}
+ for(const person of r.data){
+  const item=addItem(person.full_name,'Verificando períodos de acolhimento…');
+  const history=await db.from('crl_stays').select('id,admission_date,departure_date,departure_reason,status').eq('institution_id',member.institution_id).eq('resident_id',person.id).order('admission_date',{ascending:false}).limit(30);
+  const description=item.querySelector('.muted');description.textContent=history.error?'Histórico indisponível.':
+    (history.data||[]).map(st=>st.admission_date+' → '+(st.departure_date||'ativo')+' · '+({
+      active:'Ativo',concluded:'Concluiu',requested:'Alta pedida',administrative:'Administrativa',abandoned:'Abandono',other:'Outra saída'
+    }[st.status]||st.status)).join(' | ')||'Sem passagens';
+  if(!history.error && !(history.data||[]).some(st=>st.status==='active')){
+   const b=document.createElement('button');b.type='button';b.textContent='Iniciar nova passagem';b.onclick=()=>showReadmission(person,item);item.append(b)
+  }
+ }
+}
+function showReadmission(person,item){
+ if(member?.role!=='admin')return;
+ const old=item.querySelector('form');if(old){old.remove();return}
+ const f=document.createElement('form');
+ f.innerHTML='<label>Nova data de entrada</label><input type="date" name="admission" required><label>Contribuição mensal (R$) — zero = G5</label><input name="monthly" type="number" min="0" step="0.01" value="0" required><label>Dia do vencimento (opcional)</label><input name="due" type="number" min="1" max="31"><p class="muted">A contagem dos nove meses reinicia. As passagens anteriores permanecem disponíveis ao ADM.</p><button type="submit">Confirmar retorno</button>';
+ f.elements.admission.value=new Date().toISOString().slice(0,10);item.append(f);
+ f.onsubmit=async e=>{
+  e.preventDefault();if(!confirm('Abrir um novo período de nove meses para este acolhido?'))return;
+  const btn=f.querySelector('button');btn.disabled=true;
+  try{
+   const r=await db.rpc('crl_readmit_resident',{p_resident:person.id,p_date:f.elements.admission.value,p_monthly:Number(f.elements.monthly.value),p_due_day:f.elements.due.value===''?null:Number(f.elements.due.value)});
+   if(r.error)throw r.error;
+   status('Novo período iniciado e histórico anterior preservado.');
+   view='students';document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));await refresh();
+  }catch(e){status('Não foi possível iniciar o retorno: '+(e?.message||'erro de validação'),true)}
+  finally{btn.disabled=false}
+ };
 }
 
 function showNoteCorrection(record,item){
@@ -166,7 +234,10 @@ async function submit(e){
  e.preventDefault();if(!authenticated())return;const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
   let result;
-  if(view==='students'){
+  if(view==='history'){
+   if(member.role!=='admin')throw Error('permission');
+   await searchHistory(el('searchName').value.trim());status('Pesquisa concluída.');return;
+  }else if(view==='students'){
    result=await db.rpc('crl_admit_resident',{p_institution:member.institution_id,p_name:el('name').value.trim(),p_date:el('date').value});
   }else if(view==='notes'){
    result=await db.from('crl_records').insert({institution_id:member.institution_id,stay_id:el('stay').value,category:el('category').value,original_text:el('description').value.trim(),author_id:user.id});
