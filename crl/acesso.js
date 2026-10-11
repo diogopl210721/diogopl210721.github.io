@@ -113,7 +113,7 @@ function draw(){
  profile:prontuarioForm(stays),
  medications:careForm('medications',stays),
  resocialization:careForm('resocialization',stays),
- students:'<h2>Novo acolhimento</h2><form id="dataForm">'+field('Nome completo','name')+field('Data de entrada','date','date',true,localTime().slice(0,10))+field('CPF (opcional)','cpf','text',false)+field('Responsável (opcional)','responsible','text',false)+field('Telefone do responsável','phone','tel',false)+'<button>Cadastrar acolhido</button></form>',
+ students:admissionForm(),
  tasks:'<h2>Programar tarefa</h2><form id="dataForm"><label>Descrição da atividade</label><input id="taskTitle" maxlength="200" placeholder="Ex.: limpeza da cozinha" required><label>Acolhido responsável</label><select id="taskStay"><option value="">Equipe / geral</option>'+stayOptions()+'</select>'+field('Data e hora programada','taskDue','datetime-local',true,localTime())+'<label>Periodicidade</label><select id="taskRecurrence"><option value="unica">Única</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select><p class="muted">A próxima ocorrência semanal, quinzenal ou mensal será criada automaticamente quando você concluir a tarefa.</p><button>Agendar tarefa</button></form>',
  notes:'<h2>Registro individual</h2><form id="dataForm"><label>Acolhido</label><select id="stay" required>'+stayOptions()+'</select><label>Tipo</label><select id="category"><option value="rotina">Rotina</option><option value="ocorrencia">Ocorrência</option><option value="observacao">Observação</option></select><label>Relato</label><textarea id="description" required maxlength="10000"></textarea><p class="muted">Pode utilizar o ditado do teclado do celular. O texto original será preservado.</p><button>Registrar</button></form>',
  trips:'<h2>Abrir viagem</h2><form id="dataForm">'+field('Motorista','driver')+'<label>Finalidade</label><select id="purpose"><option>Buscar doações</option><option>Culto</option><option>Consulta médica</option><option>Ressocialização</option><option>Compras</option><option>Serviços</option><option>Outros</option></select>'+field('Destino','destination','text',false)+field('Acompanhantes','companions','text',false)+field('KM inicial','km','number')+field('Saída','departure','datetime-local',true,localTime())+'<button>Abrir viagem</button></form>',
@@ -181,7 +181,7 @@ function draw(){
  }
 
  el('listTitle').textContent=({diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque e consumo',cash:'Caixa institucional',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
- el('dataForm').onsubmit=submit;
+ const dataForm=el('dataForm');if(dataForm)dataForm.onsubmit=submit;
  if(view==='medications'||view==='resocialization')void bindCare({db,member,el,kind:view,status});
  if(view==='documents')void bindDocuments({db,member,el,status,stays});
 }
@@ -339,6 +339,63 @@ async function loadAttachments(){
    window.open(signed.data.signedUrl,'_blank','noopener,noreferrer');
   };item.append(b);
  }
+}
+// Cadastro completo do acolhido: feito pelo ADM ou pelo monitor da equipe (não pelo monitor aluno).
+// Depois de salvo, CPF, RG, telefones e endereço ficam visíveis só para o ADM.
+function admissionForm(){
+ if(!canView('files'))return '<h2>Acolhidos</h2><p class="muted">O cadastro de novos acolhidos é feito pela equipe (ADM ou monitor).</p>';
+ const admin=member?.role==='admin';
+ return '<h2>Novo acolhimento</h2><p class="muted">Só nome e data de entrada são obrigatórios; preencha o que tiver em mãos.'+(admin?'':' Depois de salvo, CPF, RG, telefones e endereço ficam visíveis só para o ADM.')+'</p><form id="dataForm">'+
+ '<h3 class="form-section">Acolhido</h3>'+field('Nome completo','name')+
+ '<div class="two">'+field('Data de entrada','date','date',true,localTime().slice(0,10))+field('Data de nascimento','birth','date',false)+'</div>'+
+ '<div class="two">'+field('CPF','cpf','text',false)+field('RG','rg','text',false)+'</div>'+
+ field('Telefone do acolhido','phone','tel',false)+field('Endereço','address','text',false)+
+ '<h3 class="form-section">Responsável / família</h3>'+field('Nome do responsável','responsible','text',false)+field('Telefone do responsável','rphone','tel',false)+
+ '<h3 class="form-section">Fotos e documentos</h3>'+
+ '<label for="admPhoto">Foto do acolhido</label><input id="admPhoto" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">'+
+ '<label for="admDocs">Documentos (RG, CPF, outros) — pode escolher vários</label><input id="admDocs" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple>'+
+ '<p class="muted">JPG, PNG, WebP ou PDF até 10 MB cada. A foto do acolhido aparece no prontuário; documentos ficam visíveis só para o ADM.</p>'+
+ '<label for="admNotes">Observações da entrada</label><textarea id="admNotes" maxlength="4000" placeholder="Pertences, como chegou, informações importantes"></textarea>'+
+ (admin?'<h3 class="form-section">Contribuição (ADM)</h3><div class="two">'+field('Valor mensal em R$ (0 = vaga G5)','monthly','number',false)+field('Dia do vencimento','dueday','number',false)+'</div>':'')+
+ '<button type="submit">Cadastrar acolhido</button></form>';
+}
+const FILE_TYPES={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'};
+async function storeFile(f,stayId,category){
+ const ext=FILE_TYPES[f.type];
+ if(!ext||f.size<=0||f.size>10*1024*1024)return {ok:false,reason:f.name+': use JPG, PNG, WebP ou PDF até 10 MB'};
+ const path=member.institution_id+'/'+stayId+'/'+crypto.randomUUID()+'.'+ext;
+ const up=await db.storage.from('crl-private').upload(path,f,{contentType:f.type,upsert:false});
+ if(up.error)return {ok:false,reason:f.name+': falha no envio'};
+ const row=await db.from('crl_files').insert({institution_id:member.institution_id,stay_id:stayId,storage_path:path,category,uploaded_by:user.id});
+ if(row.error)return {ok:false,reason:f.name+': enviado, mas sem vínculo (avise o ADM)'};
+ return {ok:true};
+}
+async function submitAdmission(){
+ const val=id=>(el(id)?.value||'').trim();
+ if(val('name').length<3){status('Informe o nome completo.',true);return}
+ const admin=member.role==='admin';
+ const params={p_institution:member.institution_id,p_full_name:val('name'),p_admission_date:val('date'),
+  p_birth_date:val('birth')||null,p_cpf:val('cpf')||null,p_rg:val('rg')||null,p_phone:val('phone')||null,
+  p_address:val('address')||null,p_responsible_name:val('responsible')||null,p_responsible_phone:val('rphone')||null,
+  p_notes:val('admNotes')||null,
+  p_monthly:admin&&val('monthly')!==''?Number(val('monthly')):null,
+  p_due_day:admin&&val('dueday')!==''?Number(val('dueday')):null};
+ const photo=el('admPhoto')?.files?.[0]||null;
+ const docs=Array.from(el('admDocs')?.files||[]);
+ status('Salvando cadastro...');
+ const r=await db.rpc('crl_register_admission',params);
+ if(r.error){status(r.error.message||'Não foi possível cadastrar. Confira os dados.',true);return}
+ const stayId=r.data?.stay_id;
+ const failures=[];let sent=0;
+ const uploads=[...(photo?[[photo,'foto']]:[]),...docs.map(d=>[d,'documento'])];
+ for(const [f,cat] of uploads){
+  status('Enviando arquivos... ('+(sent+failures.length+1)+' de '+uploads.length+')');
+  const res=await storeFile(f,stayId,cat);
+  if(res.ok)sent++;else failures.push(res.reason);
+ }
+ await refresh();
+ if(failures.length)status('Acolhido cadastrado. '+sent+' arquivo(s) enviado(s); não enviados: '+failures.join('; ')+'. Reenvie pela aba Arquivos.',true);
+ else status('Acolhido cadastrado'+(sent?' com '+sent+' arquivo(s)':'')+'.');
 }
 async function uploadAttachment(){
  if(!authenticated()||!stays.length)throw Error('no_stay');
@@ -792,7 +849,7 @@ async function submit(e){
   }else if(view==='profile'){
    await loadProntuario({db,member,stays,stayId:el('profileStay')?.value,root:el('listArea'),status});return;
   }else if(view==='students'){
-   result=await db.rpc('crl_admit_resident',{p_institution:member.institution_id,p_name:el('name').value.trim(),p_date:el('date').value,p_cpf:el('cpf').value.trim()||null,p_responsible:el('responsible').value.trim()||null,p_phone:el('phone').value.trim()||null});
+   await submitAdmission();return;
   }else if(view==='tasks'){
    const title=el('taskTitle').value.trim();
    if(title.length<3||!el('taskDue').value){status('Informe atividade e horário.',true);return}
