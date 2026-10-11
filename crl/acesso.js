@@ -19,6 +19,7 @@ async function init(){
  user=current;member=m.data;
  el('loginPanel').classList.add('hide');el('appPanel').classList.remove('hide');
  el('identity').textContent=member.display_name+' · '+(member.role==='admin'?'Administrador':'Monitor');
+ el('tabStats').style.display=member.role==='admin'?'':'none';
  await refresh();
 }
 el('loginForm').onsubmit=async e=>{
@@ -46,10 +47,12 @@ function draw(){
  notes:'<h2>Registro individual</h2><form id="dataForm"><label>Acolhido</label><select id="stay" required>'+stayOptions()+'</select><label>Tipo</label><select id="category"><option value="rotina">Rotina</option><option value="ocorrencia">Ocorrência</option><option value="observacao">Observação</option></select><label>Relato</label><textarea id="description" required maxlength="10000"></textarea><p class="muted">Pode utilizar o ditado do teclado do celular. O texto original será preservado.</p><button>Registrar</button></form>',
  trips:'<h2>Abrir viagem</h2><form id="dataForm">'+field('Motorista','driver')+'<label>Finalidade</label><select id="purpose"><option>Buscar doações</option><option>Culto</option><option>Consulta médica</option><option>Ressocialização</option><option>Compras</option><option>Serviços</option><option>Outros</option></select>'+field('Destino','destination','text',false)+field('Acompanhantes','companions','text',false)+field('KM inicial','km','number')+field('Saída','departure','datetime-local',true,localTime())+'<button>Abrir viagem</button></form>',
  devotionals:'<h2>Nova devocional</h2><form id="dataForm">'+field('Tema / passagem bíblica','theme')+field('Quem ministrou','presenter')+field('Início','start','datetime-local',true,localTime())+field('Término','end','datetime-local',true,localTime(new Date(Date.now()+45*60000)))+'<h3>Presença dos acolhidos ativos</h3>'+(
- stays.length?stays.map(s=>'<div class="item"><b>'+esc(s.crl_residents?.full_name||'Acolhido')+'</b><div class="radio-group"><label><input type="radio" name="status_'+esc(s.id)+'" value="present" checked> Presente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="absent"> Ausente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="late"> Atrasou</label></div><input data-reason="'+esc(s.id)+'" placeholder="Justificativa quando houver falta"></div>').join(''):'<p>Nenhum acolhido ativo encontrado.</p>')+'<button '+(!stays.length?'disabled':'')+'>Finalizar e registrar presenças</button></form>'
+ stays.length?stays.map(s=>'<div class="item"><b>'+esc(s.crl_residents?.full_name||'Acolhido')+'</b><div class="radio-group"><label><input type="radio" name="status_'+esc(s.id)+'" value="present" checked> Presente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="absent"> Ausente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="late"> Atrasou</label></div><input data-reason="'+esc(s.id)+'" placeholder="Justificativa quando houver falta"></div>').join(''):'<p>Nenhum acolhido ativo encontrado.</p>')+'<button '+(!stays.length?'disabled':'')+'>Finalizar e registrar presenças</button></form>',
+ meals:'<h2>Registrar refeições servidas</h2><form id="dataForm"><label>Tipo de refeição</label><select id="mealType"><option value="cafe">Café da manhã</option><option value="almoco">Almoço</option><option value="jantar">Jantar</option><option value="lanche">Lanche</option><option value="outro">Outros</option></select>'+field('Quantidade de refeições servidas','servings','number')+field('Data e hora','servedAt','datetime-local',true,localTime())+field('Observações','mealNotes','text',false)+'<p class="muted">Registrar o número realmente servido, não uma estimativa.</p><button>Salvar refeições</button></form>',
+ stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({students:'Acolhidos ativos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas'})[view];
+ el('listTitle').textContent=({students:'Acolhidos ativos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
@@ -58,6 +61,14 @@ async function loadList(){
  if(view==='students'){
   if(!stays.length)root.textContent='Nenhum acolhido ativo cadastrado.';
   for(const s of stays)addItem(s.crl_residents?.full_name||'Acolhido','Entrada: '+s.admission_date);
+  return;
+ }
+ if(view==='stats'){root.textContent='Selecione mês e ano e consulte os indicadores administrativos.';return}
+ if(view==='meals'){
+  const r=await db.from('crl_meals').select('meal_type,servings,served_at').eq('institution_id',member.institution_id).order('served_at',{ascending:false}).limit(40);
+  if(r.error){root.textContent='Falha ao consultar refeições.';return}
+  if(!r.data.length)root.textContent='Nenhuma refeição registrada.';
+  for(const m of r.data)addItem(m.meal_type+' • '+m.servings+' refeições',fmt(m.served_at));
   return;
  }
  if(view==='notes'){
@@ -132,6 +143,25 @@ function showTripFinish(trip,item){
  }
 }
 document.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=async()=>{view=btn.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===btn));draw();await loadList()});
+function renderSummary(d){
+ const list=el('listArea');list.replaceChildren();
+ const rows=[
+  ['Acolhidos ativos ao final do período',d.active_at_end],['Novas entradas',d.admissions],
+  ['Acolhimentos encerrados',d.closed],['Conclusões registradas',d.concluded],
+  ['Conclusões com 9 meses completos',d.concluded_nine_months],
+  ['Desistências a pedido',d.requested_departures],['Abandonos',d.abandonments],
+  ['Saídas administrativas',d.administrative_departures],['Quilômetros percorridos',d.kilometers+' km'],
+  ['Alimentos recebidos',d.received_kg+' kg'],['Alimentos consumidos',d.consumed_kg+' kg'],
+  ['Refeições servidas',d.meals_served],['Devocionais',d.devotionals]
+ ];
+ const grid=document.createElement('div');grid.className='metric-grid';
+ for(const [label,val] of rows){const box=document.createElement('div');box.className='metric';const b=document.createElement('b');b.textContent=String(val??'—');const small=document.createElement('small');small.textContent=label;box.append(b,small);grid.append(box)}list.append(grid);
+ const rate=document.createElement('div');rate.className='meter';rate.style.marginTop='12px';
+ rate.textContent=d.closed===0?'Ainda não há acolhimentos encerrados no período para calcular a taxa.':'A cada 10 acolhimentos encerrados, '+d.nine_months_per_ten+' concluíram os nove meses ('+d.nine_month_completion_rate+'%).';
+ list.append(rate);
+ const note=document.createElement('p');note.className='muted';note.textContent='Taxa descritiva baseada em acolhimentos encerrados; não prevê a recuperação de ninguém. A interpretação por IA ainda não está conectada. Valores de contribuições exigem controle das datas efetivas de pagamento.';list.append(note);
+}
+
 async function submit(e){
  e.preventDefault();if(!authenticated())return;const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
@@ -143,6 +173,16 @@ async function submit(e){
   }else if(view==='trips'){
    const km=Number(el('km').value);if(!Number.isFinite(km)||km<0)throw Error('km');
    result=await db.from('crl_vehicle_trips').insert({institution_id:member.institution_id,driver_name:el('driver').value.trim(),purpose:el('purpose').value,destination:el('destination').value.trim(),companions:el('companions').value.trim(),km_initial:km,departure_at:new Date(el('departure').value).toISOString(),created_by:user.id});
+  }else if(view==='meals'){
+   const amount=Number(el('servings').value);if(!Number.isInteger(amount)||amount<=0)throw Error('quantity');
+   result=await db.from('crl_meals').insert({institution_id:member.institution_id,meal_type:el('mealType').value,servings:amount,served_at:new Date(el('servedAt').value).toISOString(),notes:el('mealNotes').value.trim(),recorded_by:user.id});
+  }else if(view==='stats'){
+   if(member.role!=='admin')throw Error('permission');
+   const year=Number(el('year').value),month=Number(el('month').value);if(year<2020||year>2100)throw Error('invalid_year');
+   const start=year+'-'+String(month).padStart(2,'0')+'-01';const end=new Date(Date.UTC(year,month,0)).toISOString().slice(0,10);
+   result=await db.rpc('crl_dashboard_summary',{p_institution:member.institution_id,p_start:start,p_end:end});
+   if(result.error)throw result.error;
+   renderSummary(result.data);status('Indicadores consultados.');return;
   }else if(view==='devotionals'){
    const attendance=stays.map(s=>{const selected=document.querySelector('input[name="status_'+s.id+'"]:checked');return {stay_id:s.id,status:selected?.value||'present',justification:document.querySelector('[data-reason="'+s.id+'"]')?.value.trim()||''}});
    if(attendance.some(a=>a.status==='absent'&&a.justification.length<3)){status('Informe a justificativa de cada falta.',true);return}
