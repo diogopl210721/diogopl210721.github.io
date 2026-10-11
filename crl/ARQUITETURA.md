@@ -145,3 +145,11 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - Aplicação SQL concluída; conferidos RLS e ausência de permissão de inserção direta em tabelas sensíveis.
 - Sintaxe dos módulos JS `acesso.js`, `care.js`, `prontuario.js` e `dashboard.js` validada no repositório.
 - **Pendente:** testes integrados autenticados (ADM, monitor e bloqueado), verificação no navegador e revisão de responsabilidade profissional antes de usar medicamentos reais. Ainda não liberar operação com acolhidos reais.
+
+
+## Iteração — relatórios mensais rastreáveis de evolução (11/10/2026)
+- Migração `crl_monthly_evolution_evidence_drafts_and_adm_approval`: nova tabela privada `crl_evolution_reports` com RLS, um relatório por passagem e competência, rascunho, referências de até 30 registros, contagens, texto-base e aprovação permanente pelo ADM.
+- RPC `crl_prepare_evolution_report`: consulta fatos do período (registros, presenças de devocionais, tarefas e ressocializações), cria ou atualiza rascunho e registra evento de auditoria. Não gera diagnóstico, avaliação clínica ou interpretação causal.
+- RPC `crl_approve_evolution_report`: exige ADM ativo, revisão do texto (40–15000 caracteres) e competência já encerrada; congela texto e snapshot após aprovação. Inclusão e atualização direta da tabela negadas para usuários autenticados.
+- Tela `crl/evolution.js` adicionada ao menu **Evolução mensal (ADM)**: seleção de acolhido, competência, fontes rastreáveis, edição do parecer, aprovação e impressão/Salvar PDF no navegador; atalho também no painel ADM.
+- **Limite:** texto automático segue regras determinísticas, não integração real de IA. A impressão é do navegador, não PDF oficial assinado/arquivado no Supabase; o arquivo aprovado permanece imutável na tabela. Validar paginação/evidências extensas e fluxos autenticados antes de usar dados reais.
