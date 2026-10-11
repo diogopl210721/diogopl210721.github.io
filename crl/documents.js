@@ -24,6 +24,8 @@ export function documentForm(stays){
   '<div><label>Data de entrada</label><input id="docAdmission" disabled></div>'+
   '<div class="full"><label>Data de emissão</label><input id="docIssueDay" value="'+esc(ptDate(today()))+'" disabled></div>'+
   '</div>'+
+  '<div class="doc-inputs"><div><label>Tipo do documento</label><select id="docIdentityType"><option value="cpf">CPF</option><option value="rg">RG</option></select></div><div><label>CPF ou RG</label><input id="docIdentityValue" maxlength="30" placeholder="Número do documento"></div></div>'+
+  '<button type="button" id="docSaveIdentity" class="secondary">Salvar identificação no prontuário</button>'+
   '<div id="docPreview" class="document-sheet"><p>Selecione um acolhido para visualizar a declaração.</p></div>'+
   '<p class="muted">Prévia sem assinatura. A assinatura autorizada será aplicada somente depois da aprovação do ADM.</p>'+
   '<button type="submit" id="docIssueButton" '+(!stays.length?'disabled':'')+'>Aprovar e gerar PDF privado</button>'+
@@ -39,6 +41,7 @@ export async function bindDocuments({db,member,el,status,stays}){
  if(member?.role!=='admin')return;
  el('docStay')?.addEventListener('change',()=>loadPreview({db,member,el,status}));
  el('docRegisterSignature')?.addEventListener('click',()=>registerSignature({db,member,el,status}));
+ el('docSaveIdentity')?.addEventListener('click',()=>saveIdentity({db,member,el,status}));
  await Promise.allSettled([signatureStatus({db,el}),loadPreview({db,member,el,status})]);
 }
 async function signatureStatus({db,el}){
@@ -52,13 +55,14 @@ async function loadPreview({db,member,el,status}){
  const box=el('docPreview');if(!box)return;
  box.replaceChildren();
  if(!id){box.textContent='Cadastre ou selecione um acolhido ativo.';return}
- const r=await db.from('crl_stays').select('id,admission_date,crl_residents(full_name,cpf,rg)')
+ const r=await db.from('crl_stays').select('id,resident_id,admission_date,crl_residents(full_name,cpf,rg)')
    .eq('id',id).eq('institution_id',member.institution_id).eq('status','active').maybeSingle();
  if(r.error||!r.data){box.textContent='Prontuário não encontrado ou sem permissão.';return}
  const res=Array.isArray(r.data.crl_residents)?r.data.crl_residents[0]:r.data.crl_residents;
  if(!res){box.textContent='Dados do acolhido indisponíveis.';return}
  const label=res.cpf?'CPF nº '+res.cpf:res.rg?'RG nº '+res.rg:'CPF/RG não cadastrado';
  el('docIdentity').value=label;el('docAdmission').value=ptDate(r.data.admission_date);
+ el('docIdentityType').value=res.cpf?'cpf':res.rg?'rg':'cpf';el('docIdentityValue').value=res.cpf||res.rg||'';
  const brand=document.querySelector('body > header img');
  if(brand){const logo=document.createElement('img');logo.src=brand.src;logo.alt='Logomarca original da CRL';logo.style.cssText='display:block;width:92%;max-width:420px;height:auto;margin:0 auto 15px;object-fit:contain';box.append(logo)}
  const sections=[
@@ -75,6 +79,23 @@ async function loadPreview({db,member,el,status}){
  }
  if(!res.cpf&&!res.rg) status('Cadastre CPF ou RG do acolhido antes de gerar a declaração.',true);
 }
+async function saveIdentity({db,member,el,status}){
+ if(member?.role!=='admin')return;
+ const type=el('docIdentityType').value,number=el('docIdentityValue').value.trim();
+ if(!number){status('Informe o número do documento.',true);return}
+ if(!confirm('Confirma a atualização deste documento no prontuário do acolhido?'))return;
+ const button=el('docSaveIdentity');button.disabled=true;
+ try{
+  const r=await db.rpc('crl_set_identity_document',{
+   p_stay_id:el('docStay').value,p_document_type:type,p_number:number
+  });
+  if(r.error)throw new Error(r.error.message||'Documento inválido');
+  status('Identificação atualizada, com registro de auditoria.');
+  await loadPreview({db,member,el,status});
+ }catch(e){status(e.message||'Não foi possível atualizar o documento.',true)}
+ finally{button.disabled=false}
+}
+
 async function registerSignature({db,member,el,status}){
  const f=el('docSignatureFile')?.files?.[0];
  if(!f||f.type!=='image/png'||f.size<30||f.size>2*1024*1024){
