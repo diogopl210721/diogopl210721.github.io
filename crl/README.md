@@ -2,7 +2,8 @@
 
 **Comece por [REVISAO_CLAUDE_CODE.md](./REVISAO_CLAUDE_CODE.md) para entender o estado ATUAL, os módulos, os riscos e os arquivos de backend exportados.**
 
-- Painel: [acesso.html](./acesso.html)
+- Sistema: [ddsinovacao.com.br/crl](https://www.ddsinovacao.com.br/crl/) (o antigo acesso.html redireciona)
+- Demonstração: [demonstracao.html](./demonstracao.html)
 - Diagnóstico e testes: [VALIDACAO_FINAL.md](./VALIDACAO_FINAL.md)
 - Funções Supabase: [supabase/functions/](./supabase/functions/)
 - Estrutura e RPCs reais (snapshot): [supabase/exports/](./supabase/exports/)
