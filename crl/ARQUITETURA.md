@@ -161,3 +161,11 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - `crl/prontuario.js` mostra os relatórios mensais em seção visível apenas a ADM, preservando o histórico e exportando o texto somente após aprovação. Os rascunhos são identificados como não aprovados.
 - Conferência: sintaxe do módulo validada; RPC de revisão presente e executável por `authenticated`, sem permissão de `UPDATE` direto na tabela. Nenhum relatório real gerado ou homologado via navegador.
 - **Pendências:** teste ponta a ponta do fluxo de relatório com conta de teste, validação de evidências extensas, proteção anti-concorrência de revisões, consentimento e base legal de dados sensíveis antes de conectar serviço externo de IA.
+
+
+## Iteração — estoque, caixa e verificação de integração (11/10/2026)
+- `crl/operations.js` foi criado com lançamentos de estoque (entradas, saídas, produtos, unidades, quantidade, motivo) e caixa da casa (receita/despesa, descrição, valor, data), utilizando tabelas já existentes. A tela indica explicitamente os limites de até 300 lançamentos consultados; esse subtotal **não substitui inventário nem fechamento de caixa integral**.
+- Menus **Estoque** e **Caixa (ADM)** integrados a `acesso.html` e `acesso.js`; somente ADM pode acessar a consulta financeira. Atalhos adicionados ao painel.
+- Os sete arquivos de script foram analisados quanto à sintaxe e integração de imports; não foram realizados testes reais de cadastro e acesso autenticado.
+- A migração destinada a conclusão e repetição automática de tarefas foi bloqueada pela infraestrutura antes da execução. **Não anunciar recorrência e conclusão auditada como prontas**; agendamento atual cria somente uma ocorrência.
+- O projeto permanece em homologação; abertura da URL pública pelo verificador externo não foi possível, portanto a publicação efetiva pelo domínio ainda precisa de checagem manual. Nunca inserir prontuários ou receitas reais antes de ensaio com perfis ADM/monitor e revisão de segurança/LGPD.
