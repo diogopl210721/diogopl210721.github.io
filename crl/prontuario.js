@@ -69,6 +69,7 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  };
  if(member.role==='admin'){
   queries.history=db.from('crl_stays').select('admission_date,departure_date,status,departure_reason').eq('institution_id',tenant).eq('resident_id',person.id).order('admission_date',{ascending:false}).limit(100);
+  queries.evolution=db.from('crl_evolution_reports').select('month_start,report_status,approved_text,generated_text').eq('institution_id',tenant).eq('stay_id',stayId).order('month_start',{ascending:false}).limit(60);
   queries.documents=db.from('crl_documents').select('document_number,issued_on,pdf_storage_path,template_type').eq('institution_id',tenant).eq('stay_id',stayId).eq('status','approved').order('issued_on',{ascending:false}).limit(100);
   queries.contributions=db.from('crl_contributions').select('amount,paid_amount,due_date').eq('institution_id',tenant).eq('stay_id',stayId).order('due_date',{ascending:false}).limit(100);
  }
@@ -172,6 +173,10 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  if(member.role==='admin'){
   const hist=results.history.map(x=>line('Entrada: '+dateOnly(x.admission_date),(x.departure_date?'Saída: '+dateOnly(x.departure_date):'Em andamento')+(x.departure_reason?' · '+x.departure_reason:''),x.status));
   card.append(detail('Histórico de passagens (ADM)',hist.length?listBox(hist):null));
+  const reviews=results.evolution.map(x=>line('Relatório '+dateOnly(x.month_start),
+   x.report_status==='approved'?(x.approved_text||'Aprovado sem texto'):'Rascunho pendente de aprovação — consulte o módulo Evolução mensal',
+   x.report_status==='approved'?'Aprovado pelo ADM':'Em elaboração'));
+  card.append(detail('Relatórios mensais (ADM)',reviews.length?listBox(reviews):null));
   const cont=results.contributions.map(x=>line('Vencimento '+dateOnly(x.due_date),'Mensalidade: '+money(x.amount)+' · Recebido: '+money(x.paid_amount)+' · Saldo: '+money(Number(x.amount)-Number(x.paid_amount))));
   card.append(detail('Contribuições desta passagem (ADM)',cont.length?listBox(cont):null));
  }
@@ -188,6 +193,7 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  results.medications.forEach(x=>exportRows.push(['Medicamento — registro operacional','',x.medication_name,(x.dose_text||'')+' · '+(x.schedule_text||'')+(x.verified_by?' · Conferido ADM':' · Não conferido pelo ADM')]));
  if(member.role==='admin'){
   results.history.forEach(x=>exportRows.push(['Passagem',dateOnly(x.admission_date),x.status,dateOnly(x.departure_date)]));
+  results.evolution.forEach(x=>exportRows.push(['Evolução mensal',dateOnly(x.month_start),x.report_status,x.report_status==='approved'?(x.approved_text||''):'Rascunho não aprovado']));
   results.documents.forEach(x=>exportRows.push(['Declaração oficial',dateOnly(x.issued_on),x.document_number,'Arquivo PDF em armazenamento privado']));
   results.contributions.forEach(x=>exportRows.push(['Contribuição',dateOnly(x.due_date),money(x.amount),money(x.paid_amount)]));
  }
