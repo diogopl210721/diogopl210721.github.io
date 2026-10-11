@@ -42,3 +42,12 @@ Testes feitos por simulação autenticada de ADM e alteração temporária do pa
 - **Segurança de funções:** Supabase Advisor identificou que RPCs privilegiadas da CRL podiam ser invocadas pelo papel `anon`. Migração `crl_lock_security_definer_function_execution_to_authenticated` revogou `EXECUTE` público/anônimo das 27 funções `crl_*` com `SECURITY DEFINER`, preservando concessão ao papel `authenticated`. Verificação posterior confirmou 0 funções do grupo executáveis por `anon` e administração ainda reconhecida.
 - **Outros avisos do Advisor:** há avisos de segurança relativos ao produto DDS Avaliações no projeto Supabase compartilhado; eles não foram modificados nesta etapa para não comprometer esse produto.
 - **Acesso via navegador:** ainda não homologado externamente neste ambiente; requisições ao domínio `www.ddsinovacao.com.br` não puderam ser verificadas. Validação de Edge Function de PDF com assinatura real/autorizada, entrega de arquivos privados e interface móvel depende desse teste.
+
+## Piloto operacional controlado (11/10/2026)
+- Módulo `crl/diagnostico.js` criado e integrado à aba `Verificar sistema (ADM)`. Executa 19 verificações de leitura/conexão de maneira não destrutiva: sessão, membro ADM, tabelas CRL, saldos de estoque e caixa e Edge Functions administrativas.
+- Sintaxe de `acesso.js` e `diagnostico.js` validada; simulação de inicialização da interface e de navegação nas abas `students`, `stock`, `cash`, `diagnostic`, `documents`, `evolution` e `audit` passou com backend simulado.
+- Módulo de diagnóstico simulado apresentou 19/19 respostas ao simular todas as conexões. Isso **não é um teste real no navegador nem uma comprovação de disponibilidade do DNS**.
+- Projeto Supabase `dds-avaliacoes` encontra-se `ACTIVE_HEALTHY`, mas é compartilhado com outro produto e não temos confirmação de backup e restauração com dados de produção.
+- As tentativas de abrir os domínios `www.ddsinovacao.com.br` e `diogopl210721.github.io` a partir dos ambientes externos falharam por DNS ou acesso. Verificação pelo navegador do usuário é necessária.
+- Até concluir o teste pelo navegador, iniciar piloto com dados operacionais **sem identificação de pessoas** (como inventário ou quantidades de refeições). Não começar com cadastro de acolhidos, saúde, CPF, telefones ou assinatura.
+- Se o diagnóstico apresentar falhas, interromper a inserção de dados e revisar os resultados; não enviar senhas nem informações de prontuários pela conversa.
