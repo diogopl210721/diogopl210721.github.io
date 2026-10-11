@@ -394,9 +394,38 @@ async function loadMonitors(){
    const vinculo=document.createElement('select');vinculo.setAttribute('aria-label','Vínculo de '+m.display_name);
    [['aluno','Aluno'],['voluntario','Voluntário'],['contratado','Contratado']].forEach(([value,label])=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;vinculo.append(opt)});
    vinculo.value=m.monitor_vinculo||'voluntario';
-   const saveLink=document.createElement('button');saveLink.type='button';saveLink.textContent='Salvar vínculo';
-   saveLink.onclick=async()=>{saveLink.disabled=true;try{await adminMonitors({action:'change_vinculo',member_id:m.id,monitor_vinculo:vinculo.value});status('Vínculo atualizado.');await loadMonitors()}catch(e){status(e.message,true);saveLink.disabled=false}};
-   item.append(vinculo,saveLink);
+   const studentPick=document.createElement('select');
+   for(const st of stays){
+    const opt=document.createElement('option');
+    opt.value=st.crl_residents?.id||'';
+    opt.textContent=st.crl_residents?.full_name||'Acolhido';
+    studentPick.append(opt);
+   }
+   studentPick.value=m.resident_id||'';
+   const salaryInput=document.createElement('input');
+   salaryInput.type='number';salaryInput.min='0.01';salaryInput.step='0.01';
+   salaryInput.placeholder='Salário mensal em reais';
+   salaryInput.value=m.salary_monthly||'';
+   const updateLinkedFields=()=>{
+    studentPick.style.display=vinculo.value==='aluno'?'':'none';
+    salaryInput.style.display=vinculo.value==='contratado'?'':'none';
+   };
+   vinculo.onchange=updateLinkedFields;
+   updateLinkedFields();
+   const saveLink=document.createElement('button');
+   saveLink.type='button';saveLink.textContent='Salvar vínculo e salário';
+   saveLink.onclick=async()=>{
+    saveLink.disabled=true;
+    try{
+     await adminMonitors({action:'change_vinculo',member_id:m.id,
+      monitor_vinculo:vinculo.value,
+      resident_id:vinculo.value==='aluno'?studentPick.value:null,
+      salary_monthly:vinculo.value==='contratado'?Number(salaryInput.value):null});
+     status('Vínculo e salário atualizados.');
+     await loadMonitors();
+    }catch(e){status(e.message,true);saveLink.disabled=false}
+   };
+   item.append(vinculo,studentPick,salaryInput,saveLink);
    if(!m.active){
     const activate=document.createElement('button');activate.type='button';activate.textContent='Reativar monitor';
     activate.onclick=async()=>{
