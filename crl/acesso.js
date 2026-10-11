@@ -46,6 +46,7 @@ async function refresh(){
 function draw(){
  const forms={
  history:'<h2>Buscar ex-acolhidos</h2><p class="muted">Somente ADM. Pesquise o cadastro permanente por nome, confira as passagens e abra um novo período sem apagar o anterior.</p><form id="dataForm">'+field('Nome ou parte do nome','searchName','text',true)+'<button>Pesquisar histórico</button></form>',
+ files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado, acessível somente ao pessoal autorizado.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
  students:'<h2>Novo acolhimento</h2><form id="dataForm">'+field('Nome completo','name')+field('Data de entrada','date','date',true,localTime().slice(0,10))+field('CPF (opcional)','cpf','text',false)+field('Responsável (opcional)','responsible','text',false)+field('Telefone do responsável','phone','tel',false)+'<button>Cadastrar acolhido</button></form>',
  notes:'<h2>Registro individual</h2><form id="dataForm"><label>Acolhido</label><select id="stay" required>'+stayOptions()+'</select><label>Tipo</label><select id="category"><option value="rotina">Rotina</option><option value="ocorrencia">Ocorrência</option><option value="observacao">Observação</option></select><label>Relato</label><textarea id="description" required maxlength="10000"></textarea><p class="muted">Pode utilizar o ditado do teclado do celular. O texto original será preservado.</p><button>Registrar</button></form>',
  trips:'<h2>Abrir viagem</h2><form id="dataForm">'+field('Motorista','driver')+'<label>Finalidade</label><select id="purpose"><option>Buscar doações</option><option>Culto</option><option>Consulta médica</option><option>Ressocialização</option><option>Compras</option><option>Serviços</option><option>Outros</option></select>'+field('Destino','destination','text',false)+field('Acompanhantes','companions','text',false)+field('KM inicial','km','number')+field('Saída','departure','datetime-local',true,localTime())+'<button>Abrir viagem</button></form>',
@@ -56,12 +57,13 @@ function draw(){
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
- el('listTitle').textContent=({history:'Resultados da busca',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
  el('dataForm').onsubmit=submit;
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
 async function loadList(){
  const root=el('listArea');root.replaceChildren();
+ if(view==='files'){await loadAttachments();return}
  if(view==='students'){
   if(!stays.length)root.textContent='Nenhum acolhido ativo cadastrado.';
   for(const st of stays){
@@ -119,6 +121,48 @@ async function loadList(){
  }
 }
 
+
+
+async function loadAttachments(){
+ const root=el('listArea');root.replaceChildren();
+ if(!stays.length){root.textContent='Nenhum acolhido ativo com acesso a arquivos.';return}
+ const r=await db.from('crl_files').select('id,stay_id,category,storage_path,created_at')
+ .eq('institution_id',member.institution_id).in('stay_id',stays.map(x=>x.id))
+ .order('created_at',{ascending:false}).limit(60);
+ if(r.error){root.textContent='Não foi possível consultar os anexos.';return}
+ if(!r.data.length){root.textContent='Nenhum arquivo anexado.';return}
+ for(const file of r.data){
+  const name=stays.find(st=>st.id===file.stay_id)?.crl_residents?.full_name||'Acolhido';
+  const item=addItem(name+' — '+file.category,fmt(file.created_at));
+  const b=document.createElement('button');b.type='button';b.textContent='Abrir documento (5 minutos)';
+  b.onclick=async()=>{
+   b.disabled=true;const signed=await db.storage.from('crl-private').createSignedUrl(file.storage_path,300);
+   b.disabled=false;
+   if(signed.error||!signed.data?.signedUrl){status('Acesso ao arquivo não autorizado.',true);return}
+   window.open(signed.data.signedUrl,'_blank','noopener,noreferrer');
+  };item.append(b);
+ }
+}
+async function uploadAttachment(){
+ if(!authenticated()||!stays.length)throw Error('no_stay');
+ const f=el('attachedFile')?.files?.[0];if(!f)throw Error('no_file');
+ const accepted={
+  'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'
+ };
+ const ext=accepted[f.type];
+ if(!ext||f.size<=0||f.size>10*1024*1024){status('Use JPG, PNG, WebP ou PDF com tamanho máximo de 10 MB.',true);return}
+ const stayId=el('stay').value;if(!stays.some(st=>st.id===stayId))throw Error('stay_invalid');
+ const path=member.institution_id+'/'+stayId+'/'+crypto.randomUUID()+'.'+ext;
+ const up=await db.storage.from('crl-private').upload(path,f,{contentType:f.type,upsert:false});
+ if(up.error){status('Falha no envio. Verifique conexão e permissão.',true);return}
+ const row=await db.from('crl_files').insert({
+  institution_id:member.institution_id,stay_id:stayId,
+  storage_path:path,category:el('fileCategory').value,uploaded_by:user.id
+ });
+ if(row.error){status('Foto enviada, mas vínculo pendente. Não envie novamente; peça conferência ao ADM.',true);return}
+ status('Arquivo privado associado ao prontuário.');
+ await refresh();
+}
 
 function showCloseStay(st,item){
  if(member?.role!=='admin')return;
@@ -312,7 +356,9 @@ async function submit(e){
  e.preventDefault();if(!authenticated())return;const form=el('dataForm'),btn=form.querySelector('button');btn.disabled=true;status('Salvando...');
  try{
   let result;
-  if(view==='contributions'){
+  if(view==='files'){
+   await uploadAttachment();return;
+  }else if(view==='contributions'){
    if(member.role!=='admin')throw Error('permission');
    const value=Number(el('amount').value);if(!Number.isFinite(value)||value<0)throw Error('amount');
    result=await db.from('crl_contributions').insert({institution_id:member.institution_id,stay_id:el('stay').value,amount:value,due_date:el('dueDate').value});
