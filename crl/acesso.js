@@ -9,7 +9,7 @@ import {auditForm,loadAudit} from './auditoria.js';
 import {diagnosticForm,runDiagnostic} from './diagnostico.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
-let member=null,user=null,stays=[],view='dashboard',openTrips=[],lastMetrics=null;
+let member=null,user=null,stays=[],view='dashboard',moduleFilter='all',openTrips=[],lastMetrics=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
 const localTime=(date=new Date())=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -103,11 +103,18 @@ async function loadList(){
   return;
  }
  const root=el('listArea');root.replaceChildren();
+ if(moduleFilter!=='all'){
+  const info=document.createElement('div');info.className='filter-banner';
+  const labels={today:'Hoje',month:'Mês atual',overdue:'Em atraso',open:'Em andamento',pending:'Pendentes',month_in:'Entradas do mês',month_in_kg:'KG recebidos no mês',month_out_kg:'KG consumidos no mês',month_expense:'Despesas do mês',near9:'Próximos 9 meses',concluded_month:'Conclusões do mês',departures_month:'Desistências e abandonos do mês'};
+  info.textContent='Filtro: '+(labels[moduleFilter]||'Seleção atual')+' · ';
+  const clear=document.createElement('button');clear.type='button';clear.textContent='Limpar';clear.onclick=()=>setView(view);
+  info.append(clear);root.append(info);
+ }
  if(view==='diagnostic'){root.textContent='Clique em “Verificar conexões agora” para iniciar os testes sem alterar dados.';return}
  if(view==='audit'){await loadAudit({db,member,el,root,status});return}
- if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,root});return}
+ if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,root,filter:moduleFilter});return}
  if(view==='evolution'){await loadEvolution({db,member,stays,root,status});return}
- if(view==='medications'||view==='resocialization'){await loadCareList({db,member,stays,root,kind:view,status});return}
+ if(view==='medications'||view==='resocialization'){await loadCareList({db,member,stays,root,kind:view,status,filter:moduleFilter});return}
  if(view==='tasks'){await loadTasks();return}
  if(view==='profile'){await loadProntuario({db,member,stays,stayId:el('profileStay')?.value,root,status});return}
  if(view==='documents'){await listDocuments({db,member,el,status,stays});return}
@@ -116,7 +123,7 @@ async function loadList(){
  if(view==='students'){
   if(!stays.length)root.textContent='Nenhum acolhido ativo cadastrado.';
   const term=el('globalSearch').value.trim().toLocaleLowerCase('pt-BR');
-  for(const st of stays.filter(st=>(st.crl_residents?.full_name||'').toLocaleLowerCase('pt-BR').includes(term))){
+  for(const st of stays.filter(st=>(st.crl_residents?.full_name||'').toLocaleLowerCase('pt-BR').includes(term)&&(moduleFilter!=='near9'||(()=>{const due=new Date(st.admission_date+'T12:00:00Z');due.setUTCMonth(due.getUTCMonth()+9);const remaining=(due-new Date())/86400000;return remaining>=-1&&remaining<=30})()))){
     const item=addItem(st.crl_residents?.full_name||'Acolhido','Entrada: '+st.admission_date);
     const profileButton=document.createElement('button');profileButton.type='button';profileButton.textContent='Abrir prontuário';
     profileButton.style.marginRight='7px';
@@ -142,7 +149,8 @@ async function loadList(){
  if(view==='stats'){root.textContent='Selecione mês e ano e consulte os indicadores administrativos.';return}
  if(view==='contributions'){await loadContributions();return}
  if(view==='meals'){
-  const r=await db.from('crl_meals').select('meal_type,servings,served_at').eq('institution_id',member.institution_id).order('served_at',{ascending:false}).limit(40);
+  const base=db.from('crl_meals').select('meal_type,servings,served_at').eq('institution_id',member.institution_id);
+  const r=await (moduleFilter==='month'?base.gte('served_at',new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()).lt('served_at',new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toISOString()):base).order('served_at',{ascending:false}).limit(100);
   if(r.error){root.textContent='Falha ao consultar refeições.';return}
   if(!r.data.length)root.textContent='Nenhuma refeição registrada.';
   for(const m of r.data)addItem(m.meal_type+' • '+m.servings+' refeições',fmt(m.served_at));
@@ -157,14 +165,16 @@ async function loadList(){
   return;
  }
  if(view==='devotionals'){
-  const r=await db.from('crl_activities').select('title,presenter,starts_at,ends_at').eq('institution_id',member.institution_id).eq('type','devocional').order('starts_at',{ascending:false}).limit(25);
+  const base=db.from('crl_activities').select('title,presenter,starts_at,ends_at').eq('institution_id',member.institution_id).eq('type','devocional');
+  const r=await (moduleFilter==='month'?base.gte('starts_at',new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()).lt('starts_at',new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toISOString()):base).order('starts_at',{ascending:false}).limit(100);
   if(r.error){root.textContent='Falha ao consultar devocionais.';return}
   if(!r.data.length)root.textContent='Nenhuma devocional finalizada.';
   for(const a of r.data)addItem(a.title,(a.presenter||'Ministrante não informado')+' • '+fmt(a.starts_at)+' a '+fmt(a.ends_at));
   return;
  }
  if(view==='trips'){
-  const r=await db.from('crl_vehicle_trips').select('id,driver_name,purpose,destination,departure_at,arrival_at,km_initial,km_final,km_driven,created_by').eq('institution_id',member.institution_id).order('departure_at',{ascending:false}).limit(40);
+  const base=db.from('crl_vehicle_trips').select('id,driver_name,purpose,destination,departure_at,arrival_at,km_initial,km_final,km_driven,created_by').eq('institution_id',member.institution_id);
+  const r=await (moduleFilter==='month'?base.gte('departure_at',new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()).lt('departure_at',new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toISOString()):base).order('departure_at',{ascending:false}).limit(100);
   if(r.error){root.textContent='Falha ao consultar viagens.';return}
   if(!r.data.length)root.textContent='Nenhuma viagem cadastrada.';
   for(const t of r.data){
@@ -185,8 +195,8 @@ async function loadList(){
 
 async function loadTasks(){
  const root=el('listArea');root.replaceChildren();
- const r=await db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status,completed_at')
-  .eq('institution_id',member.institution_id).order('due_at',{ascending:true}).limit(100);
+ const base=db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status,completed_at').eq('institution_id',member.institution_id);
+ const r=await (moduleFilter==='today'?base.gte('due_at',new Date(new Date().toDateString()).toISOString()).lt('due_at',new Date(new Date().toDateString()).getTime()+86400000===0?'':new Date(new Date(new Date().toDateString()).getTime()+86400000).toISOString()).neq('status','done'):base).order('due_at',{ascending:moduleFilter==='today'}).limit(100);
  if(r.error){root.textContent='Não foi possível carregar as tarefas.';return}
  if(!r.data?.length){root.textContent='Nenhuma tarefa cadastrada.';return}
  for(const t of r.data){
@@ -436,10 +446,10 @@ function viewTitle(id){
  tasks:'Escala de tarefas',meals:'Refeições',contributions:'Contribuições',
  monitors:'Usuários e monitores',documents:'Declarações',evolution:'Evolução mensal',stock:'Estoque',cash:'Caixa da casa',audit:'Auditoria',diagnostic:'Verificar sistema',stats:'Estatísticas gerais'})[id]||'CRL';
 }
-async function setView(next){
+async function setView(next,filter='all'){
  if(['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic'].includes(next)&&member?.role!=='admin')return;
  if(!authenticated())return;
- view=next;
+ view=next;moduleFilter=filter;
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
  el('appPanel').querySelector('.tabs').classList.remove('expanded');
  draw();await loadList();
