@@ -121,13 +121,16 @@ function draw(){
  diagnostic:diagnosticForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
- monitors:'<div id="monitorQuickCard"><h3>Ativação rápida do monitor Diogo</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Gerenciar monitores (ADM)</h2><p class="muted">Para criar o acesso de Diogo, confirme o nome e o usuário já preenchidos e defina uma senha forte diretamente nesta tela. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
+ monitors:'<div id="monitorQuickCard"><h3>Ativação rápida do monitor Diogo</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Gerenciar monitores (ADM)</h2><p class="muted">Para criar o acesso de Diogo, confirme o nome e o usuário já preenchidos e defina uma senha forte diretamente nesta tela. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><div id="monitorStudentBox" style="display:none"><label>Aluno existente</label><select id="monitorResident">'+stays.map(st=>'<option value="'+st.crl_residents?.id+'">'+esc(st.crl_residents?.full_name||'')+'</option>').join('')+'</select></div><div id="monitorSalaryBox" style="display:none"><label>Salário mensal (R$)</label><input id="monitorSalary" type="number" min="0.01" step="0.01"></div><label>Telefone</label><input id="monitorPhone" type="tel" maxlength="40"><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
  el('formArea').innerHTML=forms[view];
 
  if(view==='monitors'){
+  const toggle=()=>{el('monitorStudentBox').style.display=el('monitorVinculo').value==='aluno'?'':'none';el('monitorSalaryBox').style.display=el('monitorVinculo').value==='contratado'?'':'none'};
+  el('monitorVinculo').onchange=toggle;toggle();
+  el('monitorResident').onchange=()=>{const st=stays.find(x=>x.crl_residents?.id===el('monitorResident').value);if(st){el('monitorName').value=st.crl_residents.full_name;el('monitorUsername').value='aluno.'+st.id.slice(0,8)}};
   const activate=el('activateDiogo');
   activate.onclick=async()=>{
    if(member?.role!=='admin'||monitorPreview)return;
@@ -385,7 +388,7 @@ async function loadMonitors(){
 
   for(const m of result.monitors){
    const label={aluno:'Aluno',voluntario:'Voluntário',contratado:'Contratado'}[m.monitor_vinculo]||'Vínculo não informado';
-   const item=addItem(m.display_name,(m.active?'Ativo':'Bloqueado')+' · '+label);
+   const item=addItem(m.display_name,(m.active?'Ativo':'Bloqueado')+' · '+label+(m.monitor_vinculo==='contratado'?' · Salário R$ '+Number(m.salary_monthly||0).toLocaleString('pt-BR',{minimumFractionDigits:2}):''));
    const username=document.createElement('div');username.className='code-label';username.textContent='Login: '+m.username;item.append(username);
    const vinculo=document.createElement('select');vinculo.setAttribute('aria-label','Vínculo de '+m.display_name);
    [['aluno','Aluno'],['voluntario','Voluntário'],['contratado','Contratado']].forEach(([value,label])=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;vinculo.append(opt)});
@@ -415,6 +418,13 @@ async function loadMonitors(){
      await loadMonitors();
     }catch(e){status(e.message,true)}finally{block.disabled=false}
    };
+   if(m.monitor_vinculo==='contratado'){
+    const pay=document.createElement('button');pay.type='button';pay.textContent='Lançar salário nas despesas';
+    pay.onclick=async()=>{const competency=new Date().toISOString().slice(0,7)+'-01';if(!confirm('Lançar salário de '+m.display_name+' na competência '+competency.slice(0,7)+'?'))return;
+      pay.disabled=true;const r=await db.rpc('crl_register_monitor_salary',{p_member:m.id,p_competence:competency});
+      if(r.error){status(r.error.message||'Não foi possível lançar.',true);pay.disabled=false}else status('Salário registrado nas despesas sem duplicidade.');
+    };controls.append(pay);
+   }
    controls.append(reset,block);item.append(controls);
   }
  }catch(e){root.textContent='Não foi possível carregar a equipe.';status(e.message||'Erro administrativo',true)}
@@ -428,7 +438,7 @@ async function createMonitor(){
  if(!/^[a-z][a-z0-9._-]{2,39}$/.test(username)||fullName.length<3){status('Nome ou usuário inválido.',true);return}
  if(!passwordStrong(pwd)||pwd!==confirmation){status('Senhas diferentes ou fora do padrão mínimo de segurança.',true);return}
  try{
-  const r=await adminMonitors({action:'create',username,display_name:fullName,monitor_vinculo:el('monitorVinculo').value,password:pwd});
+  const r=await adminMonitors({action:'create',username,display_name:fullName,monitor_vinculo:el('monitorVinculo').value,password:pwd,resident_id:el('monitorVinculo').value==='aluno'?el('monitorResident').value:null,salary_monthly:el('monitorVinculo').value==='contratado'?Number(el('monitorSalary').value):null,monitor_phone:el('monitorPhone').value});
   el('monitorPassword').value='';el('monitorConfirm').value='';
   el('monitorPassword').type='password';
   el('monitorGeneratedHint').textContent='A senha foi definida. Guarde-a em local seguro; o sistema não a exibe novamente.';
