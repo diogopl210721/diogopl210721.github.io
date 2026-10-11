@@ -500,12 +500,13 @@ async function loadContributions(){
  if(member?.role!=='admin'){root.textContent='Acesso reservado ao ADM.';return}
  const r=await db.from('crl_contributions')
  .select('id,stay_id,amount,paid_amount,due_date,crl_stays(crl_residents(full_name,responsible_phone))')
- .eq('institution_id',member.institution_id).order('due_date',{ascending:false}).limit(60);
+ .eq('institution_id',member.institution_id).order('due_date',{ascending:false}).limit(moduleFilter==='overdue'?500:60);
  if(r.error){root.textContent='Não foi possível consultar contribuições.';return}
  if(!r.data.length){root.textContent='Nenhuma contribuição lançada.';return}
  const brl=x=>Number(x).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
  for(const c of r.data){
   const balance=Number(c.amount)-Number(c.paid_amount||0);
+  if(moduleFilter==='overdue'&&!(c.due_date<localTime().slice(0,10)&&balance>0))continue;
   const name=c.crl_stays?.crl_residents?.full_name||'Acolhido';
   const details='Vencimento: '+c.due_date+' · Mensal: '+brl(c.amount)+' · Diária: '+brl(Number(c.amount)/30)+' · Recebido: '+brl(c.paid_amount)+' · Saldo: '+brl(balance);
   const item=addItem(name,details+(Number(c.amount)===0?' · G5 (vaga sustentada)':''));
