@@ -59,8 +59,9 @@ async function loadPreview({db,member,el,status}){
  if(!res){box.textContent='Dados do acolhido indisponíveis.';return}
  const label=res.cpf?'CPF nº '+res.cpf:res.rg?'RG nº '+res.rg:'CPF/RG não cadastrado';
  el('docIdentity').value=label;el('docAdmission').value=ptDate(r.data.admission_date);
+ const brand=document.querySelector('body > header img');
+ if(brand){const logo=document.createElement('img');logo.src=brand.src;logo.alt='Logomarca original da CRL';logo.style.cssText='display:block;width:92%;max-width:420px;height:auto;margin:0 auto 15px;object-fit:contain';box.append(logo)}
  const sections=[
- ['div','COMUNIDADE TERAPÊUTICA CRL','doc-emblem'],
  ['div','DECLARAÇÃO','doc-title'],
  ['div','Campo Largo, '+ptDate(today()),'doc-date'],
  ['p','Declaro para devidos fins que o Sr '+res.full_name+', portador do '+label+', está em Programa Terapêutico nesta Comunidade, desde o dia '+ptDate(r.data.admission_date)+', em regime integral.'],
@@ -118,7 +119,9 @@ export async function listDocuments({db,member,el,status,stays}){
    details.textContent=(student?.crl_residents?.full_name||'Acolhido em histórico')+' • Emissão: '+ptDate(d.issued_on);
    const button=document.createElement('button');button.type='button';button.textContent='Abrir / baixar PDF';
    button.onclick=()=>openPdf({db,path:d.pdf_storage_path,status});
-   item.append(title,details,button);root.append(item);
+   const share=document.createElement('button');share.type='button';share.textContent='Compartilhar PDF';share.style.marginLeft='7px';
+   share.onclick=()=>sharePdf({db,path:d.pdf_storage_path,status,filename:(d.document_number||'Declaracao-CRL')+'.pdf'});
+   item.append(title,details,button,share);root.append(item);
   }
  }catch(e){root.textContent='Não foi possível consultar documentos.';status(e.message,true)}
 }
@@ -130,5 +133,26 @@ async function openPdf({db,path,status}){
   if(win)win.close();status('Documento indisponível. Confirme suas permissões.',true);return;
  }
  if(win){win.location.assign(data.signedUrl);return}
- const a=document.createElement('a');a.href=data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Toque para abrir o PDF';el('listArea').prepend(a);
+ const a=document.createElement('a');a.href=data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Toque para abrir o PDF';document.getElementById('listArea')?.prepend(a);
+}
+
+async function sharePdf({db,path,status,filename}){
+ try{
+  const {data,error}=await db.storage.from('crl-documents').createSignedUrl(path,180);
+  if(error||!data?.signedUrl)throw new Error('Acesso ao PDF não autorizado');
+  const response=await fetch(data.signedUrl);
+  if(!response.ok)throw new Error('Não foi possível carregar o PDF');
+  const blob=await response.blob();
+  const file=new File([blob],filename,{type:'application/pdf'});
+  if(navigator.share && navigator.canShare?.({files:[file]})){
+   await navigator.share({title:'Declaração CRL',files:[file]});
+   return;
+  }
+  const link=document.createElement('a');link.href=data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Toque para abrir o PDF e compartilhar manualmente.';
+  document.getElementById('listArea')?.prepend(link);
+  status('O navegador não permite anexar automaticamente. Abra o PDF e compartilhe pelo celular.');
+ }catch(e){
+  if(e?.name==='AbortError')return;
+  status(e.message||'Não foi possível compartilhar o arquivo.',true);
+ }
 }
