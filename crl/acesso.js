@@ -1,7 +1,8 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
+import {loadDashboard} from './dashboard.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
-let member=null,user=null,stays=[],view='students',openTrips=[],lastMetrics=null;
+let member=null,user=null,stays=[],view='dashboard',openTrips=[],lastMetrics=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
 const localTime=(date=new Date())=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -23,6 +24,7 @@ async function init(){
  el('tabHistory').style.display=member.role==='admin'?'':'none';
  el('tabContributions').style.display=member.role==='admin'?'':'none';
  el('tabMonitors').style.display=member.role==='admin'?'':'none';
+ view='dashboard';
  await refresh();
 }
 el('loginForm').onsubmit=async e=>{
@@ -45,6 +47,13 @@ async function refresh(){
  await loadList();
 }
 function draw(){
+ const isDashboard=view==='dashboard';
+ el('dashboardArea').classList.toggle('hide',!isDashboard);
+ el('moduleGrid').classList.toggle('hide',isDashboard);
+ el('welcomeTitle').textContent=isDashboard?(member?.role==='admin'?'Painel Geral':'Resumo do dia'):viewTitle(view);
+ el('welcomeText').textContent=isDashboard?'Acompanhamento diário da CRL':'Registros organizados conforme seu perfil de acesso';
+ document.querySelectorAll('[data-jump]').forEach(b=>b.classList.toggle('current',b.dataset.jump===view));
+ if(isDashboard)return;
  const forms={
  history:'<h2>Buscar ex-acolhidos</h2><p class="muted">Somente ADM. Pesquise o cadastro permanente por nome, confira as passagens e abra um novo período sem apagar o anterior.</p><form id="dataForm">'+field('Nome ou parte do nome','searchName','text',true)+'<button>Pesquisar histórico</button></form>',
  files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado, acessível somente ao pessoal autorizado.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
@@ -64,12 +73,17 @@ function draw(){
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
 async function loadList(){
+ if(view==='dashboard'){
+  await loadDashboard({db,member,user,stays,el,esc,fmt,localTime,setView});
+  return;
+ }
  const root=el('listArea');root.replaceChildren();
  if(view==='monitors'){await loadMonitors();return}
  if(view==='files'){await loadAttachments();return}
  if(view==='students'){
   if(!stays.length)root.textContent='Nenhum acolhido ativo cadastrado.';
-  for(const st of stays){
+  const term=el('globalSearch').value.trim().toLocaleLowerCase('pt-BR');
+  for(const st of stays.filter(st=>(st.crl_residents?.full_name||'').toLocaleLowerCase('pt-BR').includes(term))){
     const item=addItem(st.crl_residents?.full_name||'Acolhido','Entrada: '+st.admission_date);
     if(member.role==='admin'){
       const b=document.createElement('button');b.textContent='Encerrar acolhimento';b.type='button';
@@ -330,7 +344,28 @@ function showTripFinish(trip,item){
  await loadList();
  }
 }
-document.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=async()=>{view=btn.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===btn));draw();await loadList()});
+function viewTitle(id){
+ return ({dashboard:'Painel Geral',students:'Acolhidos',files:'Arquivos e fotos',
+ history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',
+ tasks:'Escala de tarefas',meals:'Refeições',contributions:'Contribuições',
+ monitors:'Usuários e monitores',stats:'Estatísticas gerais'})[id]||'CRL';
+}
+async function setView(next){
+ if(['history','stats','contributions','monitors'].includes(next)&&member?.role!=='admin')return;
+ if(!authenticated())return;
+ view=next;
+ document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
+ el('appPanel').querySelector('.tabs').classList.remove('expanded');
+ draw();await loadList();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>setView(b.dataset.jump));
+el('moreMenu').onclick=()=>el('appPanel').querySelector('.tabs').classList.toggle('expanded');
+el('globalSearch').addEventListener('input',async()=>{
+ if(!authenticated())return;
+ if(view!=='students')await setView('students');else await loadList();
+});
 
 function exportSummaryCsv(){
  if(member?.role!=='admin'||!lastMetrics)return;
