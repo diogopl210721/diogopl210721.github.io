@@ -1,6 +1,7 @@
 // CRL: controle administrativo de receitas e acompanhamento de ressocialização.
 // Registros são históricos; a tela não prescreve medicamentos ou doses.
 import {attachChanges,changeNote} from './changes.js';
+import {openScheduleForm} from './remedios.js';
 const MED_STATUS=[['administrado','Administrado conforme receita'],['recusado','Recusado'],['nao_administrado','Não administrado'],['indisponivel','Medicamento indisponível']];
 const RESOC_PURPOSES=['Visita familiar','Ressocialização programada','Compromisso pessoal autorizado','Culto','Outra atividade autorizada'];
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -132,7 +133,7 @@ async function loadMedicationList({db,member,user,stays,root,status,filter='all'
  const ids=stays.map(s=>s.id),lookup=id=>stays.find(s=>s.id===id)?.crl_residents?.full_name||'Acolhido';
  const [a,b]=await Promise.all([
   db.from('crl_medication_requests').select('id,stay_id,medication_name,dose_text,schedule_text,request_status,created_at,review_notes,prescription_file_id').eq('institution_id',member.institution_id).in('stay_id',ids).order('created_at',{ascending:false}).limit(100),
-  db.from('crl_medication_records').select('id,stay_id,medication_name,dose_text,schedule_text,verified_by,created_at,corrected_at,correction_reason,suspended_at,suspension_reason').eq('institution_id',member.institution_id).in('stay_id',ids).order('created_at',{ascending:false}).limit(100)
+  db.from('crl_medication_records').select('id,stay_id,medication_name,dose_text,schedule_text,verified_by,created_at,corrected_at,correction_reason,suspended_at,suspension_reason,times,as_needed,instructions,end_date,box_file_id').eq('institution_id',member.institution_id).in('stay_id',ids).order('created_at',{ascending:false}).limit(100)
  ]);
  if(a.error||b.error){root.textContent='Não foi possível consultar os medicamentos.';return}
  const requests=a.data||[],medications=b.data||[];
@@ -149,8 +150,10 @@ async function loadMedicationList({db,member,user,stays,root,status,filter='all'
  const activeMeds=medications.filter(m=>!m.suspended_at),suspendedMeds=medications.filter(m=>m.suspended_at);
  if(!activeMeds.length)approved.append(document.createTextNode('Nenhuma prescrição ativa.'));
  for(const med of activeMeds){
-  const div=item(approved,lookup(med.stay_id)+' · '+med.medication_name,'Conforme receita: '+med.dose_text+' · '+med.schedule_text,(med.verified_by?'Conferido pelo ADM':'Sem conferência')+(med.corrected_at?' · '+changeNote(med):''));
-  if(med.verified_by)actionButton(div,'Registrar administração / ocorrência',()=>logMedication({db,med,container:div,status,refresh:reload}));
+  const when_=med.as_needed?'Só se necessário (SOS)':(med.times||[]).length?'Horários: '+med.times.map(t=>String(t).slice(0,5)).join(' · '):'⚠ Sem horário definido';
+  const div=item(approved,lookup(med.stay_id)+' · '+med.medication_name,'Conforme receita: '+med.dose_text+' · '+med.schedule_text+'\n'+when_+(med.instructions?' · '+med.instructions:'')+(med.end_date?' · até '+String(med.end_date).split('-').reverse().join('/'):''),(med.verified_by?'Conferido pelo ADM':'Sem conferência')+(med.box_file_id?' · com foto da caixa':'')+(med.corrected_at?' · '+changeNote(med):''));
+  if(member.role==='admin'&&med.verified_by)actionButton(div,(med.times||[]).length||med.as_needed?'Horários e foto':'⚠ Definir horários e foto',()=>openScheduleForm(div,med,{db,member,user,status,preview:false},reload));
+  if(med.verified_by)actionButton(div,'Ocorrência fora do horário',()=>logMedication({db,med,container:div,status,refresh:reload}));
   if(member.role==='admin')attachChanges(div,{db,status,entity:'medication',id:med.id,onDone:reload,
    edit:{label:'Corrigir',action:'correct',hint:'Corrija conforme a receita. O texto anterior fica guardado na Auditoria.',fields:[
     {key:'medication_name',label:'Nome do medicamento',value:med.medication_name,required:true},
@@ -202,7 +205,7 @@ function reviewMedication({db,member,req,container,status,refresh}){
   try{
    const r=await db.rpc('crl_review_medication_request',{p_request:req.id,p_approve:approve,p_review_note:form.elements.note.value.trim()});
    if(r.error)throw r.error;
-   status(approve?'Prescrição conferida pelo ADM.':'Solicitação rejeitada com justificativa.');
+   status(approve?'Prescrição conferida. Agora defina os horários e a foto da caixa (botão “Definir horários e foto”).':'Solicitação rejeitada com justificativa.');
    await refresh();
   }catch(_){status('Decisão não registrada. Verifique seus acessos.',true)}
   finally{b.disabled=false}

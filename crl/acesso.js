@@ -11,6 +11,7 @@ import {backupForm,loadBackupList,runBackup,backupReminder} from './backup.js';
 import {attachChanges,canChange,changeNote} from './changes.js';
 import {callFunction} from './fn.js';
 import {escalaForm,loadEscala} from './escala.js';
+import {dosesForm,loadDoses} from './remedios.js';
 import {mealsForm,bindMeals,submitMealsDay,loadMealsList,MEAL_LABEL} from './refeicoes.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
@@ -19,7 +20,7 @@ let monitorPreview=false,originalAdminMember=null;
 // Quem vê o quê. Para mudar o acesso de um perfil, altere só estas duas listas
 // (o banco aplica as mesmas regras; a tela apenas esconde o que não está liberado).
 const ADMIN_ONLY=['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic','backup'];
-const NOT_FOR_STUDENT_MONITOR=['profile','files','notes','medications','resocialization'];
+const NOT_FOR_STUDENT_MONITOR=['profile','files','notes','medications','doses','resocialization'];
 const isStudentMonitor=()=>member?.role==='monitor'&&member?.monitor_vinculo==='aluno';
 function canView(v){
  if(member?.role==='admin')return true;
@@ -34,7 +35,7 @@ function applyTabs(){
 const NOTE_LABEL={rotina:'Rotina',ocorrencia:'Ocorrência',observacao:'Observação'};
 const REC_LABEL={unica:'Única',semanal:'Semanal',quinzenal:'Quinzenal',mensal:'Mensal'};
 const TRIP_PURPOSES=['Buscar doações','Culto','Consulta médica','Ressocialização','Compras','Serviços','Outros'];
-const FILE_CATS=[['documento','RG / CPF / documento'],['receita','Receita médica'],['pertences','Pertences'],['foto','Fotografia'],['outro','Outro anexo']];
+const FILE_CATS=[['documento','RG / CPF / documento'],['receita','Receita médica'],['remedio','Foto do remédio (caixa)'],['pertences','Pertences'],['foto','Fotografia'],['outro','Outro anexo']];
 const dateBR=v=>v?String(v).slice(0,10).split('-').reverse().join('/'):'—';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
@@ -116,7 +117,7 @@ async function refresh(){
 function draw(){
  const isDashboard=view==='dashboard';
  el('moduleGrid').classList.toggle('profile-layout',view==='profile');
- el('moduleGrid').classList.toggle('wide-layout',['tasks','cash','stock'].includes(view));
+ el('moduleGrid').classList.toggle('wide-layout',['tasks','cash','stock','doses'].includes(view));
  el('dashboardArea').classList.toggle('hide',!isDashboard);
  el('moduleGrid').classList.toggle('hide',isDashboard);
  el('welcomeTitle').textContent=isDashboard?(member?.role==='admin'?'Painel Geral':'Resumo do dia'):viewTitle(view);
@@ -130,6 +131,7 @@ function draw(){
  files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><label for="fileWhat">O que é (opcional)</label><input id="fileWhat" maxlength="300" placeholder="Ex.: Receita de Dipirona — Dr. João"><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado. Fotos de RG/CPF (categoria documento) ficam visíveis só para o ADM.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
  profile:prontuarioForm(stays),
  medications:careForm('medications',stays),
+ doses:dosesForm(member),
  resocialization:careForm('resocialization',stays),
  students:admissionForm(),
  tasks:escalaForm(),
@@ -205,7 +207,7 @@ function draw(){
   };
  }
 
- el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque do mês',cash:'Extrato do caixa',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Como está a semana',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições por dia',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque do mês',cash:'Extrato do caixa',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',doses:'Remédios por horário',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Como está a semana',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições por dia',stats:'Resumo do período'})[view];
  const dataForm=el('dataForm');if(dataForm)dataForm.onsubmit=submit;
  if(view==='medications'||view==='resocialization')void bindCare({db,member,el,kind:view,status});
  if(view==='documents')void bindDocuments({db,member,el,status,stays});
@@ -231,6 +233,7 @@ async function loadList(){
  if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,user,root,filter:moduleFilter,status,refresh:loadList});return}
  if(view==='evolution'){await loadEvolution({db,member,stays,root,status});return}
  if(view==='medications'||view==='resocialization'){await loadCareList({db,member,user,stays,root,kind:view,status,filter:moduleFilter});return}
+ if(view==='doses'){await loadDoses({db,member,user,status,listRoot:root,preview:monitorPreview});return}
  if(view==='tasks'){await loadEscala({db,member,user,stays,status,listRoot:root,preview:monitorPreview});return}
  if(view==='meals'){await loadMealsList({db,member,root,filter:moduleFilter,el});return}
  if(view==='profile'){await loadProntuario({db,member,user,stays,stayId:el('profileStay')?.value,root,status});return}
@@ -728,7 +731,7 @@ function showTripFinish(trip,item){
 }
 function viewTitle(id){
  return ({dashboard:'Painel Geral',students:'Acolhidos',profile:'Prontuários',files:'Arquivos e fotos',
- history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',medications:'Medicamentos e receitas',resocialization:'Ressocialização',
+ history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',medications:'Medicamentos e receitas',doses:'Remédios de hoje',resocialization:'Ressocialização',
  tasks:'Escala de tarefas',meals:'Refeições',contributions:'Contribuições',
  monitors:'Usuários e monitores',backup:'Backup dos dados',documents:'Declarações',evolution:'Evolução mensal',stock:'Estoque',cash:'Caixa da casa',audit:'Auditoria',diagnostic:'Verificar sistema',stats:'Estatísticas gerais'})[id]||'CRL';
 }

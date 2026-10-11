@@ -24,6 +24,7 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
  const m=totals.data;
  const main=[
   card('♙','Acolhidos ativos',number(m.active),'Ver acolhidos','students','active'),
+  ...(canView('doses')?[card('✚','Remédios atrasados',number(m.meds_late),m.meds_late?'Doses que passaram da hora':'Nenhuma dose atrasada','doses','late')]:[]),
   card('▤','Devocionais no mês',number(m.devotionals_month),'Sessões neste mês','devotionals','month'),
   card('☷','Escalas de tarefas',number(m.tasks_today),'Tarefas pendentes de hoje','tasks','today'),
   ...(admin?[card('R$','Contribuições em atraso',number(m.contributions_overdue),'Competências vencidas','contributions','overdue')]:[card('✎','Registros de rotina','Abrir','Registros da equipe','notes')]),

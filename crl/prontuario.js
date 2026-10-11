@@ -106,7 +106,7 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
   files:db.from('crl_files').select('category,description,storage_path,created_at').eq('institution_id',tenant).eq('stay_id',stayId).is('deleted_at',null).order('created_at',{ascending:false}).limit(200),
   resocialization:db.from('crl_resocializations').select('purpose,justification,departure_at,expected_return_at,actual_return_at,picked_up_by,no_responsible_pickup,return_notes,corrected_at,correction_reason').eq('institution_id',tenant).eq('stay_id',stayId).order('departure_at',{ascending:false}).limit(120),
   medrequests:db.from('crl_medication_requests').select('medication_name,dose_text,schedule_text,request_status,created_at,review_notes').eq('institution_id',tenant).eq('stay_id',stayId).order('created_at',{ascending:false}).limit(80),
-  medications:db.from('crl_medication_records').select('id,medication_name,dose_text,schedule_text,verified_by,corrected_at,correction_reason,suspended_at,suspension_reason').eq('institution_id',tenant).eq('stay_id',stayId).limit(80),
+  medications:db.from('crl_medication_records').select('id,medication_name,dose_text,schedule_text,verified_by,corrected_at,correction_reason,suspended_at,suspension_reason,times,as_needed,instructions').eq('institution_id',tenant).eq('stay_id',stayId).limit(80),
  };
  if(member.role==='admin'){
   queries.history=db.from('crl_stays').select('admission_date,departure_date,status,departure_reason').eq('institution_id',tenant).eq('resident_id',person.id).order('admission_date',{ascending:false}).limit(100);
@@ -126,7 +126,7 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  results.attendance=(results.attendance||[]).filter(x=>!actOf(x)?.deleted_at);
  if(!failed.includes('medications')&&results.medications.length){
   const meds=await db.from('crl_medication_administrations')
-   .select('status,notes,occurred_at,medication_record_id,corrected_at,correction_reason')
+   .select('status,notes,occurred_at,scheduled_for,double_checked,medication_record_id,corrected_at,correction_reason')
    .eq('institution_id',tenant)
    .in('medication_record_id',results.medications.map(m=>m.id))
    .order('occurred_at',{ascending:false}).limit(120);
@@ -187,7 +187,7 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
   return line(x.task_name,'Fez '+done+' dia(s)'+(missed.length?' · Não fez '+missed.length+': '+missed.map(c=>dateOnly(c.day)+' ('+c.justification+')').join('; '):''),'Escala da semana de '+dateOnly(weekOf(x)));
  });
  card.append(detail('Escala de tarefas',tasks.length?listBox(tasks):null));
- const med=results.medications.map(x=>line(x.medication_name+(x.suspended_at?' (suspenso)':''),(x.dose_text||'Dose não informada')+' · '+(x.schedule_text||'Horário não informado'),(x.verified_by?'Conferido pelo ADM':'Pendente de conferência ADM')+((x.corrected_at||x.suspended_at)?' · '+changeNote(x):'')));
+ const med=results.medications.map(x=>line(x.medication_name+(x.suspended_at?' (suspenso)':''),(x.dose_text||'Dose não informada')+' · '+(x.schedule_text||'Horário não informado')+(x.as_needed?'\nSó se necessário (SOS)':(x.times||[]).length?'\nHorários: '+x.times.map(t=>String(t).slice(0,5)).join(' · '):'')+(x.instructions?' · '+x.instructions:''),(x.verified_by?'Conferido pelo ADM':'Pendente de conferência ADM')+((x.corrected_at||x.suspended_at)?' · '+changeNote(x):'')));
  card.append(detail('Medicamentos — prescrições conferidas',med.length?listBox(med):null));
  const requests=results.medrequests.map(x=>line(x.medication_name,
   'Dose transcrita: '+x.dose_text+' | Frequência: '+x.schedule_text,
@@ -195,9 +195,17 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  card.append(detail('Solicitações de medicamento',requests.length?listBox(requests):null));
  const administrations=results.administrations.map(x=>{
   const m=results.medications.find(m=>m.id===x.medication_record_id);
-  return line((m?.medication_name||'Medicamento')+' · '+(MED_LABEL[x.status]||x.status),x.notes||'Sem observação',dateTime(x.occurred_at)+(x.corrected_at?' · '+changeNote(x):''));
+  const slot=x.scheduled_for?'Dose das '+new Date(x.scheduled_for).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})+' · ':'';
+  return line((m?.medication_name||'Medicamento')+' · '+(MED_LABEL[x.status]||x.status),x.notes||(x.double_checked?'Caixa conferida antes de dar':'Sem observação'),slot+'registrado em '+dateTime(x.occurred_at)+(x.corrected_at?' · '+changeNote(x):''));
  });
  card.append(detail('Administrações e ocorrências registradas',administrations.length?listBox(administrations):null));
+ if(member.role==='admin'&&st.status==='active'){
+  const monthBox=node('p','Calculando as doses do mês...','profile-warning');card.append(monthBox);
+  db.rpc('crl_med_month',{p_stay:stayId,p_month:new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()).slice(0,8)+'01'}).then(r=>{
+   if(r.error||!r.data){monthBox.remove();return}
+   const d=r.data;monthBox.textContent='Remédios neste mês: '+d.given+' doses dadas, '+d.refused+' recusadas, '+d.not_given+' não dadas e '+d.missing+' sem registro.';
+  });
+ }
  const resocialization=results.resocialization.map(x=>line(x.purpose,
   'Saída: '+dateTime(x.departure_at)+' | Retorno previsto: '+dateTime(x.expected_return_at)+' | Retorno real: '+dateTime(x.actual_return_at)+
   ' | Busca: '+(x.no_responsible_pickup?'Sem responsável':(x.picked_up_by||'Não registrado'))+
