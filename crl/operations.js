@@ -38,14 +38,14 @@ export async function loadOperations({db,kind,member,root}){
     .select('product,unit,quantity,direction,source,occurred_at').eq('institution_id',member.institution_id)
     .order('occurred_at',{ascending:false}).limit(300);
   if(r.error){root.textContent='Não foi possível consultar o estoque.';return}
+  const balances=await db.rpc('crl_stock_balances',{p_institution:member.institution_id});
+  if(balances.error){root.textContent='Não foi possível calcular os saldos completos.';return}
   const products=new Map();
-  for(const x of r.data||[]){
-   const key=x.product.trim().toLowerCase()+'|'+x.unit;
-   const current=products.get(key)||{name:x.product,unit:x.unit,total:0};
-   current.total+=(x.direction==='in'?1:-1)*Number(x.quantity);products.set(key,current);
+  for(const x of balances.data||[]){
+   products.set(x.product+'|'+x.unit,{name:x.product,unit:x.unit,total:Number(x.balance)});
   }
-  const head=document.createElement('h3');head.textContent='Saldo por produto (movimentos consultados)';root.append(head);
-  const warning=document.createElement('p');warning.className='muted';warning.textContent='Saldo calculado com até 300 movimentos recentes. Para conferência integral, consulte todos os movimentos antes de inventariar.';root.append(warning);
+  const head=document.createElement('h3');head.textContent='Saldo total por produto';root.append(head);
+  const warning=document.createElement('p');warning.className='muted';warning.textContent='Saldo consolidado a partir de todos os lançamentos no banco. A lista abaixo mostra somente os 300 movimentos mais recentes.';root.append(warning);
   for(const p of products.values()){const row=document.createElement('div');row.className='item';row.textContent=p.name+' · '+fmt(p.total)+' '+p.unit;root.append(row)}
   const history=document.createElement('h3');history.textContent='Últimas movimentações';root.append(history);
   for(const x of r.data||[]){const row=document.createElement('div');row.className='item';row.textContent=(x.direction==='in'?'Entrada: ':'Saída: ')+x.product+' · '+fmt(x.quantity)+' '+x.unit+' · '+date(x.occurred_at)+' · '+(x.source||'');root.append(row)}
@@ -56,10 +56,12 @@ export async function loadOperations({db,kind,member,root}){
  .select('description,entry_type,amount,date').eq('institution_id',member.institution_id)
  .order('date',{ascending:false}).limit(300);
  if(r.error){root.textContent='Não foi possível consultar o caixa.';return}
- let inTotal=0,outTotal=0;
- for(const x of r.data||[]){if(x.entry_type==='income')inTotal+=Number(x.amount);else outTotal+=Number(x.amount)}
+ const summary=await db.rpc('crl_cash_summary',{p_institution:member.institution_id});
+ if(summary.error){root.textContent='Não foi possível consultar o resumo do caixa.';return}
+ let inTotal=Number(summary.data.income),outTotal=Number(summary.data.expense);
+ 
  const intro=document.createElement('p');intro.className='muted';
- intro.textContent='Movimentos consultados: receitas R$ '+fmt(inTotal)+' · despesas R$ '+fmt(outTotal)+' · diferença R$ '+fmt(inTotal-outTotal)+'. Valores limitados aos últimos 300 registros.';
+ intro.textContent='Totais de todos os lançamentos: receitas R$ '+fmt(inTotal)+' · despesas R$ '+fmt(outTotal)+' · diferença R$ '+fmt(inTotal-outTotal)+'. Histórico abaixo limitado aos últimos 300 registros.';
  root.append(intro);
  for(const x of r.data||[]){const row=document.createElement('div');row.className='item';row.textContent=(x.entry_type==='income'?'Receita':'Despesa')+' · '+x.description+' · R$ '+fmt(x.amount)+' · '+x.date;root.append(row)}
  if(!r.data?.length)root.append(document.createTextNode('Nenhum lançamento registrado.'));
