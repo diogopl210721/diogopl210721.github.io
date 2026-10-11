@@ -63,7 +63,9 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
   attendance:db.from('crl_attendance').select('status,justification,crl_activities(title,type,starts_at,presenter)').eq('institution_id',tenant).eq('stay_id',stayId).limit(250),
   tasks:db.from('crl_tasks').select('title,status,due_at,recurrence').eq('institution_id',tenant).eq('stay_id',stayId).order('due_at',{ascending:false}).limit(250),
   files:db.from('crl_files').select('category,storage_path,created_at').eq('institution_id',tenant).eq('stay_id',stayId).order('created_at',{ascending:false}).limit(200),
-  medications:db.from('crl_medication_records').select('medication_name,dose_text,schedule_text,verified_by').eq('institution_id',tenant).eq('stay_id',stayId).limit(80),
+  resocialization:db.from('crl_resocializations').select('purpose,justification,departure_at,expected_return_at,actual_return_at,picked_up_by,no_responsible_pickup,return_notes').eq('institution_id',tenant).eq('stay_id',stayId).order('departure_at',{ascending:false}).limit(120),
+  medrequests:db.from('crl_medication_requests').select('medication_name,dose_text,schedule_text,request_status,created_at,review_notes').eq('institution_id',tenant).eq('stay_id',stayId).order('created_at',{ascending:false}).limit(80),
+  medications:db.from('crl_medication_records').select('id,medication_name,dose_text,schedule_text,verified_by').eq('institution_id',tenant).eq('stay_id',stayId).limit(80),
  };
  if(member.role==='admin'){
   queries.history=db.from('crl_stays').select('admission_date,departure_date,status,departure_reason').eq('institution_id',tenant).eq('resident_id',person.id).order('admission_date',{ascending:false}).limit(100);
@@ -78,6 +80,15 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
   if(result.error){failed.push(key);results[key]=[]}else results[key]=result.data||[]
  });
  if(!root.isConnected||document.getElementById('profileStay')?.value!==stayId)return;
+ if(!failed.includes('medications')&&results.medications.length){
+  const meds=await db.from('crl_medication_administrations')
+   .select('status,notes,occurred_at,medication_record_id')
+   .eq('institution_id',tenant)
+   .in('medication_record_id',results.medications.map(m=>m.id))
+   .order('occurred_at',{ascending:false}).limit(120);
+  if(meds.error){failed.push('administrations');results.administrations=[]}
+  else results.administrations=meds.data||[];
+ }else results.administrations=[];
  root.replaceChildren();
  const card=node('div',null,'prontuario-card');
  const heading=node('div',null,'prontuario-top');
@@ -119,7 +130,22 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  const tasks=results.tasks.map(x=>line(x.title,x.status||'Programada',dateTime(x.due_at)+(x.recurrence?' · '+x.recurrence:'')));
  card.append(detail('Tarefas atribuídas',tasks.length?listBox(tasks):null));
  const med=results.medications.map(x=>line(x.medication_name,(x.dose_text||'Dose não informada')+' · '+(x.schedule_text||'Horário não informado'),x.verified_by?'Conferido pelo ADM':'Pendente de conferência ADM'));
- card.append(detail('Medicamentos — registro operacional',med.length?listBox(med):null));
+ card.append(detail('Medicamentos — prescrições conferidas',med.length?listBox(med):null));
+ const requests=results.medrequests.map(x=>line(x.medication_name,
+  'Dose transcrita: '+x.dose_text+' | Frequência: '+x.schedule_text,
+  'Solicitação: '+x.request_status+' · '+dateTime(x.created_at)+(x.review_notes?' · Revisão: '+x.review_notes:'')));
+ card.append(detail('Solicitações de medicamento',requests.length?listBox(requests):null));
+ const administrations=results.administrations.map(x=>{
+  const m=results.medications.find(m=>m.id===x.medication_record_id);
+  return line((m?.medication_name||'Medicamento')+' · '+x.status,x.notes||'Sem observação',dateTime(x.occurred_at));
+ });
+ card.append(detail('Administrações e ocorrências registradas',administrations.length?listBox(administrations):null));
+ const resocialization=results.resocialization.map(x=>line(x.purpose,
+  'Saída: '+dateTime(x.departure_at)+' | Retorno previsto: '+dateTime(x.expected_return_at)+' | Retorno real: '+dateTime(x.actual_return_at)+
+  ' | Busca: '+(x.no_responsible_pickup?'Sem responsável':(x.picked_up_by||'Não registrado'))+
+  '\nJustificativa: '+x.justification+(x.return_notes?'\nRetorno: '+x.return_notes:''),
+  x.actual_return_at?'Retorno registrado':'Saída em andamento'));
+ card.append(detail('Ressocializações e retornos',resocialization.length?listBox(resocialization):null));
  card.append(node('p','Informações de medicamentos são somente registros operacionais e não substituem prescrição ou orientação profissional.','profile-warning'));
  const files=node('div',null,'profile-files');
  results.files.forEach(f=>{
@@ -155,6 +181,10 @@ export async function loadProntuario({db,member,stays,stayId,root,status}){
  results.attendance.forEach(x=>{const ac=Array.isArray(x.crl_activities)?x.crl_activities[0]:x.crl_activities;exportRows.push(['Devocional',dateTime(ac?.starts_at),ac?.title,x.status+(x.justification?' | '+x.justification:'')])});
  results.tasks.forEach(x=>exportRows.push(['Tarefa',dateTime(x.due_at),x.title,x.status]));
  results.files.forEach(x=>exportRows.push(['Arquivo',dateTime(x.created_at),x.category,'Arquivo privado; não incluído na exportação CSV']));
+ results.resocialization.forEach(x=>exportRows.push(['Ressocialização',dateTime(x.departure_at),x.purpose,
+  x.justification+' | Responsável: '+(x.no_responsible_pickup?'Sem responsável':(x.picked_up_by||'—'))+' | Retorno: '+dateTime(x.actual_return_at)+(x.return_notes?' | '+x.return_notes:'')]));
+ results.medrequests.forEach(x=>exportRows.push(['Solicitação de medicamento',dateTime(x.created_at),x.medication_name,x.request_status+' | '+x.dose_text+' | '+x.schedule_text]));
+ results.administrations.forEach(x=>exportRows.push(['Ocorrência de medicamento',dateTime(x.occurred_at),x.status,x.notes||'']));
  results.medications.forEach(x=>exportRows.push(['Medicamento — registro operacional','',x.medication_name,(x.dose_text||'')+' · '+(x.schedule_text||'')+(x.verified_by?' · Conferido ADM':' · Não conferido pelo ADM')]));
  if(member.role==='admin'){
   results.history.forEach(x=>exportRows.push(['Passagem',dateOnly(x.admission_date),x.status,dateOnly(x.departure_date)]));
