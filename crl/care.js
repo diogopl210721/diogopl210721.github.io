@@ -116,12 +116,12 @@ function exportControls(root,name,rows){
  const print=actionButton(bar,'Imprimir / salvar PDF',()=>window.print());
  root.prepend(bar);
 }
-export async function loadCareList({db,member,stays,root,kind,status}){
+export async function loadCareList({db,member,stays,root,kind,status,filter='all'}){
  root.replaceChildren();
- if(kind==='medications')return loadMedicationList({db,member,stays,root,status});
- if(kind==='resocialization')return loadResocializationList({db,member,stays,root,status});
+ if(kind==='medications')return loadMedicationList({db,member,stays,root,status,filter});
+ if(kind==='resocialization')return loadResocializationList({db,member,stays,root,status,filter});
 }
-async function loadMedicationList({db,member,stays,root,status}){
+async function loadMedicationList({db,member,stays,root,status,filter='all'}){
  if(!stays.length){root.textContent='Cadastre um acolhido ativo para acompanhar medicamentos.';return}
  const ids=stays.map(s=>s.id),lookup=id=>stays.find(s=>s.id===id)?.crl_residents?.full_name||'Acolhido';
  const [a,b]=await Promise.all([
@@ -138,6 +138,7 @@ async function loadMedicationList({db,member,stays,root,status}){
    actionButton(div,'Conferir receita e decidir',()=>reviewMedication({db,member,req,container:div,status,refresh:()=>loadCareList({db,member,stays,root,kind:'medications',status})}));
   }else div.append(document.createTextNode(' — Aguardando conferência administrativa.'));
  }
+ if(filter==='pending')return;
  const approved=section(root,'Prescrições conferidas e acompanhamento');
  if(!medications.length)approved.append(document.createTextNode('Nenhuma prescrição conferida ainda.'));
  for(const med of medications){
@@ -204,7 +205,7 @@ function logMedication({db,med,container,status,refresh}){
   finally{b.disabled=false}
  };
 }
-async function loadResocializationList({db,member,stays,root,status}){
+async function loadResocializationList({db,member,stays,root,status,filter='all'}){
  const ids=stays.map(x=>x.id);
  if(!ids.length){root.textContent='Não há acolhidos ativos.';return}
  const r=await db.from('crl_resocializations')
@@ -217,6 +218,7 @@ async function loadResocializationList({db,member,stays,root,status}){
  if(!list.some(x=>x.actual_return_at))closed.append(document.createTextNode('Nenhum retorno registrado.'));
  for(const out of list){
   const responsible=out.no_responsible_pickup?'Sem responsável para buscar':(out.picked_up_by||'Não informado');
+  if(filter==='open'&&out.actual_return_at)continue;
   const target=out.actual_return_at?closed:open;
   const el=item(target,lookup(out.stay_id)+' · '+out.purpose,
    'Saída: '+when(out.departure_at)+' · Previsto: '+when(out.expected_return_at)+' · '+responsible,
