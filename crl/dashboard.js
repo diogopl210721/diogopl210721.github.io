@@ -13,11 +13,9 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
  if(!member?.institution_id)return;
  const admin=member.role==='admin',tenant=member.institution_id;
  const day=localTime().slice(0,10);
- const dayStart=new Date(day+'T00:00:00').toISOString();
- const dayEnd=new Date(new Date(day+'T00:00:00').getTime()+86400000).toISOString();
  const [totals,tasks,last,backup]=await Promise.all([
   db.rpc('crl_dashboard_cards',{p_institution:tenant}),
-  db.from('crl_tasks').select('title,due_at,status').eq('institution_id',tenant).is('deleted_at',null).gte('due_at',dayStart).lt('due_at',dayEnd).neq('status','done').order('due_at',{ascending:true}).limit(8),
+  db.rpc('crl_task_week_view',{p_institution:tenant,p_week_start:day}),
   db.from('crl_activities').select('title,presenter,starts_at').eq('institution_id',tenant).eq('type','devocional').is('deleted_at',null).order('starts_at',{ascending:false}).limit(1),
   admin&&backupReminder?backupReminder({db,member}):Promise.resolve(null)
  ]);
@@ -46,9 +44,13 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
    card('◷','Próximos dos 9 meses',number(m.near_nine_months),'Prazo em até 30 dias','students','near9')
   ]:[])
  ];
- const tasksHtml=tasks.error?'<p class="dash-empty">Tarefas temporariamente indisponíveis.</p>':tasks.data?.length?
-  tasks.data.map(t=>row(new Date(t.due_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' · '+t.title,'Pendente')).join(''):
-  '<p class="dash-empty">Nenhuma tarefa pendente para hoje.</p>';
+ // Escala de hoje: cada tarefa com quem faz e se já foi marcada
+ const week=tasks.data,today=week?.today;
+ const marks=new Map((week?.checks||[]).filter(c=>c.day===today).map(c=>[c.assignment_id,c]));
+ const todayList=(week?.assignments||[]).filter(a=>a.active);
+ const tasksHtml=tasks.error?'<p class="dash-empty">Escala temporariamente indisponível.</p>':todayList.length?
+  todayList.slice(0,10).map(a=>{const c=marks.get(a.id);return row(a.task_name+' · '+a.resident,!c?'Ainda não marcada':c.done?'✓ Fez':'✗ Não fez')}).join('')+(todayList.length>10?'<p class="dash-empty">e mais '+(todayList.length-10)+'…</p>':''):
+  '<p class="dash-empty">A escala desta semana ainda não foi montada.</p>';
  const lastHtml=last.error?'<p class="dash-empty">Sem acesso às devocionais.</p>':last.data?.length?
   '<div class="dash-highlight"><b>'+esc(last.data[0].title)+'</b><p class="dash-subtle">Ministrante: '+esc(last.data[0].presenter||'Não informado')+' · '+esc(fmt(last.data[0].starts_at))+'</p></div>':
   '<p class="dash-empty">Nenhuma devocional registrada.</p>';

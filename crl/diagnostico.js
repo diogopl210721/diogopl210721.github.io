@@ -1,5 +1,6 @@
 // CRL - diagnóstico de acesso executado somente após login ADM.
 // Todas as verificações são leituras, sem criar residentes ou alterar dados.
+import {callFunction} from './fn.js';
 const checks=[
  ['Acolhimentos','crl_stays'],
  ['Registros diários','crl_records'],
@@ -61,9 +62,9 @@ export async function runDiagnostic({db,member,user,root,status}){
  ];
  for(const [label,name,body] of functions){
   try{
-   const r=await db.functions.invoke(name,{body});
-   add(label,!r.error&&!r.data?.error,r.data?.error||r.error?.message||'Serviço respondeu corretamente');
-  }catch(e){add(label,false,'Serviço administrativo indisponível')}
+   await callFunction(db,name,body);
+   add(label,true,'Serviço respondeu corretamente');
+  }catch(e){add(label,false,e?.message||'Serviço administrativo indisponível')}
  }
  root.replaceChildren();
  const ok=items.filter(x=>x.ok).length,failed=items.length-ok;

@@ -9,6 +9,9 @@ import {auditForm,loadAudit} from './auditoria.js';
 import {diagnosticForm,runDiagnostic} from './diagnostico.js';
 import {backupForm,loadBackupList,runBackup,backupReminder} from './backup.js';
 import {attachChanges,canChange,changeNote} from './changes.js';
+import {callFunction} from './fn.js';
+import {escalaForm,loadEscala} from './escala.js';
+import {mealsForm,bindMeals,submitMealsDay,loadMealsList,MEAL_LABEL} from './refeicoes.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',moduleFilter='all',openTrips=[],lastMetrics=null;
@@ -28,7 +31,6 @@ function applyTabs(){
  document.querySelectorAll('[data-view]').forEach(b=>{b.style.display=canView(b.dataset.view)?'':'none'});
  document.querySelectorAll('[data-jump]').forEach(b=>{b.style.display=canView(b.dataset.jump)?'':'none'});
 }
-const MEAL_LABEL={cafe:'Café da manhã',almoco:'Almoço',jantar:'Jantar',lanche:'Lanche',outro:'Outros'};
 const NOTE_LABEL={rotina:'Rotina',ocorrencia:'Ocorrência',observacao:'Observação'};
 const REC_LABEL={unica:'Única',semanal:'Semanal',quinzenal:'Quinzenal',mensal:'Mensal'};
 const TRIP_PURPOSES=['Buscar doações','Culto','Consulta médica','Ressocialização','Compras','Serviços','Outros'];
@@ -38,6 +40,13 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=iso=>{try{return new Date(iso).toLocaleString('pt-BR')}catch{return iso}};
 const localTime=(date=new Date())=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
 function status(s,error=false){let n=el('notice');n.textContent=s;n.className=error?'danger':'success'}
+// Mostra a mensagem do banco quando ela foi escrita para pessoas (em português); senão, uma orientação geral.
+function friendlyError(e){
+ const m=String(e?.message||'').replace(/^CRL:\s*/,'');
+ if(/permission denied|row-level security|violates/i.test(m))return 'Sem permissão para salvar este registro. Consulte o ADM.';
+ if(m&&/[ãçéíóúâêô]|^[A-ZÁÉÍÓÚ][a-z]/.test(m)&&m.length<200)return m;
+ return 'Não foi possível salvar. Confira as informações ou consulte o ADM.';
+}
 function field(label,id,type='text',required=true,value=''){return '<label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+type+'" '+(required?'required':'')+' value="'+esc(value)+'">'}
 function stayOptions(){return stays.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.crl_residents?.full_name||'Acolhido')+'</option>').join('')}
 function authenticated(){return Boolean(member?.active!==false && member?.institution_id && user?.id)}
@@ -107,6 +116,7 @@ async function refresh(){
 function draw(){
  const isDashboard=view==='dashboard';
  el('moduleGrid').classList.toggle('profile-layout',view==='profile');
+ el('moduleGrid').classList.toggle('wide-layout',['tasks','cash','stock'].includes(view));
  el('dashboardArea').classList.toggle('hide',!isDashboard);
  el('moduleGrid').classList.toggle('hide',isDashboard);
  el('welcomeTitle').textContent=isDashboard?(member?.role==='admin'?'Painel Geral':'Resumo do dia'):viewTitle(view);
@@ -117,17 +127,17 @@ function draw(){
  if(isDashboard)return;
  const forms={
  history:'<h2>Buscar ex-acolhidos</h2><p class="muted">Somente ADM. Pesquise o cadastro permanente por nome, confira as passagens e abra um novo período sem apagar o anterior.</p><form id="dataForm">'+field('Nome ou parte do nome','searchName','text',true)+'<button>Pesquisar histórico</button></form>',
- files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado. Fotos de RG/CPF (categoria documento) ficam visíveis só para o ADM.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
+ files:'<h2>Foto ou documento do acolhido</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select><label>Categoria do arquivo</label><select id="fileCategory"><option value="documento">RG / CPF / documento</option><option value="receita">Receita médica</option><option value="pertences">Pertences</option><option value="foto">Fotografia</option><option value="outro">Outro anexo</option></select><label>Tirar foto ou selecionar arquivo</label><input id="attachedFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><label for="fileWhat">O que é (opcional)</label><input id="fileWhat" maxlength="300" placeholder="Ex.: Receita de Dipirona — Dr. João"><p class="muted">Apenas JPG, PNG, WebP ou PDF até 10 MB. Arquivo privado. Fotos de RG/CPF (categoria documento) ficam visíveis só para o ADM.</p><button '+(!stays.length?'disabled':'')+'>Enviar e vincular ao prontuário</button></form>',
  profile:prontuarioForm(stays),
  medications:careForm('medications',stays),
  resocialization:careForm('resocialization',stays),
  students:admissionForm(),
- tasks:'<h2>Programar tarefa</h2><form id="dataForm"><label>Descrição da atividade</label><input id="taskTitle" maxlength="200" placeholder="Ex.: limpeza da cozinha" required><label>Acolhido responsável</label><select id="taskStay"><option value="">Equipe / geral</option>'+stayOptions()+'</select>'+field('Data e hora programada','taskDue','datetime-local',true,localTime())+'<label>Periodicidade</label><select id="taskRecurrence"><option value="unica">Única</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select><p class="muted">A próxima ocorrência semanal, quinzenal ou mensal será criada automaticamente quando você concluir a tarefa.</p><button>Agendar tarefa</button></form>',
+ tasks:escalaForm(),
  notes:'<h2>Registro individual</h2><form id="dataForm"><label>Acolhido</label><select id="stay" required>'+stayOptions()+'</select><label>Tipo</label><select id="category"><option value="rotina">Rotina</option><option value="ocorrencia">Ocorrência</option><option value="observacao">Observação</option></select><label>Relato</label><textarea id="description" required maxlength="10000"></textarea><p class="muted">Pode utilizar o ditado do teclado do celular. O texto original será preservado.</p><button>Registrar</button></form>',
  trips:'<h2>Abrir viagem</h2><form id="dataForm">'+field('Motorista','driver')+'<label>Finalidade</label><select id="purpose"><option>Buscar doações</option><option>Culto</option><option>Consulta médica</option><option>Ressocialização</option><option>Compras</option><option>Serviços</option><option>Outros</option></select>'+field('Destino','destination','text',false)+field('Acompanhantes','companions','text',false)+field('KM inicial','km','number')+field('Saída','departure','datetime-local',true,localTime())+'<button>Abrir viagem</button></form>',
  devotionals:'<h2>Nova devocional</h2><form id="dataForm">'+field('Tema / passagem bíblica','theme')+field('Quem ministrou','presenter')+field('Início','start','datetime-local',true,localTime())+field('Término','end','datetime-local',true,localTime(new Date(Date.now()+45*60000)))+'<h3>Presença dos acolhidos ativos</h3>'+(
  stays.length?stays.map(s=>'<div class="item"><b>'+esc(s.crl_residents?.full_name||'Acolhido')+'</b><div class="radio-group"><label><input type="radio" name="status_'+esc(s.id)+'" value="present" checked> Presente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="absent"> Ausente</label><label><input type="radio" name="status_'+esc(s.id)+'" value="late"> Atrasou</label></div><input data-reason="'+esc(s.id)+'" placeholder="Justificativa quando houver falta"></div>').join(''):'<p>Nenhum acolhido ativo encontrado.</p>')+'<button '+(!stays.length?'disabled':'')+'>Finalizar e registrar presenças</button></form>',
- meals:'<h2>Registrar refeições servidas</h2><form id="dataForm"><label>Tipo de refeição</label><select id="mealType"><option value="cafe">Café da manhã</option><option value="almoco">Almoço</option><option value="jantar">Jantar</option><option value="lanche">Lanche</option><option value="outro">Outros</option></select>'+field('Quantidade de refeições servidas','servings','number')+field('Data e hora','servedAt','datetime-local',true,localTime())+field('Observações','mealNotes','text',false)+'<p class="muted">Registrar o número realmente servido, não uma estimativa.</p><button>Salvar refeições</button></form>',
+ meals:mealsForm(stays),
  documents:documentForm(stays),
  evolution:evolutionForm(stays),
  audit:auditForm(),
@@ -135,7 +145,7 @@ function draw(){
  backup:backupForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
- monitors:'<div id="monitorQuickCard"><h3>Acesso rápido: Diogo (voluntário)</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Cadastrar monitor</h2><p class="muted">Escolha Aluno (vinculado ao cadastro do acolhido), Voluntário ou Contratado (com salário mensal). Todos terão perfil de acesso Monitor. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" value="Diogo" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><div id="monitorStudentBox" style="display:none"><label>Aluno existente</label><select id="monitorResident">'+stays.map(st=>'<option value="'+st.crl_residents?.id+'">'+esc(st.crl_residents?.full_name||'')+'</option>').join('')+'</select></div><div id="monitorSalaryBox" style="display:none"><label>Salário mensal (R$)</label><input id="monitorSalary" type="number" min="0.01" step="0.01"></div><label>Telefone</label><input id="monitorPhone" type="tel" maxlength="40"><label>Usuário para login</label><input id="monitorUsername" type="text" value="diogo" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
+ monitors:'<div id="monitorQuickCard"><h3>Acesso rápido: Diogo (voluntário)</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Cadastrar monitor</h2><p class="muted">Escolha Aluno (vinculado ao cadastro do acolhido), Voluntário ou Contratado (com salário mensal). Todos terão perfil de acesso Monitor. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" placeholder="Ex.: João da Silva" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><div id="monitorStudentBox" style="display:none"><label>Aluno existente</label><select id="monitorResident">'+stays.map(st=>'<option value="'+st.crl_residents?.id+'">'+esc(st.crl_residents?.full_name||'')+'</option>').join('')+'</select></div><div id="monitorSalaryBox" style="display:none"><label>Salário mensal (R$)</label><input id="monitorSalary" type="number" min="0.01" step="0.01"></div><label>Telefone</label><input id="monitorPhone" type="tel" maxlength="40"><label>Usuário para login</label><input id="monitorUsername" type="text" placeholder="Ex.: joao" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><p class="muted">Só letras minúsculas, sem acento e sem espaço. Cada monitor precisa de um usuário diferente.</p><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
@@ -157,6 +167,12 @@ function draw(){
    if(v==='aluno')syncResident();
   };
   el('monitorVinculo').onchange=toggle;toggle();
+  el('monitorName').addEventListener('input',()=>{
+   const u=el('monitorUsername');if(u.dataset.touched||el('monitorVinculo').value==='aluno')return;
+   const first=el('monitorName').value.trim().split(/\s+/)[0]||'';
+   u.value=first.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9._-]/g,'').slice(0,40);
+  });
+  el('monitorUsername').addEventListener('input',()=>{el('monitorUsername').dataset.touched='1'});
   el('monitorResident').onchange=syncResident;
   const activate=el('activateDiogo');
   activate.onclick=async()=>{
@@ -189,10 +205,11 @@ function draw(){
   };
  }
 
- el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque e consumo',cash:'Caixa institucional',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Escala de tarefas',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições registradas',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque do mês',cash:'Extrato do caixa',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Como está a semana',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições por dia',stats:'Resumo do período'})[view];
  const dataForm=el('dataForm');if(dataForm)dataForm.onsubmit=submit;
  if(view==='medications'||view==='resocialization')void bindCare({db,member,el,kind:view,status});
  if(view==='documents')void bindDocuments({db,member,el,status,stays});
+ if(view==='meals')void bindMeals({db,member,el});
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
 async function loadList(){
@@ -214,7 +231,8 @@ async function loadList(){
  if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,user,root,filter:moduleFilter,status,refresh:loadList});return}
  if(view==='evolution'){await loadEvolution({db,member,stays,root,status});return}
  if(view==='medications'||view==='resocialization'){await loadCareList({db,member,user,stays,root,kind:view,status,filter:moduleFilter});return}
- if(view==='tasks'){await loadTasks();return}
+ if(view==='tasks'){await loadEscala({db,member,user,stays,status,listRoot:root,preview:monitorPreview});return}
+ if(view==='meals'){await loadMealsList({db,member,root,filter:moduleFilter,el});return}
  if(view==='profile'){await loadProntuario({db,member,user,stays,stayId:el('profileStay')?.value,root,status});return}
  if(view==='documents'){await listDocuments({db,member,el,status,stays});return}
  if(view==='monitors'){await loadMonitors();return}
@@ -275,27 +293,12 @@ async function loadList(){
  }
  if(view==='stats'){root.textContent='Selecione mês e ano e consulte os indicadores administrativos.';return}
  if(view==='contributions'){await loadContributions();return}
- if(view==='meals'){
-  const base=db.from('crl_meals').select('id,meal_type,servings,served_at,notes,recorded_by,created_at').eq('institution_id',member.institution_id).is('deleted_at',null);
-  const r=await (moduleFilter==='month'?base.gte('served_at',new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()).lt('served_at',new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toISOString()):base).order('served_at',{ascending:false}).limit(100);
-  if(r.error){root.textContent='Falha ao consultar refeições.';return}
-  if(!r.data.length)root.textContent='Nenhuma refeição registrada.';
-  for(const m of r.data){
-   const item=addItem((MEAL_LABEL[m.meal_type]||m.meal_type)+' • '+m.servings+' refeições',fmt(m.served_at)+(m.notes?' — '+m.notes:''));
-   if(canChange(member,user,m.recorded_by,m.created_at))attachChanges(item,{db,status,entity:'meal',id:m.id,onDone:loadList,
-    edit:{fields:[{key:'meal_type',label:'Tipo de refeição',type:'select',value:m.meal_type,options:Object.entries(MEAL_LABEL)},
-     {key:'servings',label:'Quantidade servida',type:'number',min:1,value:m.servings,required:true},
-     {key:'served_at',label:'Data e hora',type:'datetime-local',value:m.served_at,required:true},
-     {key:'notes',label:'Observações',value:m.notes}]},del:{}});
-  }
-  return;
- }
  if(view==='notes'){
   if(!stays.length){root.textContent='Nenhum registro ainda.';return}
   const r=await db.from('crl_records').select('id,category,original_text,created_at,stay_id,author_id,correction_of,correction_reason').eq('institution_id',member.institution_id).in('stay_id',stays.map(s=>s.id)).order('created_at',{ascending:false}).limit(25);
   if(r.error){root.textContent='Falha ao consultar registros.';return}
   if(!r.data.length)root.textContent='Nenhuma rotina registrada.';
-  for(const x of r.data){const name=stays.find(s=>s.id===x.stay_id)?.crl_residents?.full_name||'Acolhido';const item=addItem(name+' • '+(NOTE_LABEL[x.category]||x.category)+(x.correction_of?' (corrigido)':''),fmt(x.created_at)+' — '+x.original_text+(x.correction_reason?' | Motivo: '+x.correction_reason:''));if(x.author_id===user.id||member.role==='admin'){const b=document.createElement('button');b.type='button';b.textContent='Corrigir registro';b.onclick=()=>showNoteCorrection(x,item);item.append(b)}}
+  for(const x of r.data){const name=stays.find(s=>s.id===x.stay_id)?.crl_residents?.full_name||'Acolhido';const item=addItem(name+' • '+(NOTE_LABEL[x.category]||x.category)+(x.correction_of?' (corrigido)':''),fmt(x.created_at)+' — '+x.original_text+(x.correction_reason?' | Motivo: '+x.correction_reason:''));if(member.role==='admin'){const b=document.createElement('button');b.type='button';b.textContent='Corrigir registro';b.onclick=()=>showNoteCorrection(x,item);item.append(b)}}
   return;
  }
  if(view==='devotionals'){
@@ -343,49 +346,17 @@ async function loadList(){
 
 
 
-async function loadTasks(){
- const root=el('listArea');root.replaceChildren();
- const base=db.from('crl_tasks').select('id,title,stay_id,recurrence,due_at,status,completed_at,created_by,created_at').eq('institution_id',member.institution_id).is('deleted_at',null);
- const r=await (moduleFilter==='today'?base.gte('due_at',new Date(new Date().toDateString()).toISOString()).lt('due_at',new Date(new Date(new Date().toDateString()).getTime()+86400000).toISOString()).neq('status','done'):base).order('due_at',{ascending:moduleFilter==='today'}).limit(100);
- if(r.error){root.textContent='Não foi possível carregar as tarefas.';return}
- if(!r.data?.length){root.textContent='Nenhuma tarefa cadastrada.';return}
- for(const t of r.data){
-   const resident=stays.find(s=>s.id===t.stay_id)?.crl_residents?.full_name||(t.stay_id?'Acolhido não ativo':'Equipe / geral');
-   const item=addItem(t.title,'Responsável: '+resident+' · '+fmt(t.due_at)+' · '+(REC_LABEL[t.recurrence]||'Única')+' · '+(t.status==='done'?'Concluída':'Programada'));
-   if(t.status==='planned'){
-    const button=document.createElement('button');button.type='button';button.textContent='Concluir tarefa';
-    button.onclick=async()=>{
-     if(!confirm('Confirmar conclusão desta tarefa?'))return;
-     button.disabled=true;
-     const answer=prompt('Observação da conclusão (opcional):');
-     if(answer===null){button.disabled=false;return}
-     const note=answer;
-     const result=await db.rpc('crl_complete_task',{p_task:t.id,p_notes:note});
-     if(result.error){status('Não foi possível concluir: '+result.error.message,true);button.disabled=false;return}
-     status('Tarefa concluída e próximo agendamento criado quando recorrente.');
-     await loadTasks();
-    };
-    item.append(button);
-   }
-   if(canChange(member,user,t.created_by,t.created_at))attachChanges(item,{db,status,entity:'task',id:t.id,onDone:loadTasks,
-    edit:t.status==='done'?null:{fields:[{key:'title',label:'Descrição da atividade',value:t.title,required:true},
-     {key:'stay_id',label:'Acolhido responsável',type:'select',value:t.stay_id||'',options:[['','Equipe / geral'],...stays.map(s=>[s.id,s.crl_residents?.full_name||'Acolhido'])]},
-     {key:'due_at',label:'Data e hora',type:'datetime-local',value:t.due_at,required:true},
-     {key:'recurrence',label:'Periodicidade',type:'select',value:t.recurrence||'unica',options:Object.entries(REC_LABEL)}]},del:{}});
- }
-}
-
 async function loadAttachments(){
  const root=el('listArea');root.replaceChildren();
  if(!stays.length){root.textContent='Nenhum acolhido ativo com acesso a arquivos.';return}
- const r=await db.from('crl_files').select('id,stay_id,category,storage_path,created_at,uploaded_by')
+ const r=await db.from('crl_files').select('id,stay_id,category,description,storage_path,created_at,uploaded_by')
  .eq('institution_id',member.institution_id).in('stay_id',stays.map(x=>x.id)).is('deleted_at',null)
  .order('created_at',{ascending:false}).limit(60);
  if(r.error){root.textContent='Não foi possível consultar os anexos.';return}
  if(!r.data.length){root.textContent='Nenhum arquivo anexado.';return}
  for(const file of r.data){
   const name=stays.find(st=>st.id===file.stay_id)?.crl_residents?.full_name||'Acolhido';
-  const item=addItem(name+' — '+((FILE_CATS.find(c=>c[0]===file.category)||[,file.category])[1]),fmt(file.created_at));
+  const item=addItem(name+' — '+(file.description||(FILE_CATS.find(c=>c[0]===file.category)||[,file.category])[1]),fmt(file.created_at)+(file.description?' · '+((FILE_CATS.find(c=>c[0]===file.category)||[,file.category])[1]):''));
   const b=document.createElement('button');b.type='button';b.textContent='Abrir documento (5 minutos)';
   b.onclick=async()=>{
    b.disabled=true;const signed=await db.storage.from('crl-private').createSignedUrl(file.storage_path,300);
@@ -393,8 +364,8 @@ async function loadAttachments(){
    if(signed.error||!signed.data?.signedUrl){status('Acesso ao arquivo não autorizado.',true);return}
    window.open(signed.data.signedUrl,'_blank','noopener,noreferrer');
   };item.append(b);
-  if(canChange(member,user,file.uploaded_by,file.created_at))attachChanges(item,{db,status,entity:'file',id:file.id,onDone:loadAttachments,
-   edit:{label:'Mudar categoria',fields:[{key:'category',label:'Categoria',type:'select',value:file.category,options:FILE_CATS}]},
+  if(member.role==='admin')attachChanges(item,{db,status,entity:'file',id:file.id,onDone:loadAttachments,
+   edit:{label:'Editar',fields:[{key:'category',label:'Categoria',type:'select',value:file.category,options:FILE_CATS},{key:'description',label:'O que é',value:file.description,max:300}]},
    del:{hint:'Use para foto ou documento enviado errado. Ele sai do prontuário, mas fica guardado para o ADM na Auditoria.'}});
  }
 }
@@ -469,7 +440,8 @@ async function uploadAttachment(){
  if(up.error){status('Falha no envio. Verifique conexão e permissão.',true);return}
  const row=await db.from('crl_files').insert({
   institution_id:member.institution_id,stay_id:stayId,
-  storage_path:path,category:el('fileCategory').value,uploaded_by:user.id
+  storage_path:path,category:el('fileCategory').value,uploaded_by:user.id,
+  ...(el('fileWhat')?.value.trim()?{description:el('fileWhat').value.trim()}:{})
  });
  if(row.error){status('Foto enviada, mas vínculo pendente. Não envie novamente; peça conferência ao ADM.',true);return}
  status('Arquivo privado associado ao prontuário.');
@@ -504,10 +476,8 @@ function showMonitorCredentials(username,password){
 }
 async function adminMonitors(body){
  if(member?.role!=='admin')throw Error('Acesso restrito ao ADM');
- const {data,error}=await db.functions.invoke('crl-admin-monitors',{body});
- if(error)throw Error(data?.error||'Serviço administrativo indisponível');
- if(data?.error)throw Error(data.error);
- return data;
+ if(monitorPreview)throw Error('Prévia apenas visual: volte ao ADM para cadastrar.');
+ return callFunction(db,'crl-admin-monitors',body);
 }
 async function loadMonitors(){
  const root=el('listArea');root.replaceChildren();
@@ -518,7 +488,7 @@ async function loadMonitors(){
   root.replaceChildren();
   if(!result.monitors?.length){root.textContent='Nenhum monitor cadastrado. Utilize o formulário Cadastrar monitor acima.';return}
   const diogo=result.monitors.find(m=>m.username==='diogo');
-  if(diogo){const quickBtn=el('activateDiogo');if(quickBtn){quickBtn.disabled=true;quickBtn.textContent=diogo.active?'Diogo já está ativo':'Diogo bloqueado — reative pela lista';}}
+  if(diogo){const card=el('monitorQuickCard');if(card)card.style.display='none';}
 
   for(const m of result.monitors){
    const label={aluno:'Aluno',voluntario:'Voluntário',contratado:'Contratado'}[m.monitor_vinculo]||'Vínculo não informado';
@@ -932,27 +902,16 @@ async function submit(e){
    if(member.role!=='admin')throw Error('permission');
    await searchHistory(el('searchName').value.trim());status('Pesquisa concluída.');return;
   }else if(view==='profile'){
-   await loadProntuario({db,member,user,stays,stayId:el('profileStay')?.value,root:el('listArea'),status});return;
+   status('');await loadProntuario({db,member,user,stays,stayId:el('profileStay')?.value,root:el('listArea'),status});return;
   }else if(view==='students'){
    await submitAdmission();return;
-  }else if(view==='tasks'){
-   const title=el('taskTitle').value.trim();
-   if(title.length<3||!el('taskDue').value){status('Informe atividade e horário.',true);return}
-   result=await db.from('crl_tasks').insert({
-    institution_id:member.institution_id,title,
-    stay_id:el('taskStay').value||null,
-    recurrence:el('taskRecurrence').value,
-    due_at:new Date(el('taskDue').value).toISOString(),
-    status:'planned',created_by:user.id
-   });
   }else if(view==='notes'){
    result=await db.from('crl_records').insert({institution_id:member.institution_id,stay_id:el('stay').value,category:el('category').value,original_text:el('description').value.trim(),author_id:user.id});
   }else if(view==='trips'){
    const km=Number(el('km').value);if(!Number.isFinite(km)||km<0)throw Error('km');
    result=await db.from('crl_vehicle_trips').insert({institution_id:member.institution_id,driver_name:el('driver').value.trim(),purpose:el('purpose').value,destination:el('destination').value.trim(),companions:el('companions').value.trim(),km_initial:km,departure_at:new Date(el('departure').value).toISOString(),created_by:user.id});
   }else if(view==='meals'){
-   const amount=Number(el('servings').value);if(!Number.isInteger(amount)||amount<=0)throw Error('quantity');
-   result=await db.from('crl_meals').insert({institution_id:member.institution_id,meal_type:el('mealType').value,servings:amount,served_at:new Date(el('servedAt').value).toISOString(),notes:el('mealNotes').value.trim(),recorded_by:user.id});
+   await submitMealsDay({db,member,el,status,refresh:loadList});return;
   }else if(view==='stats'){
    if(member.role!=='admin')throw Error('permission');
    const year=Number(el('year').value),month=Number(el('month').value);if(year<2020||year>2100)throw Error('invalid_year');
@@ -968,7 +927,7 @@ async function submit(e){
   if(result?.error)throw result.error;
   status('Registro salvo com sucesso.');
   await refresh();
- }catch(error){status('Não foi possível salvar. Confira as informações ou consulte o ADM.',true)}
+ }catch(error){status(friendlyError(error),true)}
  finally{btn.disabled=false}
 }
 init();

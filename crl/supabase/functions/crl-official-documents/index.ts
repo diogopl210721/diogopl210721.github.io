@@ -21,7 +21,7 @@ function wrapped(page:any,font:any,t:string,x:number,y:number,w:number){
  if(line){page.drawText(line,{x,y,size,font,color:rgb(.12,.14,.18)});y-=step}
  return y;
 }
-async function makePdf(s:any,signature:Uint8Array){
+async function makePdf(s:any,signature:Uint8Array|null){
  const pdf=await PDFDocument.create(),page=pdf.addPage([595.28,841.89]);
  const regular=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);
  const logo=await pdf.embedPng(asBytes(LOGO)),dimensions=logo.scaleToFit(480,109);
@@ -36,8 +36,10 @@ async function makePdf(s:any,signature:Uint8Array){
  y=wrapped(page,regular,"Sem previsão de alta.",65,y,460)-21;
  wrapped(page,regular,"Estamos à disposição para quaisquer esclarecimentos.",65,y,460);
  page.drawText("Atenciosamente",{x:65,y:240,font:regular,size:12});
- const sig=await pdf.embedPng(signature),sd=sig.scaleToFit(260,105);
- page.drawImage(sig,{x:165+(260-sd.width)/2,y:118,width:sd.width,height:sd.height});
+ if(signature){
+  const sig=await pdf.embedPng(signature),sd=sig.scaleToFit(260,105);
+  page.drawImage(sig,{x:165+(260-sd.width)/2,y:118,width:sd.width,height:sd.height});
+ }
  page.drawLine({start:{x:165,y:122},end:{x:425,y:122},thickness:.6,color:rgb(.31,.32,.36)});
  page.drawText("Francielly",{x:270,y:105,size:11,font:bold});
  page.drawText("Administradora - CRL",{x:246,y:91,size:9,font:regular});
@@ -95,13 +97,19 @@ Deno.serve(async(req:Request)=>{
   if(!stay||stay.status!=="active")return respond({error:"Acolhimento ativo não localizado"},404,origin);
   const person:any=Array.isArray(stay.crl_residents)?stay.crl_residents[0]:stay.crl_residents;
   if(!person?.full_name||(!person?.cpf&&!person?.rg))return respond({error:"Cadastre CPF ou RG no prontuário antes de emitir"},422,origin);
-  const {data:sign}=await db.from("crl_signatures").select("id,storage_path").eq("institution_id",institution).eq("active",true).maybeSingle();
-  if(!sign)return respond({error:"Cadastre a assinatura autorizada de Francielly"},422,origin);
-  const download=await db.storage.from("crl-signatures").download(sign.storage_path);
-  if(download.error||!download.data)return respond({error:"Assinatura privada indisponível"},500,origin);
-  const signature=new Uint8Array(await download.data.arrayBuffer());
-  if(signature.length>2097152)return respond({error:"Assinatura inválida"},422,origin);
-  const snapshot={name:clean(person.full_name),cpf:clean(person.cpf),rg:clean(person.rg),admission_date:stay.admission_date,issued_on:localDay()};
+  // Assinatura: entra sozinha (guardada em armazenamento privado) quando o ADM deixa a opção marcada.
+  const withSignature=body.with_signature!==false;
+  let sign:any=null,signature:Uint8Array|null=null;
+  if(withSignature){
+    const found=await db.from("crl_signatures").select("id,storage_path").eq("institution_id",institution).eq("active",true).maybeSingle();
+    sign=found.data;
+    if(!sign)return respond({error:"Nenhuma assinatura guardada. Desmarque a opção de assinatura ou guarde uma em Trocar a assinatura guardada."},422,origin);
+    const download=await db.storage.from("crl-signatures").download(sign.storage_path);
+    if(download.error||!download.data)return respond({error:"Assinatura privada indisponível"},500,origin);
+    signature=new Uint8Array(await download.data.arrayBuffer());
+    if(signature.length>2097152)return respond({error:"Assinatura inválida"},422,origin);
+  }
+  const snapshot={name:clean(person.full_name),cpf:clean(person.cpf),rg:clean(person.rg),admission_date:stay.admission_date,issued_on:localDay(),with_signature:withSignature};
   const pdf=await makePdf(snapshot,signature);
   const id=crypto.randomUUID(),number="CRL-"+snapshot.issued_on.slice(0,4)+"-"+id.slice(0,8).toUpperCase();
   const path=institution+"/"+stay.id+"/"+id+".pdf";
@@ -110,13 +118,13 @@ Deno.serve(async(req:Request)=>{
   const saved=await db.from("crl_documents").insert({
     id,institution_id:institution,stay_id:stay.id,template_type:"permanencia",status:"approved",
     pdf_storage_path:path,approved_by:user.id,approved_at:new Date().toISOString(),
-    signature_id:sign.id,issued_on:snapshot.issued_on,snapshot,document_number:number
+    signature_id:sign?.id??null,issued_on:snapshot.issued_on,snapshot,document_number:number
   }).select("id,document_number,issued_on,pdf_storage_path").single();
   if(saved.error){
     await db.storage.from("crl-documents").remove([path]);
     return respond({error:"Falha ao registrar emissão"},500,origin);
   }
-  await db.from("crl_audit_events").insert({institution_id:institution,actor_id:user.id,action:"document_approved",entity_name:"crl_documents",entity_id:id,data:{stay_id:stay.id,document_number:number}});
+  await db.from("crl_audit_events").insert({institution_id:institution,actor_id:user.id,action:"document_approved",entity_name:"crl_documents",entity_id:id,data:{stay_id:stay.id,document_number:number,with_signature:withSignature}});
   return respond({success:true,document:saved.data},200,origin);
  }catch(error){
   console.error("crl-official-documents",String(error).slice(0,200));

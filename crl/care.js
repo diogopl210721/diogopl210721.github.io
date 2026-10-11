@@ -1,6 +1,6 @@
 // CRL: controle administrativo de receitas e acompanhamento de ressocialização.
 // Registros são históricos; a tela não prescreve medicamentos ou doses.
-import {attachChanges,canChange,changeNote} from './changes.js';
+import {attachChanges,changeNote} from './changes.js';
 const MED_STATUS=[['administrado','Administrado conforme receita'],['recusado','Recusado'],['nao_administrado','Não administrado'],['indisponivel','Medicamento indisponível']];
 const RESOC_PURPOSES=['Visita familiar','Ressocialização programada','Compromisso pessoal autorizado','Culto','Outra atividade autorizada'];
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -20,7 +20,7 @@ export function careForm(kind,stays){
  if(kind==='medications')return '<h2>Medicamentos e receitas</h2><p class="muted">Registre somente as informações que constam na prescrição. O ADM precisa conferir antes do monitor registrar uma administração.</p>'+
   '<form id="dataForm">'+select+
   '<label>Receita anexada ao prontuário</label><select id="carePrescription" required><option value="">Carregando receitas...</option></select>'+
-  '<p class="muted">Se não houver receita, utilize a aba Arquivos e envie foto ou PDF na categoria Receita médica.</p>'+
+  '<p class="muted">Se a receita ainda não foi enviada, abra o Prontuário do acolhido e use “Enviar foto da receita”.</p>'+
   '<label>Nome transcrito da receita</label><input id="careMedName" maxlength="180" required>'+
   '<label>Dose conforme a receita</label><input id="careDose" maxlength="200" required>'+
   '<label>Horário / frequência conforme a receita</label><input id="careSchedule" maxlength="500" required>'+
@@ -55,14 +55,14 @@ async function loadPrescriptions({db,member,el,status}){
  const zero=document.createElement('option');zero.value='';zero.textContent='Selecione uma receita cadastrada';input.append(zero);
  if(!stay)return;
  const {data,error}=await db.from('crl_files')
-  .select('id,created_at,category').eq('institution_id',member.institution_id)
+  .select('id,created_at,category,description').eq('institution_id',member.institution_id)
   .eq('stay_id',stay).eq('category','receita').is('deleted_at',null).order('created_at',{ascending:false}).limit(100);
  if(error){status('Não foi possível consultar as receitas anexadas.',true);return}
  for(const file of data||[]){
   const opt=document.createElement('option');opt.value=file.id;
-  opt.textContent='Receita anexada em '+when(file.created_at);input.append(opt);
+  opt.textContent=(file.description?file.description+' · ':'Receita · ')+'enviada em '+when(file.created_at);input.append(opt);
  }
- if(!data?.length)status('Nenhuma receita anexada para esse acolhido. Envie pela aba Arquivos.',true);
+ if(!data?.length)status('Nenhuma receita enviada para esse acolhido. Envie pelo Prontuário (Enviar foto da receita).',true);
 }
 export async function submitCare({db,member,el,kind,status,refresh}){
  if(!member?.institution_id)return;
@@ -171,7 +171,7 @@ async function loadMedicationList({db,member,user,stays,root,status,filter='all'
    for(const evt of data||[]){const med=medications.find(x=>x.id===evt.medication_record_id);
     const label=(MED_STATUS.find(s=>s[0]===evt.status)||[,evt.status])[1];
     const div=item(recent,(med?lookup(med.stay_id)+' · '+med.medication_name:'Medicamento')+' · '+label,evt.notes||'Sem observação',when(evt.occurred_at)+(evt.corrected_at?' · '+changeNote(evt):''));
-    if(canChange(member,user,evt.recorded_by,evt.occurred_at))attachChanges(div,{db,status,entity:'medication_event',id:evt.id,onDone:reload,
+    if(member.role==='admin')attachChanges(div,{db,status,entity:'medication_event',id:evt.id,onDone:reload,
      edit:{label:'Corrigir',action:'correct',fields:[{key:'status',label:'O que aconteceu?',type:'select',value:evt.status,options:MED_STATUS},
       {key:'notes',label:'Observações ou justificativa',type:'textarea',value:evt.notes,max:1500}]}});
    }
@@ -246,7 +246,7 @@ async function loadResocializationList({db,member,user,stays,root,status,filter=
    'Saída: '+when(out.departure_at)+' · Previsto: '+when(out.expected_return_at)+' · '+responsible,
    'Justificativa: '+out.justification+(out.actual_return_at?' · Retorno: '+when(out.actual_return_at):'')+(out.corrected_at?' · '+changeNote(out):''));
   if(!out.actual_return_at)actionButton(el,'Registrar retorno',()=>showReturn({db,out,container:el,status,refresh:reload}));
-  if(canChange(member,user,out.authorization_by,out.created_at)){
+  if(member.role==='admin'){
    const fields=[{key:'purpose',label:'Finalidade',type:'select',value:out.purpose,options:[...new Set([out.purpose,...RESOC_PURPOSES])].map(x=>[x,x])},
     {key:'justification',label:'Justificativa',type:'textarea',value:out.justification,required:true},
     {key:'departure_at',label:'Saída',type:'datetime-local',value:out.departure_at,required:true},

@@ -1,4 +1,5 @@
 // CRL — emissão de declarações oficiais, acesso restrito ao ADM.
+import {callFunction} from './fn.js';
 const ptDate=date=>{
  if(!date)return '—';
  const parts=String(date).slice(0,10).split('-').map(Number);
@@ -7,11 +8,7 @@ const ptDate=date=>{
 };
 const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'America/Sao_Paulo'}).format(new Date());
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const signCall=async(db,action,additional={})=>{
- const {data,error}=await db.functions.invoke('crl-official-documents',{body:{action,...additional}});
- if(error||data?.error)throw new Error(data?.error||'Serviço de declarações indisponível');
- return data;
-};
+const signCall=(db,action,additional={})=>callFunction(db,'crl-official-documents',{action,...additional});
 export function documentForm(stays){
  const options=stays.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.crl_residents?.full_name||'Acolhido')+'</option>').join('');
  return '<div class="row"><h2>Declaração de permanência</h2><span class="admin-only-tag">Somente ADM</span></div>'+
@@ -27,19 +24,19 @@ export function documentForm(stays){
   '<div class="doc-inputs"><div><label>Tipo do documento</label><select id="docIdentityType"><option value="cpf">CPF</option><option value="rg">RG</option></select></div><div><label>CPF ou RG</label><input id="docIdentityValue" maxlength="30" placeholder="Número do documento"></div></div>'+
   '<button type="button" id="docSaveIdentity" class="secondary">Salvar identificação no prontuário</button>'+
   '<div id="docPreview" class="document-sheet"><p>Selecione um acolhido para visualizar a declaração.</p></div>'+
-  '<p class="muted">Prévia sem assinatura. A assinatura autorizada será aplicada somente depois da aprovação do ADM.</p>'+
-  '<button type="submit" id="docIssueButton" '+(!stays.length?'disabled':'')+'>Aprovar e gerar PDF privado</button>'+
+  '<label class="care-check doc-sign-option"><input type="checkbox" id="docWithSignature" checked> Incluir a assinatura da Francielly no PDF</label>'+
+  '<p id="docSignatureStatus" class="muted">Verificando a assinatura guardada...</p>'+
+  '<button type="submit" id="docIssueButton" '+(!stays.length?'disabled':'')+'>Aprovar e gerar PDF</button>'+
   '</form>'+
-  '<hr style="border:0;border-top:1px solid #e9edf1;margin:22px 0">'+
-  '<h2>Assinatura autorizada</h2><p id="docSignatureStatus" class="muted">Verificando cadastro da assinatura...</p>'+
-  '<label>Registrar ou substituir assinatura (PNG)</label>'+
+  '<details class="doc-sign-replace"><summary>Trocar a assinatura guardada</summary>'+
+  '<p class="muted">Só use se a assinatura mudar. Ela fica em armazenamento privado; não aparece no site nem no GitHub.</p>'+
   '<input type="file" id="docSignatureFile" accept="image/png">'+
-  '<p class="muted">Armazenamento privado; o arquivo não é publicado no GitHub nem na página.</p>'+
-  '<button type="button" id="docRegisterSignature" class="secondary">Cadastrar assinatura com autorização</button>';
+  '<button type="button" id="docRegisterSignature" class="secondary">Guardar nova assinatura</button></details>';
 }
 export async function bindDocuments({db,member,el,status,stays}){
  if(member?.role!=='admin')return;
  el('docStay')?.addEventListener('change',()=>loadPreview({db,member,el,status}));
+ el('docWithSignature')?.addEventListener('change',()=>{const n=document.querySelector('#docPreview .signature-note');if(n)n.textContent=el('docWithSignature').checked?'Assinatura da Francielly entra no PDF ao aprovar.':'Sem assinatura digital: espaço para assinar à mão.'});
  el('docRegisterSignature')?.addEventListener('click',()=>registerSignature({db,member,el,status}));
  el('docSaveIdentity')?.addEventListener('click',()=>saveIdentity({db,member,el,status}));
  await Promise.allSettled([signatureStatus({db,el}),loadPreview({db,member,el,status})]);
@@ -47,8 +44,14 @@ export async function bindDocuments({db,member,el,status,stays}){
 async function signatureStatus({db,el}){
  try{
   const r=await signCall(db,'signature_status');
-  el('docSignatureStatus').textContent=r.configured?'Assinatura institucional cadastrada e protegida.':'Assinatura ainda não cadastrada. É necessária para a emissão oficial.';
- }catch(e){el('docSignatureStatus').textContent='Não foi possível verificar a assinatura.'}
+  const box=el('docWithSignature');
+  if(r.configured){
+   el('docSignatureStatus').textContent='✓ Assinatura da Francielly já guardada. Ela entra sozinha no PDF quando a opção acima estiver marcada.';
+  }else{
+   el('docSignatureStatus').textContent='Nenhuma assinatura guardada ainda. Desmarque a opção para gerar sem assinatura, ou guarde uma em “Trocar a assinatura guardada”.';
+   if(box)box.checked=false;
+  }
+ }catch(e){el('docSignatureStatus').textContent='Não foi possível verificar a assinatura: '+(e?.message||'tente de novo.')}
 }
 async function loadPreview({db,member,el,status}){
  const id=el('docStay')?.value;
@@ -77,7 +80,7 @@ async function loadPreview({db,member,el,status}){
  ['p','Sem previsão de alta.'],
  ['p','Estamos à disposição para quaisquer esclarecimentos.'],
  ['p','Atenciosamente'],
- ['div','Assinatura de Francielly aplicada após aprovação do ADM.','signature-note']
+ ['div',el('docWithSignature')?.checked===false?'Sem assinatura digital: espaço para assinar à mão.':'Assinatura da Francielly entra no PDF ao aprovar.','signature-note']
  ];
  for(const [tag,content,cl] of sections){
   const node=document.createElement(tag);node.textContent=content;if(cl)node.className=cl;box.append(node);
@@ -114,6 +117,7 @@ async function registerSignature({db,member,el,status}){
   if(upload.error)throw new Error('Não foi possível enviar a assinatura privada.');
   await signCall(db,'signature_register',{path});
   el('docSignatureFile').value='';
+  const d=document.querySelector('.doc-sign-replace');if(d)d.open=false;
   await signatureStatus({db,el});
   status('Assinatura institucional registrada no armazenamento privado.');
  }catch(e){status(e.message||'Falha no cadastro da assinatura.',true)}
@@ -122,11 +126,12 @@ async function registerSignature({db,member,el,status}){
 export async function issueDocument({db,member,el,status,loadDocuments}){
  if(member?.role!=='admin')return;
  const id=el('docStay')?.value;if(!id){status('Selecione o acolhido.',true);return}
- if(!confirm('Aprova a emissão desta declaração oficial com a assinatura cadastrada de Francielly?'))return;
+ const withSignature=el('docWithSignature')?.checked!==false;
+ if(!confirm(withSignature?'Aprovar a declaração com a assinatura da Francielly?':'Aprovar a declaração SEM assinatura (para assinar à mão)?'))return;
  const btn=el('docIssueButton');btn.disabled=true;
  try{
-  const result=await signCall(db,'issue',{stay_id:id,template_type:'permanencia',approve:true});
-  status('Documento '+result.document.document_number+' aprovado e arquivado em PDF privado.');
+  const result=await signCall(db,'issue',{stay_id:id,template_type:'permanencia',approve:true,with_signature:withSignature});
+  status('Declaração '+result.document.document_number+' gerada '+(withSignature?'com':'sem')+' assinatura. Abra ou compartilhe na lista ao lado.');
   await loadDocuments();
  }catch(e){status(e.message||'Não foi possível emitir a declaração.',true)}
  finally{btn.disabled=false}

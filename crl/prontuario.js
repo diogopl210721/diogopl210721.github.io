@@ -1,10 +1,12 @@
 // CRL — prontuário operacional. Todos os dados são consultados sob RLS do Supabase.
 // Monitores visualizam somente a passagem ativa; ADM pode consultar o histórico.
-import {attachChanges,canChange,changeNote} from './changes.js';
+// Só o ADM corrige o prontuário. O monitor pode enviar a foto da receita dizendo o que é.
+import {attachChanges,changeNote} from './changes.js';
 const ATT_LABEL={present:'Presente',absent:'Falta',late:'Atrasou',excused:'Falta justificada'};
 const NOTE_LABEL={rotina:'Rotina',ocorrencia:'Ocorrência',observacao:'Observação'};
 const MED_LABEL={administrado:'Administrado',recusado:'Recusado',nao_administrado:'Não administrado',indisponivel:'Indisponível'};
 const REQ_LABEL={pending:'Aguardando ADM',approved:'Aprovada',rejected:'Rejeitada'};
+const FILE_LABEL={documento:'Documento',receita:'Receita médica',pertences:'Pertences',foto:'Fotografia',outro:'Anexo'};
 const STAY_LABEL={active:'Ativo',concluded:'Concluiu',requested:'Alta pedida',administrative:'Alta administrativa',abandoned:'Abandono',other:'Outra saída'};
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -50,6 +52,32 @@ function addPrintStyle(){
  document.head.append(style);
 }
 export const prontuarioForm=stays=>'<h2>Prontuário do acolhido</h2><p class="muted">Consulte a passagem ativa, os registros e documentos autorizados. O histórico é preservado mesmo após a saída.</p><form id="dataForm"><label>Acolhido ativo</label><select id="profileStay" required>'+stays.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.crl_residents?.full_name||'Acolhido')+'</option>').join('')+'</select><button type="submit" '+(!stays.length?'disabled':'')+'>Abrir prontuário</button></form><p class="muted">Para ex-acolhidos, o ADM utiliza Histórico e retornos.</p>';
+// Caixa "Enviar receita": foto (ou PDF) + o que é. Vai para o prontuário e para a conferência do ADM em Medicamentos.
+function receiptBox({db,member,user,stayId,status,reload}){
+ const box=node('form',null,'receipt-box');
+ box.innerHTML='<h3>Enviar foto da receita</h3><p class="muted">Tire a foto da receita e escreva o que é. Só o ADM edita depois de enviado.</p>'+
+  '<label for="rxFile">Foto ou PDF da receita</label><input id="rxFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" required>'+
+  '<label for="rxWhat">O que é</label><input id="rxWhat" maxlength="300" placeholder="Ex.: Receita de Dipirona 500mg — Dr. João, posto de saúde" required>'+
+  '<button type="submit">Enviar receita</button>';
+ box.onsubmit=async e=>{
+  e.preventDefault();
+  const f=box.querySelector('#rxFile').files?.[0];const what=box.querySelector('#rxWhat').value.trim();
+  const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'}[f?.type];
+  if(!f||!ext||f.size>10*1024*1024){status('Use foto JPG, PNG, WebP ou PDF de até 10 MB.',true);return}
+  if(what.length<3){status('Escreva o que é a receita.',true);return}
+  const btn=box.querySelector('button');btn.disabled=true;status('Enviando a receita...');
+  try{
+   const path=member.institution_id+'/'+stayId+'/'+crypto.randomUUID()+'.'+ext;
+   const up=await db.storage.from('crl-private').upload(path,f,{contentType:f.type,upsert:false});
+   if(up.error){status('Não foi possível enviar a foto. Confira a internet e tente de novo.',true);return}
+   const row=await db.from('crl_files').insert({institution_id:member.institution_id,stay_id:stayId,storage_path:path,category:'receita',description:what,uploaded_by:user.id});
+   if(row.error){status('A foto subiu, mas não foi ligada ao prontuário. Avise o ADM e não envie de novo.',true);return}
+   status('Receita enviada. Ela aparece no prontuário e em Medicamentos para o ADM conferir.');
+   await reload();
+  }finally{btn.disabled=false}
+ };
+ return box;
+}
 export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  const reload=()=>loadProntuario({db,member,user,stays,stayId,root,status});
  addPrintStyle();
@@ -74,8 +102,8 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  const queries={
   records:db.from('crl_records').select('id,category,original_text,created_at,correction_of,correction_reason').eq('institution_id',tenant).eq('stay_id',stayId).order('created_at',{ascending:false}).limit(250),
   attendance:db.from('crl_attendance').select('id,status,justification,entered_by,created_at,corrected_at,correction_reason,crl_activities(title,type,starts_at,presenter,deleted_at)').eq('institution_id',tenant).eq('stay_id',stayId).limit(250),
-  tasks:db.from('crl_tasks').select('title,status,due_at,recurrence').eq('institution_id',tenant).eq('stay_id',stayId).is('deleted_at',null).order('due_at',{ascending:false}).limit(250),
-  files:db.from('crl_files').select('category,storage_path,created_at').eq('institution_id',tenant).eq('stay_id',stayId).is('deleted_at',null).order('created_at',{ascending:false}).limit(200),
+  tasks:db.from('crl_task_assignments').select('task_name,created_at,crl_task_weeks(week_start),crl_task_checks(day,done,justification)').eq('institution_id',tenant).eq('stay_id',stayId).is('deleted_at',null).order('created_at',{ascending:false}).limit(60),
+  files:db.from('crl_files').select('category,description,storage_path,created_at').eq('institution_id',tenant).eq('stay_id',stayId).is('deleted_at',null).order('created_at',{ascending:false}).limit(200),
   resocialization:db.from('crl_resocializations').select('purpose,justification,departure_at,expected_return_at,actual_return_at,picked_up_by,no_responsible_pickup,return_notes,corrected_at,correction_reason').eq('institution_id',tenant).eq('stay_id',stayId).order('departure_at',{ascending:false}).limit(120),
   medrequests:db.from('crl_medication_requests').select('medication_name,dose_text,schedule_text,request_status,created_at,review_notes').eq('institution_id',tenant).eq('stay_id',stayId).order('created_at',{ascending:false}).limit(80),
   medications:db.from('crl_medication_records').select('id,medication_name,dose_text,schedule_text,verified_by,corrected_at,correction_reason,suspended_at,suspension_reason').eq('institution_id',tenant).eq('stay_id',stayId).limit(80),
@@ -115,6 +143,7 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  // Exportar e imprimir levam dados de saúde para fora do sistema: somente ADM.
  if(member.role==='admin')controls.append(csv,print);
  heading.append(desc,controls);card.append(heading);
+ if(st.status==='active')card.append(receiptBox({db,member,user,stayId,status,reload}));
  const days=Math.max(0,Math.floor((new Date((st.departure_date||new Date().toISOString().slice(0,10))+'T12:00:00Z')-new Date(st.admission_date+'T12:00:00Z'))/86400000));
  const count=(key)=>failed.includes(key)?'Indisponível':String(results[key].length);
  const kpis=[
@@ -140,7 +169,7 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  const attend=results.attendance.map(x=>{
   const activity=actOf(x);
   const div=line(activity?.title||'Devocional',(ATT_LABEL[x.status]||x.status)+(x.justification?' · Justificativa: '+x.justification:''),dateTime(activity?.starts_at)+' · '+(activity?.presenter||'')+(x.corrected_at?' · '+changeNote(x):''));
-  if(canChange(member,user,x.entered_by,x.created_at))attachChanges(div,{db,status,entity:'attendance',id:x.id,onDone:reload,
+  if(member.role==='admin')attachChanges(div,{db,status,entity:'attendance',id:x.id,onDone:reload,
    edit:{label:'Corrigir presença',action:'correct',fields:[{key:'status',label:'Presença',type:'select',value:x.status,options:Object.entries(ATT_LABEL)},
     {key:'justification',label:'Justificativa (obrigatória em falta)',value:x.justification}]}});
   return div;
@@ -152,8 +181,12 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
    const fraction=Math.round(100*(p+l)/results.attendance.length);
    card.append(node('p','Resumo das marcações consultadas: '+(p+l)+' de '+results.attendance.length+' presenças ('+fraction+'%). Faltas: '+a+'; justificadas: '+e+'. Este indicador não é uma avaliação clínica.','profile-warning'));
  }
- const tasks=results.tasks.map(x=>line(x.title,x.status==='done'?'Concluída':'Programada',dateTime(x.due_at)+(x.recurrence?' · '+x.recurrence:'')));
- card.append(detail('Tarefas atribuídas',tasks.length?listBox(tasks):null));
+ const weekOf=x=>(Array.isArray(x.crl_task_weeks)?x.crl_task_weeks[0]:x.crl_task_weeks)?.week_start;
+ const tasks=results.tasks.map(x=>{
+  const checks=x.crl_task_checks||[];const done=checks.filter(c=>c.done).length;const missed=checks.filter(c=>!c.done);
+  return line(x.task_name,'Fez '+done+' dia(s)'+(missed.length?' · Não fez '+missed.length+': '+missed.map(c=>dateOnly(c.day)+' ('+c.justification+')').join('; '):''),'Escala da semana de '+dateOnly(weekOf(x)));
+ });
+ card.append(detail('Escala de tarefas',tasks.length?listBox(tasks):null));
  const med=results.medications.map(x=>line(x.medication_name+(x.suspended_at?' (suspenso)':''),(x.dose_text||'Dose não informada')+' · '+(x.schedule_text||'Horário não informado'),(x.verified_by?'Conferido pelo ADM':'Pendente de conferência ADM')+((x.corrected_at||x.suspended_at)?' · '+changeNote(x):'')));
  card.append(detail('Medicamentos — prescrições conferidas',med.length?listBox(med):null));
  const requests=results.medrequests.map(x=>line(x.medication_name,
@@ -174,7 +207,7 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  card.append(node('p','Informações de medicamentos são somente registros operacionais e não substituem prescrição ou orientação profissional.','profile-warning'));
  const files=node('div',null,'profile-files');
  results.files.forEach(f=>{
-  const b=node('button',f.category+' · '+dateTime(f.created_at));b.type='button';
+  const b=node('button',(f.description||FILE_LABEL[f.category]||f.category)+' · '+dateTime(f.created_at));b.type='button';
   b.onclick=async()=>{
    const res=await db.storage.from('crl-private').createSignedUrl(f.storage_path,180);
    if(res.error||!res.data?.signedUrl){status('Arquivo indisponível ou acesso negado.',true);return}
@@ -217,8 +250,8 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  const exportRows=[['CRL — PRONTUÁRIO',''],['Acolhido',person.full_name],['Admissão',dateOnly(st.admission_date)],['Situação',st.status],['Exportação',new Date().toLocaleString('pt-BR')],['Categoria','Data','Descrição','Detalhe']];
  results.records.forEach(x=>exportRows.push(['Registro',dateTime(x.created_at),x.category,x.original_text+(x.correction_reason?' | Retificação: '+x.correction_reason:'')]));
  results.attendance.forEach(x=>{const ac=Array.isArray(x.crl_activities)?x.crl_activities[0]:x.crl_activities;exportRows.push(['Devocional',dateTime(ac?.starts_at),ac?.title,x.status+(x.justification?' | '+x.justification:'')])});
- results.tasks.forEach(x=>exportRows.push(['Tarefa',dateTime(x.due_at),x.title,x.status]));
- results.files.forEach(x=>exportRows.push(['Arquivo',dateTime(x.created_at),x.category,'Arquivo privado; não incluído na exportação CSV']));
+ results.tasks.forEach(x=>{const ch=x.crl_task_checks||[];exportRows.push(['Escala de tarefas',dateOnly(weekOf(x)),x.task_name,'Fez '+ch.filter(c=>c.done).length+' · Não fez '+ch.filter(c=>!c.done).length])});
+ results.files.forEach(x=>exportRows.push(['Arquivo',dateTime(x.created_at),x.description||x.category,'Arquivo privado; não incluído na exportação CSV']));
  results.resocialization.forEach(x=>exportRows.push(['Ressocialização',dateTime(x.departure_at),x.purpose,
   x.justification+' | Responsável: '+(x.no_responsible_pickup?'Sem responsável':(x.picked_up_by||'—'))+' | Retorno: '+dateTime(x.actual_return_at)+(x.return_notes?' | '+x.return_notes:'')]));
  results.medrequests.forEach(x=>exportRows.push(['Solicitação de medicamento',dateTime(x.created_at),x.medication_name,x.request_status+' | '+x.dose_text+' | '+x.schedule_text]));
