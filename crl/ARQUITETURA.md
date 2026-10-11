@@ -153,3 +153,11 @@ Migração `crl_fix_resident_visibility_and_tenant_references` aplicada ao Supab
 - RPC `crl_approve_evolution_report`: exige ADM ativo, revisão do texto (40–15000 caracteres) e competência já encerrada; congela texto e snapshot após aprovação. Inclusão e atualização direta da tabela negadas para usuários autenticados.
 - Tela `crl/evolution.js` adicionada ao menu **Evolução mensal (ADM)**: seleção de acolhido, competência, fontes rastreáveis, edição do parecer, aprovação e impressão/Salvar PDF no navegador; atalho também no painel ADM.
 - **Limite:** texto automático segue regras determinísticas, não integração real de IA. A impressão é do navegador, não PDF oficial assinado/arquivado no Supabase; o arquivo aprovado permanece imutável na tabela. Validar paginação/evidências extensas e fluxos autenticados antes de usar dados reais.
+
+
+## Iteração — revisão assistida local e rastreabilidade (11/10/2026)
+- `crl_evolution_reports` recebeu os campos `reviewed_draft_text`, `reviewed_draft_at`, `reviewed_draft_by`. A RPC `crl_save_evolution_review_draft` permite ao ADM salvar uma revisão sem aprová-la, registrando autoria e auditoria.
+- `crl/evolution.js` agora mostra sugestões **determinísticas** baseadas nas contagens e alertas de dados ausentes, sem transferência a IA externa. Não apresenta inferências de saúde ou diagnóstico. Exibe o rascunho revisado salvo e preserva o status `draft` até aprovação explícita.
+- `crl/prontuario.js` mostra os relatórios mensais em seção visível apenas a ADM, preservando o histórico e exportando o texto somente após aprovação. Os rascunhos são identificados como não aprovados.
+- Conferência: sintaxe do módulo validada; RPC de revisão presente e executável por `authenticated`, sem permissão de `UPDATE` direto na tabela. Nenhum relatório real gerado ou homologado via navegador.
+- **Pendências:** teste ponta a ponta do fluxo de relatório com conta de teste, validação de evidências extensas, proteção anti-concorrência de revisões, consentimento e base legal de dados sensíveis antes de conectar serviço externo de IA.
