@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Link de Avaliação Google</title>
+<meta name="description" content="Busque a empresa e gere o link que abre direto a tela de avaliação do Google.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EEF1F5;
+    --surface: #FFFFFF;
+    --ink: #16233A;
+    --muted: #566781;
+    --line: #D5DCE6;
+    --hover: #F1F4F9;
+    --focus: #2E62E6;
+    --star: #E8A512;
+    --ok: #1C7A4A;
+    --danger: #B42318;
+    --danger-bg: #FDECEA;
+    --btn-bg: #16233A;
+    --btn-fg: #FFFFFF;
+    --mark: #FFF1C9;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1726;
+      --surface: #17223A;
+      --ink: #EAF0F8;
+      --muted: #9AA9C0;
+      --line: #2A3954;
+      --hover: #1E2B46;
+      --focus: #7FA4FF;
+      --star: #F2B01E;
+      --ok: #5FD39A;
+      --danger: #FF8A80;
+      --danger-bg: #3A1D22;
+      --btn-bg: #EAF0F8;
+      --btn-fg: #0F1726;
+      --mark: #4A3B12;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1726;
+    --surface: #17223A;
+    --ink: #EAF0F8;
+    --muted: #9AA9C0;
+    --line: #2A3954;
+    --hover: #1E2B46;
+    --focus: #7FA4FF;
+    --star: #F2B01E;
+    --ok: #5FD39A;
+    --danger: #FF8A80;
+    --danger-bg: #3A1D22;
+    --btn-bg: #EAF0F8;
+    --btn-fg: #0F1726;
+    --mark: #4A3B12;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 17px/1.55 "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+
+  .topo { padding: 22px 0 0; }
+  .marca {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--muted); text-decoration: none; font-weight: 700; font-size: 15px;
+  }
+  .marca svg { width: 18px; height: 18px; fill: var(--star); }
+
+  .abertura { padding: 56px 0 28px; }
+  h1 {
+    font-family: "Bricolage Grotesque", "Segoe UI", Arial, sans-serif;
+    font-weight: 700;
+    font-size: clamp(34px, 7vw, 56px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    margin: 0 0 16px;
+    max-width: 14ch;
+  }
+  .lead { margin: 0; color: var(--muted); font-size: 18px; max-width: 54ch; }
+
+  /* Busca */
+  .busca { position: relative; }
+  .busca label { display: block; font-weight: 700; margin-bottom: 8px; }
+  .campo {
+    position: relative;
+    display: flex; align-items: center;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    transition: border-color .15s;
+  }
+  .campo:focus-within { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent); }
+  .campo > svg { width: 22px; height: 22px; margin-left: 16px; flex: none; stroke: var(--muted); fill: none; stroke-width: 2; }
+  #q {
+    flex: 1; min-width: 0;
+    border: 0; outline: 0; background: transparent; color: var(--ink);
+    font: inherit; font-size: 18px;
+    padding: 16px 12px;
+  }
+  #q::placeholder { color: var(--muted); opacity: .8; }
+  .girando {
+    width: 20px; height: 20px; margin-right: 6px; flex: none;
+    border: 2.5px solid var(--line); border-top-color: var(--ink); border-radius: 50%;
+    animation: gira .7s linear infinite;
+    visibility: hidden;
+  }
+  .campo.carregando .girando { visibility: visible; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  #limpar {
+    flex: none; width: 44px; height: 44px; margin-right: 6px;
+    border: 0; border-radius: 10px; background: transparent; color: var(--muted);
+    font-size: 24px; line-height: 1; cursor: pointer;
+  }
+  #limpar:hover { background: var(--hover); color: var(--ink); }
+  .dica { margin: 10px 2px 0; color: var(--muted); font-size: 15px; }
+
+  #lista {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 10;
+    margin: 0; padding: 6px; list-style: none;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 18px 40px -18px rgba(10, 20, 40, .35);
+    max-height: min(60vh, 420px); overflow-y: auto;
+  }
+  #lista[hidden] { display: none; }
+  #lista li {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  }
+  #lista li[aria-selected="true"], #lista li:hover { background: var(--hover); }
+  #lista li .pin { width: 18px; height: 18px; margin-top: 3px; flex: none; fill: var(--muted); }
+  #lista .nome { display: block; font-weight: 700; }
+  #lista .nome mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
+  #lista .end { display: block; color: var(--muted); font-size: 15px; }
+  #lista li.vazio { cursor: default; color: var(--muted); display: block; }
+  #lista li.vazio:hover { background: transparent; }
+
+  /* Avisos */
+  #aviso {
+    margin-top: 16px; padding: 12px 14px;
+    border-radius: 12px; background: var(--danger-bg); color: var(--danger);
+    font-size: 15px;
+  }
+  #aviso[hidden] { display: none; }
+
+  /* Resultado */
+  #resultado {
+    margin-top: 36px;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 24px;
+  }
+  #resultado[hidden] { display: none; }
+  .estrelas { display: flex; gap: 3px; margin-bottom: 14px; }
+  .estrelas svg { width: 20px; height: 20px; fill: var(--star); }
+  #res-nome {
+    font-family: "Bricolage Grotesque", "Segoe UI", Arial, sans-serif;
+    font-size: 26px; line-height: 1.15; font-weight: 700;
+    margin: 0 0 4px;
+  }
+  #res-end { margin: 0 0 22px; color: var(--muted); }
+  .rotulo { display: block; font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  #res-link {
+    width: 100%;
+    font: 400 15px/1.45 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    resize: none;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    display: block;
+  }
+  .acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; padding: 0 20px;
+    border-radius: 12px; border: 1.5px solid var(--line);
+    background: var(--surface); color: var(--ink);
+    font: 700 16px/1 "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
+    text-decoration: none; cursor: pointer;
+  }
+  .btn:hover { background: var(--hover); }
+  .btn.principal { background: var(--btn-bg); color: var(--btn-fg); border-color: var(--btn-bg); }
+  .btn.principal:hover { opacity: .9; background: var(--btn-bg); }
+  .btn.feito, .btn.feito:hover { background: var(--ok); border-color: var(--ok); color: #fff; opacity: 1; }
+  .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .pid { margin: 20px 0 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+  .pid code { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; color: var(--ink); }
+
+  .rodape { padding: 56px 0 32px; color: var(--muted); font-size: 14px; }
+
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  #q:focus-visible { outline: none; }
+
+  @media (max-width: 520px) {
+    .abertura { padding: 36px 0 22px; }
+    #resultado { padding: 18px; }
+    .acoes .btn { flex: 1 1 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .girando { animation-duration: 2s; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topo">
+      <a class="marca" href="/">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 17.3l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z"/></svg>
+        DDS Inovação
+      </a>
+    </header>
+
+    <main>
+      <section class="abertura">
+        <h1>Link de avaliação do Google</h1>
+        <p class="lead">Digite o nome da empresa, escolha na lista e receba o link que abre direto a tela de avaliação no Google.</p>
+      </section>
+
+      <div class="busca">
+        <label for="q" id="q-label">Nome da empresa</label>
+        <div class="campo" id="campo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+          <input id="q" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="Ex.: Padaria Bom Dia Curitiba"
+                 role="combobox" aria-autocomplete="list" aria-expanded="false"
+                 aria-controls="lista" aria-labelledby="q-label">
+          <span class="girando" aria-hidden="true"></span>
+          <button id="limpar" type="button" aria-label="Limpar busca" hidden>&times;</button>
+        </div>
+        <ul id="lista" role="listbox" aria-labelledby="q-label" hidden></ul>
+        <p class="dica">Colocar a cidade junto com o nome ajuda a achar mais rápido.</p>
+      </div>
+
+      <div id="aviso" role="alert" hidden></div>
+
+      <section id="resultado" aria-live="polite" hidden>
+        <div class="estrelas" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 17.3l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 17.3l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 17.3l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 17.3l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 17.3l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z"/></svg>
+        </div>
+        <h2 id="res-nome"></h2>
+        <p id="res-end"></p>
+
+        <label class="rotulo" for="res-link">Link de avaliação</label>
+        <textarea id="res-link" rows="2" readonly></textarea>
+
+        <div class="acoes">
+          <button class="btn principal" id="btn-copiar" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>
+            <span>Copiar link</span>
+          </button>
+          <a class="btn" id="btn-abrir" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+            Abrir link
+          </a>
+        </div>
+
+        <p class="pid">Place ID: <code id="res-pid"></code></p>
+      </section>
+    </main>
+
+    <footer class="rodape">DDS Inovação</footer>
+  </div>
+
+<script>
+/* ===================== CONFIGURAÇÃO ===================== */
+const CONFIG = {
+  // Cole aqui a sua chave da API do Google Maps Platform
+  // (com "Maps JavaScript API" e "Places API (New)" ativadas).
+  GOOGLE_MAPS_API_KEY: "AIzaSyDGe2jXvB5DsjZUpj3soksCqk1qdsnM89M",
+  PAISES: ["br"],      // restringe a busca ao Brasil. Use [] para o mundo todo.
+  IDIOMA: "pt-BR",
+  REGIAO: "br",
+};
+/* ======================================================== */
+
+const LINK_BASE = "https://search.google.com/local/writereview?placeid=";
+
+const el = {
+  campo: document.getElementById("campo"),
+  q: document.getElementById("q"),
+  limpar: document.getElementById("limpar"),
+  lista: document.getElementById("lista"),
+  aviso: document.getElementById("aviso"),
+  resultado: document.getElementById("resultado"),
+  nome: document.getElementById("res-nome"),
+  end: document.getElementById("res-end"),
+  link: document.getElementById("res-link"),
+  copiar: document.getElementById("btn-copiar"),
+  abrir: document.getElementById("btn-abrir"),
+  pid: document.getElementById("res-pid"),
+};
+
+const estado = { token: null, pedido: 0, itens: [], ativo: -1, timer: null };
+let carregamento = null;
+
+/* ---------- Carrega a API do Google sob demanda ---------- */
+function carregarGoogle() {
+  if (carregamento) return carregamento;
+  if (!CONFIG.GOOGLE_MAPS_API_KEY) return Promise.reject(new Error("SEM_CHAVE"));
+  carregamento = new Promise((resolve, reject) => {
+    window.__ddsGooglePronto = resolve;
+    const params = new URLSearchParams({
+      key: CONFIG.GOOGLE_MAPS_API_KEY,
+      v: "weekly",
+      loading: "async",
+      callback: "__ddsGooglePronto",
+      language: CONFIG.IDIOMA,
+      region: CONFIG.REGIAO,
+    });
+    const s = document.createElement("script");
+    s.src = "https://maps.googleapis.com/maps/api/js?" + params.toString();
+    s.async = true;
+    s.onerror = () => reject(new Error("FALHA_CARREGAR"));
+    document.head.appendChild(s);
+  }).then(() => google.maps.importLibrary("places"));
+  carregamento.catch(() => { carregamento = null; });
+  return carregamento;
+}
+
+// O Google chama esta função quando a chave é recusada.
+window.gm_authFailure = () => mostrarAviso("chave");
+
+/* ---------- Busca ---------- */
+async function buscar(texto) {
+  const id = ++estado.pedido;
+  el.campo.classList.add("carregando");
+  try {
+    const places = await carregarGoogle();
+    if (!estado.token) estado.token = new places.AutocompleteSessionToken();
+    const pedido = {
+      input: texto,
+      sessionToken: estado.token,
+      language: CONFIG.IDIOMA,
+      region: CONFIG.REGIAO,
+    };
+    if (CONFIG.PAISES.length) pedido.includedRegionCodes = CONFIG.PAISES;
+
+    const { suggestions } = await places.AutocompleteSuggestion.fetchAutocompleteSuggestions(pedido);
+    if (id !== estado.pedido) return;
+
+    let previsoes = (suggestions || []).map((s) => s.placePrediction).filter(Boolean);
+    // Mostra estabelecimentos primeiro; se não houver nenhum, mostra o que veio.
+    const empresas = previsoes.filter((p) =>
+      (p.types || []).some((t) => t === "establishment" || t === "point_of_interest")
+    );
+    if (empresas.length) previsoes = empresas;
+
+    esconderAviso();
+    montarLista(previsoes.map((p) => ({
+      placeId: p.placeId,
+      nome: (p.mainText && p.mainText.text) || (p.text && p.text.text) || "",
+      endereco: (p.secondaryText && p.secondaryText.text) || "",
+      destaques: (p.mainText && p.mainText.matches) || [],
+    })));
+  } catch (erro) {
+    if (id !== estado.pedido) return;
+    console.error(erro);
+    fecharLista();
+    if (erro && erro.message === "SEM_CHAVE") mostrarAviso("sem-chave");
+    else if (erro && erro.message === "FALHA_CARREGAR") mostrarAviso("carregar");
+    else mostrarAviso("api");
+  } finally {
+    if (id === estado.pedido) el.campo.classList.remove("carregando");
+  }
+}
+
+/* ---------- Lista de sugestões ---------- */
+function montarLista(itens) {
+  estado.itens = itens;
+  estado.ativo = -1;
+  el.lista.replaceChildren();
+
+  if (!itens.length) {
+    const li = document.createElement("li");
+    li.className = "vazio";
+    li.textContent = "Nenhuma empresa encontrada com esse nome. Tente incluir a cidade ou o bairro.";
+    el.lista.appendChild(li);
+  }
+
+  itens.forEach((item, i) => {
+    const li = document.createElement("li");
+    li.id = "opcao-" + i;
+    li.setAttribute("role", "option");
+    li.setAttribute("aria-selected", "false");
+
+    li.insertAdjacentHTML("afterbegin",
+      '<svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>');
+
+    const textos = document.createElement("span");
+    const nome = document.createElement("span");
+    nome.className = "nome";
+    pintarDestaques(nome, item.nome, item.destaques);
+    textos.appendChild(nome);
+
+    if (item.endereco) {
+      const end = document.createElement("span");
+      end.className = "end";
+      end.textContent = item.endereco;
+      textos.appendChild(end);
+    }
+    li.appendChild(textos);
+
+    li.addEventListener("mousedown", (e) => e.preventDefault()); // mantém o foco no campo
+    li.addEventListener("click", () => escolher(i));
+    el.lista.appendChild(li);
+  });
+
+  el.lista.hidden = false;
+  el.q.setAttribute("aria-expanded", "true");
+  el.q.removeAttribute("aria-activedescendant");
+}
+
+function pintarDestaques(alvo, texto, destaques) {
+  let pos = 0;
+  const trechos = [...destaques]
+    .map((d) => ({ ini: d.startOffset, fim: d.endOffset }))
+    .filter((d) => d.fim > d.ini)
+    .sort((a, b) => a.ini - b.ini);
+  for (const d of trechos) {
+    if (d.ini < pos) continue;
+    if (d.ini > pos) alvo.appendChild(document.createTextNode(texto.slice(pos, d.ini)));
+    const m = document.createElement("mark");
+    m.textContent = texto.slice(d.ini, d.fim);
+    alvo.appendChild(m);
+    pos = d.fim;
+  }
+  if (pos < texto.length) alvo.appendChild(document.createTextNode(texto.slice(pos)));
+}
+
+function marcarAtivo(i) {
+  const opcoes = el.lista.querySelectorAll('[role="option"]');
+  if (!opcoes.length) return;
+  estado.ativo = (i + opcoes.length) % opcoes.length;
+  opcoes.forEach((o, n) => o.setAttribute("aria-selected", n === estado.ativo ? "true" : "false"));
+  const atual = opcoes[estado.ativo];
+  el.q.setAttribute("aria-activedescendant", atual.id);
+  atual.scrollIntoView({ block: "nearest" });
+}
+
+function fecharLista() {
+  el.lista.hidden = true;
+  el.q.setAttribute("aria-expanded", "false");
+  el.q.removeAttribute("aria-activedescendant");
+  estado.ativo = -1;
+}
+
+/* ---------- Resultado ---------- */
+function escolher(i) {
+  const item = estado.itens[i];
+  if (!item) return;
+  fecharLista();
+  estado.token = null; // a próxima busca abre uma sessão nova
+  el.q.value = item.nome;
+  mostrarResultado(item);
+}
+
+function mostrarResultado(item) {
+  const link = LINK_BASE + encodeURIComponent(item.placeId);
+  el.nome.textContent = item.nome;
+  el.end.textContent = item.endereco;
+  el.end.hidden = !item.endereco;
+  el.link.value = link;
+  el.abrir.href = link;
+  el.pid.textContent = item.placeId;
+  resetarBotaoCopiar();
+  el.resultado.hidden = false;
+  ajustarAltura();
+  if (window.matchMedia("(max-width: 720px)").matches) {
+    el.resultado.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+// Faz o campo do link crescer para mostrar o link inteiro.
+function ajustarAltura() {
+  el.link.style.height = "auto";
+  el.link.style.height = el.link.scrollHeight + 4 + "px";
+}
+window.addEventListener("resize", () => { if (!el.resultado.hidden) ajustarAltura(); });
+
+async function copiarLink() {
+  const texto = el.link.value;
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch {
+    el.link.select();
+    document.execCommand("copy");
+    window.getSelection().removeAllRanges();
+  }
+  el.copiar.classList.add("feito");
+  el.copiar.querySelector("span").textContent = "Link copiado";
+  clearTimeout(copiarLink.t);
+  copiarLink.t = setTimeout(resetarBotaoCopiar, 2200);
+}
+
+function resetarBotaoCopiar() {
+  el.copiar.classList.remove("feito");
+  el.copiar.querySelector("span").textContent = "Copiar link";
+}
+
+/* ---------- Avisos ---------- */
+const AVISOS = {
+  "sem-chave": "A busca ainda não está ativa: falta colocar a chave da API do Google no arquivo (GOOGLE_MAPS_API_KEY).",
+  "carregar": "Não foi possível carregar a busca do Google. Confira a conexão e tente de novo.",
+  "chave": "O Google recusou a chave da API. Confira se a Maps JavaScript API e a Places API (New) estão ativadas e se este endereço está liberado na restrição da chave.",
+  "api": "A busca do Google retornou um erro. Confira se a Places API (New) está ativada no projeto da chave e se o faturamento está ligado.",
+};
+function mostrarAviso(tipo) {
+  el.aviso.textContent = AVISOS[tipo] || AVISOS.api;
+  el.aviso.hidden = false;
+  el.campo.classList.remove("carregando");
+}
+function esconderAviso() { el.aviso.hidden = true; }
+
+/* ---------- Eventos ---------- */
+el.q.addEventListener("input", () => {
+  const texto = el.q.value.trim();
+  el.limpar.hidden = !el.q.value;
+  clearTimeout(estado.timer);
+  if (texto.length < 3) {
+    estado.pedido++;
+    el.campo.classList.remove("carregando");
+    fecharLista();
+    return;
+  }
+  estado.timer = setTimeout(() => buscar(texto), 280);
+});
+
+el.q.addEventListener("keydown", (e) => {
+  const aberta = !el.lista.hidden && estado.itens.length;
+  if (e.key === "ArrowDown" && aberta) { e.preventDefault(); marcarAtivo(estado.ativo + 1); }
+  else if (e.key === "ArrowUp" && aberta) { e.preventDefault(); marcarAtivo(estado.ativo - 1); }
+  else if (e.key === "Enter" && aberta) {
+    e.preventDefault();
+    escolher(estado.ativo >= 0 ? estado.ativo : 0);
+  }
+  else if (e.key === "Escape") fecharLista();
+});
+
+el.q.addEventListener("focus", () => {
+  if (estado.itens.length && el.q.value.trim().length >= 3 && el.resultado.hidden) {
+    el.lista.hidden = false;
+    el.q.setAttribute("aria-expanded", "true");
+  }
+});
+
+el.q.addEventListener("blur", () => setTimeout(fecharLista, 120));
+
+el.limpar.addEventListener("click", () => {
+  el.q.value = "";
+  el.limpar.hidden = true;
+  estado.itens = [];
+  estado.pedido++;
+  fecharLista();
+  el.resultado.hidden = true;
+  el.q.focus();
+});
+
+el.copiar.addEventListener("click", copiarLink);
+el.link.addEventListener("focus", () => el.link.select());
+
+// Se a chave estiver configurada, já deixa a API carregando em segundo plano.
+if (CONFIG.GOOGLE_MAPS_API_KEY) carregarGoogle().catch(() => {});
+</script>
+</body>
+</html>
