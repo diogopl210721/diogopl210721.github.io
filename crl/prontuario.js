@@ -3,6 +3,7 @@
 // Só o ADM corrige o prontuário. O monitor pode enviar a foto da receita dizendo o que é.
 import {attachChanges,changeNote} from './changes.js';
 import {signaturePadHtml,bindSignaturePad} from './assinatura.js';
+import {statsBox,TAG_LABEL} from './diario.js';
 const ATT_LABEL={present:'Presente',absent:'Falta',late:'Atrasou',excused:'Falta justificada'};
 const NOTE_LABEL={rotina:'Rotina',ocorrencia:'Ocorrência',observacao:'Observação'};
 const MED_LABEL={administrado:'Administrado',recusado:'Recusado',nao_administrado:'Não administrado',indisponivel:'Indisponível'};
@@ -204,6 +205,19 @@ export async function loadProntuario({db,member,user,stays,stayId,root,status}){
  card.append(signatureSection({db,member,user,stayId,person,active:st.status==='active',files:results.files,status,reload}));
  const records=results.records.map(x=>line((x.correction_of?'Correção — ':'')+(NOTE_LABEL[x.category]||x.category||'Registro'),x.original_text+(x.correction_reason?'\nMotivo da correção: '+x.correction_reason:''),dateTime(x.created_at)));
  card.append(detail('Registros do prontuário',records.length?listBox(records):null));
+ // Diário da casa: perfil (etiquetas) e o que foi apontado sobre o acolhido nos últimos 90 dias
+ const diaryBox=node('section',null,'prontuario-section');diaryBox.append(node('h3','Diário da casa — últimos 90 dias'),node('p','Carregando...','muted'));card.append(diaryBox);
+ const from=new Date(Date.now()-90*86400000).toISOString().slice(0,10);
+ db.rpc('crl_diary_list',{p_institution:tenant,p_stay:stayId,p_from:from}).then(r=>{
+  diaryBox.querySelector('p.muted')?.remove();
+  if(r.error){diaryBox.append(node('p','Diário indisponível.','muted'));return}
+  const list=r.data||[];
+  diaryBox.append(statsBox(list,stayId));
+  const lines=[];
+  for(const d of list)for(const e of d.entries||[])if(e.stay_id===stayId)lines.push(line(dateOnly(d.day)+' · '+((e.tags||[]).map(t=>TAG_LABEL[t]||t).join(', ')||'Citado no diário'),e.note||'Citado no relato do dia.','por '+d.author));
+  diaryBox.append(lines.length?listBox(lines.slice(0,40)):node('p','Nenhum apontamento no diário.','muted'));
+  try{for(const d of list)for(const e of d.entries||[])if(e.stay_id===stayId)exportRows.push(['Diário da casa',dateOnly(d.day),(e.tags||[]).map(t=>TAG_LABEL[t]||t).join(', '),e.note||''])}catch(_){}
+ });
  const attend=results.attendance.map(x=>{
   const activity=actOf(x);
   const div=line(activity?.title||'Devocional',(ATT_LABEL[x.status]||x.status)+(x.justification?' · Justificativa: '+x.justification:''),dateTime(activity?.starts_at)+' · '+(activity?.presenter||'')+(x.corrected_at?' · '+changeNote(x):''));

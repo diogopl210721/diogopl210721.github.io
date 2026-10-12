@@ -13,6 +13,7 @@ import {callFunction} from './fn.js';
 import {escalaForm,loadEscala} from './escala.js';
 import {dosesForm,loadDoses} from './remedios.js';
 import {signaturePadHtml,bindSignaturePad} from './assinatura.js';
+import {diaryForm,bindDiary,loadDiaries} from './diario.js';
 import {mealsForm,bindMeals,submitMealsDay,loadMealsList,MEAL_LABEL} from './refeicoes.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
@@ -21,7 +22,7 @@ let monitorPreview=false,originalAdminMember=null,admissionPad=null;
 // Quem vê o quê. Para mudar o acesso de um perfil, altere só estas duas listas
 // (o banco aplica as mesmas regras; a tela apenas esconde o que não está liberado).
 const ADMIN_ONLY=['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic','backup'];
-const NOT_FOR_STUDENT_MONITOR=['profile','files','notes','medications','doses','resocialization'];
+const NOT_FOR_STUDENT_MONITOR=['profile','files','notes','diary','medications','doses','resocialization'];
 const isStudentMonitor=()=>member?.role==='monitor'&&member?.monitor_vinculo==='aluno';
 function canView(v){
  if(member?.role==='admin')return true;
@@ -118,7 +119,7 @@ async function refresh(){
 function draw(){
  const isDashboard=view==='dashboard';
  el('moduleGrid').classList.toggle('profile-layout',view==='profile');
- el('moduleGrid').classList.toggle('wide-layout',['tasks','cash','stock','doses'].includes(view));
+ el('moduleGrid').classList.toggle('wide-layout',['tasks','cash','stock','doses','diary'].includes(view));
  el('dashboardArea').classList.toggle('hide',!isDashboard);
  el('moduleGrid').classList.toggle('hide',isDashboard);
  el('welcomeTitle').textContent=isDashboard?(member?.role==='admin'?'Painel Geral':'Resumo do dia'):viewTitle(view);
@@ -133,6 +134,7 @@ function draw(){
  profile:prontuarioForm(stays),
  medications:careForm('medications',stays),
  doses:dosesForm(member),
+ diary:diaryForm(stays,member),
  resocialization:careForm('resocialization',stays),
  students:admissionForm(),
  tasks:escalaForm(),
@@ -208,7 +210,7 @@ function draw(){
   };
  }
 
- el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque do mês',cash:'Extrato do caixa',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',doses:'Remédios por horário',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Como está a semana',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições por dia',stats:'Resumo do período'})[view];
+ el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque do mês',cash:'Extrato do caixa',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',doses:'Remédios por horário',diary:'Diários recentes',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Como está a semana',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições por dia',stats:'Resumo do período'})[view];
  const dataForm=el('dataForm');if(dataForm)dataForm.onsubmit=submit;
  admissionPad=null;
  if(view==='students'&&el('admSign')){
@@ -218,6 +220,7 @@ function draw(){
  if(view==='medications'||view==='resocialization')void bindCare({db,member,el,kind:view,status});
  if(view==='documents')void bindDocuments({db,member,el,status,stays});
  if(view==='meals')void bindMeals({db,member,el});
+ if(view==='diary')bindDiary({db,member,user,stays,status,preview:monitorPreview});
 }
 function addItem(title,details){const item=document.createElement('div');item.className='item';const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.className='muted';p.textContent=details;item.append(b,p);el('listArea').append(item);return item}
 async function loadList(){
@@ -239,6 +242,7 @@ async function loadList(){
  if(view==='stock'||view==='cash'){await loadOperations({db,kind:view,member,user,root,filter:moduleFilter,status,refresh:loadList});return}
  if(view==='evolution'){await loadEvolution({db,member,stays,root,status});return}
  if(view==='medications'||view==='resocialization'){await loadCareList({db,member,user,stays,root,kind:view,status,filter:moduleFilter});return}
+ if(view==='diary'){await loadDiaries({db,member,user,stays,status,listRoot:root,preview:monitorPreview});return}
  if(view==='doses'){await loadDoses({db,member,user,status,listRoot:root,preview:monitorPreview});return}
  if(view==='tasks'){await loadEscala({db,member,user,stays,status,listRoot:root,preview:monitorPreview});return}
  if(view==='meals'){await loadMealsList({db,member,root,filter:moduleFilter,el});return}
@@ -255,6 +259,10 @@ async function loadList(){
     profileButton.style.marginRight='7px';
     profileButton.onclick=async()=>{await setView('profile');if(el('profileStay')){el('profileStay').value=st.id;await loadList()}};
     if(canView('profile'))item.append(profileButton);
+    if(!isStudentMonitor()){
+      const b=document.createElement('button');b.textContent='Encerrar acolhimento';b.type='button';
+      b.style.marginRight='7px';b.onclick=()=>showCloseStay(st,item);item.append(b);
+    }
     if(member.role==='admin'){
       const doc=document.createElement('button');doc.type='button';doc.textContent='Gerar declaração';
       doc.style.marginRight='7px';doc.onclick=async()=>{
@@ -262,8 +270,7 @@ async function loadList(){
        if(el('docStay')){el('docStay').value=st.id;el('docStay').dispatchEvent(new Event('change'));}
       };
       item.append(doc);
-      const b=document.createElement('button');b.textContent='Encerrar acolhimento';b.type='button';
-      b.onclick=()=>showCloseStay(st,item);item.append(b);
+
       attachChanges(item,{db,status,entity:'admission',id:st.id,onDone:refresh,
        edit:{label:'Editar cadastro',loadFields:async()=>{
         const [p,f]=await Promise.all([db.rpc('crl_residents_private',{p_residents:[st.resident_id]}),db.rpc('crl_stay_finance',{p_stay:st.id})]);
@@ -630,19 +637,25 @@ function showMonitorReset(m,item){
 }
 
 function showCloseStay(st,item){
- if(member?.role!=='admin')return;
+ if(!authenticated()||isStudentMonitor())return;
  const old=item.querySelector('form');if(old){old.remove();return}
  const form=document.createElement('form');
- form.innerHTML='<label>Tipo de saída</label><select name="exitType" required><option value="concluded">Conclusão de 9 meses</option><option value="requested">Alta pedida / desistência</option><option value="administrative">Alta administrativa</option><option value="abandoned">Fuga ou abandono</option><option value="other">Outro encerramento</option></select><label>Data de saída</label><input type="date" name="exitDate" required><label>Justificativa e informações da saída</label><textarea name="reason" required minlength="5" maxlength="4000"></textarea><p class="muted">Somente o ADM pode confirmar. A passagem encerrada e seus registros serão preservados.</p><button type="submit">Confirmar encerramento</button>';
- form.elements.exitDate.value=new Date().toISOString().slice(0,10);item.append(form);
+ form.innerHTML='<label>Tipo de saída</label><select name="exitType" required><option value="concluded">Conclusão de 9 meses</option><option value="requested">Alta pedida / desistência</option><option value="administrative">Alta administrativa</option><option value="abandoned">Fuga ou abandono</option><option value="other">Outro encerramento</option></select><label>Data de saída</label><input type="date" name="exitDate" required><label>Justificativa e informações da saída</label><textarea name="reason" required minlength="5" maxlength="4000"></textarea>'+
+  '<fieldset class="family-box"><legend>A família foi avisada?</legend><label class="care-check"><input type="radio" name="family" value="yes" required> Sim, já avisei</label><label class="care-check"><input type="radio" name="family" value="no"> Ainda não (fica lembrete no Painel)</label>'+
+  '<div class="family-who hide"><label>Quem foi avisado e como</label><input name="familyNote" maxlength="500" placeholder="Ex.: mãe (Maria), por telefone às 10h"></div></fieldset>'+
+  '<p class="muted">Fica registrado quem encerrou. O histórico é preservado. Se foi engano, o ADM pode desfazer em até 7 dias.</p><button type="submit">Confirmar encerramento</button>';
+ form.elements.exitDate.value=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());item.append(form);
+ form.querySelectorAll('input[name=family]').forEach(r=>r.onchange=()=>{const yes=form.elements.family.value==='yes';form.querySelector('.family-who').classList.toggle('hide',!yes);form.elements.familyNote.required=yes});
  form.onsubmit=async e=>{
   e.preventDefault();if(!confirm('Confirma o encerramento deste período? O histórico não poderá ser apagado.'))return;
   const button=form.querySelector('button');button.disabled=true;
   try{
-   const r=await db.rpc('crl_close_stay',{p_stay:st.id,p_status:form.elements.exitType.value,p_date:form.elements.exitDate.value,p_reason:form.elements.reason.value.trim()});
+   const fam=form.elements.family.value;
+   if(!fam){status('Marque se a família foi avisada.',true);return}
+   const r=await db.rpc('crl_close_stay',{p_stay:st.id,p_status:form.elements.exitType.value,p_date:form.elements.exitDate.value,p_reason:form.elements.reason.value.trim(),p_family_notified:fam==='yes',p_family_note:fam==='yes'?form.elements.familyNote.value.trim():null});
    if(r.error)throw r.error;
-   status('Acolhimento encerrado; histórico preservado.');await refresh();
-  }catch(e){status('Encerramento não realizado: '+(e?.message||'erro de validação'),true)}
+   status('Acolhimento encerrado; histórico preservado.'+(fam==='yes'?'':' Lembre de avisar a família: o lembrete fica no Painel.'));await refresh();
+  }catch(e){status('Encerramento não realizado: '+friendlyError(e),true)}
   finally{button.disabled=false}
  };
 }
@@ -660,6 +673,17 @@ async function searchHistory(query){
     (history.data||[]).map(st=>st.admission_date+' → '+(st.departure_date||'ativo')+' · '+({
       active:'Ativo',concluded:'Concluiu',requested:'Alta pedida',administrative:'Administrativa',abandoned:'Abandono',other:'Outra saída'
     }[st.status]||st.status)).join(' | ')||'Sem passagens';
+  const recent=(history.data||[]).find(x=>x.status!=='active'&&x.departure_date&&(Date.now()-new Date(x.departure_date+'T12:00:00Z').getTime())<8*86400000);
+  if(recent&&!(history.data||[]).some(x=>x.status==='active')){
+   const undo=document.createElement('button');undo.type='button';undo.textContent='Desfazer encerramento de '+dateBR(recent.departure_date);
+   undo.onclick=async()=>{
+    const reason=prompt('Motivo para desfazer o encerramento (fica na Auditoria):');
+    if(reason===null)return;
+    const r=await db.rpc('crl_undo_close_stay',{p_stay:recent.id,p_reason:reason});
+    if(r.error){status(friendlyError(r.error),true);return}
+    status('Encerramento desfeito: o acolhimento voltou a ficar ativo.');await refresh();
+   };item.append(undo);
+  }
   if(!history.error && member.role==='admin'){
    for(const historical of history.data||[]){
     const b=document.createElement('button');b.type='button';
@@ -740,7 +764,7 @@ function showTripFinish(trip,item){
 }
 function viewTitle(id){
  return ({dashboard:'Painel Geral',students:'Acolhidos',profile:'Prontuários',files:'Arquivos e fotos',
- history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',medications:'Medicamentos e receitas',doses:'Remédios de hoje',resocialization:'Ressocialização',
+ history:'Histórico e retornos',notes:'Rotina diária',trips:'Veículo',devotionals:'Devocionais',medications:'Medicamentos e receitas',doses:'Remédios de hoje',diary:'Diário da casa',resocialization:'Ressocialização',
  tasks:'Escala de tarefas',meals:'Refeições',contributions:'Contribuições',
  monitors:'Usuários e monitores',backup:'Backup dos dados',documents:'Declarações',evolution:'Evolução mensal',stock:'Estoque',cash:'Caixa da casa',audit:'Auditoria',diagnostic:'Verificar sistema',stats:'Estatísticas gerais'})[id]||'CRL';
 }

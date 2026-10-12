@@ -13,17 +13,19 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
  if(!member?.institution_id)return;
  const admin=member.role==='admin',tenant=member.institution_id;
  const day=localTime().slice(0,10);
- const [totals,tasks,last,backup]=await Promise.all([
+ const [totals,tasks,last,backup,family]=await Promise.all([
   db.rpc('crl_dashboard_cards',{p_institution:tenant}),
   db.rpc('crl_task_week_view',{p_institution:tenant,p_week_start:day}),
   db.from('crl_activities').select('title,presenter,starts_at').eq('institution_id',tenant).eq('type','devocional').is('deleted_at',null).order('starts_at',{ascending:false}).limit(1),
-  admin&&backupReminder?backupReminder({db,member}):Promise.resolve(null)
+  admin&&backupReminder?backupReminder({db,member}):Promise.resolve(null),
+  canView('diary')?db.rpc('crl_family_pending',{p_institution:tenant}):Promise.resolve({data:[]})
  ]);
  if(!root.isConnected)return;
  if(totals.error||!totals.data){root.innerHTML='<section class="panel"><h2>Indicadores indisponíveis</h2><p>Não foi possível consultar os totais. Entre em Verificar sistema (ADM) para diagnosticar a conexão.</p></section>';return}
  const m=totals.data;
  const main=[
   card('♙','Acolhidos ativos',number(m.active),'Ver acolhidos','students','active'),
+  ...(canView('diary')?[card('✎','Diário de hoje',m.diaries_today?number(m.diaries_today):'Pendente',m.diaries_today?'Diário(s) escrito(s) hoje':'Ninguém escreveu ainda hoje','diary')]:[]),
   ...(canView('doses')?[card('✚','Remédios atrasados',number(m.meds_late),m.meds_late?'Doses que passaram da hora':'Nenhuma dose atrasada','doses','late')]:[]),
   card('▤','Devocionais no mês',number(m.devotionals_month),'Sessões neste mês','devotionals','month'),
   card('☷','Escalas de tarefas',number(m.tasks_today),'Tarefas pendentes de hoje','tasks','today'),
@@ -58,6 +60,10 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
  const alerts=[];
  // Lembrete de backup (ADM): vermelho a partir de 3 dias sem backup
  let backupHtml='';
+ // Saídas recentes sem aviso à família
+ const pending=Array.isArray(family?.data)?family.data:[];
+ const familyHtml=pending.length?'<section class="backup-banner late family-banner" role="alert"><div><b>Família ainda não avisada</b>'+pending.map(p=>'<span class="family-row" data-stay="'+esc(p.stay_id)+'">'+esc(p.resident)+' · saiu em '+esc(String(p.departure_date).split('-').reverse().join('/'))+(p.responsible?' · responsável: '+esc(p.responsible):'')+' <button type="button" data-family="'+esc(p.stay_id)+'">Marcar avisada</button></span>').join('')+'</div></section>':'';
+ if(pending.length)alerts.push(row(pending.length+' saída(s) sem aviso à família','Marque quando avisar'));
  if(admin&&backup&&!backup.error){
   const lastTxt=backup.last?new Date(backup.last).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):null;
   if(backup.overdue){
@@ -74,10 +80,10 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
  if(canView('resocialization')&&Number(m.resocializations_open)>0)alerts.push(row(m.resocializations_open+' ressocializações abertas','Conferir retornos'));
  const quick='<div class="dash-actions">'+[
   ['students','Acolhidos'],['tasks','Escalas de tarefas'],['devotionals','Devocionais'],['meals','Refeições'],
-  ['notes','Rotina'],['trips','Veículos'],['resocialization','Ressocialização'],['stock','Estoque'],
+  ['diary','Diário'],['trips','Veículos'],['resocialization','Ressocialização'],['stock','Estoque'],
   ...(admin?[['contributions','Contribuições'],['cash','Caixa'],['documents','Declarações'],['evolution','Evolução mensal'],['diagnostic','Verificar sistema']]:[])
  ].map(([go,label])=>'<button type="button" data-go="'+go+'">'+label+'</button>').join('')+'</div>';
- root.innerHTML=backupHtml+
+ root.innerHTML=familyHtml+backupHtml+
  '<section class="dash-section"><div class="dash-section-header"><h2>Visão geral</h2><p>Toque em qualquer indicador para consultar os registros</p></div><div class="dash-stats">'+main.join('')+'</div></section>'+
  '<section class="dash-section"><div class="dash-section-header"><h2>Indicadores complementares</h2><p>Gestão, movimentações e consumo</p></div><div class="dash-stats dash-stats-extra">'+extras.join('')+'</div></section>'+
  '<div class="dash-blocks">'+
@@ -89,4 +95,12 @@ export async function loadDashboard({db,member,stays,el,fmt,localTime,setView,ca
  // Cartões e atalhos de módulos que o perfil não acessa não aparecem.
  root.querySelectorAll('[data-go]').forEach(b=>{if(!canView(b.dataset.go))b.remove()});
  root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setView(b.dataset.go,b.dataset.filter||'all'));
+ root.querySelectorAll('[data-family]').forEach(b=>b.onclick=async()=>{
+  const note=prompt('Quem da família foi avisado e como? (ex.: mãe, por telefone)');
+  if(note===null)return;
+  const r=await db.rpc('crl_mark_family_notified',{p_stay:b.dataset.family,p_note:note});
+  if(r.error){alert(String(r.error.message||'Não foi possível salvar.').replace(/^CRL:\s*/,''));return}
+  b.closest('.family-row')?.remove();
+  if(!root.querySelector('.family-row'))root.querySelector('.family-banner')?.remove();
+ });
 }
