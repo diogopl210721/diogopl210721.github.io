@@ -956,7 +956,8 @@ html.et-locked,html.et-locked body{overflow:hidden}
   async function entrou(session) {
     if (ET.uid) return;
     const u = session.user; ET.uid = u.id; ET.email = u.email || '';
-    ET.nome = String(u.user_metadata?.nome || '').trim().split(/\s+/)[0] || cap(ET.email.split('@')[0]);
+    const md = u.user_metadata || {};
+    ET.nome = String(md.nome || md.name || md.full_name || '').trim().split(/\s+/)[0] || cap((ET.email.split('@')[0].match(/[A-Za-zÀ-ú]+/) || [''])[0]) || 'você';
     try { const { data } = await sb.rpc('et_assumir_biblioteca'); ET.admin = !!data?.admin; } catch { ET.admin = false; }
     try { const { data } = await sb.rpc('et_meu_uso'); if (data) { ET.usados = data.usados || 0; ET.limite = data.limite || null; } } catch {}
     gate.hide(); resolveReady(session); ET.contaUI();
@@ -1100,14 +1101,15 @@ html.et-locked,html.et-locked body{overflow:hidden}
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   window.ESCUTA = {
     ok: !!SR, rec: null,
-    toggle(btn, inp, enviar, avisar) {
+    stop() { try { this.rec?.stop(); } catch {} },
+    toggle(btn, inp, enviar, avisar, op = {}) {
       if (!SR) return false;
       if (this.rec) { try { this.rec.stop(); } catch {} return true; }
       const r = new SR(); r.lang = 'pt-BR'; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
-      let fala = '';
+      let fala = '', erro = '';
       r.onresult = e => { let t = ''; for (const x of e.results) t += x[0].transcript; fala = t; inp.value = t; inp.dispatchEvent(new Event('input', { bubbles: true })); };
-      r.onerror = e => { if (/not-allowed|service-not-allowed/.test(e.error)) avisar?.('Libere o microfone para este site (no cadeado da barra de endereço) e toque de novo.'); else if (e.error === 'no-speech') avisar?.('Não ouvi nada. Toque no microfone e fale de novo.'); };
-      r.onend = () => { this.rec = null; btn.classList.remove('on'); btn.setAttribute('aria-pressed', 'false'); if (fala.trim()) enviar(); };
+      r.onerror = e => { erro = e.error || ''; if (op.vazio) return; if (/not-allowed|service-not-allowed/.test(erro)) avisar?.('Libere o microfone para este site (no cadeado da barra de endereço) e toque de novo.'); else if (erro === 'no-speech') avisar?.('Não ouvi nada. Toque no microfone e fale de novo.'); };
+      r.onend = () => { this.rec = null; btn.classList.remove('on'); btn.setAttribute('aria-pressed', 'false'); if (fala.trim()) enviar(); else op.vazio?.(/not-allowed|service-not-allowed/.test(erro) ? 'bloqueado' : 'silencio'); };
       try { r.start(); } catch { return false; }
       this.rec = r; btn.classList.add('on'); btn.setAttribute('aria-pressed', 'true');
       return true;
@@ -3609,12 +3611,12 @@ function falavel(t) {
 const VOZ = {
   ok: 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window,
   on: store.get('voz', true), voice: null, pend: 0, busy: false, unlocked: false, onDone: null, sub: null,
-  pick() { if (!this.ok) return; const vs = speechSynthesis.getVoices(); const pt = vs.filter(v => /^pt/i.test(v.lang)), br = pt.filter(v => /BR/i.test(v.lang)), pool = br.length ? br : pt; this.voice = pool.find(v => /Google|Luciana|Francisca|Thalita|Felipe|Natural|Online/i.test(v.name)) || pool[0] || null; },
+  pick() { if (!this.ok) return; const vs = speechSynthesis.getVoices(); const pt = vs.filter(v => /^pt/i.test(v.lang)), br = pt.filter(v => /BR/i.test(v.lang)), pool = br.length ? br : pt; this.voice = pool.find(v => /Antonio|Felipe|Daniel|Donato|Fabio|Humberto|Julio|Nicolau|Valerio|Ricardo|Thiago/i.test(v.name)) || pool.find(v => /Google|Luciana|Francisca|Thalita|Natural|Online/i.test(v.name)) || pool[0] || null; },
   unlock() { if (!this.ok || this.unlocked) return; try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'pt-BR'; speechSynthesis.speak(u); this.unlocked = true; } catch {} },
   say(sentence) {
     if (!this.ok) return; const txt = falavel(sentence); if (!txt || !/[\p{L}\d]/u.test(txt)) return;
     if (!this.voice) this.pick();
-    const u = new SpeechSynthesisUtterance(txt); u.lang = this.voice?.lang || 'pt-BR'; if (this.voice) u.voice = this.voice; u.rate = 1.04; u.pitch = 0.95;
+    const u = new SpeechSynthesisUtterance(txt); u.lang = this.voice?.lang || 'pt-BR'; if (this.voice) u.voice = this.voice; u.rate = 1.02; u.pitch = 0.88;
     u.onstart = () => { this.busy = true; this.started = true; HUDFX.setMode('speaking'); HUDFX.bump(1); if (this.sub) { this.sub.hidden = false; this.sub.textContent = txt; } };
     u.onboundary = () => HUDFX.bump(0.9 + Math.random() * 0.3);
     const end = () => { this.pend = Math.max(0, this.pend - 1); if (!this.pend && this.streamDone) this.finish(); };
@@ -3704,12 +3706,13 @@ async function askBinah(q, ui) {
     const tools = binahTools(); if (tools.length && S.sampleTools) opts.tools = tools; else opts.cache = false;
     const res = await S.sample(msgs, opts);
     const text = res.text || ''; bub.set(text, true); BINAH.hist.push({ role: 'assistant', content: text });
+    if (CONVERSA.on) VOZ.onDone = () => CONVERSA.continuar();
     VOZ.streamDone = true; feed(text, true); if (!voice || !VOZ.pend) { HUDFX.setMode('idle'); VOZ.finish(); } else setTimeout(() => { if (!VOZ.started && VOZ.pend) VOZ.stop(); }, 3500);
     const vids = citedVids(text).slice(0, 8); vids.forEach((v, i) => HUDFX.emit({ type: 'verse', vid: v }, 300 + i * 450));
     if (vids.length) binahLog(vids.length + (vids.length === 1 ? ' versículo citado' : ' versículos citados'));
     bub.actions(q, text, vids);
   } catch (e) {
-    BINAH.hist.pop(); VOZ.stop(); HUDFX.setMode('idle');
+    CONVERSA.parar(); BINAH.hist.pop(); VOZ.stop(); HUDFX.setMode('idle');
     const msg = e?.et && e?.message ? e.message : e?.code === 'no_sample' ? 'A conversa usa o Claude dentro desta página e não está disponível nesta visualização. Abra o app pelo claude.ai.'
       : e?.code === 'cancelled' ? (e.text ? null : 'Parei.')
       : (e?.code === 'not_granted' || e?.code === 'sampling_disabled' || e?.code === 'not_declared') ? 'O uso do Claude não foi liberado nesta página. Libere em Permissões do artefato e tente de novo.'
@@ -3844,12 +3847,12 @@ const NEURO = {
     const scrim = h('div', { class: 'nr-scrim' });
     const el = h('div', { class: 'neuro', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Segundo Cérebro' }, scrim, stage, card, sub, bar, close, vozBtn, window.ET ? ET.medidor('nr-ia') : null, hist);
     document.body.append(el);
-    Object.assign(this, { el, cv, stage, card, sub, inp, hist, scrim, bar, go });
+    Object.assign(this, { el, cv, stage, card, sub, inp, hist, scrim, bar, go, mic });
     scrim.addEventListener('click', () => this.close());
     close.onclick = () => this.close();
     if (vozBtn) vozBtn.onclick = () => { VOZ.on = !VOZ.on; store.set('voz', VOZ.on); vozBtn.setAttribute('aria-pressed', String(VOZ.on)); vozBtn.textContent = VOZ.on ? 'Voz ligada' : 'Voz desligada'; if (!VOZ.on) VOZ.stop(); else VOZ.unlock(); };
     histBtn.onclick = () => { hist.hidden = !hist.hidden; if (!hist.hidden) this.renderHist(); };
-    mic.onclick = () => { if (window.ESCUTA?.ok) { if (!ESCUTA.rec) { VOZ.stop(); HUDFX.setMode('listening'); this.say('Pode falar…', true); } ESCUTA.toggle(mic, inp, () => { if (bar.requestSubmit) bar.requestSubmit(); else bar.dispatchEvent(new Event('submit', { cancelable: true })); }, t => this.say(t, true)); return; } inp.focus(); if (!BINAH.tipShown) { BINAH.tipShown = true; this.say('Este navegador não deixa usar o microfone direto. Toque no microfone do teclado do celular e dite.', true); } };
+    mic.onclick = () => { if (window.ESCUTA?.ok) { if (ESCUTA.rec) { CONVERSA.parar(); this.say('Pausei. Toque no microfone quando quiser falar.', true); HUDFX.setMode('idle'); return; } VOZ.stop(); VOZ.unlock(); CONVERSA.on = true; CONVERSA.vazios = 0; CONVERSA.ouvir(this, false); return; } inp.focus(); if (!BINAH.tipShown) { BINAH.tipShown = true; this.say('Este navegador não deixa usar o microfone direto. Toque no microfone do teclado do celular e dite.', true); } };
     bar.onsubmit = e => { e.preventDefault(); if (BINAH.busy) { BINAH.abort?.abort(); return; } const q = inp.value.trim(); if (!q) { inp.focus(); return; } inp.value = ''; this.card.hidden = true; askBinah(q, this.ui()); };
     inp.addEventListener('input', () => { if (!BINAH.busy) { if (HUDFX.mode !== 'listening') HUDFX.setMode('listening'); HUDFX.bump(0.7 + Math.random() * 0.3); } });
     inp.addEventListener('focus', () => { if (!BINAH.busy && !VOZ.busy) HUDFX.setMode('listening'); });
@@ -3890,10 +3893,11 @@ const NEURO = {
     this.say(BINAH.hist.length ? '' : 'Toque num pensamento, num estudo ou num livro do anel. Arraste para girar. Ou pergunte ao Binah aqui embaixo.');
     HUDFX.setMode('idle');
     if (opts.focus || FINE) setTimeout(() => this.inp.focus(), 500);
+    if (!opts.focus) CONVERSA.abrir(this);
   },
   close() {
     if (!this.isOpen) return; this.isOpen = false;
-    BINAH.abort?.abort(); VOZ.stop(); HUDFX.setMode('idle');
+    CONVERSA.parar(); BINAH.abort?.abort(); VOZ.stop(); HUDFX.setMode('idle');
     const o = this.origin || { ox: this.D / 2, oy: this.D / 2, r: 20 };
     this.el.classList.remove('on'); this.stage.style.clipPath = `circle(${o.r}px at ${o.ox}px ${o.oy}px)`;
     this.card.hidden = true; this.hist.hidden = true;
@@ -4418,6 +4422,47 @@ function renderLib() {
       h('span', { class: 'es-card-m' }, h('span', { class: 'chip st-' + E.status, text: E.status }), h('span', { class: 'muted', text: (E.secoes || []).length + ' seções · ' + kids + ' descobertas' }))));
   });
 }
+
+/* ================= conversa por voz (estilo JARVIS) ================= */
+const CONVERSA = {
+  on: false, saudou: false, vazios: 0,
+  fala() {
+    const hr = new Date().getHours(), p = hr >= 5 && hr < 12 ? 'Bom dia' : hr >= 12 && hr < 18 ? 'Boa tarde' : 'Boa noite';
+    let par = ''; try { const sem = semana(); if (sem?.par) par = ' Esta semana é a parashá ' + parashaPt(sem.par.names) + '.'; } catch {}
+    return `${p}, ${ETN()}.${par} O que vamos estudar hoje?`;
+  },
+  abrir(n) {
+    if (this.saudou || !VOZ.ok || !VOZ.on || BINAH.hist.length) return;
+    this.saudou = true; this.vazios = 0; this.on = !!window.ESCUTA?.ok; VOZ.unlock();
+    const f = this.fala();
+    setTimeout(() => { if (!n.isOpen) return; n.say(f); VOZ.sayAll(f, () => this.continuar()); }, 750);
+  },
+  continuar() { if (!this.on || !NEURO.isOpen || BINAH.busy) return; setTimeout(() => { if (this.on && NEURO.isOpen && !BINAH.busy && !VOZ.busy) this.ouvir(NEURO); }, 300); },
+  ouvir(n, auto = true) {
+    if (!window.ESCUTA?.ok || ESCUTA.rec) return;
+    this.auto = auto;
+    HUDFX.setMode('listening'); n.say('Pode falar, estou ouvindo…', true);
+    const ok = ESCUTA.toggle(n.mic, n.inp, () => this.enviar(n), t => n.say(t, true), { vazio: m => this.vazio(n, m) });
+    if (!ok) { this.on = false; HUDFX.setMode('idle'); n.say('Toque no microfone para falar comigo.', true); }
+  },
+  enviar(n) {
+    const q = n.inp.value.trim();
+    if (/^(tchau|até (logo|mais|amanhã)|pode parar|para de ouvir|encerrar|obrigad[oa],? (binah,? )?(é só|por hoje|por enquanto)|boa noite,? binah)/i.test(q)) {
+      n.inp.value = ''; this.on = false; HUDFX.setMode('idle');
+      const f = 'Até logo, ' + ETN() + '. Quando quiser, é só me chamar.'; n.say(f); VOZ.sayAll(f); return;
+    }
+    this.vazios = 0;
+    if (n.bar.requestSubmit) n.bar.requestSubmit(); else n.bar.dispatchEvent(new Event('submit', { cancelable: true }));
+  },
+  vazio(n, motivo) {
+    HUDFX.setMode('idle');
+    if (motivo === 'bloqueado' && this.auto) { this.on = false; n.say('Toque no microfone para falar comigo.', true); return; }
+    if (motivo === 'bloqueado') { this.on = false; n.say('O microfone está bloqueado. Toque nele de novo; se não funcionar, libere o microfone para este site nas configurações do navegador.', true); return; }
+    if (++this.vazios >= 2 || !this.on) { this.on = false; this.vazios = 0; n.say('Fiquei em silêncio. Toque no microfone quando quiser falar.', true); return; }
+    setTimeout(() => { if (this.on && n.isOpen) this.ouvir(n); }, 300);
+  },
+  parar() { this.on = false; this.vazios = 0; if (window.ESCUTA?.rec) ESCUTA.stop(); },
+};
 
 /* ================= boot ================= */
 async function boot() {
