@@ -712,6 +712,13 @@ html.et-locked,html.et-locked body{overflow:hidden}
 .nr-ib.on,.mic.on{color:#fff!important;background:#e5484d!important;border-color:#ff8a8a!important;animation:etMic 1.2s ease-in-out infinite}
 @keyframes etMic{0%,100%{box-shadow:0 0 0 0 #e5484d88}50%{box-shadow:0 0 0 10px #e5484d00}}
 @media (max-width:430px){.et-card{padding:24px 18px 18px;border-radius:20px}}
+.et-ia{display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;border:1px solid #2a4166;background:#06111fd9;color:#CFE9FF;font:600 12px var(--f-ui,system-ui);white-space:nowrap}
+.et-ia[hidden]{display:none}
+.et-ia-b{position:relative;width:64px;height:6px;border-radius:9px;background:#1b2b45;overflow:hidden}.et-ia-b i{position:absolute;inset:0 auto 0 0;border-radius:9px;background:linear-gradient(90deg,#3be3f0,#7ff6ff)}
+.et-ia.alto .et-ia-b i{background:linear-gradient(90deg,#f2b648,#ff9a3c)}.et-ia.fim .et-ia-b i{background:#e5484d}.et-ia.fim{border-color:#e5484d88}
+.et-ia-n{font-family:var(--f-mono,monospace);font-weight:500}
+.et-ia.nr-ia{position:absolute;z-index:3;top:calc(52px + env(safe-area-inset-top,0px));left:calc(12px + env(safe-area-inset-left,0px))}
+.inv .et-ia{margin-top:10px}
 
 </style>
 
@@ -832,7 +839,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
       body, msg,
       $e('p', { class: 'et-foot' }, '© 2026 Diogo Soares · ', $e('a', { href: 'https://www.ddsinovacao.com.br', target: '_blank', rel: 'noopener', text: 'DDS Inovação' })));
     const el = $e('div', { class: 'et-gate', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Entrar na Escola da Torá' }, cv, card);
-    const say = (t, kind) => { msg.textContent = t || ''; msg.className = 'et-msg' + (kind ? ' ' + kind : ''); };
+    const say = (t, kind) => { msg.textContent = t || ''; msg.className = 'et-msg' + (kind ? ' ' + kind : ''); if (t) try { msg.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch {} };
     const field = (label, attrs) => { const i = $e('input', { class: 'et-in', ...attrs }); return [$e('label', { class: 'et-lab' }, $e('span', { text: label }), i), i]; };
     const traduz = e => {
       const m = String(e?.message || e || '');
@@ -866,18 +873,28 @@ html.et-locked,html.et-locked body{overflow:hidden}
       criar() {
         const [l0, nm] = field('Seu nome', { type: 'text', autocomplete: 'given-name', required: true, maxlength: '40' });
         const [l1, em] = field('E-mail', { type: 'email', autocomplete: 'email', required: true, inputmode: 'email' });
+        const [l1b, em2] = field('Confirme o e-mail', { type: 'email', autocomplete: 'off', required: true, inputmode: 'email' });
         const [l2, pw] = field('Crie uma senha', { type: 'password', autocomplete: 'new-password', required: true, minlength: '6', placeholder: 'pelo menos 6 caracteres' });
+        const [l2b, pw2] = field('Repita a senha', { type: 'password', autocomplete: 'new-password', required: true, minlength: '6' });
+        [em2, pw2].forEach(i => i.addEventListener('paste', e => e.preventDefault()));
         const go = $e('button', { class: 'et-btn', type: 'submit', text: 'Criar minha conta' });
         const f = $e('form', { class: 'et-form', onsubmit: async ev => {
-          ev.preventDefault(); say(''); busy(go, true, 'Criando…');
-          const email = em.value.trim();
-          const { data, error } = await sb.auth.signUp({ email, password: pw.value, options: { data: { nome: nm.value.trim(), app: 'escola-da-tora' }, emailRedirectTo: ET.app } });
+          ev.preventDefault(); say('');
+          const email = em.value.trim().toLowerCase();
+          if (email !== em2.value.trim().toLowerCase()) { em2.focus(); return say('Os dois e-mails não estão iguais. Confira e digite de novo.', 'err'); }
+          if (pw.value.length < 6) { pw.focus(); return say('A senha precisa ter pelo menos 6 caracteres.', 'err'); }
+          if (pw.value !== pw2.value) { pw2.value = ''; pw2.focus(); return say('As duas senhas não estão iguais. Digite de novo.', 'err'); }
+          busy(go, true, 'Criando…');
+          try {
+            const r = await fetch(ET.url + '/functions/v1/et-cadastro', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + ET.key, apikey: ET.key }, body: JSON.stringify({ nome: nm.value.trim(), email, senha: pw.value }) });
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok) { busy(go, false, 'Criar minha conta'); return say(j.error || 'Não consegui criar a conta agora.', 'err'); }
+          } catch { busy(go, false, 'Criar minha conta'); return say('Sem conexão com o servidor. Verifique a internet.', 'err'); }
+          const { data, error } = await sb.auth.signInWithPassword({ email, password: pw.value });
           busy(go, false, 'Criar minha conta');
           if (error) return say(traduz(error), 'err');
-          if (data.session) return entrou(data.session);
-          if (data.user && Array.isArray(data.user.identities) && !data.user.identities.length) return say('Este e-mail já tem conta. Use "Entrar".', 'err');
-          show('aviso', 'Quase lá! Enviamos um e-mail para ' + email + '. Abra a mensagem e toque no link para confirmar; depois volte aqui e entre. Se não chegar em alguns minutos, veja o spam.');
-        } }, l0, l1, l2, go,
+          if (data.session) entrou(data.session);
+        } }, l0, l1, l1b, l2, l2b, go,
           $e('div', { class: 'et-links' }, $e('button', { type: 'button', class: 'et-link', text: 'Já tenho conta', onclick: () => show('entrar') })));
         return [f, nm];
       },
@@ -911,7 +928,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
         return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
       },
     };
-    function show(v, arg) { say(''); body.innerHTML = ''; const [node, focus] = views[v](arg); body.append(node); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
+    function show(v, arg) { say(''); body.innerHTML = ''; const [node, focus] = views[v](arg); body.append(node); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
     function hide() { el.classList.add('out'); document.documentElement.classList.remove('et-locked'); setTimeout(() => { el.hidden = true; el.classList.remove('out'); stopAnim(); }, 450); }
     // fundo: neurônios devagar
     let raf = 0;
@@ -941,7 +958,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
     const u = session.user; ET.uid = u.id; ET.email = u.email || '';
     ET.nome = String(u.user_metadata?.nome || '').trim().split(/\s+/)[0] || cap(ET.email.split('@')[0]);
     try { const { data } = await sb.rpc('et_assumir_biblioteca'); ET.admin = !!data?.admin; } catch { ET.admin = false; }
-    try { const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); const { data } = await sb.from('et_ia_uso').select('n').eq('dia', hoje).maybeSingle(); ET.usados = data?.n || 0; } catch {}
+    try { const { data } = await sb.rpc('et_meu_uso'); if (data) { ET.usados = data.usados || 0; ET.limite = data.limite || null; } } catch {}
     gate.hide(); resolveReady(session); ET.contaUI();
   }
   sb.auth.onAuthStateChange((ev, session) => {
@@ -959,7 +976,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
   /* ---------------- cérebro no Supabase (mesma interface do db do Claude) ---------------- */
   const DB = (() => {
     let rows = new Map(); const L = { nos: [], privado: [] };
-    const meu = r => r.user_id === ET.uid;
+    const meu = r => r.user_id === ET.uid || (r.base && ET.admin);
     const colOf = r => (meu(r) && r.status === 'rascunho') ? 'privado' : 'nos';
     const snap = c => ({ docs: [...rows.values()].filter(r => colOf(r) === c).map(r => ({ id: r.id, exists: true, metadata: {}, data: () => meu(r) ? r.dados : { ...r.dados, _lib: true } })) });
     const fire = () => { for (const c of ['nos', 'privado']) L[c].forEach(cb => { try { cb(snap(c)); } catch (e) { console.warn(e); } }); };
@@ -971,7 +988,11 @@ html.et-locked,html.et-locked body{overflow:hidden}
         out.push(...data); if (data.length < 1000) break;
       }
       const m = new Map();
-      for (const r of out) { if (m.has(r.id) && meu(m.get(r.id))) continue; m.set(r.id, r); }
+      try {
+        const bj = await fetch('data/base.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
+        for (const n of (bj?.nos || [])) { const { id, ...d } = n; if (id) m.set(id, { id, user_id: 'base', base: true, status: d.status || 'rascunho', dados: d }); }
+      } catch {}
+      for (const r of out) { const cur = m.get(r.id); if (cur && !cur.base && cur.user_id === ET.uid) continue; m.set(r.id, r); }
       rows = m;
     }
     let carregado = null;
@@ -987,6 +1008,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
     }
     async function apagar(c, id) {
       const cur = rows.get(id); if (!cur || !meu(cur) || colOf(cur) !== c) return;
+      if (cur.base) { rows.delete(id); fire(); return; }
       const { error } = await sb.from('et_nos').delete().eq('user_id', ET.uid).eq('id', id);
       if (error) throw { code: 'db', message: error.message };
       rows.delete(id); fire();
@@ -1005,7 +1027,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
       }),
       doc: p => { const [c, id] = String(p).split('/'); return ref(c, id); },
       async recarregar() { await carregar(); fire(); },
-      meus: () => [...rows.values()].filter(meu),
+      meus: () => [...rows.values()].filter(r => r.user_id === ET.uid),
       async importar(lista) {
         const prontos = lista.filter(n => n && n.id).map(n => { const dados = limpa(n); return { id: String(n.id), user_id: ET.uid, status: dados.status || 'rascunho', tipo: dados.tipo || null, dados }; });
         for (let i = 0; i < prontos.length; i += 100) {
@@ -1096,12 +1118,22 @@ html.et-locked,html.et-locked body{overflow:hidden}
   ET.rodape = () => {
     const p = $e('p', { class: 'af-conta' });
     if (!ET.uid) return p;
-    const ia = ET.admin ? 'IA sem limite (administrador)' : ET.usados != null ? `IA hoje: ${ET.usados}${ET.limite ? ' de ' + ET.limite : ''}` : '';
+    const ia = ET.usados != null ? `IA hoje: ${ET.usados}${ET.limite ? ' de ' + ET.limite : ''}` : '';
     const link = (t, fn) => $e('a', { href: '#', text: t, onclick: e => { e.preventDefault(); fn(); } });
     p.append('Conectado como ', $e('strong', { text: ET.nome }), ` (${ET.email})`, ia ? ' · ' + ia : '', ' · ', link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Sair', ET.sair));
     return p;
   };
-  ET.contaUI = () => document.querySelectorAll('.af-conta').forEach(x => x.replaceWith(ET.rodape()));
+  const pintaIA = s => {
+    s.innerHTML = '';
+    if (!ET.uid || ET.usados == null) { s.hidden = true; return; }
+    s.hidden = false;
+    const u = ET.usados, L = ET.limite, pct = L ? Math.min(100, Math.round(u / L * 100)) : 0, resta = L ? Math.max(0, L - u) : null;
+    s.classList.toggle('alto', pct >= 80); s.classList.toggle('fim', !!L && u >= L);
+    s.title = L ? `Você usou ${u} de ${L} pedidos de IA hoje (restam ${resta}). Zera à meia-noite.` : `Pedidos de IA hoje: ${u}`;
+    s.append($e('span', { class: 'et-ia-l', text: 'IA hoje' }), $e('span', { class: 'et-ia-b', 'aria-hidden': 'true' }, $e('i', { style: `width:${pct}%` })), $e('span', { class: 'et-ia-n', text: L ? `${u}/${L}` : String(u) }));
+  };
+  ET.medidor = (cls = '') => { const s = $e('span', { class: 'et-ia ' + cls, role: 'status' }); pintaIA(s); return s; };
+  ET.contaUI = () => { document.querySelectorAll('.af-conta').forEach(x => x.replaceWith(ET.rodape())); document.querySelectorAll('.et-ia').forEach(pintaIA); };
   ET.exportar = () => {
     const nos = DB.meus().map(r => ({ id: r.id, ...r.dados }));
     const blob = new Blob([JSON.stringify({ formato: 'escola-da-tora-cerebro', versao: 1, exportado: new Date().toISOString(), nos }, null, 1)], { type: 'application/json' });
@@ -3810,7 +3842,7 @@ const NEURO = {
     const close = h('button', { type: 'button', class: 'iconbtn nr-x', 'aria-label': 'Fechar o cérebro', html: XSVG });
     const vozBtn = VOZ.ok ? h('button', { type: 'button', class: 'nr-voz', 'aria-pressed': String(VOZ.on), text: VOZ.on ? 'Voz ligada' : 'Voz desligada' }) : null;
     const scrim = h('div', { class: 'nr-scrim' });
-    const el = h('div', { class: 'neuro', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Segundo Cérebro' }, scrim, stage, card, sub, bar, close, vozBtn, hist);
+    const el = h('div', { class: 'neuro', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Segundo Cérebro' }, scrim, stage, card, sub, bar, close, vozBtn, window.ET ? ET.medidor('nr-ia') : null, hist);
     document.body.append(el);
     Object.assign(this, { el, cv, stage, card, sub, inp, hist, scrim, bar, go });
     scrim.addEventListener('click', () => this.close());
@@ -4362,7 +4394,7 @@ VIEWS.descobertas = (root, opts = {}) => {
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     wrap.append(h('section', { class: 'inv' }, h('div', { class: 'inv-row' }, inp, go),
       h('div', { class: 'sugs', style: 'margin-top:10px' }, ['2 Rs 4:8-37', 'Jonas em Nínive', 'Elias no Carmelo', 'Rute e Boaz em Belém', 'A travessia do Mar Vermelho', 'Paulo em Malta'].map(t => h('button', { class: 'sug', text: t, onclick: () => { inp.value = t; go.click(); } }))),
-      h('p', { class: 'muted', style: 'font-size:12.5px;margin:10px 0 0', text: 'O investigador usa o conhecimento do Claude e não navega na internet: o que vier dele aparece com o selo "a conferir". Cada investigação usa vários pedidos de IA do seu dia.' }), prog));
+      h('p', { class: 'muted', style: 'font-size:12.5px;margin:10px 0 0', text: 'O investigador usa o conhecimento do Claude e não navega na internet: o que vier dele aparece com o selo "a conferir". Cada investigação usa vários pedidos de IA do seu dia.' }), window.ET ? ET.medidor() : null, prog));
   }
   // biblioteca
   const lib = h('section', { style: 'margin-top:26px' }, h('div', { class: 'sec-head', style: 'margin-bottom:12px' }, h('h2', { text: 'Estudos' }), h('span', { id: 'libN', text: '' })), h('div', { id: 'libHost', class: 'es-lib' }));
