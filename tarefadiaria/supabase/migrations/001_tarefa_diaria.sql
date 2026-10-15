@@ -297,7 +297,8 @@ begin
       return jsonb_build_object('ok', false, 'erro', 'PIN incorreto 5 vezes. Acesso bloqueado temporariamente.');
     end if;
     update td_usuarios set tentativas = tentativas + 1 where id = u.id;
-    return jsonb_build_object('ok', false, 'erro', 'Celular ou PIN incorretos.');
+    return jsonb_build_object('ok', false, 'erro',
+      format('PIN incorreto. Restam %s tentativa%s antes do bloqueio.', 4 - u.tentativas, case when 4 - u.tentativas = 1 then '' else 's' end));
   end if;
 
   v_token := encode(gen_random_bytes(32), 'hex');
