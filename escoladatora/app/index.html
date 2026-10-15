@@ -304,6 +304,7 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .fs-sheet-body{padding:6px 16px 20px;display:flex;flex-direction:column;gap:6px}
 .fs-sheet-x{position:sticky;top:8px;float:right;margin:8px 10px 0 0;z-index:2}
 .arc-fs,.hud-fs{position:absolute;inset:0;touch-action:none}
+.arc-fs{overflow:hidden;background:#03070E}
 .arc-fs canvas,.hud-fs canvas{display:block;touch-action:none}
 .fs-hint{animation:hintfade .8s ease 6s forwards;position:absolute;left:10px;bottom:10px;font-size:11.5px;color:var(--soft);pointer-events:none;background:#02050Acc;border:1px solid var(--line);padding:3px 9px;border-radius:999px}
 .fs-pill{border:1px solid var(--line2);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;white-space:nowrap;color:var(--soft)}
@@ -685,6 +686,30 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .es-qs li span{margin-right:8px}
 .es-fontes{font-size:12.5px}
 @media (max-width:720px){.es-pair{grid-template-columns:minmax(0,1fr)}.es-pair-x{display:none}.es-tese-c{grid-template-columns:1fr}.calc-grid,.ej-grid,.es-words,.es-tese-grid{grid-template-columns:minmax(0,1fr)}.inv-core{display:none}}
+
+/* v9 · sinapses no cérebro */
+.nr-syn{font-size:12px;color:#8FD9E4;line-height:1.45}
+.nr-refs:empty{display:none}
+.nr-card-h .nr-syn{flex:1 1 0;min-width:0}
+/* v9 · menu de baixo com mais destaque */
+.tab{color:var(--soft)}
+.tab svg{opacity:1}
+@media (max-width:720px){
+  nav.tabs{background:linear-gradient(180deg,color-mix(in srgb,var(--nav) 80%,var(--glow) 20%) 0%,var(--nav) 70%);border-top:1px solid color-mix(in srgb,var(--glow) 55%,transparent);box-shadow:0 -10px 28px rgba(0,0,0,.55),0 -1px 14px color-mix(in srgb,var(--glow) 28%,transparent)}
+  .tab{position:relative;color:var(--text);font-size:11.5px;font-weight:700;letter-spacing:.01em;border-radius:12px;padding:5px 6px 4px;opacity:.86}
+  .tab svg{width:21px;height:21px;stroke-width:2.2}
+  .tab[aria-selected="true"]{opacity:1;color:var(--glow);background:color-mix(in srgb,var(--glow) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--glow) 45%,transparent)}
+  .tab[aria-selected="true"]::before{content:"";position:absolute;top:-7px;left:26%;right:26%;height:3px;border-radius:0 0 4px 4px;background:var(--glow);box-shadow:0 0 12px var(--glow)}
+  .tab[aria-selected="true"] svg{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--glow) 70%,transparent))}
+}
+:root[data-tema="pergaminho"] .tab{color:var(--soft)}
+@media (max-width:720px){
+  :root[data-tema="pergaminho"] nav.tabs{background:var(--nav);border-top-color:var(--line2);box-shadow:0 -6px 18px rgba(60,40,10,.18)}
+  :root[data-tema="pergaminho"] .tab{color:var(--text);opacity:.8}
+  :root[data-tema="pergaminho"] .tab[aria-selected="true"]{color:var(--royal);opacity:1;background:color-mix(in srgb,var(--royal) 12%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--royal) 35%,transparent)}
+  :root[data-tema="pergaminho"] .tab[aria-selected="true"]::before{background:var(--royal);box-shadow:none}
+  :root[data-tema="pergaminho"] .tab[aria-selected="true"] svg{filter:none}
+}
 /* ---------- Escola da Torá no ar: entrada, conta e microfone ---------- */
 html.et-locked,html.et-locked body{overflow:hidden}
 .et-gate{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:24px 16px;overflow-y:auto;background:radial-gradient(1200px 700px at 50% -10%,#0f2a4a 0%,var(--bg,#060B14) 55%) var(--bg,#060B14);color:var(--text,#E8EEF7);font-family:var(--f-ui,system-ui);transition:opacity .45s ease,transform .45s ease}
@@ -1536,6 +1561,7 @@ async function selectVerse(id, wordIdx) {
   body.append(h('div', { style: 'display:flex;flex-wrap:wrap;gap:8px' },
     h('button', { class: 'btn', onclick: () => openEditor({ refs: [id] }), text: '+ Anotar descoberta' }),
     h('button', { class: 'btn', onclick: () => { closePanel(); setTab('arcos', { verse: id }); }, text: 'Ver nos arcos' }),
+    h('button', { class: 'btn', onclick: () => { closePanel(); NEURO.open({ verse: id }); }, text: 'Ver no cérebro' }),
     h('button', { class: 'btn', onclick: () => copyText(refLabel(id, true) + ' — ' + text), text: 'Copiar' })));
   // original words
   const origHost = h('section', {});
@@ -1796,6 +1822,8 @@ async function openLexPanel(code) {
 
 /* ================= FULL-SCREEN STAGE ================= */
 const XSVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+// animações que ficam por baixo de uma tela cheia param de desenhar (economiza bateria e deixa a tela da frente leve)
+const coberto = (fs) => (typeof NEURO !== 'undefined' && NEURO.isOpen) || (fs && !$('#fs').hidden);
 const FS = {
   onClose: null,
   open({ title, tools = [], mount, onClose, wrap = false }) {
@@ -1825,21 +1853,35 @@ const FS = {
 };
 
 /* ================= ARCS ================= */
+/* Leve: os arcos são desenhados uma vez numa camada própria (resolução reduzida), aos poucos e dos mais fortes
+   para os mais fracos; no zoom e no arrasto só esticamos essa camada e redesenhamos quando o gesto termina. */
+const ARC_BINS = 16;
 const ARC = {
-  thumb: null, full: null,
-  async ensure() {
-    if (S.arcs) return;
-    const flat = await getJSON('data/arcs.json');
-    const n = flat.length / 4; const a = new Uint16Array(n), b = new Uint16Array(n), vot = new Uint32Array(n);
-    for (let i = 0; i < n; i++) { a[i] = flat[4 * i]; b[i] = flat[4 * i + 1]; vot[i] = flat[4 * i + 3]; }
-    const deg = new Uint32Array(S.chapters.length); for (let i = 0; i < n; i++) { deg[a[i]]++; deg[b[i]]++; }
-    const off = new Uint32Array(S.chapters.length + 1); for (let i = 0; i < deg.length; i++) off[i + 1] = off[i] + deg[i];
-    const fill = off.slice(0, -1); const lst = new Uint32Array(off[off.length - 1]);
-    for (let i = 0; i < n; i++) { lst[fill[a[i]]++] = i; lst[fill[b[i]]++] = i; }
-    S.arcs = { n, a, b, vot, off, lst };
+  thumb: null, full: null, cache: null, _p: null,
+  ensure() {
+    if (S.arcs) return Promise.resolve();
+    if (this._p) return this._p;
+    this._p = getJSON('data/arcs.json').then(flat => {
+      const n = flat.length / 4, NC = S.chapters.length;
+      const a = new Uint16Array(n), b = new Uint16Array(n), vot = new Uint32Array(n), bin = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        let x = flat[4 * i], y = flat[4 * i + 1]; if (x > y) { const t = x; x = y; y = t; }
+        a[i] = x; b[i] = y; vot[i] = flat[4 * i + 3]; bin[i] = Math.min(ARC_BINS - 1, Math.floor(Math.sqrt((y - x) / 1188) * ARC_BINS));
+      }
+      const deg = new Uint32Array(NC); for (let i = 0; i < n; i++) { deg[a[i]]++; deg[b[i]]++; }
+      const off = new Uint32Array(NC + 1); for (let i = 0; i < NC; i++) off[i + 1] = off[i] + deg[i];
+      const fill = off.slice(0, -1), lst = new Uint32Array(off[NC]);
+      for (let i = 0; i < n; i++) { lst[fill[a[i]]++] = i; lst[fill[b[i]]++] = i; }
+      const ord = new Uint32Array(n); for (let i = 0; i < n; i++) ord[i] = i;
+      ord.sort((x, y) => vot[y] - vot[x]);
+      S.arcs = { n, a, b, vot, off, lst, ord, bin };
+    }).catch(e => { this._p = null; throw e; });
+    return this._p;
   },
-  redraw() { this.thumb?.request(); this.full?.request(); },
+  redraw() { this.thumb?.render(); this.full?.render(); },
+  paint() { this.thumb?.request(); this.full?.request(); },
 };
+const layerDpr = (dpr = Math.min(2, window.devicePixelRatio || 1)) => FINE ? Math.min(dpr, 2) : dpr >= 2 ? dpr / 2 : dpr;
 const arcColor = (dist, alpha) => `hsla(${350 - 300 * Math.min(1, Math.sqrt(dist / 1188))},92%,62%,${alpha})`;
 function arcVisible(i) {
   const A = S.arcs; if (A.vot[i] < S.arcMin) return false;
@@ -1847,7 +1889,9 @@ function arcVisible(i) {
   return true;
 }
 function makeArcView(canvas, interactive) {
-  const V = { canvas, ctx: canvas.getContext('2d'), interactive, W: 0, H: 0, dpr: 1, k: 1, tx: 0, draft: false, raf: 0, zoom: null, hover: -1 };
+  const V = { canvas, ctx: canvas.getContext('2d'), interactive, W: 0, H: 0, dpr: 1, ldpr: 1, k: 1, tx: 0, raf: 0, zoom: null, hover: -1,
+    gen: 0, job: 0, st: 0, L: document.createElement('canvas'), lk: 1, ltx: 0, shown: 0, done: false, moving: false };
+  V.lctx = V.L.getContext('2d');
   V.g = () => {
     const N = S.chapters.length, pad = 12, lab = interactive ? 42 : 24;
     const y0 = Math.round((V.H - lab) * 0.8);
@@ -1857,54 +1901,98 @@ function makeArcView(canvas, interactive) {
   V.idxAt = px => { const g = V.g(); const i = Math.floor((px - g.pad - V.tx) / (g.dx * V.k)); return i >= 0 && i < g.N ? i : -1; };
   V.resize = () => {
     const box = canvas.parentElement.getBoundingClientRect();
-    V.W = Math.max(240, Math.floor(box.width));
-    V.H = interactive ? Math.max(240, Math.floor(box.height)) : Math.round(Math.max(230, Math.min(520, V.W * 0.5)));
-    V.dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = V.W * V.dpr; canvas.height = V.H * V.dpr; canvas.style.width = V.W + 'px'; canvas.style.height = V.H + 'px';
-    if (V.zoom) V.zoom.extent([[0, 0], [V.W, V.H]]).translateExtent([[0, -1e5], [V.W, 1e5]]);
-    V.draw();
+    const W = Math.max(240, Math.floor(box.width));
+    const H = interactive ? Math.max(240, Math.floor(box.height)) : Math.round(Math.max(230, Math.min(520, W * 0.5)));
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (W === V.W && H === V.H && dpr === V.dpr && V.L.width) { V.request(); return; }
+    V.W = W; V.H = H; V.dpr = dpr;
+    if (ARC.cache && ARC.cache.cv === V.L) { V.L = document.createElement('canvas'); V.lctx = V.L.getContext('2d'); }
+    // a camada dos arcos não precisa de nitidez de retina: brilho fino, bem mais leve (escala inteira evita listras)
+    V.ldpr = layerDpr(dpr);
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    V.L.width = Math.round(W * V.ldpr); V.L.height = Math.round(H * V.ldpr);
+    if (V.zoom) V.zoom.extent([[0, 0], [W, H]]).translateExtent([[0, -1e5], [W, 1e5]]);
+    V.render();
   };
-  V.request = () => { if (!V.raf) V.raf = requestAnimationFrame(() => { V.raf = 0; V.draw(); }); };
+  V.request = () => { if (!V.raf) V.raf = requestAnimationFrame(() => { V.raf = 0; drawArcs(V); }); };
   V.draw = () => drawArcs(V);
+  V.render = () => { clearTimeout(V.st); renderArcLayer(V); };
+  V.halt = () => { V.gen++; V.moving = true; cancelAnimationFrame(V.job); clearTimeout(V.st); };
+  V.settle = (ms = 120) => { clearTimeout(V.st); V.moving = false; if (V.done && V.k === V.lk && V.tx === V.ltx) { V.request(); return; } V.st = setTimeout(() => renderArcLayer(V), ms); };
   return V;
+}
+function renderArcLayer(V) {
+  const A = S.arcs; if (!A || !V.W || !V.canvas.isConnected) return;
+  cancelAnimationFrame(V.job); const gen = ++V.gen;
+  const key = [V.W, V.H, V.ldpr, S.arcMin, S.arcMode].join('|');
+  if (!V.interactive) {
+    const c = ARC.cache;
+    if (c && c.key === key) { V.L = c.cv; V.lctx = c.cv.getContext('2d'); V.lk = 1; V.ltx = 0; V.shown = c.shown; V.done = true; V.request(); return; }
+    if (c && c.cv === V.L) { V.L = document.createElement('canvas'); V.L.width = c.cv.width; V.L.height = c.cv.height; V.lctx = V.L.getContext('2d'); }
+  }
+  const g = V.g(), lc = V.lctx, W = V.W, H = V.H, maxH = g.y0 - g.top;
+  const lk = V.k, ltx = V.tx, X = i => g.pad + ltx + (i + 0.5) * g.dx * lk;
+  const cap = V.interactive ? (FINE ? 160000 : 70000) : (FINE ? 70000 : 30000);
+  const list = V.list || (V.list = new Uint32Array(A.n)); let m = 0;
+  for (let j = 0; j < A.n && m < cap; j++) {
+    const i = A.ord[j]; if (!arcVisible(i)) continue;
+    if (lk > 1) { const x1 = X(A.a[i]), x2 = X(A.b[i]); if (x2 < -2 || x1 > W + 2) continue; }
+    list[m++] = i;
+  }
+  const span0 = (W - 2 * g.pad) / 2, vs = V.interactive ? Math.max(1, maxH / span0) : 1;
+  const dens = Math.min(1, Math.pow(W * Math.min(maxH, span0 * vs) / (1300 * 560), 0.8));
+  const alpha = Math.max(0.012, Math.min(0.6, 2400 / Math.max(1, m) * dens));
+  const strokes = Array.from({ length: ARC_BINS }, (_, k) => arcColor(((k + 0.5) / ARC_BINS) ** 2 * 1188, alpha * (0.3 + 0.7 * Math.sqrt((k + 0.5) / ARC_BINS))));
+  V.lk = lk; V.ltx = ltx; V.shown = m; V.done = false;
+  lc.setTransform(V.ldpr, 0, 0, V.ldpr, 0, 0); lc.globalCompositeOperation = 'source-over'; lc.clearRect(0, 0, W, H);
+  lc.lineWidth = lk > 8 ? 1 : 0.65;
+  let pos = 0;
+  const step = () => {
+    if (gen !== V.gen || !V.canvas.isConnected) return;
+    const t0 = performance.now(); lc.globalCompositeOperation = 'lighter';
+    do {
+      const end = Math.min(m, pos + 700), paths = new Array(ARC_BINS);
+      for (; pos < end; pos++) {
+        const i = list[pos], x1 = X(A.a[i]), x2 = X(A.b[i]), hh = Math.min(maxH, (x2 - x1) / 2 * vs), bn = A.bin[i];
+        const p = paths[bn] || (paths[bn] = new Path2D()); p.moveTo(x1, g.y0); p.quadraticCurveTo((x1 + x2) / 2, g.y0 - 2 * hh, x2, g.y0);
+      }
+      for (let k = 0; k < ARC_BINS; k++) if (paths[k]) { lc.strokeStyle = strokes[k]; lc.stroke(paths[k]); }
+    } while (pos < m && performance.now() - t0 < 6);
+    lc.globalCompositeOperation = 'source-over';
+    V.done = pos >= m; V.request();
+    if (!V.done) V.job = requestAnimationFrame(step);
+    else if (!V.interactive) ARC.cache = { key, cv: V.L, shown: m };
+  };
+  step();
 }
 function drawArcs(V) {
   const A = S.arcs; if (!A || !V.W || !V.canvas.isConnected) return;
   const ctx = V.ctx, g = V.g(), sel = S.arcSel, maxH = g.y0 - g.top;
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
   ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
   ctx.fillStyle = '#03070E'; ctx.fillRect(0, 0, V.W, V.H);
-  const vis = [];
-  for (let i = 0; i < A.n; i++) {
-    if (!arcVisible(i)) continue;
-    if (V.k > 1) { const x1 = V.x(A.a[i], g), x2 = V.x(A.b[i], g); if (x2 < -2 || x1 > V.W + 2) continue; }
-    vis.push(i);
-  }
-  const stride = V.draft && vis.length > 9000 ? Math.ceil(vis.length / 9000) : 1;
-  const span0 = (V.W - 2 * g.pad) / 2, vs = V.interactive ? Math.max(1, maxH / span0) : 1;
-  const bins = 36, paths = Array.from({ length: bins }, () => new Path2D()); let shown = 0;
-  for (let j = 0; j < vis.length; j += stride) {
-    const i = vis[j], x1 = V.x(A.a[i], g), x2 = V.x(A.b[i], g), hh = Math.min(maxH, (x2 - x1) / 2 * vs);
-    const bin = Math.min(bins - 1, Math.floor(Math.sqrt((A.b[i] - A.a[i]) / 1188) * bins));
-    const p = paths[bin]; p.moveTo(x1, g.y0); p.quadraticCurveTo((x1 + x2) / 2, g.y0 - 2 * hh, x2, g.y0); shown++;
-  }
-  const dens = Math.min(1, Math.pow(V.W * Math.min(maxH, span0 * vs) / (1300 * 560), 0.8));
-  let alpha = Math.max(0.01, Math.min(0.6, 2400 / Math.max(1, shown) * dens));
-  if (sel) alpha *= 0.3;
-  ctx.globalCompositeOperation = 'lighter'; ctx.lineWidth = V.k > 8 ? 1 : 0.6;
-  paths.forEach((p, k) => { ctx.strokeStyle = arcColor(((k + 0.5) / bins) ** 2 * 1188, alpha * (0.3 + 0.7 * Math.sqrt((k + 0.5) / bins))); ctx.stroke(p); });
+  // camada pronta dos arcos: no gesto só é esticada na horizontal (sem suavizar, que é o mais rápido)
+  const s = V.k / V.lk;
+  ctx.globalAlpha = sel ? 0.3 : 1; ctx.imageSmoothingEnabled = !V.moving;
+  ctx.setTransform(V.dpr * s, 0, 0, V.dpr, V.dpr * (g.pad + V.tx - (g.pad + V.ltx) * s), 0);
+  ctx.drawImage(V.L, 0, 0, V.W, V.H);
+  ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = true;
   if (sel) {
-    ctx.lineWidth = V.k > 8 ? 1.8 : 1.2;
+    const span0 = (V.W - 2 * g.pad) / 2, vs = V.interactive ? Math.max(1, maxH / span0) : 1;
+    const paths = new Map();
     const one = (ia, ib, w) => {
       const lo = Math.min(ia, ib), hi = Math.max(ia, ib), x1 = V.x(lo, g), x2 = V.x(hi, g);
       if (x2 < -2 || x1 > V.W + 2) return;
-      const hh = Math.min(maxH, (x2 - x1) / 2 * vs);
-      ctx.strokeStyle = arcColor(hi - lo, Math.min(0.95, 0.4 + w / 50));
-      ctx.beginPath(); ctx.moveTo(x1, g.y0); ctx.quadraticCurveTo((x1 + x2) / 2, g.y0 - 2 * hh, x2, g.y0); ctx.stroke();
+      const hh = Math.min(maxH, (x2 - x1) / 2 * vs), key = Math.min(ARC_BINS - 1, Math.floor(Math.sqrt((hi - lo) / 1188) * ARC_BINS)) * 4 + Math.min(3, Math.floor(w / 15));
+      let p = paths.get(key); if (!p) paths.set(key, p = new Path2D());
+      p.moveTo(x1, g.y0); p.quadraticCurveTo((x1 + x2) / 2, g.y0 - 2 * hh, x2, g.y0);
     };
     if (sel.kind === 'chap') { for (let k = A.off[sel.i]; k < A.off[sel.i + 1]; k++) { const i = A.lst[k]; if (A.vot[i] >= Math.min(S.arcMin, 3)) one(A.a[i], A.b[i], A.vot[i]); } }
     else for (const [ci, w] of sel.targets) one(sel.i, ci, w);
+    ctx.globalCompositeOperation = 'lighter'; ctx.lineWidth = V.k > 8 ? 1.8 : 1.2;
+    for (const [key, p] of paths) { const bn = key >> 2, lv = key & 3; ctx.strokeStyle = arcColor(((bn + 0.5) / ARC_BINS) ** 2 * 1188, [0.45, 0.6, 0.78, 0.95][lv]); ctx.stroke(p); }
+    ctx.globalCompositeOperation = 'source-over';
   }
-  ctx.globalCompositeOperation = 'source-over';
   // chapter bars
   const cw = g.dx * V.k, bw = Math.max(0.6, cw * (cw > 4 ? 0.8 : 0.95));
   for (let i = 0; i < g.N; i++) {
@@ -1939,8 +2027,7 @@ function drawArcs(V) {
     const every = cw >= 18 ? 1 : cw >= 9 ? 5 : 10;
     for (let i = 0; i < g.N; i++) { const [b, c] = S.chapters[i]; if (c % every && c !== 1) continue; const x = V.x(i, g); if (x < 0 || x > V.W) continue; ctx.fillText(String(c), x, yC); }
   }
-  V.shown = shown;
-  const cnt = $('#arcCount'); if (cnt && V.interactive === !!ARC.full) cnt.textContent = fmt(shown) + ' arcos';
+  const cnt = $('#arcCount'); if (cnt && V.interactive && ARC.full === V) cnt.textContent = fmt(V.shown) + ' arcos' + (V.done ? '' : '…');
 }
 function arcTools() {
   const selB = h('select', { id: 'arcBook', 'aria-label': 'Livro', class: 'fs-sel' }, h('option', { value: '', text: 'Ir para…' }), S.books.map((bk, i) => h('option', { value: i, text: bk.n })));
@@ -1956,7 +2043,7 @@ function arcTools() {
   const zOut = zb('Reduzir', '−', () => ARC.full?.zoom && d3.select(ARC.full.canvas).transition().duration(260).call(ARC.full.zoom.scaleBy, 1 / 2.2));
   const zFit = zb('Ver tudo', '⤢', () => ARC.full?.zoom && d3.select(ARC.full.canvas).transition().duration(320).call(ARC.full.zoom.transform, d3.zoomIdentity));
   const rng = h('input', { type: 'range', id: 'arcMin', min: 1, max: 120, step: 1, value: S.arcMin, 'aria-label': 'Força mínima das ligações', style: 'width:110px;accent-color:var(--sky)' });
-  rng.oninput = () => { S.arcMin = +rng.value; store.set('arcMin', S.arcMin); ARC.redraw(); };
+  let rt = 0; rng.oninput = () => { S.arcMin = +rng.value; store.set('arcMin', S.arcMin); clearTimeout(rt); rt = setTimeout(() => ARC.redraw(), 90); };
   const mode = h('button', { class: 'fs-pill', 'aria-pressed': String(S.arcMode === 'atnt'), text: 'Só AT ↔ NT', onclick: () => { S.arcMode = S.arcMode === 'atnt' ? 'todos' : 'atnt'; mode.setAttribute('aria-pressed', String(S.arcMode === 'atnt')); ARC.redraw(); } });
   return [selB, selC, zOut, zIn, zFit, h('label', { class: 'fs-range' }, 'Força', rng), mode, h('span', { class: 'mono muted', id: 'arcCount', style: 'font-size:11.5px;white-space:nowrap' })];
 }
@@ -1973,9 +2060,9 @@ function openArcFull(opts = {}) {
       const V = makeArcView(cv, true); ARC.full = V;
       if (window.d3) {
         V.zoom = d3.zoom().scaleExtent([1, 160])
-          .on('start', () => { V.draft = true; })
+          .on('start', () => V.halt())
           .on('zoom', e => { V.k = e.transform.k; V.tx = e.transform.x; V.request(); })
-          .on('end', () => { V.draft = false; V.request(); });
+          .on('end', () => V.settle());
         d3.select(cv).call(V.zoom).on('dblclick.zoom', null);
       }
       ro = new ResizeObserver(() => V.resize()); ro.observe(wrap);
@@ -1990,7 +2077,7 @@ function openArcFull(opts = {}) {
       if (opts.verse) selectArcVerse(opts.verse).then(() => showArcSheet());
       else if (S.arcSel) showArcSheet();
     },
-    onClose: () => { ro?.disconnect(); ARC.full = null; ARC.thumb?.request(); renderArcInfo(); },
+    onClose: () => { ro?.disconnect(); ARC.full?.halt(); ARC.full = null; ARC.thumb?.request(); renderArcInfo(); },
   });
 }
 function arcZoomTo(i, span = 30) {
@@ -1999,14 +2086,14 @@ function arcZoomTo(i, span = 30) {
   const tx = Math.min(0, Math.max(-(V.W - 2 * g.pad) * (k - 1), V.W / 2 - g.pad - (i + 0.5) * g.dx * k));
   d3.select(V.canvas).transition().duration(420).call(V.zoom.transform, d3.zoomIdentity.translate(tx, 0).scale(k));
 }
-function selectArcChapter(i) { S.arcSel = { kind: 'chap', i }; ARC.redraw(); renderArcInfo(); if (ARC.full) showArcSheet(); }
+function selectArcChapter(i) { S.arcSel = { kind: 'chap', i }; ARC.paint(); renderArcInfo(); if (ARC.full) showArcSheet(); }
 async function selectArcVerse(id) {
   await ARC.ensure();
   const [b, c, v] = split(id); const xr = await getJSON('data/xref/' + S.books[b].o + '.json');
   const flat = xr[c + '.' + v] || []; const m = new Map();
   for (let i = 0; i < flat.length; i += 3) { const [tb, tc] = split(flat[i]); const ci = chapIndex(tb, tc); m.set(ci, (m.get(ci) || 0) + Math.max(1, flat[i + 2])); }
   S.arcSel = { kind: 'verse', i: chapIndex(b, c), id, targets: [...m] };
-  ARC.redraw(); renderArcInfo();
+  ARC.paint(); renderArcInfo();
 }
 function arcLinks() {
   const sel = S.arcSel, A = S.arcs;
@@ -2024,7 +2111,7 @@ function arcInfoBody(host, inFull) {
     h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px' },
       h('button', { class: 'btn primary', text: 'Abrir no Leitor', onclick: () => { FS.close(); if (sel.kind === 'verse') gotoVerse(sel.id); else { S.book = b; S.chap = c; store.set('book', b); store.set('chap', c); setTab('leitor'); } } }),
       inFull ? h('button', { class: 'btn', text: 'Ampliar aqui', onclick: () => arcZoomTo(sel.i) }) : h('button', { class: 'btn', text: 'Explorar em tela cheia', onclick: () => openArcFull() }),
-      h('button', { class: 'btn ghost', text: 'Limpar', onclick: () => { S.arcSel = null; ARC.redraw(); renderArcInfo(); if (inFull) FS.sheet(null); } })),
+      h('button', { class: 'btn ghost', text: 'Limpar', onclick: () => { S.arcSel = null; ARC.paint(); renderArcInfo(); if (inFull) FS.sheet(null); } })),
     h('div', { class: 'sec-title', text: 'Ligações mais fortes' }),
     h('div', { class: 'toplinks' }, links.slice(0, 12).map(([ci, w]) => { const [b2, c2] = S.chapters[ci];
       return h('button', { class: 'tl', onclick: () => { selectArcChapter(ci); if (inFull) arcZoomTo(ci); } },
@@ -2252,7 +2339,7 @@ function makeHud(canvas, interactive) {
   V.start = () => {
     if (V.running || reduce) { V.draw(); return; }
     V.running = true;
-    const loop = t => { if (!V.running || !canvas.isConnected) { V.running = false; return; } if (t - V.last > 33) { V.last = t; V.draw(t); } V.raf = requestAnimationFrame(loop); };
+    const loop = t => { if (!V.running || !canvas.isConnected) { V.running = false; return; } if (t - V.last > 33 && !coberto(!V.interactive)) { V.last = t; V.draw(t); } V.raf = requestAnimationFrame(loop); };
     V.raf = requestAnimationFrame(loop);
   };
   V.stop = () => { V.running = false; cancelAnimationFrame(V.raf); };
@@ -2309,6 +2396,7 @@ function drawHud(V, time) {
   for (const [tp, r] of Object.entries(RING)) { ctx.strokeStyle = (TIPOS[tp]?.c || '#3BE3F0') + '22'; ctx.beginPath(); ctx.arc(cx, cy, r * s, 0, TAU); ctx.stroke(); }
   // chords & synapses
   ctx.globalCompositeOperation = 'lighter';
+  SYN.draw(ctx, SYN.get(0.9 * s), cx, cy, dim ? 0.3 : 0.85);
   for (const d of V.nodes) {
     const on = !dim || d.id === V.sel || (V.book >= 0 && (d.n.refs || []).some(r => split(r)[0] === V.book));
     const [tx2, ty2] = [cx + d.x * s, cy + d.y * s];
@@ -2329,7 +2417,7 @@ function drawHud(V, time) {
     const on = !dim || d.id === V.sel || (V.book >= 0 && (d.n.refs || []).some(r => split(r)[0] === V.book));
     const [x, y] = [cx + d.x * s, cy + d.y * s]; const rad = (d.id === V.sel ? 5.5 : 3.4) * (V.interactive ? 1 : 0.85) / Math.sqrt(k) * (1 + 0.16 * Math.sin(sec * 2.1 + (d.ph || 0) * TAU));
     ctx.globalAlpha = on ? 1 : 0.16;
-    ctx.shadowColor = d.color; ctx.shadowBlur = on ? 12 : 0;
+    if (on) { ctx.globalAlpha = 0.2; ctx.fillStyle = d.color; ctx.beginPath(); ctx.arc(x, y, rad * 2.4, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
     if (d.n.status === 'rascunho') { ctx.strokeStyle = d.color; ctx.lineWidth = 1.4 * lw; ctx.beginPath(); ctx.arc(x, y, rad, 0, TAU); ctx.stroke(); ctx.fillStyle = d.color + '55'; ctx.fill(); }
     else { ctx.fillStyle = d.n.status === 'contestado' ? '#F07070' : d.color; ctx.beginPath(); ctx.arc(x, y, rad, 0, TAU); ctx.fill(); }
     ctx.shadowBlur = 0;
@@ -3361,7 +3449,7 @@ function coverFx(canvas, face) {
     }
     ctx.shadowBlur = 0; ctx.globalAlpha = 1;
   };
-  const loop = t => { if (!canvas.isConnected) return; if (vis && !document.hidden && t - last > 28) { last = t; draw(t); } raf = requestAnimationFrame(loop); };
+  const loop = t => { if (!canvas.isConnected) return; if (vis && !document.hidden && t - last > 28 && !coberto(true)) { last = t; draw(t); } raf = requestAnimationFrame(loop); };
   const move = e => {
     const r = face.getBoundingClientRect(); ptr.x = e.clientX - r.left; ptr.y = e.clientY - r.top; ptr.t = performance.now();
     if (!REDUCE) { const x = ptr.x / r.width - 0.5, y = ptr.y / r.height - 0.5; face.style.setProperty('--ry', (x * 14).toFixed(2) + 'deg'); face.style.setProperty('--rx', (-y * 12).toFixed(2) + 'deg'); face.style.setProperty('--gx', (ptr.x / r.width * 100).toFixed(1) + '%'); face.style.setProperty('--gy', (ptr.y / r.height * 100).toFixed(1) + '%'); }
@@ -3394,7 +3482,7 @@ function coreFx(canvas) {
     ctx.strokeStyle = 'rgba(242,182,72,.55)'; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(c, c, s * 0.96, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = '#E9FDFF'; ctx.font = `700 ${Math.round(W * 0.1)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('BINAH', c, c);
   };
-  const loop = t => { if (!canvas.isConnected) return; if (t - last > 33) { last = t; draw(t); } requestAnimationFrame(loop); };
+  const loop = t => { if (!canvas.isConnected) return; if (t - last > 33 && !coberto(true)) { last = t; draw(t); } requestAnimationFrame(loop); };
   new ResizeObserver(() => { size(); draw(performance.now()); }).observe(canvas);
   size(); if (REDUCE) draw(performance.now()); else requestAnimationFrame(loop);
 }
@@ -3797,6 +3885,134 @@ function openBinahFS() {
   });
 }
 
+/* ================= v9 · sinapses: as 344.799 referências cruzadas dentro do cérebro ================= */
+/* Cada capítulo é um ponto do anel; cada par de capítulos com referências cruzadas vira um fio (142 mil pares, que
+   somam as 344.799 ligações). Os fios são desenhados uma vez numa camada própria, aos poucos e dos mais fortes para
+   os mais fracos, e a cada quadro só colamos essa imagem: o cérebro continua leve. */
+const SYN = {
+  L: new Map(), running: false, req: 0, cs: null,
+  RGB: ['59,227,240', '255,140,56', '255,226,170'], LV: [1, 2.5, 6, 14], CM: [1, 0.55, 0.9], K: 0.65, MODE: 'lighter', DA: 1,
+  LIT: ['140,244,255', '255,186,96', '255,244,210'],
+  lv: w => w < 15 ? 0 : w < 40 ? 1 : w < 100 ? 2 : 3,
+  cang: i => -Math.PI / 2 + (i + 0.5) / S.chapters.length * TAU,
+  cat(p, q) { const s = S.chapStart[39]; return (p < s) === (q < s) ? (p < s ? 0 : 1) : 2; },
+  chord(path, a1, a2, cx, cy, r0) {
+    let d = Math.abs(a2 - a1); if (d > Math.PI) d = TAU - d;
+    const x1 = cx + Math.cos(a1) * r0, y1 = cy + Math.sin(a1) * r0, x2 = cx + Math.cos(a2) * r0, y2 = cy + Math.sin(a2) * r0, beta = 0.9 - 0.78 * d / Math.PI;
+    path.moveTo(x1, y1); path.quadraticCurveTo(cx + ((x1 + x2) / 2 - cx) * beta, cy + ((y1 + y2) / 2 - cy) * beta, x2, y2);
+  },
+  ready() {
+    if (S.arcs) return true;
+    if (!this.req) this.req = setTimeout(() => ARC.ensure().catch(() => { this.req = 0; }), 650);
+    return false;
+  },
+  // camada com todos os fios para um anel de raio r0 (px CSS); pode vir parcial enquanto termina de desenhar
+  get(r0) {
+    if (!this.ready()) return null;
+    r0 = Math.round(r0); if (r0 < 30) return null;
+    let L = this.L.get(r0);
+    if (!L) {
+      if (this.L.size >= 3) this.L.delete(this.L.keys().next().value);
+      const dpr = layerDpr(), m = 3, side = Math.ceil((2 * r0 + 2 * m) * dpr);
+      const cv = document.createElement('canvas'); cv.width = cv.height = side;
+      L = { r0, m, dpr, cv, ctx: cv.getContext('2d'), pos: 0, done: false };
+      // tinta suficiente para ver a trama sem virar névoa: num anel pequeno (celular) o fundo mostra os pares com 15+ votos;
+      // num anel grande entram também os de 5+. Ao tocar, acendem todas as ligações daquele ponto, inclusive as fracas.
+      L.alpha = this.K * Math.min(1.6, Math.sqrt(r0 / 160)) / 255;
+      const minV = r0 < 220 ? 15 : 5; let end = 0; while (end < S.arcs.n && S.arcs.vot[S.arcs.ord[end]] >= minV) end++; L.end = end;
+      this.L.set(r0, L); this.kick();
+    }
+    return L;
+  },
+  kick() {
+    if (this.running) return; this.running = true;
+    const tick = () => { const L = [...this.L.values()].find(x => !x.done); if (!L) { this.running = false; return; } this.step(L); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  },
+  step(L) {
+    const A = S.arcs, n = L.end, ctx = L.ctx, c = L.r0 + L.m, t0 = performance.now();
+    if (!this.cs) { const N = S.chapters.length; this.cs = new Float32Array(N); for (let i = 0; i < N; i++) this.cs[i] = this.cang(i); }
+    ctx.setTransform(L.dpr, 0, 0, L.dpr, 0, 0); ctx.globalCompositeOperation = this.MODE; ctx.lineWidth = 0.6; const rev = this.MODE !== 'lighter';
+    const st = this.RGB.flatMap((rgb, ci) => this.LV.map(k => `rgba(${rgb},${Math.min(0.9, L.alpha * k * this.CM[ci]).toFixed(4)})`));
+    ctx.lineWidth = L.r0 < 220 ? 0.7 : 0.6;
+    do {
+      const end = Math.min(n, L.pos + 700), paths = new Array(12);
+      for (; L.pos < end; L.pos++) {
+        const i = A.ord[rev ? n - 1 - L.pos : L.pos], a = A.a[i], b = A.b[i], k = this.cat(a, b) * 4 + this.lv(A.vot[i]);
+        this.chord(paths[k] || (paths[k] = new Path2D()), this.cs[a], this.cs[b], c, c, L.r0);
+      }
+      for (let k = 0; k < 12; k++) if (paths[k]) { ctx.strokeStyle = st[k]; ctx.stroke(paths[k]); }
+    } while (L.pos < n && performance.now() - t0 < 5);
+    ctx.globalCompositeOperation = 'source-over';
+    L.done = L.pos >= n;
+  },
+  draw(ctx, L, cx, cy, alpha, r0) {
+    if (!L || alpha <= 0) return;
+    const sz = 2 * (L.r0 + L.m) * (r0 ? r0 / L.r0 : 1); ctx.globalAlpha = Math.min(1, alpha * (L.lit ? 1 : this.DA)); ctx.drawImage(L.cv, cx - sz / 2, cy - sz / 2, sz, sz); ctx.globalAlpha = 1;
+  },
+  // o que acende quando se toca num livro, num capítulo, num versículo ou num pensamento
+  async items(kind, x) {
+    const out = [], agg = new Map(), marks = [], tg = [];
+    if (kind === 'book' || kind === 'chap') {
+      await ARC.ensure(); const A = S.arcs;
+      const lo = kind === 'book' ? S.chapStart[x] : x, hi = kind === 'book' ? lo + S.books[x].v.length : x + 1;
+      for (let ch = lo; ch < hi; ch++) {
+        if (kind === 'chap') marks.push(this.cang(ch));
+        for (let k = A.off[ch]; k < A.off[ch + 1]; k++) {
+          const i = A.lst[k], o = A.a[i] === ch ? A.b[i] : A.a[i];
+          if (o >= lo && o < hi && o < ch) continue;
+          out.push([this.cang(ch), this.cang(o), A.vot[i], this.cat(ch, o)]);
+          const key = kind === 'book' ? S.chapters[o][0] : o;
+          if (kind === 'book' && key === x) continue;
+          agg.set(key, (agg.get(key) || 0) + A.vot[i]);
+        }
+      }
+    } else {
+      const ids = (kind === 'verse' ? [x] : x).slice(0, 8);
+      for (const id of ids) {
+        const [b, c, v] = split(id); if (!S.books[b]) continue;
+        const xr = await getJSON('data/xref/' + S.books[b].o + '.json').catch(() => null);
+        const flat = xr?.[c + '.' + v] || [], a1 = angleOfVerse(id), from = chapIndex(b, c);
+        marks.push(a1);
+        for (let j = 0; j < flat.length && j < 3 * 150; j += 3) {
+          const t = flat[j], w = Math.max(1, flat[j + 2]), [tb, tc] = split(t); if (!S.books[tb]) continue;
+          const a2 = angleOfVerse(t); out.push([a1, a2, w, this.cat(from, chapIndex(tb, tc))]); tg.push(a2);
+          agg.set(t, (agg.get(t) || 0) + w);
+        }
+      }
+    }
+    return { items: out, top: [...agg].sort((p, q) => q[1] - p[1]), marks, tg: tg.slice(0, 240) };
+  },
+  paintLit(r0, items) {
+    const n0 = n => n <= 260;
+    const dpr = layerDpr(), m = 3, side = Math.ceil((2 * r0 + 2 * m) * dpr), c = r0 + m;
+    const cv = document.createElement('canvas'); cv.width = cv.height = side; const ctx = cv.getContext('2d');
+    // por cima de tudo: as fracas primeiro, as fortes por último; onde há muitas a cor satura em vez de estourar em branco
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalCompositeOperation = n0(items.length) ? 'lighter' : 'source-over';
+    const n = items.length, sc = n0(n) ? 1 : Math.min(1, Math.pow(260 / n, 0.5)), paths = new Array(12);
+    items = items.slice().sort((p, q) => p[2] - q[2]);
+    for (const [a1, a2, w, cat] of items) { const k = cat * 4 + this.lv(w); this.chord(paths[k] || (paths[k] = new Path2D()), a1, a2, c, c, r0); }
+    ctx.lineWidth = n > 1500 ? 0.8 : 1.25;
+    for (let k = 0; k < 12; k++) if (paths[k]) { ctx.strokeStyle = `rgba(${this.LIT[k >> 2]},${Math.max(0.05, sc * [0.42, 0.62, 0.82, 1][k & 3])})`; ctx.stroke(paths[k]); }
+    return { cv, r0, m, lit: true };
+  },
+  // acende as ligações no cérebro (NEURO): devolve o resumo para o cartão
+  async light(V, kind, x) {
+    const tok = V.synTok = (V.synTok || 0) + 1;
+    if (kind == null) { V.syn = null; V.synNodes = null; return null; }
+    let it; try { it = await this.items(kind, x); } catch { return null; }
+    if (tok !== V.synTok || !V.W) return null;
+    const r0 = Math.round(V.W / 2 * 0.86), lit = this.paintLit(r0, it.items);
+    V.syn = { kind, x, t0: performance.now(), ...lit, marks: it.marks, tg: it.tg, n: it.items.length };
+    // pensamentos e estudos que tocam o que acendeu ficam por cima, em destaque
+    let hit = null;
+    if (kind === 'verse' || kind === 'node') { const ids = new Set([...(kind === 'verse' ? [x] : x), ...it.top.map(t => t[0])]); hit = i => V.g.nodes[i].refs.some(r => ids.has(r)); }
+    else if (kind === 'chap') { const chs = new Set([x, ...it.top.slice(0, 10).map(t => t[0])]); hit = i => V.g.nodes[i].refs.some(r => { const [b, c] = split(r); return chs.has(chapIndex(b, c)); }); }
+    V.synNodes = hit ? new Set(V.g.nodes.map((_, i) => i).filter(hit)) : null;
+    if (V.synNodes && kind === 'node' && V.sel >= 0) V.synNodes.add(V.sel);
+    return it;
+  },
+};
 /* ================= v4 · cérebro neural (cresce do ponto tocado) ================= */
 function neuroGraph() {
   const list = [...S.brain.values()];
@@ -3890,10 +4106,11 @@ const NEURO = {
     if (!this.V) { this.V = makeNeuro(this.cv); }
     VOZ.sub = null;
     this.V.setData(); this.V.resize(); this.V.start();
-    this.say(BINAH.hist.length ? '' : 'Toque num pensamento, num estudo ou num livro do anel. Arraste para girar. Ou pergunte ao Binah aqui embaixo.');
+    this.say(BINAH.hist.length || opts.verse ? '' : 'Os fios finos são as 344.799 ligações da Bíblia. Toque num livro do anel, num pensamento ou num estudo para acender as ligações dele.');
+    if (opts.verse) setTimeout(() => { if (this.isOpen) this.showVerse(opts.verse); }, 420);
     HUDFX.setMode('idle');
     if (opts.focus || FINE) setTimeout(() => this.inp.focus(), 500);
-    if (!opts.focus) CONVERSA.abrir(this);
+    if (!opts.focus && !opts.verse) CONVERSA.abrir(this);
   },
   close() {
     if (!this.isOpen) return; this.isOpen = false;
@@ -3937,11 +4154,14 @@ const NEURO = {
     const linked = V.g.adj[i].length;
     C.innerHTML = ''; C.hidden = false;
     const txt = (n.texto || '').replace(/\*\*|[*_#`>]/g, '').replace(/\s+/g, ' ').trim();
+    const synl = h('div', { class: 'nr-syn', text: d.refs.length ? 'acendendo as ligações nas Escrituras…' : '' });
+    if (d.refs.length) SYN.light(V, 'node', d.refs).then(it => { if (it && C.contains(synl)) synl.textContent = fmt(it.items.length) + ' ligações acesas nas Escrituras · toque num versículo para seguir'; });
+    else SYN.light(V, null);
     C.append(h('div', { class: 'nr-card-h' }, h('span', { class: 'chip' }, h('span', { class: 'dot', style: 'background:' + t.c }), t.n), n.status ? h('span', { class: 'chip st-' + n.status, text: n.status }) : null, h('span', { class: 'muted', style: 'font-size:12px', text: linked + (linked === 1 ? ' ligação' : ' ligações') }),
         h('button', { class: 'iconbtn', type: 'button', style: 'margin-left:auto;width:28px;height:28px', 'aria-label': 'Fechar cartão', html: XSVG, onclick: () => this.deselect() })),
       h('div', { class: 'nr-card-t', text: n.titulo || '(sem título)' }),
       txt ? h('p', { class: 'nr-card-s', text: txt.length > 240 ? txt.slice(0, 240) + '…' : txt }) : null,
-      d.refs.length ? h('div', { class: 'nr-refs' }, d.refs.slice(0, 8).map(r => h('button', { class: 'ref', type: 'button', text: refLabel(r), onclick: () => { this.close(); gotoVerse(r); } }))) : null,
+      d.refs.length ? h('div', { class: 'nr-refs' }, d.refs.slice(0, 8).map(r => h('button', { class: 'ref', type: 'button', text: refLabel(r), onclick: () => this.showVerse(r) }))) : null, synl,
       h('div', { class: 'nr-acts' },
         h('button', { class: 'btn primary', type: 'button', text: n.tipo === 'estudo' ? 'Abrir estudo' : 'Abrir', onclick: () => { this.close(); if (n.tipo === 'estudo' && typeof openEstudo === 'function') openEstudo(n.id); else openNode(n.id); } }),
         d.refs[0] ? h('button', { class: 'btn', type: 'button', text: 'Ler ' + refLabel(d.refs[0]), onclick: () => { this.close(); gotoVerse(d.refs[0]); } }) : null,
@@ -3950,18 +4170,72 @@ const NEURO = {
   },
   showBook(b) {
     const C = this.card, bk = S.books[b], V = this.V;
+    const synl = h('div', { class: 'nr-syn', text: 'acendendo as ligações do livro…' }), synb = h('div', { class: 'nr-refs' });
+    SYN.light(V, 'book', b).then(it => {
+      if (!it || !C.contains(synl)) return;
+      synl.textContent = fmt(it.items.length) + ' fios entre capítulos · mais ligado a:';
+      synb.append(...it.top.slice(0, 6).map(([b2]) => h('button', { class: 'chip', type: 'button', text: S.books[b2].n, onclick: () => { V.sel = -1; V.linked = new Set(); V.book = b2; this.showBook(b2); HUDFX.emit({ type: 'book', b: b2 }); } })),
+        h('button', { class: 'chip', type: 'button', text: 'Capítulos…', onclick: () => this.showChap(S.chapStart[b]) }));
+    });
     const ns = V.g.nodes.filter(d => d.refs.some(r => split(r)[0] === b));
     const caps = new Map(); ns.forEach(d => d.refs.forEach(r => { const [bb, c] = split(r); if (bb === b) caps.set(c, (caps.get(c) || 0) + 1); }));
     C.innerHTML = ''; C.hidden = false;
     C.append(h('div', { class: 'nr-card-h' }, h('span', { class: 'chip', text: bk.t === 'AT' ? 'Antigo Testamento' : 'Novo Testamento' }), h('span', { class: 'muted', style: 'font-size:12px', text: ns.length + (ns.length === 1 ? ' pensamento' : ' pensamentos') }),
         h('button', { class: 'iconbtn', type: 'button', style: 'margin-left:auto;width:28px;height:28px', 'aria-label': 'Fechar cartão', html: XSVG, onclick: () => this.deselect() })),
       h('div', { class: 'nr-card-t', text: bk.n }),
-      caps.size ? h('div', { class: 'nr-refs' }, [...caps].sort((p, q) => p[0] - q[0]).slice(0, 24).map(([c, k]) => h('button', { class: 'chip geo-chip', type: 'button', text: bk.a + ' ' + c + ' · ' + k, onclick: () => { this.close(); gotoVerse(vid(b, c, 1)); } }))) : h('p', { class: 'nr-card-s', text: 'Nada no cérebro ligado a este livro ainda.' }),
+      caps.size ? h('div', { class: 'nr-refs' }, [...caps].sort((p, q) => p[0] - q[0]).slice(0, 24).map(([c, k]) => h('button', { class: 'chip geo-chip', type: 'button', text: bk.a + ' ' + c + ' · ' + k, onclick: () => this.showChap(chapIndex(b, c)) }))) : h('p', { class: 'nr-card-s', text: 'Nada no cérebro ligado a este livro ainda.' }),
+      synl, synb,
       h('div', { class: 'nr-acts' }, h('button', { class: 'btn primary', type: 'button', text: 'Abrir ' + bk.n + ' 1', onclick: () => { this.close(); gotoVerse(vid(b, 1, 1)); } }),
         h('button', { class: 'btn glow', type: 'button', text: 'Perguntar ao Binah', onclick: () => { this.inp.value = 'O que eu já descobri em ' + bk.n + '?'; this.inp.focus(); } })));
     this.sub.hidden = true;
   },
-  deselect() { const V = this.V; if (!V) return; V.sel = -1; V.book = -1; this.card.hidden = true; },
+  showChap(ch) {
+    const V = this.V, C = this.card; if (!V || !S.chapters[ch]) return;
+    const [b, c] = S.chapters[ch], bk = S.books[b];
+    V.sel = -1; V.linked = new Set(); V.book = -1;
+    C.innerHTML = ''; C.hidden = false; this.sub.hidden = true;
+    const line = h('span', { class: 'nr-syn', text: 'acendendo…' }), tops = h('div', { class: 'nr-refs' }); let names = '';
+    const nav = h('div', { class: 'nr-refs' },
+      ch > 0 ? h('button', { class: 'chip', type: 'button', text: '‹ anterior', onclick: () => this.showChap(ch - 1) }) : null,
+      ch < S.chapters.length - 1 ? h('button', { class: 'chip', type: 'button', text: 'próximo ›', onclick: () => this.showChap(ch + 1) }) : null);
+    C.append(h('div', { class: 'nr-card-h' }, h('span', { class: 'chip', text: 'Capítulo' }), line,
+        h('button', { class: 'iconbtn', type: 'button', style: 'margin-left:auto;width:28px;height:28px', 'aria-label': 'Fechar cartão', html: XSVG, onclick: () => this.deselect() })),
+      h('div', { class: 'nr-card-t', text: bk.n + ' ' + c }), tops, nav,
+      h('div', { class: 'nr-acts' },
+        h('button', { class: 'btn primary', type: 'button', text: 'Ler ' + bk.a + ' ' + c, onclick: () => { this.close(); gotoVerse(vid(b, c, 1)); } }),
+        h('button', { class: 'btn glow', type: 'button', text: 'Perguntar ao Binah', onclick: () => { this.inp.value = 'Por que ' + bk.n + ' ' + c + ' se liga tanto a ' + (names || 'outros capítulos') + '?'; this.inp.focus(); } })));
+    SYN.light(V, 'chap', ch).then(it => {
+      if (!it || !C.contains(line)) return;
+      const mine = V.synNodes?.size || 0;
+      line.textContent = fmt(it.top.length) + ' capítulos ligados' + (mine ? ' · ' + mine + (mine === 1 ? ' pensamento seu acende junto' : ' pensamentos seus acendem junto') : '');
+      const top = it.top.slice(0, 10); names = top.slice(0, 3).map(([o]) => S.books[S.chapters[o][0]].n + ' ' + S.chapters[o][1]).join(', ');
+      tops.append(...top.map(([o, w]) => { const [b2, c2] = S.chapters[o]; return h('button', { class: 'chip geo-chip', type: 'button', title: w + ' votos', text: S.books[b2].a + ' ' + c2, onclick: () => this.showChap(o) }); }));
+    });
+  },
+  showVerse(id) {
+    const V = this.V, C = this.card; if (!V) return; const [b, c, v] = split(id); if (!S.books[b]) return;
+    V.sel = -1; V.linked = new Set(); V.book = -1;
+    C.innerHTML = ''; C.hidden = false; this.sub.hidden = true;
+    const line = h('span', { class: 'nr-syn', text: 'acendendo…' }), txt = h('p', { class: 'nr-card-s' }), tops = h('div', { class: 'nr-refs' }), mine = h('div', { class: 'nr-refs' }); let names = '';
+    C.append(h('div', { class: 'nr-card-h' }, h('span', { class: 'chip', text: 'Versículo' }), line,
+        h('button', { class: 'iconbtn', type: 'button', style: 'margin-left:auto;width:28px;height:28px', 'aria-label': 'Fechar cartão', html: XSVG, onclick: () => this.deselect() })),
+      h('div', { class: 'nr-card-t', text: refLabel(id, true) }), txt, tops, mine,
+      h('div', { class: 'nr-acts' },
+        h('button', { class: 'btn primary', type: 'button', text: 'Ler no Leitor', onclick: () => { this.close(); gotoVerse(id); } }),
+        h('button', { class: 'btn', type: 'button', text: 'Capítulo', onclick: () => this.showChap(chapIndex(b, c)) }),
+        h('button', { class: 'btn glow', type: 'button', text: 'Perguntar ao Binah', onclick: () => { this.inp.value = 'Como ' + refLabel(id, true) + ' se liga a ' + (names || 'outros textos') + '?'; this.inp.focus(); } })));
+    getJSON('data/pt/' + S.books[b].o + '.json').then(pt => { const t = pt?.[c - 1]?.[v - 1]; if (t && C.contains(txt)) txt.textContent = t.length > 260 ? t.slice(0, 260) + '…' : t; }).catch(() => {});
+    HUDFX.emit({ type: 'verse', vid: id });
+    SYN.light(V, 'verse', id).then(it => {
+      if (!it || !C.contains(line)) return;
+      line.textContent = it.items.length ? fmt(it.items.length) + (it.items.length === 1 ? ' ligação' : ' ligações') : 'sem referências cruzadas';
+      const top = it.top.slice(0, 10); names = top.slice(0, 3).map(([t]) => refLabel(t, true)).join(', ');
+      tops.append(...top.map(([t]) => h('button', { class: 'ref', type: 'button', text: refLabel(t), onclick: () => this.showVerse(t) })));
+      const ns = [...(V.synNodes || [])].slice(0, 4);
+      if (ns.length) mine.append(h('span', { class: 'nr-syn', style: 'width:100%', text: 'No seu cérebro:' }), ...ns.map(i => h('button', { class: 'chip', type: 'button', text: (V.g.nodes[i].n.titulo || '(sem título)').slice(0, 38), onclick: () => V.select(i) })));
+    });
+  },
+  deselect() { const V = this.V; if (!V) return; V.sel = -1; V.book = -1; SYN.light(V, null); this.card.hidden = true; },
 };
 function makeNeuro(canvas) {
   const V = { canvas, ctx: canvas.getContext('2d'), W: 0, dpr: 1, g: { nodes: [], edges: [], adj: [] }, yaw: 0, pitch: 0, vyaw: 0, vpitch: 0, uyaw: 0, upitch: 0, k: 1, ox: 0, oy: 0, sel: -1, book: -1, pull: 0, linked: new Set(), proj: [], raf: 0, last: 0, running: false, drag: null, hover: -1 };
@@ -3969,10 +4243,11 @@ function makeNeuro(canvas) {
     const prevSel = V.sel >= 0 ? V.g.nodes[V.sel]?.id : null;
     V.g = neuroGraph(); V.sel = prevSel ? (V.g.idx.get(prevSel) ?? -1) : -1;
     V.linked = new Set(V.sel >= 0 ? V.g.adj[V.sel] : []);
+    if (V.syn) { const sk = V.syn; SYN.light(V, sk.kind, sk.kind === 'node' && V.sel >= 0 ? V.g.nodes[V.sel].refs : sk.x); }
   };
   V.resize = () => { const r = canvas.getBoundingClientRect(); if (!r.width) return; V.W = r.width; V.dpr = Math.min(2, devicePixelRatio || 1); canvas.width = V.W * V.dpr; canvas.height = V.W * V.dpr; V.draw(performance.now()); };
   V.draw = t => drawNeuro(V, t);
-  V.start = () => { if (V.running) return; V.running = true; const loop = t => { if (!V.running) return; if (REDUCE ? !V.last : t - V.last > 16) { V.last = t; V.draw(t); } V.raf = requestAnimationFrame(loop); }; V.raf = requestAnimationFrame(loop); };
+  V.start = () => { if (V.running) return; V.running = true; const loop = t => { if (!V.running) return; if (REDUCE ? !V.last : t - V.last > (V.drag || FINE ? 15 : 30)) { V.last = t; V.draw(t); } V.raf = requestAnimationFrame(loop); }; V.raf = requestAnimationFrame(loop); };
   V.stop = () => { V.running = false; cancelAnimationFrame(V.raf); };
   V.select = i => { V.sel = i; V.book = -1; V.linked = new Set(i >= 0 ? V.g.adj[i] : []); if (i >= 0) NEURO.showNode(i); };
   V.pick = (px, py) => {
@@ -4002,7 +4277,7 @@ function makeNeuro(canvas) {
     if (d.moved) return;
     const hit = V.pick(d.x0, d.y0);
     if (hit.node != null) { if (V.sel === hit.node) { NEURO.showNode(hit.node); } else V.select(hit.node); HUDFX.emit({ type: 'nodes', ids: [V.g.nodes[hit.node].id] }); }
-    else if (hit.book != null) { V.sel = -1; V.linked = new Set(); V.book = V.book === hit.book ? -1 : hit.book; if (V.book >= 0) { NEURO.showBook(V.book); HUDFX.emit({ type: 'book', b: V.book }); } else NEURO.deselect(); }
+    else if (hit.book != null) { const was = V.book === hit.book && !V.syn?.kind?.startsWith('c'); V.sel = -1; V.linked = new Set(); V.book = was ? -1 : hit.book; if (V.book >= 0) { NEURO.showBook(V.book); HUDFX.emit({ type: 'book', b: V.book }); } else NEURO.deselect(); }
     else NEURO.deselect();
   };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', e => { pts.delete(e.pointerId); V.drag = null; });
@@ -4037,8 +4312,8 @@ function drawNeuro(V, time) {
   V.ox += (tox - V.ox) * 0.08; V.oy += (toy - V.oy) * 0.08;
   proj.forEach(p => { p.sx = c + p.rx * V.kk + V.ox; p.sy = c + p.ry * V.kk + V.oy; });
   V.proj = proj;
-  const dim = V.sel >= 0 || V.book >= 0;
-  const onN = i => !dim || i === V.sel || V.linked.has(i) || (V.book >= 0 && g.nodes[i].refs.some(r => split(r)[0] === V.book));
+  const dim = V.sel >= 0 || V.book >= 0 || !!V.synNodes;
+  const onN = i => !dim || i === V.sel || V.linked.has(i) || V.synNodes?.has(i) || (V.book >= 0 && g.nodes[i].refs.some(r => split(r)[0] === V.book));
   // recorte do círculo
   ctx.save(); ctx.beginPath(); ctx.arc(c, c, R * 0.995, 0, TAU); ctx.clip();
   // grade sutil
@@ -4047,6 +4322,10 @@ function drawNeuro(V, time) {
   const sw = sec * (M === 'thinking' ? 1.6 : 0.3) % TAU;
   if (ctx.createConicGradient) { const gr = ctx.createConicGradient(sw - 0.6, c, c); gr.addColorStop(0, 'rgba(59,227,240,0)'); gr.addColorStop(0.08, 'rgba(59,227,240,.08)'); gr.addColorStop(0.085, 'rgba(59,227,240,0)'); gr.addColorStop(1, 'rgba(59,227,240,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(c, c, R * 0.86, 0, TAU); ctx.fill(); }
   ctx.globalCompositeOperation = 'lighter';
+  // sinapses: as 344.799 referências cruzadas (camada pronta) e, por cima, as que acenderam
+  const lit = V.syn;
+  SYN.draw(ctx, SYN.get(R * 0.86), c, c, lit || dim ? 0.26 : 0.95);
+  if (lit) SYN.draw(ctx, lit, c, c, Math.min(1, (time - lit.t0) / 650) * (0.86 + 0.14 * Math.sin(sec * 2.6)), R * 0.86);
   // fios até o anel (só do escolhido e ligados, ou bem fracos)
   const ringP = (a, rr) => [c + Math.cos(a) * rr * R, c + Math.sin(a) * rr * R];
   g.nodes.forEach((d, i) => {
@@ -4085,7 +4364,8 @@ function drawNeuro(V, time) {
     let rad = (d.est ? 7.5 : 3.6) * p.f * breath * Math.sqrt(V.kk) * (W / 700 * 0.6 + 0.4);
     if (i === V.sel) rad *= 1.7; else if (V.linked.has(i)) rad *= 1.25;
     ctx.globalAlpha = on ? Math.min(1, 0.45 + 0.55 * p.f) : 0.12;
-    ctx.shadowColor = d.color; ctx.shadowBlur = on ? (i === V.sel ? 26 : 12) : 0;
+    if (on && i !== V.sel) { const ga = ctx.globalAlpha; ctx.globalAlpha = ga * 0.2; ctx.fillStyle = d.color; ctx.beginPath(); ctx.arc(p.sx, p.sy, rad * 2.4, 0, TAU); ctx.fill(); ctx.globalAlpha = ga; }
+    ctx.shadowColor = d.color; ctx.shadowBlur = i === V.sel ? 26 : 0;
     if (d.n.status === 'rascunho' && !d.est) { ctx.strokeStyle = d.color; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(p.sx, p.sy, rad, 0, TAU); ctx.stroke(); ctx.fillStyle = d.color + '55'; ctx.fill(); }
     else { ctx.fillStyle = d.n.status === 'contestado' ? '#F07070' : d.color; ctx.beginPath(); ctx.arc(p.sx, p.sy, rad, 0, TAU); ctx.fill(); }
     if (d.est) { ctx.strokeStyle = 'rgba(255,231,176,.9)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(p.sx, p.sy, rad + 5 + 2 * Math.sin(sec * 3 + d.ph * 6), 0, TAU); ctx.stroke(); }
@@ -4098,6 +4378,7 @@ function drawNeuro(V, time) {
   const lab = i => { const p = proj[i], t = (g.nodes[i].n.titulo || '').slice(0, 44); const tw = ctx.measureText(t).width; ctx.fillStyle = 'rgba(2,5,10,.78)'; ctx.fillRect(p.sx + 10, p.sy - 10, tw + 12, 20); ctx.fillStyle = i === V.sel ? '#FFFFFF' : '#CFE9FF'; ctx.fillText(t, p.sx + 16, p.sy); };
   if (V.sel >= 0) { [...V.linked].slice(0, W < 480 ? 3 : 8).forEach(lab); lab(V.sel); }
   else if (V.hover >= 0) lab(V.hover);
+  else if (V.syn) [...(V.synNodes || [])].slice(0, W < 480 ? 3 : 6).forEach(lab);
   else g.nodes.forEach((d, i) => { if (d.est) lab(i); });
   ctx.restore();
   // anel dos 66 livros (moldura fixa)
@@ -4114,6 +4395,10 @@ function drawNeuro(V, time) {
     ctx.fill();
   });
   if (selD) { ctx.strokeStyle = '#FFE7B0'; ctx.lineWidth = 2.4; ctx.beginPath(); for (const a of selD.refA) { const [x1, y1] = ringP(a, 0.86), [x2, y2] = ringP(a, 0.96); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); } ctx.stroke(); }
+  if (lit) {
+    if (lit.tg?.length) { ctx.strokeStyle = 'rgba(255,214,140,.7)'; ctx.lineWidth = 1.1; ctx.beginPath(); for (const a of lit.tg) { const [x1, y1] = ringP(a, 0.875), [x2, y2] = ringP(a, 0.935); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); } ctx.stroke(); }
+    if (!selD && lit.marks.length) { ctx.strokeStyle = '#FFE7B0'; ctx.lineWidth = 2.6; ctx.beginPath(); for (const a of lit.marks) { const [x1, y1] = ringP(a, 0.84), [x2, y2] = ringP(a, 0.97); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); } ctx.stroke(); }
+  }
   if (W > 420) {
     ctx.textAlign = 'center'; ctx.font = `600 ${W < 600 ? 9.5 : 10.5}px Manrope, system-ui, sans-serif`;
     S.books.forEach((bk, b) => { const [a0, a1] = bookAngles(b); if ((a1 - a0) * R < 18 && V.book !== b) return; const [x, y] = ringP((a0 + a1) / 2, 0.905); ctx.fillStyle = V.book === b ? '#02050A' : b >= 39 ? 'rgba(255,240,205,.9)' : 'rgba(225,236,250,.9)'; ctx.fillText(bk.a, x, y); });
