@@ -1147,7 +1147,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
     if (!ET.uid) return p;
     const ia = ET.usados != null ? `IA hoje: ${ET.usados}${ET.limite ? ' de ' + ET.limite : ''}` : '';
     const link = (t, fn) => $e('a', { href: '#', text: t, onclick: e => { e.preventDefault(); fn(); } });
-    p.append('Conectado como ', $e('strong', { text: ET.nome }), ` (${ET.email})`, ia ? ' · ' + ia : '', ' · ', link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Sair', ET.sair));
+    p.append(...(ia ? [ia, ' · '] : []), link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Sair', ET.sair));
     return p;
   };
   const pintaIA = s => {
@@ -1402,9 +1402,8 @@ function appFooter() {
   return h('footer', { class: 'app-foot' },
     h('div', { class: 'af-l' }, h('strong', { text: 'Escola da Torá' }), h('span', { text: ' · ' }), h('span', { class: 'he', lang: 'he', dir: 'rtl', text: 'בית ספר תורני' })),
     h('p', {}, '© ' + anos + ' Diogo Soares. Todos os direitos reservados sobre o software, o design e os estudos originais.'),
-    h('p', {}, a('https://www.ddsinovacao.com.br/escoladatora/', 'ddsinovacao.com.br/escoladatora'), ' · Desenvolvido por ', a('https://www.ddsinovacao.com.br', 'DDS Inovação')),
-    window.ET ? ET.rodape() : null,
-    h('p', { class: 'af-s' }, 'Textos bíblicos, léxicos, referências cruzadas e mapas de terceiros seguem as próprias licenças, citadas em “Fontes e licenças”.'));
+    h('p', {}, a('https://www.ddsinovacao.com.br/', 'ddsinovacao.com.br'), ' · Desenvolvido por ', a('https://www.ddsinovacao.com.br', 'DDS')),
+    window.ET ? ET.rodape() : null);
 }
 
 /* ================= navigation ================= */
