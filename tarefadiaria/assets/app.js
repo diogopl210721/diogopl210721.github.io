@@ -238,7 +238,7 @@
             <label class="f"><span>Celular</span>
               <input name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(41) 99999-9999" maxlength="16" data-mask="tel" value="${esc(fTel(tel))}" required></label>
             <label class="f"><span>PIN (4 números)</span>
-              <div class="pinbox"><input name="pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" placeholder="••••" data-mask="pin" required>
+              <div class="pinbox"><input name="pin" type="password" inputmode="numeric" autocomplete="off" data-lpignore="true" maxlength="4" placeholder="••••" data-mask="pin" required>
               <button type="button" class="eye" data-act="ver-pin" aria-label="Mostrar PIN">${ic('olho')}</button></div></label>
             <label class="check"><input type="checkbox" name="lembrar" checked> Manter conectado neste aparelho</label>
             <button class="btn primary lg" type="submit">Entrar</button>
