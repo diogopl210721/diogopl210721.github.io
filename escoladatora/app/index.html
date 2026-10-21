@@ -778,6 +778,28 @@ html.et-locked,html.et-locked body{overflow:hidden}
 .et-ia.nr-ia{position:absolute;z-index:3;top:calc(14px + env(safe-area-inset-top,0px));left:calc(12px + env(safe-area-inset-left,0px))}
 .inv .et-ia{margin-top:10px}
 
+/* abertura: logo respirando num círculo que se completa conforme o app carrega */
+.et-intro{display:none;position:relative;z-index:1;text-align:center;width:min(340px,88vw);animation:etIn .6s ease-out both}
+.et-gate.intro .et-intro{display:block}
+.et-gate.intro .et-card{display:none}
+.et-gate:not(.intro) .et-card{animation:etIn .45s ease-out both}
+.et-i-ring{width:min(210px,56vw);aspect-ratio:1;margin:0 auto 14px;filter:drop-shadow(0 0 26px #3be3f033)}
+.et-i-ring>svg{width:100%;height:100%;display:block;overflow:visible}
+.et-i-orbit{transform-origin:80px 80px;animation:etSpin 38s linear infinite}
+.et-i-prog{filter:drop-shadow(0 0 6px #3be3f0aa)}
+.et-i-head{filter:drop-shadow(0 0 6px #fff1c9)}
+.et-i-logo{transform-origin:80px 80px;animation:etFloat 5.5s ease-in-out infinite}
+.et-i-dot{transform-origin:32px 32px;animation:etDot 2.4s ease-in-out infinite}
+.et-intro .et-title{font-size:clamp(30px,7.5vw,40px)}
+.et-intro .et-he{margin:6px 0 0}
+.et-i-st{margin:16px 0 0;display:flex;justify-content:center;align-items:baseline;gap:10px;font-size:14px;color:var(--soft,#B6C3D8);min-height:1.4em}
+.et-i-pct{font-family:var(--f-mono,ui-monospace,monospace);font-size:12.5px;color:#3BE3F0;min-width:3.2em;text-align:left}
+@keyframes etIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes etSpin{to{transform:rotate(360deg)}}
+@keyframes etFloat{0%,100%{transform:translateY(0) rotate(0deg) scale(1)}25%{transform:translateY(-2.5px) rotate(-1.5deg) scale(1.015)}50%{transform:translateY(0) rotate(0deg) scale(1.03)}75%{transform:translateY(2px) rotate(1.5deg) scale(1.015)}}
+@keyframes etDot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.45);opacity:.75}}
+@media (prefers-reduced-motion:reduce){.et-i-orbit,.et-i-logo,.et-i-dot,.et-intro,.et-gate:not(.intro) .et-card{animation:none}}
+
 </style>
 
 </head>
@@ -896,7 +918,47 @@ html.et-locked,html.et-locked body{overflow:hidden}
       $e('p', { class: 'et-sub', text: 'Leitor com hebraico e grego, 344 mil ligações entre versículos, mapas com as jornadas e o Binah, um segundo cérebro que estuda com você.' }),
       body, msg,
       $e('p', { class: 'et-foot' }, '© 2026 Diogo Soares · ', $e('a', { href: 'https://www.ddsinovacao.com.br', target: '_blank', rel: 'noopener', text: 'DDS Inovação' })));
-    const el = $e('div', { class: 'et-gate', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Entrar na Escola da Torá' }, cv, card);
+    // abertura: a logo respira dentro de um círculo que vai se completando conforme o app carrega
+    const C = 2 * Math.PI * 70;
+    const ring = $e('div', { class: 'et-i-ring', html: '<svg viewBox="0 0 160 160" aria-hidden="true"><defs><linearGradient id="etiR" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3BE3F0"/><stop offset=".55" stop-color="#62B2E6"/><stop offset="1" stop-color="#F2B648"/></linearGradient><linearGradient id="etiS" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#62B2E6"/><stop offset="1" stop-color="#1B4F8C"/></linearGradient></defs>'
+      + '<circle class="et-i-orbit" cx="80" cy="80" r="77" fill="none" stroke="#3BE3F0" stroke-opacity=".28" stroke-width="1.2" stroke-dasharray="2 7"/>'
+      + '<circle cx="80" cy="80" r="70" fill="none" stroke="#3BE3F0" stroke-opacity=".12" stroke-width="4"/>'
+      + `<circle class="et-i-prog" cx="80" cy="80" r="70" fill="none" stroke="url(#etiR)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" transform="rotate(-90 80 80)"/>`
+      + '<circle class="et-i-head" cx="80" cy="10" r="4.2" fill="#FFF1C9"/>'
+      + `<g class="et-i-logo"><svg x="44" y="44" width="72" height="72" viewBox="0 0 64 64"><path d="M32 5 L56 46 H8 Z" fill="none" stroke="url(#etiS)" stroke-width="4" stroke-linejoin="round"/><path d="M32 59 L8 18 H56 Z" fill="none" stroke="#E8EEF7" stroke-width="4" stroke-linejoin="round" opacity=".92"/><circle class="et-i-dot" cx="32" cy="32" r="3.4" fill="#F2B648"/></svg></g></svg>` });
+    const iTxt = $e('span', { class: 'et-i-txt', text: 'Abrindo…' }), iPct = $e('span', { class: 'et-i-pct', text: '0%' });
+    const intro = $e('div', { class: 'et-intro', role: 'status', 'aria-live': 'polite' }, ring,
+      $e('h1', { class: 'et-title', text: 'Escola da Torá' }),
+      $e('p', { class: 'et-he' }, $e('span', { lang: 'he', dir: 'rtl', text: 'בית ספר תורני' }), ' · escola de Torá'),
+      $e('p', { class: 'et-i-st' }, iTxt, iPct));
+    const el = $e('div', { class: 'et-gate', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Entrar na Escola da Torá' }, cv, intro, card);
+    const prog = ring.querySelector('.et-i-prog'), head = ring.querySelector('.et-i-head');
+    const I = { alvo: 0, teto: 0, atual: 0, raf: 0, fim: null, t0: performance.now(), visto: '' };
+    const pinta = () => {
+      const p = I.atual / 100; prog.setAttribute('stroke-dashoffset', (C * (1 - p)).toFixed(2));
+      const a = -Math.PI / 2 + p * 2 * Math.PI; head.setAttribute('cx', (80 + 70 * Math.cos(a)).toFixed(2)); head.setAttribute('cy', (80 + 70 * Math.sin(a)).toFixed(2)); head.style.opacity = p > 0.01 ? 1 : 0;
+      const t = Math.round(I.atual) + '%'; if (t !== I.visto) { I.visto = t; iPct.textContent = t; }
+    };
+    const roda = () => {
+      if (I.raf) return;
+      const f = () => {
+        if (I.alvo < I.teto) I.alvo += (I.teto - I.alvo) * 0.012;
+        I.atual += (I.alvo - I.atual) * (I.fim ? 0.16 : 0.07); if (I.fim && I.alvo - I.atual < 0.6) I.atual = I.alvo;
+        pinta();
+        if (I.fim && I.atual >= 99.9) { I.raf = 0; const cb = I.fim; I.fim = null; setTimeout(cb, 260); return; }
+        I.raf = requestAnimationFrame(f);
+      };
+      I.raf = requestAnimationFrame(f);
+    };
+    const intro_ = {
+      etapa(p, teto, txt) { if (I.fim) return; I.alvo = Math.max(I.alvo, p); I.teto = Math.max(I.teto, teto, I.alvo); if (txt) iTxt.textContent = txt; roda(); },
+      fim(cb, txt) {
+        if (I.fim || I.done) return; I.done = true;
+        const espera = Math.max(0, 900 - (performance.now() - I.t0));
+        setTimeout(() => { if (txt) iTxt.textContent = txt; I.alvo = I.teto = 100; I.fim = () => { I.done = false; cb?.(); }; I.raf = 0; roda(); }, espera);
+      },
+      reinicia(p = 0) { cancelAnimationFrame(I.raf); Object.assign(I, { alvo: p, teto: p, atual: p, raf: 0, fim: null, done: false, t0: performance.now() }); pinta(); },
+    };
     const say = (t, kind) => { msg.textContent = t || ''; msg.className = 'et-msg' + (kind ? ' ' + kind : ''); if (t) try { msg.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch {} };
     const field = (label, attrs) => { const i = $e('input', { class: 'et-in', ...attrs }); return [$e('label', { class: 'et-lab' }, $e('span', { text: label }), i), i]; };
     const traduz = e => {
@@ -981,12 +1043,12 @@ html.et-locked,html.et-locked body{overflow:hidden}
         } }, $e('p', { class: 'et-sub', text: 'Crie a sua nova senha.' }), l1, go);
         return [f, pw];
       },
-      carregando() { return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-sub', style: 'text-align:center', text: 'Abrindo…' }))]; },
+      carregando() { return [$e('div')]; },
       aviso(t) {
         return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
       },
     };
-    function show(v, arg) { say(''); body.innerHTML = ''; const [node, focus] = views[v](arg); body.append(node); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
+    function show(v, arg) { say(''); body.innerHTML = ''; el.classList.toggle('intro', v === 'carregando'); const [node, focus] = views[v](arg); body.append(node); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
     function hide() { el.classList.add('out'); document.documentElement.classList.remove('et-locked'); setTimeout(() => { el.hidden = true; el.classList.remove('out'); stopAnim(); }, 450); }
     // fundo: neurônios devagar
     let raf = 0;
@@ -1007,18 +1069,25 @@ html.et-locked,html.et-locked body{overflow:hidden}
     function stopAnim() { cancelAnimationFrame(raf); raf = 0; }
     const mount = () => document.body.append(el);
     if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
-    show('carregando');
-    return { show, hide, say };
+    show('carregando'); intro_.etapa(3, 30, 'Conferindo sua conta…');
+    return { show, hide, say, intro: intro_, get emIntro() { return el.classList.contains('intro') && !el.hidden; } };
   })();
+  ET.gate = gate;
 
   async function entrou(session) {
     if (ET.uid) return;
+    if (!gate.emIntro) { gate.intro.reinicia(30); gate.show('carregando'); }
+    gate.intro.etapa(34, 58, 'Abrindo o seu cérebro…');
     const u = session.user; ET.uid = u.id; ET.email = u.email || '';
     const md = u.user_metadata || {};
     ET.nome = String(md.nome || md.name || md.full_name || '').trim().split(/\s+/)[0] || cap((ET.email.split('@')[0].match(/[A-Za-zÀ-ú]+/) || [''])[0]) || 'você';
     try { const { data } = await sb.rpc('et_assumir_biblioteca'); ET.admin = !!data?.admin; } catch { ET.admin = false; }
     try { const { data } = await sb.rpc('et_meu_uso'); if (data) { ET.usados = data.usados || 0; ET.limite = data.limite || null; } } catch {}
-    gate.hide(); resolveReady(session); ET.contaUI();
+    gate.intro.etapa(58, 88, 'Trazendo as suas anotações…');
+    resolveReady(session); ET.contaUI();
+    // a abertura fecha quando o cérebro termina de carregar (ou depois de alguns segundos, para nunca prender)
+    ET.introFim = () => gate.intro.fim(() => gate.hide(), 'Tudo pronto. Shalom, ' + ET.nome + '!');
+    setTimeout(ET.introFim, 9000);
   }
   sb.auth.onAuthStateChange((ev, session) => {
     if (ev === 'PASSWORD_RECOVERY') { gate.show('nova'); return; }
@@ -1028,8 +1097,8 @@ html.et-locked,html.et-locked body{overflow:hidden}
   ET.inicio = sb.auth.getSession().then(({ data }) => {
     if (RECUP) gate.show('nova');
     else if (data.session) entrou(data.session);
-    else gate.show('entrar');
-  }).catch(() => gate.show('entrar'));
+    else gate.intro.fim(() => gate.show('entrar'), 'Bem-vindo!');
+  }).catch(() => gate.intro.fim(() => gate.show('entrar')));
   ET.sair = async () => { try { await sb.auth.signOut(); } catch {} location.replace(ET.app); };
 
   /* ---------------- cérebro no Supabase (mesma interface do db do Claude) ---------------- */
@@ -1046,6 +1115,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
         if (error) throw error;
         out.push(...data); if (data.length < 1000) break;
       }
+      ET.gate?.intro.etapa(76, 94, 'Preparando as 344 mil ligações…');
       const m = new Map();
       try {
         const bj = await fetch('data/base.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
@@ -1055,7 +1125,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
       rows = m;
     }
     let carregado = null;
-    const pronto = () => carregado || (carregado = ET.ready.then(carregar));
+    const pronto = () => carregado || (carregado = ET.ready.then(carregar).finally(() => setTimeout(() => ET.introFim?.(), 120)));
     const limpa = d => { const o = {}; for (const [k, v] of Object.entries(d || {})) if (!k.startsWith('_') && k !== 'id') o[k] = v; return o; };
     const novoId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     async function gravar(id, d) {
