@@ -1031,21 +1031,29 @@ html.et-locked,html.et-locked body{overflow:hidden}
         return [f, em];
       },
       nova() {
-        const [l1, pw] = field('Nova senha', { type: 'password', autocomplete: 'new-password', required: true, minlength: '6' });
+        const logado = !!ET.uid;
+        const [l1, pw] = field('Nova senha', { type: 'password', autocomplete: 'new-password', required: true, minlength: '6', placeholder: 'pelo menos 6 caracteres' });
+        const [l2, pw2] = field('Repita a nova senha', { type: 'password', autocomplete: 'new-password', required: true, minlength: '6' });
+        pw2.addEventListener('paste', e => e.preventDefault());
         const go = $e('button', { class: 'et-btn', type: 'submit', text: 'Salvar nova senha' });
         const f = $e('form', { class: 'et-form', onsubmit: async ev => {
-          ev.preventDefault(); say(''); busy(go, true, 'Salvando…');
-          const { data, error } = await sb.auth.updateUser({ password: pw.value });
+          ev.preventDefault(); say('');
+          if (pw.value.length < 6) { pw.focus(); return say('A senha precisa ter pelo menos 6 caracteres.', 'err'); }
+          if (pw.value !== pw2.value) { pw2.value = ''; pw2.focus(); return say('As duas senhas não estão iguais. Digite de novo.', 'err'); }
+          busy(go, true, 'Salvando…');
+          const { error } = await sb.auth.updateUser({ password: pw.value });
           busy(go, false, 'Salvar nova senha');
-          if (error) return say(traduz(error), 'err');
+          if (error) return say(/different from the old|same as the old|should be different/i.test(error.message || '') ? 'A nova senha precisa ser diferente da atual.' : traduz(error), 'err');
+          if (logado) { show('aviso', 'Senha trocada. Da próxima vez, entre com a senha nova.'); setTimeout(() => { if (ET.uid) hide(); }, 2200); return; }
           const { data: s } = await sb.auth.getSession();
           if (s.session) entrou(s.session); else show('entrar');
-        } }, $e('p', { class: 'et-sub', text: 'Crie a sua nova senha.' }), l1, go);
+        } }, $e('p', { class: 'et-sub', text: logado ? 'Troque a senha da sua conta (' + ET.email + ').' : 'Crie a sua nova senha.' }), l1, l2, go,
+          logado ? $e('div', { class: 'et-links' }, $e('button', { type: 'button', class: 'et-link', text: 'Cancelar', onclick: () => hide() })) : null);
         return [f, pw];
       },
       carregando() { return [$e('div')]; },
       aviso(t) {
-        return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
+        return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), ET.uid ? null : $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
       },
     };
     function show(v, arg) { say(''); body.innerHTML = ''; el.classList.toggle('intro', v === 'carregando'); const [node, focus] = views[v](arg); body.append(node); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
@@ -1289,7 +1297,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
     if (!ET.uid) return p;
     const ia = ET.usados != null ? `IA hoje: ${ET.usados}${ET.limite ? ' de ' + ET.limite : ''}` : '';
     const link = (t, fn) => $e('a', { href: '#', text: t, onclick: e => { e.preventDefault(); fn(); } });
-    p.append(...(ia ? [ia, ' · '] : []), link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Sair', ET.sair));
+    p.append(...(ia ? [ia, ' · '] : []), link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Trocar senha', () => gate.show('nova')), ' · ', link('Sair', ET.sair));
     return p;
   };
   const pintaIA = s => {
