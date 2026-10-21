@@ -305,6 +305,9 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .fs-sheet-x{position:sticky;top:8px;float:right;margin:8px 10px 0 0;z-index:2}
 .arc-fs,.hud-fs{position:absolute;inset:0;touch-action:none}
 .arc-fs{overflow:hidden;background:#03070E}
+.arc-load{display:none;position:absolute;z-index:2;left:50%;top:14px;transform:translateX(-50%);align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#06111fd9;border:1px solid #2a4166;color:#CFE9FF;font-size:12.5px;font-weight:700;white-space:nowrap;pointer-events:none}
+.loading>.arc-load{display:inline-flex}
+.arc-load i{width:11px;height:11px;border:2px solid #3BE3F0;border-right-color:transparent;border-radius:50%;animation:invSpin .8s linear infinite}
 .arc-fs canvas,.hud-fs canvas{display:block;touch-action:none}
 .fs-hint{animation:hintfade .8s ease 6s forwards;position:absolute;left:10px;bottom:10px;font-size:11.5px;color:var(--soft);pointer-events:none;background:#02050Acc;border:1px solid var(--line);padding:3px 9px;border-radius:999px}
 .fs-pill{border:1px solid var(--line2);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;white-space:nowrap;color:var(--soft)}
@@ -617,6 +620,23 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .inv-steps li.ok::marker{content:"✓  ";color:var(--green)}
 .inv-steps li.err{color:var(--red)}
 .inv-sub{font-size:12px;color:var(--muted);margin-top:6px;min-height:1em}
+.inv-head{display:flex;align-items:center;gap:8px}
+.inv-head .brief-h{margin:0}
+.inv-pct{margin-left:auto;font-size:12px;color:var(--cyan)}
+.inv-live{width:9px;height:9px;border-radius:50%;background:var(--cyan);flex:none;opacity:.35}
+.inv-prog.run .inv-live{opacity:1;animation:invPulse 1.1s ease-in-out infinite}
+.inv-bar{position:relative;height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin:8px 0 6px}
+.inv-bar i{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--celeste),var(--cyan));transition:width .6s ease}
+.inv-prog.run .inv-bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);transform:translateX(-100%);animation:invShine 1.4s linear infinite}
+.inv-steps li.run{color:var(--text);font-weight:600}
+.inv-steps li.run::after{content:"";display:inline-block;width:12px;height:12px;margin-left:8px;vertical-align:-1px;border:2px solid var(--cyan);border-right-color:transparent;border-radius:50%;animation:invSpin .8s linear infinite}
+.ans .think::before{content:"";display:inline-block;width:11px;height:11px;margin-right:8px;vertical-align:-1px;border:2px solid var(--cyan);border-right-color:transparent;border-radius:50%;animation:invSpin .8s linear infinite}
+.ans .think{animation:invFade 1.6s ease-in-out infinite}
+@keyframes invSpin{to{transform:rotate(360deg)}}
+@keyframes invShine{to{transform:translateX(100%)}}
+@keyframes invPulse{0%,100%{transform:scale(.8);box-shadow:0 0 0 0 color-mix(in srgb,var(--cyan) 60%,transparent)}50%{transform:scale(1);box-shadow:0 0 0 6px transparent}}
+@keyframes invFade{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.inv-prog.run .inv-live,.inv-steps li.run::after,.ans .think::before,.ans .think,.inv-prog.run .inv-bar i::after{animation:none}}
 .es-lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .es-card{text-align:left;border:1px solid var(--line);border-radius:18px;padding:16px;background:linear-gradient(165deg,color-mix(in srgb,#FFD27A 9%,var(--panel)),var(--panel) 60%);display:flex;flex-direction:column;gap:6px;min-width:0}
 .es-card:hover{border-color:color-mix(in srgb,#FFD27A 55%,var(--line))}
@@ -691,6 +711,8 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .nr-syn{font-size:12px;color:#8FD9E4;line-height:1.45}
 .nr-refs:empty{display:none}
 .nr-card-h .nr-syn{flex:1 1 0;min-width:0}
+.nr-think{display:block;margin-top:6px;font-size:13px;color:#8FD9E4;animation:invFade 1.6s ease-in-out infinite}
+.nr-think::before{content:"";display:inline-block;width:11px;height:11px;margin-right:8px;vertical-align:-1px;border:2px solid #3BE3F0;border-right-color:transparent;border-radius:50%;animation:invSpin .8s linear infinite}
 /* v9 · menu de baixo com mais destaque */
 .tab{color:var(--soft)}
 .tab svg{opacity:1}
@@ -2066,6 +2088,7 @@ function drawArcs(V) {
     for (let i = 0; i < g.N; i++) { const [b, c] = S.chapters[i]; if (c % every && c !== 1) continue; const x = V.x(i, g); if (x < 0 || x > V.W) continue; ctx.fillText(String(c), x, yC); }
   }
   const cnt = $('#arcCount'); if (cnt && V.interactive && ARC.full === V) cnt.textContent = fmt(V.shown) + ' arcos' + (V.done ? '' : '…');
+  const par = V.canvas.parentElement; if (par && par.classList.contains('loading') !== !V.done) par.classList.toggle('loading', !V.done);
 }
 function arcTools() {
   const selB = h('select', { id: 'arcBook', 'aria-label': 'Livro', class: 'fs-sel' }, h('option', { value: '', text: 'Ir para…' }), S.books.map((bk, i) => h('option', { value: i, text: bk.n })));
@@ -2090,10 +2113,10 @@ function openArcFull(opts = {}) {
   FS.open({
     title: 'Arcos · 344.799 referências cruzadas', tools: arcTools(),
     mount: stage => {
-      const wrap = h('div', { class: 'arc-fs' });
+      const wrap = h('div', { class: 'arc-fs loading' });
       const cv = h('canvas', { role: 'img', 'aria-label': 'Arcos das referências cruzadas; use pinça ou roda para ampliar' });
       const tip = h('div', { class: 'arc-tip', hidden: true });
-      wrap.append(cv, tip, h('div', { class: 'fs-hint', text: 'Pinça ou roda para ampliar · arraste para os lados · toque num capítulo' }));
+      wrap.append(cv, tip, h('span', { class: 'arc-load', 'aria-live': 'polite' }, h('i'), 'Desenhando as ligações…'), h('div', { class: 'fs-hint', text: 'Pinça ou roda para ampliar · arraste para os lados · toque num capítulo' }));
       stage.append(wrap);
       const V = makeArcView(cv, true); ARC.full = V;
       if (window.d3) {
@@ -2167,9 +2190,9 @@ VIEWS.arcos = async (root, opts = {}) => {
   wrap.append(h('div', { class: 'eyebrow', text: 'Referências cruzadas' }),
     h('h1', { class: 'h1', text: 'A Bíblia como um livro de conexões' }),
     h('p', { class: 'lede', text: 'Cada barra embaixo é um dos 1.189 capítulos; cada arco liga dois capítulos com referências cruzadas, e a cor indica a distância entre eles.' }));
-  const thumb = h('button', { class: 'thumb', 'aria-label': 'Abrir os arcos em tela cheia' });
+  const thumb = h('button', { class: 'thumb loading', 'aria-label': 'Abrir os arcos em tela cheia' });
   const cv = h('canvas', { role: 'img', 'aria-label': 'Miniatura dos arcos de referências cruzadas' });
-  thumb.append(cv, h('span', { class: 'thumb-cta' }, h('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>' }), 'Explorar em tela cheia'));
+  thumb.append(cv, h('span', { class: 'arc-load', 'aria-live': 'polite' }, h('i'), 'Desenhando as ligações…'), h('span', { class: 'thumb-cta' }, h('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>' }), 'Explorar em tela cheia'));
   thumb.onclick = () => openArcFull();
   wrap.append(h('div', { style: 'margin-top:16px' }, thumb), h('div', { id: 'arcInfo', style: 'margin-top:14px' }),
     h('p', { class: 'muted', style: 'font-size:12.5px;margin-top:16px', text: 'Dados: 344.799 referências cruzadas do OpenBible.info (votos da comunidade, CC BY), agregadas por capítulo. Inspirado no pôster de Chris Harrison e Christoph Römhild (2007), que usou outro conjunto, com 63.779 referências.' }));
@@ -4162,7 +4185,7 @@ const NEURO = {
   ui() {
     const self = this;
     return {
-      addUser(q) { self.say('Você: ' + q); },
+      addUser(q) { self.say('Você: ' + q); self.sub.append(h('span', { class: 'nr-think', text: 'Binah está pensando…' })); },
       addBot() {
         return {
           set(t, done, err) { if (err) { self.say(err, true); return; } if (!t) return; const plain = t.replace(/\*\*|[*_#`>]/g, ''); self.sub.hidden = false; self.sub.className = 'nr-sub ans'; self.sub.innerHTML = mdLite(plain.length > 420 && !done ? '…' + plain.slice(-420) : plain); },
@@ -4660,7 +4683,7 @@ async function investigar(q, ui) {
     if (rel.length) { ui.step(rel.length + ' notas suas já ligadas a este trecho'); HUDFX.emit({ type: 'nodes', ids: rel.map(n => n.id) }); }
     const ctx = `PASSAGEM: ${rot}\nTEXTO (Bíblia Livre):\n${lines.join('\n')}\n\nLUGARES QUE O APP ACHOU NO TRECHO: ${places.map(p => p.lab + ' (hoje ' + (p.modPt || '?') + ')').join('; ') || 'nenhum'}\n\nO QUE ${ETN().toUpperCase()} JÁ TEM NO CÉREBRO SOBRE ESTE TRECHO:\n${rel.map(n => '• ' + n.titulo + ' (' + n.status + '): ' + (n.texto || '').slice(0, 220)).join('\n') || 'nada ainda'}`;
     const tools = S.sampleTools ? binahTools().filter(t => t.name !== 'gravar_no_cerebro' && t.name !== 'briefing_de_hoje') : undefined;
-    const call = async (parte, label) => { if (SV.partes[parte]) { ui.step(label + ' · já estava pronto'); return SV.partes[parte]; } ui.step(label); HUDFX.setMode('thinking'); let n = 0; return SV.partes[parte] = await S.sample.json(invPrompt(parte, ctx), { modelTier: 'complex', signal: INV.abort.signal, tools, onText: u => { const L = (u.text || '').length; if (L - n > 400) { n = L; ui.sub(label + ' · ' + fmt(L) + ' caracteres'); HUDFX.bump(0.8); } } }); };
+    const call = async (parte, label) => { if (SV.partes[parte]) { ui.step(label + ' · já estava pronto'); return SV.partes[parte]; } ui.step(label); HUDFX.setMode('thinking'); let n = 0; return SV.partes[parte] = await S.sample.json(invPrompt(parte, ctx), { modelTier: 'complex', signal: INV.abort.signal, tools, onText: u => { const L = (u.text || '').length; if (L - n > 120) { n = L; ui.chars(L); HUDFX.bump(0.8); } } }); };
     const A = await call(1, 'Montando passagem, geografia e contas');
     const B = await call(2, 'Buscando palavras, conexões e tradições');
     const C = { ...(await call(3, 'Escrevendo teses e síntese')), ...(await call(4, 'Separando as descobertas para o cérebro')) };
@@ -4719,13 +4742,32 @@ VIEWS.descobertas = (root, opts = {}) => {
     const prog = h('div', { class: 'inv-prog', hidden: true });
     const steps = h('ol', { class: 'inv-steps' }); const sub = h('div', { class: 'inv-sub mono' }); const core = h('canvas', { 'aria-hidden': 'true' });
     const stop = h('button', { class: 'btn', style: 'margin-top:8px' });
-    prog.append(h('div', { class: 'inv-core' }, core), h('div', { style: 'min-width:0;flex:1' }, h('div', { class: 'brief-h', text: 'Binah investigando' }), steps, sub, stop));
+    // carregando: barra com o avanço, passo atual girando, relógio e o texto que a IA já escreveu
+    const fill = h('i'), pct = h('span', { class: 'inv-pct mono' }), bar = h('div', { class: 'inv-bar', role: 'progressbar', 'aria-label': 'Andamento da investigação', 'aria-valuemin': '0', 'aria-valuemax': '100' }, fill);
+    const head = h('div', { class: 'inv-head' }, h('span', { class: 'inv-live', 'aria-hidden': 'true' }), h('div', { class: 'brief-h', text: 'Binah investigando' }), pct);
+    prog.append(h('div', { class: 'inv-core' }, core), h('div', { style: 'min-width:0;flex:1' }, head, bar, steps, sub, stop));
+    const TOTAL = 8; let feitos = 0, t0 = 0, chars = 0, ia = false, tick = 0;
+    const KEEP = 'costuma levar de 20 s a 1 min';
+    const seg = () => Math.max(0, Math.round((performance.now() - t0) / 1000));
+    const pinta = () => {
+      const p = Math.min(96, Math.round((feitos + (ia ? Math.min(0.9, chars / 3500 + seg() / 120) : 0.5)) / TOTAL * 100));
+      fill.style.width = p + '%'; pct.textContent = p + '%'; bar.setAttribute('aria-valuenow', String(p));
+      if (ia) sub.textContent = seg() + ' s · ' + (chars ? fmt(chars) + ' caracteres escritos' : 'pensando…') + (seg() > 15 && !chars ? ' · ' + KEEP : '');
+    };
+    const corre = on => { clearInterval(tick); prog.classList.toggle('run', on); if (on) tick = setInterval(pinta, 1000); };
+    const atual = () => $$('li', steps).pop();
     const ui = {
-      start() { prog.hidden = false; steps.innerHTML = ''; sub.textContent = ''; go.disabled = true; coreFx(core); stop.hidden = false; stop.className = 'btn'; stop.textContent = 'Parar'; stop.onclick = () => INV.abort?.abort(); },
-      step(t) { $$('li', steps).forEach(li => li.classList.add('ok')); steps.append(h('li', { text: t })); sub.textContent = ''; },
+      start() { prog.hidden = false; steps.innerHTML = ''; sub.textContent = ''; feitos = 0; go.disabled = true; coreFx(core); stop.hidden = false; stop.className = 'btn'; stop.textContent = 'Parar'; stop.onclick = () => INV.abort?.abort(); corre(true); pinta(); },
+      step(t) {
+        $$('li', steps).forEach(li => { if (!li.classList.contains('ok')) { li.classList.remove('run'); li.classList.add('ok'); } });
+        feitos = steps.children.length; steps.append(h('li', { class: 'run', text: t }));
+        t0 = performance.now(); chars = 0; ia = /^(Montando|Buscando|Escrevendo|Separando)/.test(t) && !/já estava pronto/.test(t) || /^Localizando/.test(t);
+        sub.textContent = ''; pinta();
+      },
+      chars(n) { chars = n; pinta(); },
       sub(t) { sub.textContent = t; },
-      done(id) { $$('li', steps).forEach(li => li.classList.add('ok')); go.disabled = false; stop.hidden = true; toast('Estudo gravado no cérebro (rascunho)'); setTimeout(() => openEstudo(id), 900); },
-      fail(m) { go.disabled = false; steps.append(h('li', { class: 'err', text: m })); stop.className = 'btn primary'; stop.textContent = 'Tentar de novo'; stop.onclick = () => go.click(); },
+      done(id) { corre(false); $$('li', steps).forEach(li => { li.classList.remove('run'); li.classList.add('ok'); }); fill.style.width = '100%'; pct.textContent = '100%'; sub.textContent = 'Pronto!'; go.disabled = false; stop.hidden = true; toast('Estudo gravado no cérebro (rascunho)'); setTimeout(() => openEstudo(id), 900); },
+      fail(m) { corre(false); atual()?.classList.remove('run'); sub.textContent = ''; go.disabled = false; steps.append(h('li', { class: 'err', text: m })); stop.className = 'btn primary'; stop.textContent = 'Tentar de novo'; stop.onclick = () => go.click(); },
     };
     go.onclick = () => { const q = inp.value.trim(); if (!q) { inp.focus(); return; } investigar(q, ui); };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
