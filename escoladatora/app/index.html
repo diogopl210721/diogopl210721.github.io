@@ -711,6 +711,13 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .nr-syn{font-size:12px;color:#8FD9E4;line-height:1.45}
 .nr-refs:empty{display:none}
 .nr-card-h .nr-syn{flex:1 1 0;min-width:0}
+.nr-zoom{position:absolute;z-index:4;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;transition:opacity .4s ease}
+.neuro.on .nr-zoom{opacity:1}
+.nr-zb{width:38px;height:38px;border-radius:12px;border:1px solid #1d4d57;background:#04101be6;color:#CFF6FF;font-size:20px;font-weight:700;line-height:1;display:grid;place-items:center;box-shadow:0 6px 18px #0008}
+.nr-zb:active{transform:scale(.94)}
+.nr-zl{font-size:11px;color:#8FD9E4;background:#04101bcc;border-radius:8px;padding:2px 6px}
+.nr-stage.zoom{clip-path:inset(0 round 22px)!important;border-radius:22px}
+.nr-stage.zoom canvas{border-radius:22px;cursor:move}
 .nr-think{display:block;margin-top:6px;font-size:13px;color:#8FD9E4;animation:invFade 1.6s ease-in-out infinite}
 .nr-think::before{content:"";display:inline-block;width:11px;height:11px;margin-right:8px;vertical-align:-1px;border:2px solid #3BE3F0;border-right-color:transparent;border-radius:50%;animation:invSpin .8s linear infinite}
 /* v9 · menu de baixo com mais destaque */
@@ -4035,7 +4042,7 @@ const SYN = {
         marks.push(a1);
         for (let j = 0; j < flat.length && j < 3 * 150; j += 3) {
           const t = flat[j], w = Math.max(1, flat[j + 2]), [tb, tc] = split(t); if (!S.books[tb]) continue;
-          const a2 = angleOfVerse(t); out.push([a1, a2, w, this.cat(from, chapIndex(tb, tc))]); tg.push(a2);
+          const a2 = angleOfVerse(t); out.push([a1, a2, w, this.cat(from, chapIndex(tb, tc)), id, t]); tg.push(a2);
           agg.set(t, (agg.get(t) || 0) + w);
         }
       }
@@ -4062,7 +4069,7 @@ const SYN = {
     let it; try { it = await this.items(kind, x); } catch { return null; }
     if (tok !== V.synTok || !V.W) return null;
     const r0 = Math.round(V.W / 2 * 0.86), lit = this.paintLit(r0, it.items);
-    V.syn = { kind, x, t0: performance.now(), ...lit, marks: it.marks, tg: it.tg, n: it.items.length };
+    V.syn = { kind, x, t0: performance.now(), ...lit, marks: it.marks, tg: it.tg, n: it.items.length, items: it.items, verts: kind === 'verse' || kind === 'node' ? new Set([...(kind === 'verse' ? [x] : x), ...it.items.map(q => q[5])]) : null };
     // pensamentos e estudos que tocam o que acendeu ficam por cima, em destaque
     let hit = null;
     if (kind === 'verse' || kind === 'node') { const ids = new Set([...(kind === 'verse' ? [x] : x), ...it.top.map(t => t[0])]); hit = i => V.g.nodes[i].refs.some(r => ids.has(r)); }
@@ -4123,6 +4130,11 @@ const NEURO = {
     const el = h('div', { class: 'neuro', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Segundo Cérebro' }, scrim, stage, card, sub, bar, close, vozBtn, window.ET ? ET.medidor('nr-ia') : null, hist);
     document.body.append(el);
     Object.assign(this, { el, cv, stage, card, sub, inp, hist, scrim, bar, go });
+    const zb = (t, lab, fn) => h('button', { type: 'button', class: 'nr-zb', 'aria-label': lab, title: lab, text: t, onclick: fn });
+    const zc = () => [this.V.W / 2, this.V.W / 2];
+    this.zlab = h('span', { class: 'nr-zl mono', text: '1×' });
+    this.zoom = h('div', { class: 'nr-zoom' }, zb('+', 'Ampliar', () => this.V && this.V.setZoom(this.V.Zt * 2, ...zc(), true)), this.zlab, zb('−', 'Reduzir', () => this.V && this.V.setZoom(this.V.Zt / 2, ...zc(), true)), zb('⤢', 'Ver o cérebro inteiro', () => { const V = this.V; if (!V) return; V.Zt = 1; V.pxt = 0; V.pyt = 0; V.lastMove = performance.now(); }));
+    el.append(this.zoom);
     scrim.addEventListener('click', () => this.close());
     close.onclick = () => this.close();
     if (vozBtn) vozBtn.onclick = () => { VOZ.on = !VOZ.on; store.set('voz', VOZ.on); vozBtn.setAttribute('aria-pressed', String(VOZ.on)); vozBtn.textContent = VOZ.on ? 'Voz ligada' : 'Voz desligada'; if (!VOZ.on) VOZ.stop(); else VOZ.unlock(); };
@@ -4145,6 +4157,7 @@ const NEURO = {
     Object.assign(this.stage.style, { left: sx + 'px', top: sy + 'px', width: D + 'px', height: D + 'px' });
     this.el.style.setProperty('--below', (sy + D + 8) + 'px');
     this.D = D; this.sx = sx; this.sy = sy;
+    if (this.zoom) Object.assign(this.zoom.style, { left: (sx + D - 44) + 'px', top: (sy + D - 150) + 'px' });
     if (final) this.stage.style.clipPath = 'circle(50% at 50% 50%)';
     this.V?.resize();
   },
@@ -4163,6 +4176,7 @@ const NEURO = {
     requestAnimationFrame(() => { el.classList.add('on'); this.stage.style.clipPath = 'circle(50% at 50% 50%)'; });
     $('#orb')?.classList.add('away');
     if (!this.V) { this.V = makeNeuro(this.cv); }
+    Object.assign(this.V, { Z: 1, Zt: 1, px: 0, py: 0, pxt: 0, pyt: 0 }); this.zoomUI();
     VOZ.sub = null;
     this.V.setData(); this.V.resize(); this.V.start();
     this.say(BINAH.hist.length || opts.verse ? '' : 'Os fios finos são as 344.799 ligações da Bíblia. Toque num livro do anel, num pensamento ou num estudo para acender as ligações dele.');
@@ -4247,8 +4261,9 @@ const NEURO = {
         h('button', { class: 'btn glow', type: 'button', text: 'Perguntar ao Binah', onclick: () => { this.inp.value = 'O que eu já descobri em ' + bk.n + '?'; this.inp.focus(); } })));
     this.sub.hidden = true;
   },
-  showChap(ch) {
+  showChap(ch, op = {}) {
     const V = this.V, C = this.card; if (!V || !S.chapters[ch]) return;
+    if (op.voa !== false && V.Zt >= 3) { const a = SYN.cang(ch), R = V.W / 2; V.flyTo(R + Math.cos(a) * R * 0.86, R + Math.sin(a) * R * 0.86); }
     const [b, c] = S.chapters[ch], bk = S.books[b];
     V.sel = -1; V.linked = new Set(); V.book = -1;
     C.innerHTML = ''; C.hidden = false; this.sub.hidden = true;
@@ -4270,8 +4285,9 @@ const NEURO = {
       tops.append(...top.map(([o, w]) => { const [b2, c2] = S.chapters[o]; return h('button', { class: 'chip geo-chip', type: 'button', title: w + ' votos', text: S.books[b2].a + ' ' + c2, onclick: () => this.showChap(o) }); }));
     });
   },
-  showVerse(id) {
+  showVerse(id, op = {}) {
     const V = this.V, C = this.card; if (!V) return; const [b, c, v] = split(id); if (!S.books[b]) return;
+    if (op.voa !== false && V.Zt >= 3) { const R = V.W / 2; V.flyTo(...versePos(id, R, R, verseZf(V.Zt))); }
     V.sel = -1; V.linked = new Set(); V.book = -1;
     C.innerHTML = ''; C.hidden = false; this.sub.hidden = true;
     const line = h('span', { class: 'nr-syn', text: 'acendendo…' }), txt = h('p', { class: 'nr-card-s' }), tops = h('div', { class: 'nr-refs' }), mine = h('div', { class: 'nr-refs' }); let names = '';
@@ -4294,9 +4310,56 @@ const NEURO = {
     });
   },
   deselect() { const V = this.V; if (!V) return; V.sel = -1; V.book = -1; SYN.light(V, null); this.card.hidden = true; },
+  zoomUI() {
+    const V = this.V; if (!V || !this.zlab) return;
+    const z = V.Zt, t = (z < 1.05 ? '1' : z < 10 ? z.toFixed(1).replace('.', ',') : Math.round(z)) + '×';
+    if (this.zlab.textContent !== t) this.zlab.textContent = t;
+    const on = V.Z > 1.15; if (this.stage.classList.contains('zoom') !== on) this.stage.classList.toggle('zoom', on);
+    if (on && !this.dicaZoom && this.card.hidden) { this.dicaZoom = true; this.say('Arraste para andar pelo anel. Bem de perto, cada bolinha é um versículo: toque nela para acender as ligações dele.', true); }
+  },
 };
+/* v10 · zoom profundo: amplia até cada versículo virar uma bolinha que dá para tocar; arrastar move a vista */
+const NZ = { MAX: 48, DOTS: 7, NUMS: 15 };
+const nzClamp = (x, a, b) => Math.max(a, Math.min(b, x));
+// posição (no desenho sem zoom) de um versículo: perto, vira uma pilha de bolinhas sob o capítulo, do anel para dentro
+function versePos(id, R, c, zf) {
+  const [b, ch, v] = split(id); if (!S.books[b]) return [c, c];
+  const N = S.chapters.length, r0 = R * 0.86, a0 = angleOfVerse(id);
+  const x0 = c + Math.cos(a0) * r0, y0 = c + Math.sin(a0) * r0;
+  if (zf <= 0) return [x0, y0];
+  const ac = SYN.cang(chapIndex(b, ch)), DV = r0 * TAU / N, rr = r0 - (Math.max(1, v) - 0.5) * DV;
+  const x1 = c + Math.cos(ac) * rr, y1 = c + Math.sin(ac) * rr;
+  return zf >= 1 ? [x1, y1] : [x0 + (x1 - x0) * zf, y0 + (y1 - y0) * zf];
+}
+const verseZf = Z => nzClamp((Z - 5) / 5, 0, 1);
+// fio entre dois pontos quaisquer, curvado para o centro conforme a distância no anel
+function chordP(path, x1, y1, x2, y2, cx, cy, a1, a2) {
+  let d = Math.abs(a2 - a1); if (d > Math.PI) d = TAU - d;
+  const beta = 0.9 - 0.78 * d / Math.PI;
+  path.moveTo(x1, y1); path.quadraticCurveTo(cx + ((x1 + x2) / 2 - cx) * beta, cy + ((y1 + y2) / 2 - cy) * beta, x2, y2);
+}
+function nzView(V) {
+  const W = V.W, c = W / 2, R = W / 2, Z = V.Z || 1, PX = V.px || 0, PY = V.py || 0;
+  return { W, c, R, Z, PX, PY, cx: c + PX, cy: c + PY,
+    T: (x, y) => [(x - c) * Z + c + PX, (y - c) * Z + c + PY],
+    inv: (sx, sy) => [(sx - c - PX) / Z + c, (sy - c - PY) / Z + c] };
+}
+// fios dos capítulos que estão na tela (recalcula quando a vista para)
+function nzLocal(V, vw) {
+  const A = S.arcs; if (!A || vw.Z < 2) { V.local = null; return null; }
+  const key = vw.Z.toFixed(2) + '|' + Math.round(vw.PX / 12) + '|' + Math.round(vw.PY / 12);
+  if (V.localKey === key || performance.now() - (V.lastMove || 0) < 180) return V.local;
+  V.localKey = key;
+  const N = S.chapters.length, r0 = vw.R * 0.86, m = 30, mark = V.mark || (V.mark = new Uint8Array(N)); mark.fill(0); let nv = 0;
+  for (let ch = 0; ch < N; ch++) { const a = SYN.cang(ch), [x, y] = vw.T(vw.c + Math.cos(a) * r0, vw.c + Math.sin(a) * r0); if (x > -m && x < vw.W + m && y > -m && y < vw.W + m) { mark[ch] = 1; nv++; } }
+  if (!nv) { V.local = null; return null; }
+  const cap = FINE ? 2200 : 1300, out = [];
+  for (let j = 0; j < A.n && out.length < cap; j++) { const i = A.ord[j]; if (mark[A.a[i]] || mark[A.b[i]]) out.push(i); }
+  V.local = out; return out;
+}
 function makeNeuro(canvas) {
-  const V = { canvas, ctx: canvas.getContext('2d'), W: 0, dpr: 1, g: { nodes: [], edges: [], adj: [] }, yaw: 0, pitch: 0, vyaw: 0, vpitch: 0, uyaw: 0, upitch: 0, k: 1, ox: 0, oy: 0, sel: -1, book: -1, pull: 0, linked: new Set(), proj: [], raf: 0, last: 0, running: false, drag: null, hover: -1 };
+  const V = { canvas, ctx: canvas.getContext('2d'), W: 0, dpr: 1, g: { nodes: [], edges: [], adj: [] }, yaw: 0, pitch: 0, vyaw: 0, vpitch: 0, uyaw: 0, upitch: 0, k: 1, ox: 0, oy: 0, sel: -1, book: -1, pull: 0, linked: new Set(), proj: [], raf: 0, last: 0, running: false, drag: null, hover: -1,
+    Z: 1, Zt: 1, px: 0, py: 0, pxt: 0, pyt: 0, lastMove: 0 };
   V.setData = () => {
     const prevSel = V.sel >= 0 ? V.g.nodes[V.sel]?.id : null;
     V.g = neuroGraph(); V.sel = prevSel ? (V.g.idx.get(prevSel) ?? -1) : -1;
@@ -4305,121 +4368,187 @@ function makeNeuro(canvas) {
   };
   V.resize = () => { const r = canvas.getBoundingClientRect(); if (!r.width) return; V.W = r.width; V.dpr = Math.min(2, devicePixelRatio || 1); canvas.width = V.W * V.dpr; canvas.height = V.W * V.dpr; V.draw(performance.now()); };
   V.draw = t => drawNeuro(V, t);
-  V.start = () => { if (V.running) return; V.running = true; const loop = t => { if (!V.running) return; if (REDUCE ? !V.last : t - V.last > (V.drag || FINE ? 15 : 30)) { V.last = t; V.draw(t); } V.raf = requestAnimationFrame(loop); }; V.raf = requestAnimationFrame(loop); };
+  V.start = () => { if (V.running) return; V.running = true; const loop = t => { if (!V.running) return; if (REDUCE ? !V.last || V.Z !== V.Zt : t - V.last > (V.drag || FINE ? 15 : 30)) { V.last = t; V.draw(t); } V.raf = requestAnimationFrame(loop); }; V.raf = requestAnimationFrame(loop); };
   V.stop = () => { V.running = false; cancelAnimationFrame(V.raf); };
   V.select = i => { V.sel = i; V.book = -1; V.linked = new Set(i >= 0 ? V.g.adj[i] : []); if (i >= 0) NEURO.showNode(i); };
+  // zoom e movimento
+  const lim = z => z <= 1.001 ? 0 : V.W / 2 * 0.98 * z;
+  V.clamp = () => { const L = lim(V.Z), Lt = lim(V.Zt); V.px = nzClamp(V.px, -L, L); V.py = nzClamp(V.py, -L, L); V.pxt = nzClamp(V.pxt, -Lt, Lt); V.pyt = nzClamp(V.pyt, -Lt, Lt); };
+  V.setZoom = (z, sx, sy, anim) => {
+    z = nzClamp(z, 1, NZ.MAX); const c = V.W / 2, Zc = anim ? V.Zt : V.Z, pxc = anim ? V.pxt : V.px, pyc = anim ? V.pyt : V.py;
+    const wx = (sx - c - pxc) / Zc + c, wy = (sy - c - pyc) / Zc + c, px = sx - c - (wx - c) * z, py = sy - c - (wy - c) * z;
+    if (anim) { V.Zt = z; V.pxt = px; V.pyt = py; } else { V.Z = V.Zt = z; V.px = V.pxt = px; V.py = V.pyt = py; }
+    V.clamp(); V.lastMove = performance.now(); NEURO.zoomUI();
+  };
+  V.flyTo = (wx, wy) => { const c = V.W / 2; V.pxt = -(wx - c) * V.Zt; V.pyt = -(wy - c) * V.Zt; V.clamp(); V.lastMove = performance.now(); };
   V.pick = (px, py) => {
     let best = -1, bd = Infinity;
     for (const p of V.proj) { if (!p) continue; const dx = p.sx - px, dy = p.sy - py, dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = p.i; } }
     const hitR = Math.max(14, 22 * (V.W / 700));
     if (best >= 0 && Math.sqrt(bd) < hitR) return { node: best };
-    const c = V.W / 2, rr = Math.hypot(px - c, py - c) / (V.W / 2);
-    if (rr > 0.86 && rr < 1) return { book: bookAtAngle(Math.atan2(py - c, px - c)) };
+    const vw = nzView(V), [wx, wy] = vw.inv(px, py), R = vw.R, c = vw.c, N = S.chapters.length;
+    const rr = Math.hypot(wx - c, wy - c) / R, ang = Math.atan2(wy - c, wx - c), f = ((ang + Math.PI / 2) % TAU + TAU) % TAU / TAU * N;
+    if (vw.Z >= NZ.DOTS) {
+      const zf = verseZf(vw.Z), DV = 0.86 * R * TAU / N; let bv = null, bdv = 16;
+      for (const ci of [Math.floor(f) - 1, Math.floor(f), Math.floor(f) + 1]) {
+        if (ci < 0 || ci >= N) continue; const [b, ch] = S.chapters[ci], nv = S.books[b].v[ch - 1] || 0;
+        const v0 = Math.round((0.86 * R - rr * R) / DV + 0.5);
+        for (let v = Math.max(1, v0 - 1); v <= Math.min(nv, v0 + 1); v++) { const id = vid(b, ch, v), [x, y] = vw.T(...versePos(id, R, c, zf)), dd = Math.hypot(x - px, y - py); if (dd < bdv) { bdv = dd; bv = id; } }
+      }
+      if (bv) return { verse: bv };
+    }
+    if (vw.Z >= 3 && rr > 0.862 && rr < 0.95) return { chap: Math.min(N - 1, Math.floor(f)) };
+    if (rr > 0.86 && rr < 1) return { book: bookAtAngle(ang) };
     return {};
   };
-  // gestos
+  // gestos: pinça/roda ampliam, arrastar move (ou gira, sem zoom), toque duplo aproxima
   const pos = e => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  const pts = new Map();
-  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); const [x, y] = pos(e); pts.set(e.pointerId, [x, y]); V.drag = { x, y, x0: x, y0: y, moved: false, t: performance.now(), d0: null, k0: V.k }; if (pts.size === 2) { const [a, b] = [...pts.values()]; V.drag.d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
+  const pts = new Map(); let lastTap = null;
+  const pinchStart = () => { const [a, b] = [...pts.values()], c = V.W / 2, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; V.drag.pinch = { d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, z0: V.Z, wx: (mx - c - V.px) / V.Z + c, wy: (my - c - V.py) / V.Z + c }; V.drag.moved = true; };
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); const [x, y] = pos(e); pts.set(e.pointerId, [x, y]); if (!V.drag) V.drag = { x, y, x0: x, y0: y, moved: false, t: performance.now() }; if (pts.size === 2) pinchStart(); });
   canvas.addEventListener('pointermove', e => {
     const [x, y] = pos(e);
-    if (!V.drag) { if (FINE) { const hit = V.pick(x, y); V.hover = hit.node ?? -1; canvas.style.cursor = hit.node != null || hit.book != null ? 'pointer' : 'grab'; } return; }
+    if (!V.drag) { if (FINE) { const hit = V.pick(x, y); V.hover = hit.node ?? -1; canvas.style.cursor = hit.node != null || hit.book != null || hit.verse != null || hit.chap != null ? 'pointer' : V.Z > 1.15 ? 'move' : 'grab'; } return; }
     pts.set(e.pointerId, [x, y]);
-    if (pts.size === 2 && V.drag.d0) { const [a, b] = [...pts.values()]; V.k = Math.max(0.7, Math.min(3.2, V.drag.k0 * Math.hypot(a[0] - b[0], a[1] - b[1]) / V.drag.d0)); V.drag.moved = true; return; }
+    if (pts.size >= 2 && V.drag.pinch) {
+      const [a, b] = [...pts.values()], P = V.drag.pinch, c = V.W / 2, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      const z = nzClamp(P.z0 * Math.hypot(a[0] - b[0], a[1] - b[1]) / P.d0, 1, NZ.MAX);
+      V.Z = V.Zt = z; V.px = V.pxt = mx - c - (P.wx - c) * z; V.py = V.pyt = my - c - (P.wy - c) * z; V.clamp(); V.lastMove = performance.now(); NEURO.zoomUI(); return;
+    }
     const dx = x - V.drag.x, dy = y - V.drag.y; V.drag.x = x; V.drag.y = y;
     if (Math.hypot(x - V.drag.x0, y - V.drag.y0) > 6) V.drag.moved = true;
-    if (V.drag.moved) { V.uyaw += dx * 0.006; V.upitch = Math.max(-0.9, Math.min(0.9, V.upitch + dy * 0.004)); V.vyaw = dx * 0.0006; }
+    if (!V.drag.moved) return;
+    if (V.Z > 1.15) { V.px += dx; V.py += dy; V.pxt = V.px; V.pyt = V.py; V.clamp(); V.lastMove = performance.now(); }
+    else { V.uyaw += dx * 0.006; V.upitch = Math.max(-0.9, Math.min(0.9, V.upitch + dy * 0.004)); V.vyaw = dx * 0.0006; }
   });
   const up = e => {
-    pts.delete(e.pointerId); if (!V.drag) return; const d = V.drag; if (pts.size) return; V.drag = null;
-    if (d.moved) return;
+    pts.delete(e.pointerId); if (!V.drag) return; const d = V.drag;
+    if (pts.size) { const [p] = [...pts.values()]; d.x = p[0]; d.y = p[1]; d.pinch = null; return; }
+    V.drag = null; if (d.moved) return;
+    const now = performance.now();
+    if (lastTap && now - lastTap.t < 320 && Math.hypot(d.x0 - lastTap.x, d.y0 - lastTap.y) < 30) { lastTap = null; V.setZoom(V.Zt * 2.6, d.x0, d.y0, true); return; }
+    lastTap = { t: now, x: d.x0, y: d.y0 };
     const hit = V.pick(d.x0, d.y0);
     if (hit.node != null) { if (V.sel === hit.node) { NEURO.showNode(hit.node); } else V.select(hit.node); HUDFX.emit({ type: 'nodes', ids: [V.g.nodes[hit.node].id] }); }
+    else if (hit.verse != null) NEURO.showVerse(hit.verse, { voa: false });
+    else if (hit.chap != null) NEURO.showChap(hit.chap, { voa: false });
     else if (hit.book != null) { const was = V.book === hit.book && !V.syn?.kind?.startsWith('c'); V.sel = -1; V.linked = new Set(); V.book = was ? -1 : hit.book; if (V.book >= 0) { NEURO.showBook(V.book); HUDFX.emit({ type: 'book', b: V.book }); } else NEURO.deselect(); }
     else NEURO.deselect();
   };
-  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', e => { pts.delete(e.pointerId); V.drag = null; });
-  canvas.addEventListener('wheel', e => { e.preventDefault(); V.k = Math.max(0.7, Math.min(3.2, V.k * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); }, { passive: false });
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', e => { pts.delete(e.pointerId); if (!pts.size) V.drag = null; });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); const [x, y] = pos(e); V.setZoom(V.Z * Math.pow(1.0018, -e.deltaY), x, y, false); }, { passive: false });
+  canvas.addEventListener('dblclick', e => e.preventDefault());
   return V;
 }
 function drawNeuro(V, time) {
   if (!V.W || !V.canvas.isConnected) return;
+  // zoom e posição andam suavemente até o alvo (botões, toque duplo, voo até um versículo)
+  if (Math.abs(V.Zt - V.Z) > 1e-3 || Math.abs(V.pxt - V.px) > 0.3 || Math.abs(V.pyt - V.py) > 0.3) { const k = REDUCE ? 1 : 0.24; V.Z += (V.Zt - V.Z) * k; V.px += (V.pxt - V.px) * k; V.py += (V.pyt - V.py) * k; V.lastMove = performance.now(); NEURO.zoomUI(); }
+  else if (V.Z !== V.Zt) { V.Z = V.Zt; V.px = V.pxt; V.py = V.pyt; NEURO.zoomUI(); }
   const ctx = V.ctx, W = V.W, c = W / 2, R = W / 2, sec = time / 1000, M = HUDFX.mode, g = V.g;
+  const vw = nzView(V), Z = vw.Z, T = vw.T, cx = vw.cx, cy = vw.cy, zoomed = Z > 1.15;
+  // de perto, o cérebro para de girar e de flutuar (fica fácil tocar)
+  if (!zoomed) V.fsec = sec; const ts = V.fsec ?? sec;
   ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
-  const bg = ctx.createRadialGradient(c, c, 0, c, c, R); bg.addColorStop(0, '#0A2133'); bg.addColorStop(0.6, '#04101B'); bg.addColorStop(1, '#02050A');
-  ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(c, c, R, 0, TAU); ctx.fill();
-  // câmera: segue o nó escolhido
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * Z); bg.addColorStop(0, '#0A2133'); bg.addColorStop(0.6, '#04101B'); bg.addColorStop(1, '#02050A');
+  ctx.fillStyle = bg; if (zoomed) ctx.fillRect(0, 0, W, W); else { ctx.clearRect(0, 0, W, W); ctx.beginPath(); ctx.arc(c, c, R, 0, TAU); ctx.fill(); }
+  // câmera: segue o nó escolhido (só sem zoom)
   const selD = V.sel >= 0 ? g.nodes[V.sel] : null;
-  const tk = selD ? Math.max(V.k, 1.7) : V.k;
+  const tk = selD && !zoomed ? Math.max(V.k, 1.7) : 1;
   V.kk = (V.kk || 1) + (tk - (V.kk || 1)) * 0.08;
   V.pull += ((selD ? 1 : 0) - V.pull) * 0.07;
-  if (!V.drag) { V.uyaw += V.vyaw; V.vyaw *= 0.95; }
-  const yaw = 0.45 * Math.sin(sec * 0.07) + V.uyaw, pitch = 0.38 + 0.14 * Math.sin(sec * 0.11) + V.upitch;
+  if (!V.drag && !zoomed) { V.uyaw += V.vyaw; V.vyaw *= 0.95; }
+  const yaw = 0.45 * Math.sin(ts * 0.07) + V.uyaw, pitch = 0.38 + 0.14 * Math.sin(ts * 0.11) + V.upitch;
   const cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
   const Rc = R * 0.74;
   const P3 = (x, y, z) => { const x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw, y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp, f = 2.4 / (2.4 + z2); return [x1 * f * Rc, y1 * f * Rc, f, z2]; };
-  // posições projetadas
   const sp3 = selD ? [selD.x, selD.y, selD.z] : null;
   const proj = new Array(g.nodes.length);
   g.nodes.forEach((d, i) => {
-    let x = d.x + 0.022 * Math.sin(sec * 0.55 + d.ph * TAU), y = d.y + 0.022 * Math.cos(sec * 0.47 + d.ph * 9), z = d.z + 0.06 * Math.sin(sec * 0.35 + d.ph * 5);
+    let x = d.x + 0.022 * Math.sin(ts * 0.55 + d.ph * TAU), y = d.y + 0.022 * Math.cos(ts * 0.47 + d.ph * 9), z = d.z + 0.06 * Math.sin(ts * 0.35 + d.ph * 5);
     if (sp3 && V.linked.has(i)) { const k = 0.42 * V.pull; x += (sp3[0] - x) * k; y += (sp3[1] - y) * k; z += (sp3[2] - z) * k; }
     const [px, py, f, zz] = P3(x, y, z); proj[i] = { i, rx: px, ry: py, f, z: zz };
   });
-  let tox = 0, toy = 0; if (selD) { const p = proj[V.sel]; tox = -p.rx * V.kk; toy = -p.ry * V.kk; }
+  let tox = 0, toy = 0; if (selD && !zoomed) { const p = proj[V.sel]; tox = -p.rx * V.kk; toy = -p.ry * V.kk; }
   V.ox += (tox - V.ox) * 0.08; V.oy += (toy - V.oy) * 0.08;
-  proj.forEach(p => { p.sx = c + p.rx * V.kk + V.ox; p.sy = c + p.ry * V.kk + V.oy; });
+  proj.forEach(p => { const [x, y] = T(c + p.rx * V.kk + V.ox, c + p.ry * V.kk + V.oy); p.sx = x; p.sy = y; });
   V.proj = proj;
   const dim = V.sel >= 0 || V.book >= 0 || !!V.synNodes;
   const onN = i => !dim || i === V.sel || V.linked.has(i) || V.synNodes?.has(i) || (V.book >= 0 && g.nodes[i].refs.some(r => split(r)[0] === V.book));
-  // recorte do círculo
-  ctx.save(); ctx.beginPath(); ctx.arc(c, c, R * 0.995, 0, TAU); ctx.clip();
-  // grade sutil
-  ctx.strokeStyle = 'rgba(59,227,240,.07)'; ctx.lineWidth = 1;
-  for (let k = 1; k <= 4; k++) { ctx.beginPath(); ctx.arc(c + V.ox * 0.3, c + V.oy * 0.3, R * 0.2 * k * V.kk, 0, TAU); ctx.stroke(); }
-  const sw = sec * (M === 'thinking' ? 1.6 : 0.3) % TAU;
-  if (ctx.createConicGradient) { const gr = ctx.createConicGradient(sw - 0.6, c, c); gr.addColorStop(0, 'rgba(59,227,240,0)'); gr.addColorStop(0.08, 'rgba(59,227,240,.08)'); gr.addColorStop(0.085, 'rgba(59,227,240,0)'); gr.addColorStop(1, 'rgba(59,227,240,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(c, c, R * 0.86, 0, TAU); ctx.fill(); }
+  ctx.save(); if (!zoomed) { ctx.beginPath(); ctx.arc(c, c, R * 0.995, 0, TAU); ctx.clip(); }
+  // grade sutil e varredura (só sem zoom)
+  if (Z < 2) {
+    ctx.strokeStyle = 'rgba(59,227,240,.07)'; ctx.lineWidth = 1;
+    for (let k = 1; k <= 4; k++) { ctx.beginPath(); ctx.arc(cx + V.ox * 0.3 * Z, cy + V.oy * 0.3 * Z, R * 0.2 * k * V.kk * Z, 0, TAU); ctx.stroke(); }
+    const sw = sec * (M === 'thinking' ? 1.6 : 0.3) % TAU;
+    if (ctx.createConicGradient) { const gr = ctx.createConicGradient(sw - 0.6, cx, cy); gr.addColorStop(0, 'rgba(59,227,240,0)'); gr.addColorStop(0.08, 'rgba(59,227,240,.08)'); gr.addColorStop(0.085, 'rgba(59,227,240,0)'); gr.addColorStop(1, 'rgba(59,227,240,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(cx, cy, R * 0.86 * Z, 0, TAU); ctx.fill(); }
+  }
   ctx.globalCompositeOperation = 'lighter';
-  // sinapses: as 344.799 referências cruzadas (camada pronta) e, por cima, as que acenderam
-  const lit = V.syn;
-  SYN.draw(ctx, SYN.get(R * 0.86), c, c, lit || dim ? 0.26 : 0.95);
-  if (lit) SYN.draw(ctx, lit, c, c, Math.min(1, (time - lit.t0) / 650) * (0.86 + 0.14 * Math.sin(sec * 2.6)), R * 0.86);
+  // sinapses: de longe a camada pronta; de perto, os fios dos capítulos na tela desenhados nítidos
+  const lit = V.syn, r0 = R * 0.86, zf = verseZf(Z);
+  const fadeBase = nzClamp((3 - Z) / 1.5, 0, 1), fadeLocal = nzClamp((Z - 1.8) / 1.2, 0, 1);
+  if (fadeBase > 0) SYN.draw(ctx, SYN.get(r0), cx, cy, (lit || dim ? 0.26 : 0.95) * fadeBase, r0 * Z);
+  const loc = fadeLocal > 0 ? nzLocal(V, vw) : null;
+  if (loc && loc.length) {
+    const A = S.arcs, paths = new Array(12), al = [0.07, 0.14, 0.26, 0.42].map(a => a * fadeLocal * (lit || dim ? 0.45 : 1));
+    for (const i of loc) { const a = A.a[i], b = A.b[i], k = SYN.cat(a, b) * 4 + SYN.lv(A.vot[i]); SYN.chord(paths[k] || (paths[k] = new Path2D()), SYN.cang(a), SYN.cang(b), cx, cy, r0 * Z); }
+    ctx.lineWidth = 0.9; for (let k = 0; k < 12; k++) if (paths[k]) { ctx.strokeStyle = `rgba(${SYN.RGB[k >> 2]},${al[k & 3].toFixed(3)})`; ctx.stroke(paths[k]); }
+  }
+  if (lit) {
+    const u = Math.min(1, (time - lit.t0) / 650) * (0.86 + 0.14 * Math.sin(sec * 2.6)), vec = lit.items && (lit.items[0]?.[4] != null || Z >= 2 || lit.items.length <= 400);
+    if (!vec) SYN.draw(ctx, lit, cx, cy, u, r0 * Z);
+    else {
+      const its = lit.items.length > 2500 ? lit.items.slice().sort((p, q) => q[2] - p[2]).slice(0, 2500) : lit.items;
+      const paths = new Array(12), sc = Math.min(1, Math.pow(260 / Math.max(1, its.length), 0.45));
+      for (const it of its) {
+        const [a1, a2, w, cat, ia, ib] = it, k = cat * 4 + SYN.lv(w), p = paths[k] || (paths[k] = new Path2D());
+        if (ia != null) { const [x1, y1] = T(...versePos(ia, R, c, zf)), [x2, y2] = T(...versePos(ib, R, c, zf)); chordP(p, x1, y1, x2, y2, cx, cy, a1, a2); }
+        else SYN.chord(p, a1, a2, cx, cy, r0 * Z);
+      }
+      ctx.lineWidth = its.length > 1500 ? 0.9 : 1.4;
+      for (let k = 0; k < 12; k++) if (paths[k]) { ctx.strokeStyle = `rgba(${SYN.LIT[k >> 2]},${(u * Math.max(0.08, sc * [0.5, 0.68, 0.85, 1][k & 3])).toFixed(3)})`; ctx.stroke(paths[k]); }
+    }
+  }
   // fios até o anel (só do escolhido e ligados, ou bem fracos)
-  const ringP = (a, rr) => [c + Math.cos(a) * rr * R, c + Math.sin(a) * rr * R];
+  const ringP = (a, rr) => T(c + Math.cos(a) * rr * R, c + Math.sin(a) * rr * R);
   g.nodes.forEach((d, i) => {
     const p = proj[i], on = onN(i), strong = i === V.sel || V.linked.has(i) || i === V.hover;
     if (!strong && dim) return;
     const al = strong ? 0.5 : 0.05 * p.f;
     ctx.strokeStyle = d.color + Math.round(255 * Math.min(1, al)).toString(16).padStart(2, '0'); ctx.lineWidth = strong ? 1.2 : 0.7;
-    ctx.beginPath(); for (const a of d.refA.slice(0, 4)) { const [bx, by] = ringP(a, 0.86); ctx.moveTo(p.sx, p.sy); ctx.quadraticCurveTo((p.sx + c) / 2, (p.sy + c) / 2, bx, by); } if (on) ctx.stroke();
+    ctx.beginPath(); for (const a of d.refA.slice(0, 4)) { const [bx, by] = ringP(a, 0.86); ctx.moveTo(p.sx, p.sy); ctx.quadraticCurveTo((p.sx + cx) / 2, (p.sy + cy) / 2, bx, by); } if (on) ctx.stroke();
   });
-  // sinapses
+  // ligações entre pensamentos
   const per = M === 'thinking' ? 1.4 : 3.6, fper = M === 'thinking' ? 2.2 : 5.5;
   for (const [i, j, kind, ph] of g.edges) {
     const a = proj[i], b = proj[j], on = onN(i) && onN(j), hot = (i === V.sel || j === V.sel);
     if (dim && !on) continue;
+    if (zoomed && (a.sx < -40 && b.sx < -40 || a.sx > W + 40 && b.sx > W + 40 || a.sy < -40 && b.sy < -40 || a.sy > W + 40 && b.sy > W + 40)) continue;
     const depth = Math.min(a.f, b.f), base = hot ? 0.75 : kind === 'estudo' ? 0.35 : kind === 'verso' ? 0.26 : 0.14;
     const da = g.nodes[i];
     ctx.strokeStyle = (hot ? '#FFE7B0' : da.color) + Math.round(255 * Math.min(1, base * depth)).toString(16).padStart(2, '0');
     ctx.lineWidth = hot ? 1.8 : 0.9 * depth;
-    const mx = (a.sx + b.sx) / 2 + (c - (a.sx + b.sx) / 2) * 0.12, my = (a.sy + b.sy) / 2 + (c - (a.sy + b.sy) / 2) * 0.12;
+    const mx = (a.sx + b.sx) / 2 + (cx - (a.sx + b.sx) / 2) * 0.12, my = (a.sy + b.sy) / 2 + (cy - (a.sy + b.sy) / 2) * 0.12;
     ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.quadraticCurveTo(mx, my, b.sx, b.sy); ctx.stroke();
     const tt = ((sec / per) + ph) % 1;
     if (tt < 0.6) { const u = tt / 0.6, w = 1 - u, al = Math.sin(Math.PI * u); ctx.fillStyle = `rgba(210,250,255,${(hot ? 1 : 0.85) * al})`; ctx.beginPath(); ctx.arc(w * w * a.sx + 2 * w * u * mx + u * u * b.sx, w * w * a.sy + 2 * w * u * my + u * u * b.sy, (hot ? 2.4 : 1.6) * depth, 0, TAU); ctx.fill(); }
     const ff = ((sec / fper) + ph * 1.7) % 1;
     if (ff < 0.08) { const al = Math.sin(Math.PI * ff / 0.08); ctx.strokeStyle = `rgba(255,255,255,${0.55 * al})`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.quadraticCurveTo(mx, my, b.sx, b.sy); ctx.stroke(); }
   }
-  // efeitos do Binah
-  drawNeuroFx(V, ctx, c, R, proj, time, ringP);
-  // núcleo
+  drawNeuroFx(V, ctx, c, R, proj, time, ringP, vw);
   ctx.globalCompositeOperation = 'source-over';
-  if (V.kk < 1.35) { const s = R * 0.62, L = HUDFX.lv(time); const cg = ctx.createRadialGradient(c, c, 0, c, c, 0.16 * s); cg.addColorStop(0, `rgba(170,250,255,${Math.min(1, 0.7 + 0.25 * Math.sin(sec * 1.6) + L * 0.4)})`); cg.addColorStop(0.4, 'rgba(34,211,238,.45)'); cg.addColorStop(1, 'rgba(6,48,58,0)'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(c, c, 0.16 * s, 0, TAU); ctx.fill(); drawHudCore(V, ctx, s, c, c, 1, sec, time); }
-  // nós (do fundo para a frente)
+  // núcleo (só sem zoom)
+  if (V.kk < 1.35 && Z < 1.3) { const s = R * 0.62, L = HUDFX.lv(time); const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 0.16 * s); cg.addColorStop(0, `rgba(170,250,255,${Math.min(1, 0.7 + 0.25 * Math.sin(sec * 1.6) + L * 0.4)})`); cg.addColorStop(0.4, 'rgba(34,211,238,.45)'); cg.addColorStop(1, 'rgba(6,48,58,0)'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cx, cy, 0.16 * s, 0, TAU); ctx.fill(); drawHudCore(V, ctx, s, cx, cy, 1, sec, time); }
+  // versículos como bolinhas (bem de perto)
+  if (Z >= NZ.DOTS) drawVerseDots(V, ctx, vw, zf, time);
+  // pensamentos (do fundo para a frente)
+  const grow = 1 + 0.32 * Math.log2(Z);
   const order = proj.map(p => p.i).sort((p, q) => proj[q].z - proj[p].z);
   for (const i of order) {
     const d = g.nodes[i], p = proj[i], on = onN(i);
+    if (zoomed && (p.sx < -30 || p.sx > W + 30 || p.sy < -30 || p.sy > W + 30)) continue;
     const breath = 1 + 0.18 * Math.sin(sec * 2.2 + d.ph * TAU);
-    let rad = (d.est ? 7.5 : 3.6) * p.f * breath * Math.sqrt(V.kk) * (W / 700 * 0.6 + 0.4);
+    let rad = (d.est ? 7.5 : 3.6) * p.f * breath * Math.sqrt(V.kk) * (W / 700 * 0.6 + 0.4) * grow;
     if (i === V.sel) rad *= 1.7; else if (V.linked.has(i)) rad *= 1.25;
     ctx.globalAlpha = on ? Math.min(1, 0.45 + 0.55 * p.f) : 0.12;
     if (on && i !== V.sel) { const ga = ctx.globalAlpha; ctx.globalAlpha = ga * 0.2; ctx.fillStyle = d.color; ctx.beginPath(); ctx.arc(p.sx, p.sy, rad * 2.4, 0, TAU); ctx.fill(); ctx.globalAlpha = ga; }
@@ -4433,43 +4562,118 @@ function drawNeuro(V, time) {
   ctx.globalAlpha = 1;
   // rótulos
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `600 ${W < 480 ? 11 : 12.5}px Manrope, system-ui, sans-serif`;
-  const lab = i => { const p = proj[i], t = (g.nodes[i].n.titulo || '').slice(0, 44); const tw = ctx.measureText(t).width; ctx.fillStyle = 'rgba(2,5,10,.78)'; ctx.fillRect(p.sx + 10, p.sy - 10, tw + 12, 20); ctx.fillStyle = i === V.sel ? '#FFFFFF' : '#CFE9FF'; ctx.fillText(t, p.sx + 16, p.sy); };
+  const lab = i => { const p = proj[i], t = (g.nodes[i].n.titulo || '').slice(0, 44); if (p.sx < -20 || p.sx > W || p.sy < -10 || p.sy > W + 10) return; const tw = ctx.measureText(t).width; ctx.fillStyle = 'rgba(2,5,10,.78)'; ctx.fillRect(p.sx + 10, p.sy - 10, tw + 12, 20); ctx.fillStyle = i === V.sel ? '#FFFFFF' : '#CFE9FF'; ctx.fillText(t, p.sx + 16, p.sy); };
   if (V.sel >= 0) { [...V.linked].slice(0, W < 480 ? 3 : 8).forEach(lab); lab(V.sel); }
   else if (V.hover >= 0) lab(V.hover);
   else if (V.syn) [...(V.synNodes || [])].slice(0, W < 480 ? 3 : 6).forEach(lab);
-  else g.nodes.forEach((d, i) => { if (d.est) lab(i); });
+  else if (!zoomed) g.nodes.forEach((d, i) => { if (d.est) lab(i); });
+  else if (Z >= 2.5) g.nodes.forEach((d, i) => { if (d.est || Z >= 6) lab(i); });
   ctx.restore();
-  // anel dos 66 livros (moldura fixa)
+  // anel dos 66 livros
   ctx.globalCompositeOperation = 'source-over';
-  ctx.strokeStyle = 'rgba(59,227,240,.35)'; ctx.lineWidth = 1; ctx.beginPath();
-  for (let i = 0; i < 180; i++) { const a = i / 180 * TAU, r2 = i % 15 === 0 ? 0.985 : 0.972; const [x1, y1] = ringP(a, 0.958), [x2, y2] = ringP(a, r2); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
-  ctx.stroke();
-  ctx.save(); ctx.setLineDash([7, 5]); ctx.lineDashOffset = -sec * (M === 'thinking' ? 30 : 6); ctx.strokeStyle = 'rgba(59,227,240,.45)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(c, c, R * 0.945, 0, TAU); ctx.stroke(); ctx.restore();
+  if (Z < 6) {
+    ctx.strokeStyle = 'rgba(59,227,240,.35)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let i = 0; i < 180; i++) { const a = i / 180 * TAU, r2 = i % 15 === 0 ? 0.985 : 0.972; const [x1, y1] = ringP(a, 0.958), [x2, y2] = ringP(a, r2); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+    ctx.stroke();
+    ctx.save(); ctx.setLineDash([7, 5]); ctx.lineDashOffset = -sec * (M === 'thinking' ? 30 : 6); ctx.strokeStyle = 'rgba(59,227,240,.45)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, cy, R * 0.945 * Z, 0, TAU); ctx.stroke(); ctx.restore();
+  }
   S.books.forEach((bk, b) => {
-    const [a0, a1] = bookAngles(b), gap = Math.min(0.004, (a1 - a0) * 0.2);
-    ctx.beginPath(); ctx.arc(c, c, R * 0.935, a0 + gap, a1 - gap); ctx.arc(c, c, R * 0.875, a1 - gap, a0 + gap, true); ctx.closePath();
+    const [a0, a1] = bookAngles(b), gap = Math.min(0.004, (a1 - a0) * 0.2) / Math.max(1, Z * 0.6);
+    ctx.beginPath(); ctx.arc(cx, cy, R * 0.935 * Z, a0 + gap, a1 - gap); ctx.arc(cx, cy, R * 0.875 * Z, a1 - gap, a0 + gap, true); ctx.closePath();
     const nt = b >= 39, hl = V.book === b || (selD && selD.refs.some(r => split(r)[0] === b));
     ctx.fillStyle = hl ? 'rgba(242,182,72,.95)' : nt ? (b % 2 ? 'rgba(242,182,72,.4)' : 'rgba(242,182,72,.24)') : (b % 2 ? 'rgba(41,128,185,.55)' : 'rgba(27,79,140,.72)');
     ctx.fill();
   });
+  if (Z >= 3) drawRingChapters(V, ctx, vw);
   if (selD) { ctx.strokeStyle = '#FFE7B0'; ctx.lineWidth = 2.4; ctx.beginPath(); for (const a of selD.refA) { const [x1, y1] = ringP(a, 0.86), [x2, y2] = ringP(a, 0.96); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); } ctx.stroke(); }
   if (lit) {
     if (lit.tg?.length) { ctx.strokeStyle = 'rgba(255,214,140,.7)'; ctx.lineWidth = 1.1; ctx.beginPath(); for (const a of lit.tg) { const [x1, y1] = ringP(a, 0.875), [x2, y2] = ringP(a, 0.935); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); } ctx.stroke(); }
     if (!selD && lit.marks.length) { ctx.strokeStyle = '#FFE7B0'; ctx.lineWidth = 2.6; ctx.beginPath(); for (const a of lit.marks) { const [x1, y1] = ringP(a, 0.84), [x2, y2] = ringP(a, 0.97); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); } ctx.stroke(); }
   }
-  if (W > 420) {
-    ctx.textAlign = 'center'; ctx.font = `600 ${W < 600 ? 9.5 : 10.5}px Manrope, system-ui, sans-serif`;
-    S.books.forEach((bk, b) => { const [a0, a1] = bookAngles(b); if ((a1 - a0) * R < 18 && V.book !== b) return; const [x, y] = ringP((a0 + a1) / 2, 0.905); ctx.fillStyle = V.book === b ? '#02050A' : b >= 39 ? 'rgba(255,240,205,.9)' : 'rgba(225,236,250,.9)'; ctx.fillText(bk.a, x, y); });
+  // nomes dos livros (de perto, na parte do livro que está na tela)
+  if (W > 420 || zoomed) {
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `600 ${W < 600 ? 9.5 : 10.5}px Manrope, system-ui, sans-serif`;
+    const av = Math.atan2(c - cy, c - cx);
+    S.books.forEach((bk, b) => {
+      const [a0, a1] = bookAngles(b); if ((a1 - a0) * R * Z < 18 && V.book !== b) return;
+      let am = (a0 + a1) / 2;
+      if (zoomed) { let t = av; while (t < a0) t += TAU; while (t > a1 + TAU) t -= TAU; if (t >= a0 && t <= a1) am = t; }
+      const [x, y] = ringP(am, 0.905); if (x < -40 || x > W + 40 || y < -20 || y > W + 20) return;
+      const txt = Z >= 3 ? bk.n : bk.a;
+      if (zoomed) { const tw = ctx.measureText(txt).width; ctx.fillStyle = 'rgba(2,5,10,.55)'; ctx.fillRect(x - tw / 2 - 5, y - 8, tw + 10, 16); }
+      ctx.fillStyle = V.book === b ? '#02050A' : b >= 39 ? 'rgba(255,240,205,.95)' : 'rgba(225,236,250,.95)'; ctx.fillText(txt, x, y);
+    });
   }
 }
-function drawNeuroFx(V, ctx, c, R, proj, time, ringP) {
-  const g = V.g; HUDFX.fx = HUDFX.fx.filter(e => time - e.t0 < e.dur);
+// marcas e números dos capítulos no anel (de perto)
+function drawRingChapters(V, ctx, vw) {
+  const { W, c, R, Z, T } = vw, N = S.chapters.length, sp = 0.86 * R * TAU / N * Z, step = Math.max(1, Math.ceil(30 / sp));
+  ctx.strokeStyle = 'rgba(2,5,10,.55)'; ctx.lineWidth = 1; ctx.beginPath();
+  ctx.font = `600 ${Z >= 12 ? 11 : 10}px "IBM Plex Mono", ui-monospace, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const labs = [];
+  for (let ch = 0; ch < N; ch++) {
+    const a = -Math.PI / 2 + ch / N * TAU, [x1, y1] = T(c + Math.cos(a) * R * 0.875, c + Math.sin(a) * R * 0.875);
+    if (x1 < -60 || x1 > W + 60 || y1 < -60 || y1 > W + 60) continue;
+    const [x2, y2] = T(c + Math.cos(a) * R * 0.935, c + Math.sin(a) * R * 0.935); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    const [b, cc] = S.chapters[ch]; if ((cc - 1) % step && cc !== 1) continue;
+    const am = SYN.cang(ch), [lx, ly] = T(c + Math.cos(am) * R * 0.905, c + Math.sin(am) * R * 0.905);
+    labs.push([cc === 1 ? S.books[b].a + ' ' + cc : String(cc), lx, ly, V.syn?.kind === 'chap' && V.syn.x === ch]);
+  }
+  ctx.stroke();
+  if (Z < 5) return;
+  for (const [t, x, y, on] of labs) { const tw = ctx.measureText(t).width; ctx.fillStyle = on ? 'rgba(242,182,72,.95)' : 'rgba(2,5,10,.6)'; ctx.fillRect(x - tw / 2 - 3, y - 7, tw + 6, 14); ctx.fillStyle = on ? '#02050A' : '#E8F6FF'; ctx.fillText(t, x, y); }
+}
+function drawVerseDots(V, ctx, vw, zf, time) {
+  const { W, c, R, Z, T } = vw, N = S.chapters.length, r0 = R * 0.86, DV = r0 * TAU / N;
+  const rd = nzClamp(DV * Z * 0.26, 1.4, 6), m = 12, fade = nzClamp((Z - NZ.DOTS) / 2, 0, 1);
+  const lit = V.syn, verts = lit?.verts, sel = lit?.kind === 'verse' ? lit.x : null;
+  const pAT = new Path2D(), pNT = new Path2D(), pLit = new Path2D(), pNote = new Path2D(), nums = [];
+  const showNums = Z >= NZ.NUMS, numStep = Z >= NZ.NUMS * 1.6 ? 1 : 5, tags = [], tagStep = Math.max(1, Math.ceil(46 / (DV * Z)));
+  for (let ci = 0; ci < N; ci++) {
+    const a = SYN.cang(ci), [xa, ya] = T(c + Math.cos(a) * r0, c + Math.sin(a) * r0);
+    const [b, ch] = S.chapters[ci], nv = S.books[b].v[ch - 1] || 0;
+    const [xb, yb] = T(c + Math.cos(a) * (r0 - nv * DV), c + Math.sin(a) * (r0 - nv * DV));
+    if (Math.max(xa, xb) < -m || Math.min(xa, xb) > W + m || Math.max(ya, yb) < -m || Math.min(ya, yb) > W + m) continue;
+    for (let v = 1; v <= nv; v++) {
+      const id = vid(b, ch, v), [x, y] = T(...versePos(id, R, c, zf));
+      if (x < -m || x > W + m || y < -m || y > W + m) continue;
+      const on = verts?.has(id), p = on ? pLit : b >= 39 ? pNT : pAT;
+      p.moveTo(x + rd * (on ? 1.5 : 1), y); p.arc(x, y, rd * (on ? 1.5 : 1), 0, TAU);
+      if (S.byVerse?.get(id)?.size) { pNote.moveTo(x + rd + 2.5, y); pNote.arc(x, y, rd + 2.5, 0, TAU); }
+      if (showNums && (v % numStep === 0 || v === 1)) nums.push([String(v), x, y, on, id === sel]);
+      if (!tags.length || tags[tags.length - 1][0] !== ci) tags.push([ci, x, y, a]);
+      if (id === sel) V._selDot = [x, y];
+    }
+  }
+  ctx.globalAlpha = fade;
+  ctx.fillStyle = 'rgba(120,220,240,.75)'; ctx.fill(pAT);
+  ctx.fillStyle = 'rgba(255,190,110,.8)'; ctx.fill(pNT);
+  ctx.strokeStyle = 'rgba(190,140,255,.95)'; ctx.lineWidth = 1.3; ctx.stroke(pNote);
+  ctx.fillStyle = '#FFE7B0'; ctx.shadowColor = '#F2B648'; ctx.shadowBlur = 8; ctx.fill(pLit); ctx.shadowBlur = 0;
+  if (sel && V._selDot) { const [x, y] = V._selDot, pr = rd * 2.4 + 3 * Math.sin(time / 250); ctx.strokeStyle = '#FFE7B0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, pr, 0, TAU); ctx.stroke(); }
+  V._selDot = null;
+  // nome do capítulo em cima de cada coluna de versículos
+  ctx.font = `700 ${Z >= 20 ? 11 : 10}px "IBM Plex Mono", ui-monospace, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const [ci, x, y, a] of tags) {
+    const [b, ch] = S.chapters[ci]; if ((ci % tagStep) && ch !== 1) continue;
+    const t = S.books[b].a + ' ' + ch, d = rd + 12, tw = ctx.measureText(t).width, tx = nzClamp(x + Math.cos(a) * d, tw / 2 + 6, W - tw / 2 - 6), ty = nzClamp(y + Math.sin(a) * d, 10, W - 10), on = lit?.kind === 'chap' && lit.x === ci;
+    ctx.fillStyle = on ? 'rgba(242,182,72,.95)' : 'rgba(2,8,16,.78)'; ctx.fillRect(tx - tw / 2 - 4, ty - 8, tw + 8, 16);
+    ctx.fillStyle = on ? '#02050A' : b >= 39 ? '#FFE2B5' : '#CFF3FF'; ctx.fillText(t, tx, ty);
+  }
+  if (nums.length) {
+    ctx.font = `600 ${Z >= NZ.NUMS * 1.6 ? 10 : 9}px "IBM Plex Mono", ui-monospace, monospace`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    for (const [t, x, y, on, s] of nums) { ctx.fillStyle = s ? '#FFFFFF' : on ? '#FFE7B0' : 'rgba(207,233,255,.85)'; ctx.fillText(t, x + rd + 3, y); }
+  }
+  ctx.globalAlpha = 1;
+}
+function drawNeuroFx(V, ctx, c, R, proj, time, ringP, vw) {
+  const g = V.g, Z = vw?.Z || 1, cx = vw?.cx ?? c, cy = vw?.cy ?? c, T = vw?.T || ((x, y) => [x, y]); HUDFX.fx = HUDFX.fx.filter(e => time - e.t0 < e.dur);
   const byId = id => { const i = g.idx?.get(id); return i == null ? null : proj[i]; };
   for (const e of HUDFX.fx) {
     const age = time - e.t0, env = hudEnv(age, e.dur);
-    if (e.type === 'book' && S.books[e.b]) { const [a0, a1] = bookAngles(e.b); ctx.fillStyle = `rgba(242,182,72,${0.7 * env})`; ctx.beginPath(); ctx.arc(c, c, R * 0.94, a0, a1); ctx.arc(c, c, R * 0.86, a1, a0, true); ctx.closePath(); ctx.fill(); }
-    else if (e.type === 'verse') { const a = angleOfVerse(e.vid), [x0, y0] = ringP(a, 0.08), [x1, y1] = ringP(a, 0.93); const gr = ctx.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, `rgba(170,250,255,${0.15 * env})`); gr.addColorStop(1, `rgba(255,214,140,${env})`); ctx.strokeStyle = gr; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); const [lx, ly] = ringP(a, 0.8); ctx.fillStyle = `rgba(255,236,190,${env})`; ctx.font = '700 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.fillText(refLabel(e.vid), lx, ly); }
-    else if (e.type === 'arcs') { const a0 = angleOfVerse(e.from), [sx, sy] = ringP(a0, 0.86); e.to.forEach((t, k) => { const p = Math.max(0, Math.min(1, (age - k * 90) / 800)); if (!p) return; const a1 = angleOfVerse(t), [ex, ey] = ringP(a1, 0.86), mx = c + (Math.cos(a0) + Math.cos(a1)) * 0.2 * R, my = c + (Math.sin(a0) + Math.sin(a1)) * 0.2 * R; ctx.strokeStyle = split(t)[0] >= 39 ? `rgba(255,154,60,${0.9 * env})` : `rgba(80,235,255,${0.9 * env})`; ctx.lineWidth = 1.6; ctx.beginPath(); for (let i = 0; i <= 28; i++) { const u = i / 28 * p, w = 1 - u, x = w * w * sx + 2 * w * u * mx + u * u * ex, y = w * w * sy + 2 * w * u * my + u * u * ey; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.stroke(); }); }
+    if (e.type === 'book' && S.books[e.b]) { const [a0, a1] = bookAngles(e.b); ctx.fillStyle = `rgba(242,182,72,${0.7 * env})`; ctx.beginPath(); ctx.arc(cx, cy, R * 0.94 * Z, a0, a1); ctx.arc(cx, cy, R * 0.86 * Z, a1, a0, true); ctx.closePath(); ctx.fill(); }
+    else if (e.type === 'verse') { if (Z > 2) continue; const a = angleOfVerse(e.vid), [x0, y0] = ringP(a, 0.08), [x1, y1] = ringP(a, 0.93); const gr = ctx.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, `rgba(170,250,255,${0.15 * env})`); gr.addColorStop(1, `rgba(255,214,140,${env})`); ctx.strokeStyle = gr; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); const [lx, ly] = ringP(a, 0.8); ctx.fillStyle = `rgba(255,236,190,${env})`; ctx.font = '700 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.fillText(refLabel(e.vid), lx, ly); }
+    else if (e.type === 'arcs') { const a0 = angleOfVerse(e.from), [sx, sy] = ringP(a0, 0.86); e.to.forEach((t, k) => { const p = Math.max(0, Math.min(1, (age - k * 90) / 800)); if (!p) return; const a1 = angleOfVerse(t), [ex, ey] = ringP(a1, 0.86), [mx, my] = T(c + (Math.cos(a0) + Math.cos(a1)) * 0.2 * R, c + (Math.sin(a0) + Math.sin(a1)) * 0.2 * R); ctx.strokeStyle = split(t)[0] >= 39 ? `rgba(255,154,60,${0.9 * env})` : `rgba(80,235,255,${0.9 * env})`; ctx.lineWidth = 1.6; ctx.beginPath(); for (let i = 0; i <= 28; i++) { const u = i / 28 * p, w = 1 - u, x = w * w * sx + 2 * w * u * mx + u * u * ex, y = w * w * sy + 2 * w * u * my + u * u * ey; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.stroke(); }); }
     else if (e.type === 'nodes') { for (const id of e.ids) { const p = byId(id); if (!p) continue; const col = g.nodes[p.i].color; for (let k = 0; k < 2; k++) { const u = ((age / 900) + k * 0.5) % 1; ctx.strokeStyle = col + Math.round(230 * (1 - u) * env).toString(16).padStart(2, '0'); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(p.sx, p.sy, 6 + 26 * u, 0, TAU); ctx.stroke(); } } }
     else if (e.type === 'word') { const u = age / e.dur; ctx.fillStyle = e.he ? `rgba(247,231,180,${env})` : `rgba(200,250,255,${env})`; ctx.font = `${e.he ? 600 : 700} ${e.he ? 30 : 14}px ${e.he ? "'Noto Serif Hebrew', serif" : '"IBM Plex Mono", monospace'}`; ctx.textAlign = 'center'; ctx.shadowColor = '#F2B648'; ctx.shadowBlur = e.he ? 16 : 0; ctx.fillText(e.text, c + (e.dx || 0) * R, c - (0.22 + 0.3 * u) * R); ctx.shadowBlur = 0; }
     else if (e.type === 'birth') { const p = byId(e.id); if (!p) continue; const d = g.nodes[p.i], pr = Math.min(1, age / 900); if (d.refA.length && pr < 1) { const [bx, by] = ringP(d.refA[0], 0.88); ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(bx + (p.sx - bx) * pr, by + (p.sy - by) * pr, 3.5, 0, TAU); ctx.fill(); } if (pr >= 1) for (let k = 0; k < 3; k++) { const u = (((age - 900) / 1600) + k * 0.2) % 1; ctx.strokeStyle = d.color + Math.round(230 * (1 - u) * env).toString(16).padStart(2, '0'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.sx, p.sy, 6 + 34 * u, 0, TAU); ctx.stroke(); } }
