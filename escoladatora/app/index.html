@@ -434,6 +434,10 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .cover-face canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cover-face .glare{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at var(--gx,28%) var(--gy,18%),#ffffff26,transparent 46%)}
 .cover-top{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.cover-hello{position:absolute;left:18px;right:18px;top:54px;pointer-events:none;animation:rvIn .7s ease-out both}
+.cover-hi{font-family:var(--f-text);font-weight:700;font-size:clamp(26px,3.4vw,38px);line-height:1.12;color:#FFFFFF;text-shadow:0 2px 18px #000c,0 0 24px color-mix(in srgb,var(--glow) 45%,transparent)}
+.cover-hi .caret{display:inline-block;width:2px;height:.9em;margin-left:3px;vertical-align:-.08em;background:var(--glow);animation:blink 1s steps(1) infinite}
+.cover-hi-s{margin-top:4px;font-size:clamp(13px,1.5vw,15.5px);font-weight:600;color:#DDF6FF;text-shadow:0 1px 10px #000d}
 .cover-chip{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#F7E7B4;background:#02050Aa8;border:1px solid #f2b6484d;border-radius:999px;padding:4px 10px}
 .cover-copy{position:absolute;left:0;right:0;bottom:0;padding:22px 20px 18px;display:flex;flex-direction:column;gap:4px;background:linear-gradient(0deg,#02050Ad9,#02050A00);pointer-events:none}
 .cover-he{font-family:var(--f-heb);font-size:clamp(38px,5.4vw,60px);line-height:1.05;color:#F7E7B4;text-shadow:0 0 22px #f2b64899}
@@ -3458,9 +3462,10 @@ async function conexaoDoDia(range) {
   return pick;
 }
 let briefCache = null;
+const saudacao = () => { const hr = new Date().getHours(); return (hr >= 5 && hr < 12 ? 'Bom dia' : hr >= 12 && hr < 18 ? 'Boa tarde' : 'Boa noite') + ', ' + ETN() + '.'; };
 async function buildBriefing() {
-  const now = new Date(), hr = now.getHours();
-  const sauda = (hr < 12 ? 'Bom dia' : hr < 18 ? 'Boa tarde' : 'Boa noite') + ', ' + ETN() + '.';
+  const now = new Date();
+  const sauda = saudacao();
   const dia = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   const t = hebToday(), sem = semana();
   const rasc = [...S.brain.values()].filter(n => n.status === 'rascunho');
@@ -3589,7 +3594,8 @@ const PORTAL = {
     const host = $('#briefHost'); if (!host) return;
     const B = await buildBriefing(); if (!host.isConnected) return;
     host.innerHTML = '';
-    const hi = h('div', { class: 'brief-hi', 'aria-label': B.sauda });
+    const head = B.dia.charAt(0).toUpperCase() + B.dia.slice(1) + '.';
+    const hi = h('div', { class: 'brief-hi', 'aria-label': head });
     const items = h('div', { class: 'brief-items' });
     if (B.sem?.par) { const p = B.sem.par, r = p.range; items.append(h('div', { class: 'bi' }, h('span', { class: 'k', text: 'Parashá da semana' }), h('span', { class: 'v' }, p.names.join('–') + ' · ', h('span', { class: 'he', text: p.he })), h('span', { class: 's', text: parashaPt(p.names) + (r ? ' · ' + refLabel(r.start) + ' – ' + refLabel(r.end) : '') }), r ? h('span', { class: 'acts' }, h('button', { class: 'btn', text: 'Ler a parashá', onclick: () => gotoVerse(r.start) })) : null)); }
     if (B.sem?.fests?.length) { const f = B.sem.fests[0], n = diasAte(f.date); items.append(h('div', { class: 'bi' }, h('span', { class: 'k', text: 'Próxima festa' }), h('span', { class: 'v' }, f.n + ' · ', h('span', { class: 'he', text: f.he })), h('span', { class: 's', text: f.date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' }) + ' · ' + diasTxt(n) }), h('span', { class: 'acts' }, h('button', { class: 'btn', text: 'Calendário', onclick: () => setTab('mesa') })))); }
@@ -3603,20 +3609,25 @@ const PORTAL = {
     const core = h('canvas', { 'aria-hidden': 'true' });
     host.append(h('div', { class: 'brief-core' }, core), h('div', { style: 'min-width:0' },
       h('div', { class: 'brief-h' }, h('span', { text: 'Binah · briefing de hoje' }), h('span', { class: 'he', style: 'font-family:var(--f-heb);letter-spacing:0;font-size:13px;color:var(--gold)', text: B.t?.heb || '' })),
-      hi, h('p', { class: 'brief-date', text: 'Hoje é ' + B.dia + (B.t ? ' · ' + B.t.label : '') + '.' }), items,
+      hi, B.t ? h('p', { class: 'brief-date', text: B.t.label + '.' }) : null, items,
       h('div', { class: 'brief-acts' }, ouvir, h('button', { class: 'btn primary', text: 'Conversar com o Binah', onclick: e => NEURO.open({ from: e.currentTarget, focus: true }) }))));
     coreFx(core); core.style.cursor = 'pointer'; core.onclick = () => NEURO.open({ from: core });
-    if (REDUCE || store.get('briefDia', '') === new Date().toDateString()) hi.textContent = B.sauda;
-    else { store.set('briefDia', new Date().toDateString()); let i = 0; const caret = h('span', { class: 'caret' }); const tick = () => { if (!hi.isConnected) return; hi.textContent = B.sauda.slice(0, ++i); hi.append(caret); if (i < B.sauda.length) setTimeout(tick, 45); else setTimeout(() => caret.remove(), 1600); }; tick(); }
+    if (REDUCE || store.get('briefDia', '') === new Date().toDateString()) hi.textContent = head;
+    else { store.set('briefDia', new Date().toDateString()); let i = 0; const caret = h('span', { class: 'caret' }); const tick = () => { if (!hi.isConnected) return; hi.textContent = head.slice(0, ++i); hi.append(caret); if (i < head.length) setTimeout(tick, 45); else setTimeout(() => caret.remove(), 1600); }; tick(); }
   },
 };
 VIEWS.inicio = root => {
   const sem = semana(), par = sem?.par, t = hebToday();
   const wrap = h('div', { class: 'portal' });
-  // capa
+  // capa (com a saudação logo em cima: a pessoa é acolhida assim que entra)
   const cv = h('canvas', { 'aria-hidden': 'true' });
+  const helloT = h('div', { class: 'cover-hi', role: 'heading', 'aria-level': '2' }), hello = h('div', { class: 'cover-hello' }, helloT, h('div', { class: 'cover-hi-s', text: 'Shalom! Que bom ter você aqui.' }));
+  { const txt = saudacao(), hoje = new Date().toDateString();
+    if (REDUCE || store.get('heroDia', '') === hoje) helloT.textContent = txt;
+    else { store.set('heroDia', hoje); let i = 0; const caret = h('span', { class: 'caret' }); const tick = () => { if (!helloT.isConnected && i) return; helloT.textContent = txt.slice(0, ++i); helloT.append(caret); if (i < txt.length) setTimeout(tick, 55); else setTimeout(() => caret.remove(), 1400); }; setTimeout(tick, 350); } }
   const face = h('div', { class: 'cover-face', role: 'img', 'aria-label': 'Capa interativa com as letras do alef-bet' }, cv, h('div', { class: 'glare' }),
     h('div', { class: 'cover-top' }, h('span', { class: 'cover-chip', text: 'Parashá da semana' }), h('span', { class: 'cover-chip', text: t ? t.label : 'calendário' })),
+    hello,
     h('div', { class: 'cover-copy' }, h('span', { class: 'cover-he', lang: 'he', dir: 'rtl', text: par?.he || 'בְּרֵאשִׁית' }), h('span', { class: 'cover-pt', text: par ? par.names.join('–') + ' · ' + parashaPt(par.names) : 'Bereshit · No princípio' }),
       par?.range ? h('span', { class: 'cover-meta', text: refLabel(par.range.start, true) + ' – ' + refLabel(par.range.end) }) : null,
       h('button', { class: 'cover-go', text: 'Ler a parashá ›', onclick: () => gotoVerse(par?.range?.start || vid(0, 1, 1)) })),
