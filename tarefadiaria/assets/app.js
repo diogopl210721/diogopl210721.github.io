@@ -111,7 +111,9 @@
     usuario: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     cadeado: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     caixa: '<path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>',
-    inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'
+    inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+    lixo: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>',
+    restaurar: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'
   };
   const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${P[n] || ''}</svg>`;
 
@@ -125,7 +127,8 @@
     consultores: [],
     listas: {
       abertas: { f: filtrosPadrao(), page: 1, size: 25, data: null },
-      concluidas: { f: filtrosPadrao(), page: 1, size: 25, data: null }
+      concluidas: { f: filtrosPadrao(), page: 1, size: 25, data: null },
+      lixeira: { f: filtrosPadrao(), page: 1, size: 25, data: null }
     },
     escopo: null,
     sel: new Set(),
@@ -189,14 +192,15 @@
     toast((e && e.message) || String(e), { err: true, ms: 5200 });
   }
   const dlg = () => $('#dlg');
-  function modal(html, { wide = false, locked = false } = {}) {
+  function modal(html, { wide = false, locked = false, foco = true } = {}) {
     const d = dlg();
     d.classList.toggle('wide', wide);
     d.dataset.locked = locked ? '1' : '';
     $('#dlg-body').innerHTML = html;
     if (!d.open) d.showModal();
-    const first = d.querySelector('input:not([type=hidden]):not([readonly]), textarea, select');
+    const first = foco && d.querySelector('input:not([type=hidden]):not([readonly]), textarea, select');
     if (first) setTimeout(() => first.focus(), 30);
+    else setTimeout(() => d.querySelector('.dlg-x')?.focus(), 30);
     return d;
   }
   function fecharModal() { const d = dlg(); d.dataset.locked = ''; if (d.open) d.close(); }
@@ -354,6 +358,7 @@
         <a href="#/concluidas" data-nav="concluidas">${ic('check')} Concluídas</a>
         <a href="#/relatorios" data-nav="relatorios">${ic('rel')} Relatórios</a>
         <a href="#/config" data-nav="config">${ic('config')} Configurações</a>
+        <a href="#/lixeira" data-nav="lixeira" class="nav-lixeira">${ic('lixo')} Lixeira <span class="cnt" id="cnt-lixeira" hidden></span></a>
       </nav>
       <div class="side-foot">Atrasada = aberta há mais de 5 dias corridos (120 h).<br>Horários de Brasília.</div>
     </aside>
@@ -376,6 +381,8 @@
     c.hidden = false; c.textContent = String(k.abertas); c.title = `${k.abertas} abertas`;
     const a = $('#cnt-atr');
     if (a) { a.hidden = !k.atrasadas; a.textContent = String(k.atrasadas); a.title = `${k.atrasadas} atrasadas (mais de 5 dias)`; }
+    const l = $('#cnt-lixeira');
+    if (l) { l.hidden = !k.lixeira; l.textContent = String(k.lixeira || 0); }
   }
   function menuPerfil(btn) {
     const ex = $('.menu-pop');
@@ -412,6 +419,7 @@
       if (path === '#/painel') { setNav('painel'); window.scrollTo(0, 0); return await viewPainel(); }
       if (path === '#/demandas') { setNav(q.get('novo') ? 'nova' : 'demandas'); return await viewLista('abertas', q); }
       if (path === '#/concluidas') { setNav('concluidas'); return await viewLista('concluidas', q); }
+      if (path === '#/lixeira') { setNav('lixeira'); return await viewLista('lixeira', q); }
       if ((m = path.match(/^#\/demanda\/([0-9a-f-]{36})$/i))) { setNav(''); window.scrollTo(0, 0); return await viewDemanda(m[1], q); }
       if (path === '#/clientes') { setNav('clientes'); window.scrollTo(0, 0); return await viewClientes(); }
       if ((m = path.match(/^#\/cliente\/([0-9a-f-]{36})$/i))) { setNav('clientes'); window.scrollTo(0, 0); return await viewCliente(m[1], q); }
@@ -519,7 +527,7 @@
     return `<div class="tblwrap"><table class="tbl responsive"><thead><tr><th>Cliente (Código)</th><th>Tipo / Registro</th><th>Situação atual</th><th>Atualização</th><th class="num">Dias</th><th>Status</th></tr></thead><tbody>
       ${rows.map(d => `<tr class="click${d.atrasada ? ' late' : ''}" data-go="#/demanda/${esc(d.id)}">
         <td class="full"><b>${esc(d.cliente)}</b> <span class="muted">(${esc(d.codigo)})</span></td>
-        <td><span class="tipo tipo-${esc(d.tipo)}">${esc(d.tipo)}</span> ${esc(d.numero_registro || '')}</td>
+        <td>${regsHTML(d)}</td>
         <td class="full">${esc(trunc(d.descricao_atual, 110))}</td>
         <td class="nowrap" data-l="Atualização">${esc(fDTs(d.atualizada_em))}</td>
         <td class="num" data-l="Dias"><b${d.atrasada ? ' style="color:var(--red)"' : ''}>${d.dias}</b></td>
@@ -527,6 +535,20 @@
       </tbody></table></div>`;
   }
   const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+  // Registros da demanda: OC (Salesforce) e/ou CI (TOTVS)
+  function regsHTML(d) {
+    const par = (t, num) => `<span class="regpar"><span class="tipo tipo-${t}">${t}</span>${num ? `<span class="reg">${esc(num)}</span>` : '<span class="reg vazio">s/ nº</span>'}</span>`;
+    return (d.tem_oc ? par('OC', d.numero_oc) : '') + (d.tem_ci ? par('CI', d.numero_ci) : '');
+  }
+  const regsTexto = d => [d.tem_oc ? `OC ${d.numero_oc || 's/ nº'}` : '', d.tem_ci ? `CI ${d.numero_ci || 's/ nº'}` : ''].filter(Boolean).join(' · ');
+  const ESCOPOS = {
+    abertas: { hash: '#/demandas', titulo: 'Demandas', sub: 'Todas as demandas em aberto. Escreva a atualização direto na linha.' },
+    concluidas: { hash: '#/concluidas', titulo: 'Concluídas', sub: 'Demandas encerradas. Para reabrir, troque o status.' },
+    lixeira: { hash: '#/lixeira', titulo: 'Lixeira', sub: 'Demandas excluídas. Restaure se precisar: o histórico volta junto.' }
+  };
+  // Converte data/hora local de Brasília (input datetime-local) em ISO e vice-versa
+  const paraInputLocal = iso => { const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso)).map(x => [x.type, x.value])); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; };
+  const deInputLocal = v => v ? `${v}:00-03:00` : '';
 
   // ------------------------------------------------------------------
   // Lista de demandas (planilha viva)
@@ -541,15 +563,14 @@
       if (chaves.some(k => q.has(k)) || q.get('f') === 'todas') { L.f = filtrosPadrao(); L.page = 1; }
       chaves.forEach(k => { if (q.has(k)) L.f[k] = q.get(k); });
       if (q.get('novo')) abrirNovo = q.get('novo');
-      history.replaceState(null, '', escopo === 'abertas' ? '#/demandas' : '#/concluidas');
+      history.replaceState(null, '', ESCOPOS[escopo].hash);
     }
     const ab = escopo === 'abertas';
     const v = view();
     v.innerHTML = `
-      ${head(ab ? 'Demandas' : 'Concluídas',
-        ab ? 'Todas as demandas em aberto. Escreva a atualização direto na linha.' : 'Demandas encerradas. Para reabrir, troque o status.',
+      ${head(ESCOPOS[escopo].titulo, ESCOPOS[escopo].sub,
         ab ? `<button class="btn primary" type="button" data-act="qa-abrir">${ic('mais')} Nova demanda</button>`
-           : `<a class="btn ghost" href="#/relatorios">${ic('impr')} Relatórios</a>`)}
+           : escopo === 'concluidas' ? `<a class="btn ghost" href="#/relatorios">${ic('impr')} Relatórios</a>` : `<a class="btn ghost" href="#/demandas">${ic('lista')} Voltar às demandas</a>`)}
       ${ab ? '<div class="chips" id="chips"></div>' : ''}
       ${ab ? qaHTML() : ''}
       ${ferramentasHTML(escopo)}
@@ -594,6 +615,7 @@
       chip('amber', 'status:Aguardando', k.aguardando, 'aguardando', f.status === 'Aguardando'),
       chip('', 'origem:Salesforce', k.oc_abertas, 'OC · Salesforce', f.origem === 'Salesforce'),
       chip('purple', 'origem:TOTVS', k.ci_abertas, 'CI · TOTVS', f.origem === 'TOTVS'),
+      k.oc_ci_abertas ? chip('purple', 'origem:ambos', k.oc_ci_abertas, 'OC + CI', f.origem === 'ambos') : '',
       k.sem_atualizacao ? chip('amber', 'atraso:sem_atualizacao', k.sem_atualizacao, 'sem atualização 5+ dias', f.atraso === 'sem_atualizacao') : ''
     ].join('');
   }
@@ -612,13 +634,17 @@
       </form>
       <div class="filters">
         ${ab ? `<label class="f"><span>Status</span><select data-filtro="status">${opt('', 'Todos', f.status)}${ABERTOS.map(s => opt(s, s, f.status)).join('')}</select></label>` : ''}
-        <label class="f"><span>Origem / Tipo</span><select data-filtro="origem">${opt('', 'Todos', f.origem)}${opt('Salesforce', 'Salesforce · OC', f.origem)}${opt('TOTVS', 'TOTVS · CI', f.origem)}</select></label>
+        <label class="f"><span>Origem / Tipo</span><select data-filtro="origem">${opcoesOrigem(f.origem)}</select></label>
         <label class="f f-consultor"><span>Consultor</span><select data-filtro="consultor">${opcoesConsultor(f.consultor, true)}</select></label>
         ${ab ? `<label class="f"><span>Mais de 5 dias</span><select data-filtro="atraso">${opt('', 'Todas', f.atraso)}${opt('atrasadas', 'Só atrasadas (+5 dias)', f.atraso)}${opt('no_prazo', 'Só no prazo', f.atraso)}${opt('sem_atualizacao', 'Sem atualização há 5+ dias', f.atraso)}</select></label>` : ''}
-        <label class="f f-ordem"><span>Ordenar</span><select data-filtro="ordem">${opt('prioridade', ab ? 'Prioridade' : 'Concluídas recentes', f.ordem)}${opt('recentes', 'Mais recentes', f.ordem)}${opt('atualizacao', 'Última atualização', f.ordem)}</select></label>
+        ${escopo !== 'lixeira' ? `<label class="f f-ordem"><span>Ordenar</span><select data-filtro="ordem">${opt('prioridade', ab ? 'Prioridade' : 'Concluídas recentes', f.ordem)}${opt('recentes', 'Mais recentes', f.ordem)}${opt('atualizacao', 'Última atualização', f.ordem)}</select></label>` : ''}
         <button class="btn ghost" type="button" data-act="limpar-filtros">Limpar</button>
       </div>
     </section>`;
+  }
+  function opcoesOrigem(cur) {
+    const opt = (val, txt) => `<option value="${esc(val)}"${val === cur ? ' selected' : ''}>${esc(txt)}</option>`;
+    return opt('', 'Todos') + opt('Salesforce', 'Com OC (Salesforce)') + opt('TOTVS', 'Com CI (TOTVS)') + opt('ambos', 'OC e CI juntos');
   }
   function sincronizarFiltros(escopo) {
     const f = S.listas[escopo].f;
@@ -647,16 +673,29 @@
     return `<div class="dm-head" role="row">
       <div><input type="checkbox" data-act="sel-todos" ${todos ? 'checked' : ''} aria-label="Selecionar todas desta página"></div>
       <div>Cliente</div><div>Tipo / Registro</div><div>Demanda · antes → agora</div>
-      <div>${escopo === 'abertas' ? 'Tempo' : 'Duração'}</div><div>Status</div><div style="text-align:right">Ações</div></div>`;
+      <div>${escopo === 'abertas' ? 'Tempo' : escopo === 'lixeira' ? 'Excluída' : 'Duração'}</div><div>Status</div><div style="text-align:right">Ações</div></div>`;
   }
 
   function linhaHTML(d) {
     const conc = d.status === 'Concluído';
+    const lixo = !!d.excluida_em;
     const tel = d.telefone ? fTel(d.telefone) : '';
     const wa = waUrl(d.telefone);
     const draft = S.drafts.get(d.id) || '';
     const venc = d.prazo_proxima_acao && d.prazo_proxima_acao < hojeISO() && !conc;
     const id = esc(d.id);
+    if (lixo) {
+      return `<article class="dm lixo" data-id="${id}">
+        <div class="dm-sel"><input type="checkbox" data-act="sel" data-id="${id}" ${S.sel.has(d.id) ? 'checked' : ''} aria-label="Selecionar ${esc(d.cliente)}"></div>
+        <div class="dm-cli"><div class="dm-cli-top"><span class="dot" data-st="${esc(d.status)}"></span><span class="dm-nome">${esc(d.cliente)}</span></div><div class="dm-sub">COD <b>${esc(d.codigo)}</b></div></div>
+        <div class="dm-reg">${regsHTML(d)}<div class="dm-sub">${esc(d.origem)} · ${esc(d.consultor)}</div></div>
+        <div class="dm-desc">${d.descricao_anterior ? `<p class="ant"><span class="lbl">Antes</span>${esc(d.descricao_anterior)}</p>` : ''}<p class="atu"><span class="lbl">Agora</span>${esc(d.descricao_atual)}</p></div>
+        <div class="dm-tempo"><span class="dias">${esc(fD(d.excluida_em))}</span><span class="dm-sub">por ${esc(d.excluida_por || '—')}</span></div>
+        <div class="dm-st"><span class="badge" data-st="${esc(d.status)}">${esc(d.status)}</span></div>
+        <div class="dm-acts"><button type="button" class="btn ghost sm" data-act="restaurar" data-id="${id}">${ic('restaurar')} Restaurar</button></div>
+        <div class="dm-hist" hidden></div>
+      </article>`;
+    }
     return `<article class="dm${d.atrasada ? ' late' : ''}" data-id="${id}">
       <div class="dm-sel"><input type="checkbox" data-act="sel" data-id="${id}" ${S.sel.has(d.id) ? 'checked' : ''} aria-label="Selecionar ${esc(d.cliente)}"></div>
       <div class="dm-cli">
@@ -664,7 +703,7 @@
         <div class="dm-sub">COD <b>${esc(d.codigo)}</b></div>
         ${d.contato || tel ? `<div class="dm-sub">${esc(d.contato || '')}${d.contato && tel ? ' · ' : ''}${tel ? `<a href="tel:+55${esc(telNac(d.telefone))}">${esc(tel)}</a>` : ''}</div>` : ''}
       </div>
-      <div class="dm-reg"><span class="tipo tipo-${esc(d.tipo)}">${esc(d.tipo)}</span>${d.numero_registro ? `<span class="reg">${esc(d.numero_registro)}</span>` : '<span class="reg vazio">s/ nº</span>'}
+      <div class="dm-reg">${regsHTML(d)}
         <div class="dm-sub">${esc(d.origem)} · ${esc(d.consultor)}</div></div>
       <div class="dm-desc">
         ${d.descricao_anterior ? `<p class="ant" title="${esc(d.descricao_anterior)}"><span class="lbl">Antes</span>${esc(d.descricao_anterior)}</p>` : ''}
@@ -674,6 +713,7 @@
           <textarea name="t" rows="1" maxlength="12000" enterkeyhint="send" placeholder="${conc ? 'Adicionar observação… (Enter salva)' : 'Escrever atualização… (Enter salva)'}" aria-label="Nova atualização para ${esc(d.cliente)}">${esc(draft)}</textarea>
           <button class="send" type="submit" title="Salvar atualização" aria-label="Salvar atualização" ${draft.trim() ? '' : 'disabled'}>${ic('enviar')}</button>
         </form>
+        <div class="dm-links"><button type="button" data-act="hist" data-id="${id}" aria-expanded="false">${ic('hist')} Histórico (${d.n_historico})</button><a href="#/demanda/${id}">${ic('olho')} Abrir página</a></div>
       </div>
       <div class="dm-tempo">
         ${conc
@@ -683,8 +723,8 @@
       <div class="dm-st"><select class="st" data-st="${esc(d.status)}" data-act="status" data-id="${id}" aria-label="Status de ${esc(d.cliente)}">${STATUS.map(s => `<option${s === d.status ? ' selected' : ''}>${s}</option>`).join('')}</select>${d.atrasada ? '<span class="badge late">Atrasada</span>' : ''}</div>
       <div class="dm-acts">
         ${wa ? `<a class="ib wa" href="${esc(wa)}" target="_blank" rel="noopener noreferrer" title="WhatsApp ${esc(d.contato || d.cliente)}" aria-label="Abrir WhatsApp">${ic('wa')}</a>` : `<span class="ib wa disabled" title="Sem telefone cadastrado">${ic('wa')}</span>`}
-        <button class="ib" type="button" data-act="hist" data-id="${id}" title="Ver histórico aqui" aria-expanded="false" aria-label="Histórico">${ic('hist')}<span class="n">${d.n_historico}</span></button>
-        <a class="ib" href="#/demanda/${id}" title="Abrir detalhes e editar" aria-label="Abrir detalhes">${ic('olho')}</a>
+        <button class="ib" type="button" data-act="editar" data-id="${id}" title="Editar a demanda inteira" aria-label="Editar demanda">${ic('lapis')}</button>
+        <button class="ib del" type="button" data-act="excluir" data-id="${id}" title="Excluir demanda (vai para a lixeira)" aria-label="Excluir demanda">${ic('lixo')}</button>
       </div>
       <div class="dm-hist" hidden></div>
     </article>`;
@@ -697,11 +737,13 @@
     const f = L.f;
     const comFiltro = ['q', 'status', 'origem', 'consultor', 'atraso'].some(k => f[k]);
     const ab = escopo === 'abertas';
-    $('#resinfo').innerHTML = `<span><b>${total}</b> ${ab ? (total === 1 ? 'demanda em aberto' : 'demandas em aberto') : (total === 1 ? 'demanda concluída' : 'demandas concluídas')}${comFiltro ? ' com os filtros atuais' : ''}</span>${ab ? '<span class="legend-late"><i></i> Vermelho = aberta há mais de 5 dias (120 h)</span>' : ''}`;
+    const rotulo = { abertas: ['demanda em aberto', 'demandas em aberto'], concluidas: ['demanda concluída', 'demandas concluídas'], lixeira: ['demanda na lixeira', 'demandas na lixeira'] }[escopo];
+    $('#resinfo').innerHTML = `<span><b>${total}</b> ${total === 1 ? rotulo[0] : rotulo[1]}${comFiltro ? ' com os filtros atuais' : ''}</span>${ab ? '<span class="legend-late"><i></i> Vermelho = aberta há mais de 5 dias (120 h)</span>' : ''}`;
     if (!linhas.length) {
       dl.innerHTML = comFiltro
         ? `<div class="empty">${ic('busca')}<b>Nada encontrado</b>Nenhuma demanda bate com a busca ou os filtros. <div style="margin-top:12px"><button class="btn ghost sm" data-act="limpar-filtros">Limpar filtros</button></div></div>`
         : ab ? `<div class="empty">${ic('inbox')}<b>Nenhuma demanda em aberto</b>Clique em “Nova demanda” para cadastrar a primeira.<div style="margin-top:12px"><button class="btn primary sm" data-act="qa-abrir">${ic('mais')} Nova demanda</button></div></div>`
+        : escopo === 'lixeira' ? `<div class="empty">${ic('lixo')}<b>A lixeira está vazia</b>Demandas excluídas aparecem aqui e podem ser restauradas.</div>`
              : `<div class="empty">${ic('check')}<b>Nenhuma demanda concluída ainda</b>Quando você marcar uma demanda como Concluído ela aparece aqui.</div>`;
       atualizarBulk();
       return;
@@ -801,24 +843,83 @@
     try { const r = await rpc('td_resumo'); S.resumo = r; atualizarContadores(r.kpis); renderChips(); } catch { /* silencioso */ }
   }
 
-  async function alternarHistorico(id, forcarAberto = false) {
+  async function alternarHistorico(id, forcarAberto = false, dados = null) {
     const el = linhaEl(id); if (!el) return;
     const box = el.querySelector('.dm-hist'), btn = el.querySelector('[data-act=hist]');
-    if (!box.hidden && !forcarAberto) { box.hidden = true; btn.setAttribute('aria-expanded', 'false'); return; }
-    box.hidden = false; btn.setAttribute('aria-expanded', 'true');
-    box.innerHTML = carregando('Carregando histórico…');
+    if (!box.hidden && !forcarAberto) { box.hidden = true; if (btn) btn.setAttribute('aria-expanded', 'false'); return; }
+    box.hidden = false; if (btn) btn.setAttribute('aria-expanded', 'true');
+    if (!dados) box.innerHTML = carregando('Carregando histórico…');
     try {
-      const r = await rpc('td_demanda', { p_id: id });
-      box.innerHTML = linhaDoTempo(r.historico) + `<p style="margin:0 0 10px"><a href="#/demanda/${esc(id)}">Abrir a página completa desta demanda →</a></p>`;
+      const r = dados || await rpc('td_demanda', { p_id: id });
+      box.innerHTML = linhaDoTempo(r.historico, r.n_excluidos, !r.demanda.excluida_em) + `<p style="margin:0 0 10px"><a href="#/demanda/${esc(id)}">Abrir a página completa desta demanda →</a></p>`;
     } catch (e) { box.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
   }
 
-  function linhaDoTempo(h) {
+  function linhaDoTempo(h, nExcluidos = 0, editavel = true) {
     if (!h || !h.length) return '<p class="muted">Sem registros.</p>';
     const k = { 'abertura': 'abertura', 'atualização': 'atualizacao', 'mudança de status': 'status', 'conclusão': 'conclusao', 'reabertura': 'reabertura', 'edição': 'edicao' };
-    return `<ol class="tl">${h.map(e => `<li class="k-${k[e.acao] || ''}"><span class="pt"></span>
-      <div class="meta"><b>${esc(fDT(e.registrado_em))}</b><span>${esc(e.autor)}</span><span class="kind">${esc(e.acao)}</span></div>
-      <div class="txt">${esc(e.descricao)}</div></li>`).join('')}</ol>`;
+    return `<ol class="tl">${h.map(e => `<li class="k-${k[e.acao] || ''}" data-hid="${esc(e.id)}"><span class="pt"></span>
+      <div class="meta"><b>${esc(fDT(e.registrado_em))}</b><span>${esc(e.autor)}</span><span class="kind">${esc(e.acao)}</span>
+        ${e.editado_em ? `<span class="editado" title="${esc(`Corrigido em ${fDT(e.editado_em)} por ${e.editado_por || '—'}. Texto original: ${e.descricao_original || ''}`)}">editado</span>` : ''}
+        ${editavel && (e.editavel || e.excluivel) ? `<span class="tl-acts">${e.editavel ? `<button type="button" data-act="hist-editar" data-hid="${esc(e.id)}" title="Corrigir o texto">${ic('lapis')} Corrigir</button>` : ''}${e.excluivel ? `<button type="button" data-act="hist-excluir" data-hid="${esc(e.id)}" title="Excluir esta atualização">${ic('lixo')} Excluir</button>` : ''}</span>` : ''}</div>
+      <div class="txt">${esc(e.descricao)}</div></li>`).join('')}</ol>
+      ${nExcluidos ? `<p class="muted" style="font-size:12px;margin:-6px 0 10px">${plural(nExcluidos, 'atualização excluída', 'atualizações excluídas')} (não aparece${nExcluidos === 1 ? '' : 'm'} aqui, mas continua${nExcluidos === 1 ? '' : 'm'} guardada${nExcluidos === 1 ? '' : 's'} no backup).</p>` : ''}`;
+  }
+
+  // Corrigir / excluir um registro do histórico (na lista ou na página da demanda)
+  function abrirEdicaoHistorico(btn) {
+    const li = btn.closest('li[data-hid]'); if (!li) return;
+    const txt = li.querySelector('.txt');
+    if (li.querySelector('.hist-form')) return;
+    const atual = txt.textContent;
+    txt.hidden = true;
+    txt.insertAdjacentHTML('afterend', `<form class="hist-form" data-hid="${esc(li.dataset.hid)}"><textarea name="t" rows="3" maxlength="12000">${esc(atual)}</textarea>
+      <div class="hist-form-a"><button type="button" class="btn ghost sm" data-act="hist-cancelar">Cancelar</button><button type="submit" class="btn primary sm">Salvar correção</button></div></form>`);
+    const ta = li.querySelector('.hist-form textarea'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+  async function aposMudarHistorico(r) {
+    const d = r.demanda;
+    if (S.det && S.det.demanda.id === d.id && $('#pane')) {
+      S.det = r; renderDemanda($('.tabs button.on')?.dataset.aba || 'historico');
+    } else if (linhaEl(d.id)) {
+      substituirLinha(d, true);
+      alternarHistorico(d.id, true, r);
+    }
+  }
+  async function salvarHistorico(form) {
+    const btn = form.querySelector('[type=submit]'); btn.disabled = true;
+    try {
+      const r = await rpc('td_editar_historico', { p_id: form.dataset.hid, p_texto: form.t.value });
+      await aposMudarHistorico(r);
+      toast('Texto corrigido. O original fica guardado.');
+    } catch (e) { erro(e); btn.disabled = false; }
+  }
+  async function excluirHistorico(hid) {
+    if (!(await confirmar({ titulo: 'Excluir esta atualização?', texto: 'Ela some do histórico e da lista. Se era a mais recente, a anterior volta a ser a descrição “Agora”.', ok: 'Excluir', perigo: true }))) return;
+    try {
+      const r = await rpc('td_excluir_historico', { p_id: hid });
+      await aposMudarHistorico(r);
+      toast('Atualização excluída.');
+    } catch (e) { erro(e); }
+  }
+
+  // Excluir demandas (lixeira) e restaurar
+  async function excluirDemandas(ids, { perguntar = true } = {}) {
+    if (!ids.length) return;
+    if (perguntar && !(await confirmar({
+      titulo: ids.length === 1 ? 'Excluir esta demanda?' : `Excluir ${ids.length} demandas?`,
+      texto: 'Ela vai para a Lixeira junto com o histórico. Dá para restaurar depois.', ok: 'Excluir', perigo: true }))) return false;
+    const r = await rpc('td_excluir_demandas', { p_ids: ids });
+    ids.forEach(id => S.sel.delete(id));
+    toast(r.n === 1 ? 'Demanda enviada para a lixeira.' : `${r.n} demandas enviadas para a lixeira.`, { action: 'Desfazer', onAction: () => restaurarDemandas(ids) });
+    return true;
+  }
+  async function restaurarDemandas(ids) {
+    try {
+      for (const id of ids) { await rpc('td_restaurar_demanda', { p_id: id }); S.sel.delete(id); }
+      toast(ids.length === 1 ? 'Demanda restaurada.' : `${ids.length} demandas restauradas.`);
+      if (S.escopo && $('#dl')) carregarLista(S.escopo); else route();
+    } catch (e) { erro(e); }
   }
 
   // Seleção em lote
@@ -827,8 +928,10 @@
     const n = S.sel.size;
     b.hidden = !n;
     if (n) b.innerHTML = `<b>${plural(n, 'demanda selecionada', 'demandas selecionadas')}</b>
+      ${S.escopo === 'lixeira' ? `<button type="button" class="btn ghost sm" data-act="bulk-restaurar">${ic('restaurar')} Restaurar</button>` : `
       <button type="button" class="btn ghost sm" data-act="bulk-print">${ic('impr')} Imprimir</button>
       <button type="button" class="btn ghost sm" data-act="bulk-csv">${ic('baixar')} Exportar CSV</button>
+      <button type="button" class="btn ghost sm" data-act="bulk-excluir">${ic('lixo')} Excluir</button>`}
       <button type="button" class="btn ghost sm" data-act="bulk-limpar">${ic('x')} Limpar seleção</button>`;
     const all = $('[data-act=sel-todos]');
     const ids = (S.listas[S.escopo]?.data?.linhas || []).map(d => d.id);
@@ -848,7 +951,7 @@
     const sh = document.createElement('div'); sh.className = 'sheet-mob'; sh.id = 'sheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-label', 'Filtros');
     sh.innerHTML = `<div class="dlg-h" style="margin:0"><h3>Filtros</h3><button type="button" class="dlg-x" data-act="sheet-fechar" aria-label="Fechar">${ic('x')}</button></div>
       ${ab ? `<label class="f"><span>Status</span><select name="status">${opt('', 'Todos', f.status)}${ABERTOS.map(s => opt(s, s, f.status)).join('')}</select></label>` : ''}
-      <div class="row2"><label class="f"><span>Origem / Tipo</span><select name="origem">${opt('', 'Todos', f.origem)}${opt('Salesforce', 'Salesforce · OC', f.origem)}${opt('TOTVS', 'TOTVS · CI', f.origem)}</select></label>
+      <div class="row2"><label class="f"><span>Origem / Tipo</span><select name="origem">${opcoesOrigem(f.origem)}</select></label>
       <label class="f"><span>Consultor</span><select name="consultor">${opcoesConsultor(f.consultor, true)}</select></label></div>
       <label class="f"><span>Ordenar</span><select name="ordem">${opt('prioridade', ab ? 'Prioridade (atrasadas primeiro)' : 'Concluídas mais recentes', f.ordem)}${opt('recentes', 'Abertas mais recentes', f.ordem)}${opt('atualizacao', 'Última atualização', f.ordem)}</select></label>
       ${ab ? `<label class="switch">Mais de 5 dias apenas <input type="checkbox" name="atrasadas" ${f.atraso === 'atrasadas' ? 'checked' : ''}></label>
@@ -885,19 +988,33 @@
           <label class="f f-nome s4"><span>Cliente <span class="req">*</span></span><input name="nome" maxlength="180"></label>
           <label class="f s3"><span>Contato / Nome</span><input name="contato" maxlength="120"></label>
           <label class="f s3"><span>Telefone / WhatsApp</span><input name="telefone" type="tel" inputmode="tel" maxlength="16" placeholder="(41) 99999-9999" data-mask="tel"></label>
-          <div class="f f-origem s4"><span>Origem <span class="req">*</span></span>
-            <div class="seg" role="radiogroup" aria-label="Origem">
-              <label><input type="radio" name="origem" value="Salesforce" checked><span>Salesforce <b>OC</b></span></label>
-              <label><input type="radio" name="origem" value="TOTVS"><span>TOTVS <b>CI</b></span></label></div></div>
-          <label class="f s3"><span>Nº do registro</span><div class="pre"><b id="qa-tipo">OC</b><input name="numero_registro" maxlength="60" placeholder="ex.: 5938372"></div></label>
+          <div class="qa-info s12" id="qa-info" hidden></div>
+          <div class="f f-origem s4"><span>Origem <span class="req">*</span> <em class="muted">· marque uma ou as duas</em></span>${origensSeg(true, false)}</div>
+          <label class="f f-num s2"><span>Nº da OC</span><div class="pre"><b>OC</b><input name="numero_oc" maxlength="60" placeholder="ex.: 5938372"></div></label>
+          <label class="f f-num s2 off"><span>Nº da CI</span><div class="pre"><b>CI</b><input name="numero_ci" maxlength="60" placeholder="ex.: 0389439048" disabled></div></label>
           <label class="f s2"><span>Status inicial</span><select name="status">${ABERTOS.map(s => `<option>${s}</option>`).join('')}</select></label>
-          <label class="f s3"><span>Consultor</span><select name="consultor">${opcoesConsultor(S.user ? S.user.nome : '')}</select></label>
+          <label class="f s2"><span>Consultor</span><select name="consultor">${opcoesConsultor(S.user ? S.user.nome : '')}</select></label>
           <label class="f s12"><span>Descrição da demanda <span class="req">*</span></span><textarea name="descricao" rows="2" maxlength="12000" placeholder="O que o cliente pediu e qual é a situação agora"></textarea></label>
         </div>
         <div class="qa-f"><span class="muted" id="qa-quando"></span>
           <button type="button" class="btn ghost" data-act="qa-fechar">Cancelar</button>
           <button type="submit" class="btn primary">${ic('mais')} Salvar demanda</button></div>
       </form></section>`;
+  }
+  // Origem: Salesforce (OC) e/ou TOTVS (CI) — caixas de marcar
+  function origensSeg(oc, ci) {
+    return `<div class="seg multi" role="group" aria-label="Origem">
+      <label><input type="checkbox" name="tem_oc" ${oc ? 'checked' : ''}><span>Salesforce <b>OC</b></span></label>
+      <label><input type="checkbox" name="tem_ci" ${ci ? 'checked' : ''}><span>TOTVS <b>CI</b></span></label></div>`;
+  }
+  function sincronizarOrigens(form, foco = '') {
+    ['oc', 'ci'].forEach(t => {
+      const cb = form.querySelector(`[name=tem_${t}]`), inp = form.querySelector(`[name=numero_${t}]`);
+      if (!cb || !inp) return;
+      inp.disabled = !cb.checked;
+      inp.closest('.f, .pre')?.classList.toggle('off', !cb.checked);
+      if (cb.checked && foco === t) inp.focus();
+    });
   }
   function abrirQA(codigo = '') {
     const qa = $('#qa'); if (!qa) return;
@@ -912,8 +1029,18 @@
     const qa = $('#qa'); if (!qa) return;
     qa.hidden = true;
     const f = $('#qa-form'); f.reset(); f.nome.readOnly = false;
-    $('#qa-hint').textContent = ''; $('#qa-hint').className = 'hint'; $('#qa-tipo').textContent = 'OC';
+    $('#qa-hint').textContent = ''; $('#qa-hint').className = 'hint';
+    $('#qa-info').hidden = true; sincronizarOrigens(f);
     qaCliente = null; qaAuto = { contato: '', telefone: '' };
+  }
+  function qaInfoCliente(c) {
+    const box = $('#qa-info'); if (!box) return;
+    const ds = (c && c.demandas_abertas) || [];
+    if (!ds.length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.innerHTML = `<b>${esc(c.nome)}</b> já tem ${plural(ds.length, 'demanda aberta', 'demandas abertas')}:
+      ${ds.map(d => `<button type="button" class="qa-dem" data-act="editar" data-id="${esc(d.id)}" title="${esc(d.descricao_atual)}">${esc(regsTexto(d))} · ${esc(d.status)} ${ic('lapis')}</button>`).join('')}
+      <span class="muted">Se o novo OC/CI é do mesmo assunto, clique na demanda e marque a outra origem nela. Se é outro assunto, continue aqui para abrir uma demanda nova.</span>`;
   }
   async function qaBuscarCodigo() {
     const f = $('#qa-form'); if (!f) return;
@@ -934,10 +1061,12 @@
         trocaAuto('telefone', c.telefone ? fTel(c.telefone) : '');
         hint.className = 'hint ok';
         hint.textContent = `✓ Já cadastrado · ${plural(c.abertas, 'aberta', 'abertas')}`;
+        qaInfoCliente(c);
       } else {
         if (qaCliente) { f.nome.value = ''; trocaAuto('contato', ''); trocaAuto('telefone', ''); }
         qaCliente = null; f.nome.readOnly = false;
         hint.className = 'hint new'; hint.textContent = 'Cliente novo: preencha o nome.';
+        qaInfoCliente(null);
       }
     } catch (e) { if (seq === qaSeq) { hint.className = 'hint'; hint.textContent = ''; } erro(e); }
   }
@@ -945,8 +1074,10 @@
     const p = Object.fromEntries(new FormData(form));
     p.codigo = (p.codigo || '').trim(); p.nome = (p.nome || '').trim(); p.descricao = (p.descricao || '').trim();
     const falha = (msg, campo) => { toast(msg, { err: true }); if (campo) form[campo].focus(); };
+    p.tem_oc = form.tem_oc.checked; p.tem_ci = form.tem_ci.checked;
     if (!p.codigo) return falha('Informe o código do cliente.', 'codigo');
     if (!p.nome) return falha('Informe o nome do cliente.', 'nome');
+    if (!p.tem_oc && !p.tem_ci) return falha('Marque a origem: Salesforce (OC), TOTVS (CI) ou as duas.');
     if (p.telefone && !telValido(p.telefone)) return falha('Telefone inválido. Use DDD + número.', 'telefone');
     if (p.descricao.length < 3) return falha('Descreva a demanda.', 'descricao');
     p.confirmar_cliente = confirmarCliente;
@@ -983,24 +1114,28 @@
     const { demanda: d, cliente: c, historico: h } = S.det;
     const wa = waUrl(d.telefone);
     const conc = d.status === 'Concluído';
+    const lixo = !!d.excluida_em;
     const tab = (k, t) => `<button type="button" role="tab" data-act="det-aba" data-aba="${k}" class="${aba === k ? 'on' : ''}" aria-selected="${aba === k}">${esc(t)}</button>`;
+    const volta = lixo ? ['#/lixeira', 'Lixeira'] : conc ? ['#/concluidas', 'Concluídas'] : ['#/demandas', 'Demandas'];
     view().innerHTML = `
-      <a class="back" href="${conc ? '#/concluidas' : '#/demandas'}">${ic('esq')} Voltar para ${conc ? 'Concluídas' : 'Demandas'}</a>
+      <a class="back" href="${volta[0]}">${ic('esq')} Voltar para ${volta[1]}</a>
+      ${lixo ? `<div class="aviso-lixo">${ic('lixo')}<span>Esta demanda está na <b>lixeira</b> (excluída em ${esc(fDT(d.excluida_em))} por ${esc(d.excluida_por || '—')}).</span><button type="button" class="btn primary sm" data-act="restaurar" data-id="${esc(d.id)}">${ic('restaurar')} Restaurar</button></div>` : ''}
       <section class="card">
         <div class="det-head">
           <div><h2>${esc(d.cliente)} <small>(${esc(d.codigo)})</small></h2>
-            <div class="det-tags"><span class="tipo tipo-${esc(d.tipo)}">${esc(d.tipo)}</span>${d.numero_registro ? `<span class="reg">${esc(d.numero_registro)}</span>` : ''}
+            <div class="det-tags">${regsHTML(d)}
               <span class="badge" data-st="${esc(d.status)}">${esc(d.status)}</span>
               ${d.atrasada ? `<span class="badge late">Atrasada · ${plural(d.dias, 'dia')}</span>` : ''}
               ${d.sem_atualizacao ? '<span class="badge soft">Sem atualização há 5+ dias</span>' : ''}</div></div>
           <div class="det-actions">
             ${wa ? `<a class="btn green" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">${ic('wa')} WhatsApp</a>` : ''}
-            <a class="btn ghost" href="#/cliente/${esc(c.id)}">${ic('clientes')} Ver cliente</a></div>
+            <a class="btn ghost" href="#/cliente/${esc(c.id)}">${ic('clientes')} Ver cliente</a>
+            ${lixo ? '' : `<button type="button" class="btn danger" data-act="excluir" data-id="${esc(d.id)}">${ic('lixo')} Excluir</button>`}</div>
         </div>
-        <div class="mobile-cta">${wa ? `<a class="btn green lg" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">${ic('wa')} Abrir WhatsApp</a>` : `<a class="btn ghost lg" href="#/cliente/${esc(c.id)}">${ic('clientes')} Cliente</a>`}
-          <button type="button" class="btn primary lg" data-act="ir-atualizar">${ic('lapis')} Atualizar</button></div>
-        <div class="tabs" role="tablist">${tab('geral', 'Visão Geral')}${tab('historico', `Histórico (${h.length})`)}${tab('editar', 'Editar')}</div>
-        <div class="tabpane" id="pane">${aba === 'geral' ? paneGeral(d) : aba === 'editar' ? paneEditar(d) : paneHistorico(d, h)}</div>
+        ${lixo ? '' : `<div class="mobile-cta">${wa ? `<a class="btn green lg" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">${ic('wa')} Abrir WhatsApp</a>` : `<a class="btn ghost lg" href="#/cliente/${esc(c.id)}">${ic('clientes')} Cliente</a>`}
+          <button type="button" class="btn primary lg" data-act="ir-atualizar">${ic('lapis')} Atualizar</button></div>`}
+        <div class="tabs" role="tablist">${tab('geral', 'Visão Geral')}${tab('historico', `Histórico (${h.length})`)}${lixo ? '' : tab('editar', 'Editar tudo')}</div>
+        <div class="tabpane" id="pane">${aba === 'geral' ? paneGeral(d) : (aba === 'editar' && !lixo) ? formEdicaoHTML(d, 'pagina') : paneHistorico(d, h, S.det.n_excluidos)}</div>
       </section>`;
   }
   function formAtualizar(d) {
@@ -1010,35 +1145,104 @@
         <button class="btn primary" type="submit">${ic('enviar')} Salvar atualização</button></div>
     </form>`;
   }
-  function paneHistorico(d, h) { return linhaDoTempo(h) + formAtualizar(d); }
+  function paneHistorico(d, h, nExc = 0) { return linhaDoTempo(h, nExc, !d.excluida_em) + (d.excluida_em ? '' : formAtualizar(d)); }
   function paneGeral(d) {
     const item = (rot, val) => `<div><small>${esc(rot)}</small><b>${val}</b></div>`;
     const tel = d.telefone ? esc(fTel(d.telefone)) : '—';
     return `<div class="kv">
-        ${item('Consultor', esc(d.consultor))}${item('Origem', `${esc(d.origem)} · ${esc(d.tipo)}`)}${item('Nº do registro', esc(d.numero_registro || '—'))}
+        ${item('Consultor', esc(d.consultor))}${item('Origem', esc(d.origem))}${item('Registros', esc(regsTexto(d)))}
         ${item('Contato', esc(d.contato || '—'))}${item('Telefone', tel)}${item('Dias em aberto', `${d.dias}${d.atrasada ? ' <span class="badge late">Atrasada</span>' : ''}`)}
         ${item('Abertura', esc(fDT(d.aberta_em)))}${item('Última atualização', `${esc(fDT(d.atualizada_em))} <span class="muted">(${esc(relTempo(d.atualizada_em))})</span>`)}${item(d.concluida_em ? 'Concluída em' : 'Próxima ação', d.concluida_em ? esc(fDT(d.concluida_em)) : esc(d.proxima_acao ? d.proxima_acao + (d.prazo_proxima_acao ? ` · até ${fData(d.prazo_proxima_acao)}` : '') : '—'))}
       </div>
       ${d.descricao_anterior ? `<div class="descbox ant"><small>Descrição anterior</small>${esc(d.descricao_anterior)}</div>` : ''}
       <div class="descbox atu"><small>Descrição atual</small>${esc(d.descricao_atual)}</div>
-      ${formAtualizar(d)}`;
+      ${d.excluida_em ? '' : formAtualizar(d)}`;
   }
-  function paneEditar(d) {
-    return `<form id="det-edit" data-id="${esc(d.id)}" novalidate>
+  // Formulário de edição completa (usado no modal da lista e na aba "Editar tudo")
+  function formEdicaoHTML(d, ctx) {
+    return `<form class="edit-form" data-id="${esc(d.id)}" data-ctx="${ctx}" novalidate>
       <div class="formgrid">
-        <label class="f"><span>Consultor</span><select name="consultor">${opcoesConsultor(d.consultor)}</select></label>
-        <div class="f"><span>Origem</span><div class="seg" role="radiogroup" aria-label="Origem">
-          <label><input type="radio" name="origem" value="Salesforce" ${d.origem === 'Salesforce' ? 'checked' : ''}><span>Salesforce <b>OC</b></span></label>
-          <label><input type="radio" name="origem" value="TOTVS" ${d.origem === 'TOTVS' ? 'checked' : ''}><span>TOTVS <b>CI</b></span></label></div></div>
-        <label class="f"><span>Nº do registro</span><input name="numero_registro" maxlength="60" value="${esc(d.numero_registro || '')}"></label>
-        <label class="f"><span>Contato desta demanda</span><input name="contato" maxlength="120" value="${esc(d.contato || '')}"></label>
+        <label class="f"><span>Código do cliente</span><input name="codigo" maxlength="40" value="${esc(d.codigo)}" autocapitalize="characters"></label>
+        <label class="f g2"><span>Cliente</span><input name="nome" maxlength="180" value="${esc(d.cliente)}"></label>
+        <p class="nota wide">Trocar o <b>código</b> passa a demanda para outro cliente (ou cria um novo). Mudar só o <b>nome</b> corrige o cadastro do cliente.</p>
+        <label class="f"><span>Contato</span><input name="contato" maxlength="120" value="${esc(d.contato || '')}"></label>
         <label class="f"><span>Telefone / WhatsApp</span><input name="telefone" type="tel" inputmode="tel" maxlength="16" data-mask="tel" value="${esc(d.telefone ? fTel(d.telefone) : '')}"></label>
+        <label class="f"><span>Consultor</span><select name="consultor">${opcoesConsultor(d.consultor)}</select></label>
+        <div class="f wide"><span>Origem · marque uma ou as duas</span>
+          <div class="origens">${origensSeg(d.tem_oc, d.tem_ci)}
+            <label class="f f-num${d.tem_oc ? '' : ' off'}"><span class="sr">Nº da OC</span><div class="pre"><b>OC</b><input name="numero_oc" maxlength="60" placeholder="Nº da OC" value="${esc(d.numero_oc || '')}" ${d.tem_oc ? '' : 'disabled'}></div></label>
+            <label class="f f-num${d.tem_ci ? '' : ' off'}"><span class="sr">Nº da CI</span><div class="pre"><b>CI</b><input name="numero_ci" maxlength="60" placeholder="Nº da CI" value="${esc(d.numero_ci || '')}" ${d.tem_ci ? '' : 'disabled'}></div></label>
+          </div></div>
+        <label class="f"><span>Status</span><select name="status">${STATUS.map(s => `<option${s === d.status ? ' selected' : ''}>${s}</option>`).join('')}</select></label>
+        <label class="f"><span>Data e hora de abertura</span><input name="aberta_em" type="datetime-local" value="${esc(paraInputLocal(d.aberta_em))}" max="${esc(paraInputLocal(new Date()))}"></label>
         <label class="f"><span>Prazo da próxima ação</span><input name="prazo_proxima_acao" type="date" value="${esc(d.prazo_proxima_acao || '')}"></label>
         <label class="f wide"><span>Próxima ação</span><input name="proxima_acao" maxlength="600" value="${esc(d.proxima_acao || '')}" placeholder="Ex.: ligar para o cliente e confirmar documentação"></label>
+        <label class="f wide"><span>Descrição atual (“Agora”)</span><textarea name="descricao_atual" rows="3" maxlength="12000">${esc(d.descricao_atual)}</textarea>
+          <small class="hint">Corrige o texto da última atualização (o original fica guardado). Para registrar algo novo, escreva na caixa de atualização da lista.</small></label>
       </div>
-      <p class="muted" style="margin:14px 0 0;font-size:12.5px">Toda alteração fica registrada no histórico. Para mudar a descrição, escreva uma nova atualização. Para mudar o nome ou o código do cliente, vá em <a href="#/cliente/${esc(d.cliente_id)}?aba=dados">Dados do cliente</a>.</p>
-      <div class="form-actions"><button type="button" class="btn ghost" data-act="det-aba" data-aba="historico">Cancelar</button><button type="submit" class="btn primary">Salvar alterações</button></div>
+      <div class="form-actions spread">
+        <button type="button" class="btn danger" data-act="excluir" data-id="${esc(d.id)}">${ic('lixo')} Excluir demanda</button>
+        <span class="grow"></span>
+        <button type="button" class="btn ghost" data-act="${ctx === 'modal' ? 'dlg-fechar' : 'det-aba'}" data-aba="historico">Cancelar</button>
+        <button type="submit" class="btn primary">Salvar alterações</button></div>
     </form>`;
+  }
+  async function abrirEdicao(id) {
+    let r;
+    try { r = await rpc('td_demanda', { p_id: id }); } catch (e) { erro(e); return; }
+    const d = r.demanda;
+    if (d.excluida_em) { toast('Esta demanda está na lixeira. Restaure para editar.', { err: true }); return; }
+    modal(`<div class="dlg-h"><div><h2>Editar demanda</h2><p>${esc(d.cliente)} (${esc(d.codigo)}) · ${esc(regsTexto(d))} · aberta em ${esc(fDT(d.aberta_em))}</p></div>${xBtn()}</div>${formEdicaoHTML(d, 'modal')}`, { wide: true, foco: false });
+  }
+  async function salvarEdicao(form, confirmarCliente = false) {
+    const id = form.dataset.id, ctx = form.dataset.ctx;
+    const g = n => form.elements[n];
+    const p = {
+      codigo: g('codigo').value.trim(), nome: g('nome').value.trim(), contato: g('contato').value, telefone: g('telefone').value,
+      consultor: g('consultor').value, tem_oc: g('tem_oc').checked, tem_ci: g('tem_ci').checked,
+      numero_oc: g('numero_oc').value, numero_ci: g('numero_ci').value, status: g('status').value,
+      aberta_em: deInputLocal(g('aberta_em').value), prazo_proxima_acao: g('prazo_proxima_acao').value,
+      proxima_acao: g('proxima_acao').value, descricao_atual: g('descricao_atual').value, confirmar_cliente: confirmarCliente
+    };
+    const falha = (m, n) => { toast(m, { err: true }); if (n) g(n).focus(); };
+    if (!p.codigo) return falha('Informe o código do cliente.', 'codigo');
+    if (!p.nome) return falha('Informe o nome do cliente.', 'nome');
+    if (!p.tem_oc && !p.tem_ci) return falha('Marque pelo menos uma origem: Salesforce (OC) ou TOTVS (CI).');
+    if (p.telefone && !telValido(p.telefone)) return falha('Telefone inválido. Use DDD + número.', 'telefone');
+    if (p.descricao_atual.trim().length < 3) return falha('A descrição precisa de pelo menos 3 caracteres.', 'descricao_atual');
+    if (!g('aberta_em').value) delete p.aberta_em;
+    const btn = form.querySelector('[type=submit]'); btn.disabled = true;
+    try {
+      const r = await rpc('td_editar_demanda', { p_id: id, p });
+      if (!r.ok && r.conflito) {
+        const ok = await confirmar({ titulo: 'Este código já existe', texto: `${r.erro} Quer passar a demanda para esse cliente? O nome cadastrado dele será mantido.`, ok: `Passar para “${trunc(r.cliente.nome, 36)}”`, cancelar: 'Voltar' });
+        if (ok) {
+          // o modal foi trocado pela confirmação: reabre a edição já com o novo código aplicado
+          const r2 = await rpc('td_editar_demanda', { p_id: id, p: { ...p, confirmar_cliente: true } });
+          return aposEditar(r2, ctx);
+        }
+        if (ctx === 'modal') abrirEdicao(id);
+        return;
+      }
+      if (!r.ok) throw new Error(r.erro || 'Não foi possível salvar.');
+      await aposEditar(r, ctx);
+    } catch (e) { erro(e); } finally { if (btn.isConnected) btn.disabled = false; }
+  }
+  async function aposEditar(r, ctx) {
+    const d = r.demanda;
+    toast(r.sem_mudancas ? 'Nada mudou.' : 'Demanda atualizada. As mudanças ficaram registradas no histórico.');
+    if (ctx === 'modal') fecharModal();
+    if (S.det && S.det.demanda.id === d.id && $('#pane')) {
+      S.det = await rpc('td_demanda', { p_id: d.id });
+      renderDemanda(r.sem_mudancas ? 'editar' : 'historico');
+      return;
+    }
+    if ($('#dl') && S.escopo) {
+      const fora = (S.escopo === 'abertas' && d.status === 'Concluído') || (S.escopo === 'concluidas' && d.status !== 'Concluído');
+      if (fora || !linhaEl(d.id)) carregarLista(S.escopo); else { substituirLinha(d, true); if (S.escopo === 'abertas') atualizarResumoSilencioso(); }
+      return;
+    }
+    if ($('#qa-form') || $('.cli-head')) route();
   }
   async function detSalvarAtualizacao(form) {
     const id = form.dataset.id, txt = form.t.value.trim(), st = form.status.value;
@@ -1051,18 +1255,6 @@
       const aba = $('.tabs button.on')?.dataset.aba || 'historico';
       renderDemanda(aba);
       toast(st === 'Concluído' && txt === '' ? 'Demanda concluída.' : 'Atualização salva no histórico.');
-    } catch (e) { erro(e); } finally { if (btn.isConnected) btn.disabled = false; }
-  }
-  async function detSalvarEdicao(form) {
-    const id = form.dataset.id;
-    const p = Object.fromEntries(new FormData(form));
-    if (p.telefone && !telValido(p.telefone)) { toast('Telefone inválido. Use DDD + número.', { err: true }); form.telefone.focus(); return; }
-    const btn = form.querySelector('[type=submit]'); btn.disabled = true;
-    try {
-      const r = await rpc('td_editar_demanda', { p_id: id, p });
-      S.det = await rpc('td_demanda', { p_id: id });
-      renderDemanda(r.sem_mudancas ? 'editar' : 'historico');
-      toast(r.sem_mudancas ? 'Nada mudou.' : 'Alterações salvas e registradas no histórico.');
     } catch (e) { erro(e); } finally { if (btn.isConnected) btn.disabled = false; }
   }
 
@@ -1147,12 +1339,13 @@
     const tab = (k, t) => `<button type="button" role="tab" data-act="cli-aba" data-aba="${k}" class="${aba === k ? 'on' : ''}" aria-selected="${aba === k}">${esc(t)}</button>`;
     let pane = '';
     if (aba === 'demandas') {
-      pane = ds.length ? `<div class="tblwrap"><table class="tbl responsive"><thead><tr><th>Tipo</th><th>Registro</th><th>Situação</th><th>Abertura</th><th class="num">Dias</th><th>Status</th></tr></thead><tbody>
+      pane = ds.length ? `<div class="tblwrap"><table class="tbl responsive"><thead><tr><th>OC / CI</th><th>Situação</th><th>Abertura</th><th class="num">Dias</th><th>Status</th><th></th></tr></thead><tbody>
         ${ds.map(d => `<tr class="click${d.atrasada ? ' late' : ''}" data-go="#/demanda/${esc(d.id)}">
-          <td><span class="tipo tipo-${esc(d.tipo)}">${esc(d.tipo)}</span></td><td data-l="Registro">${esc(d.numero_registro || '—')}</td>
+          <td class="nowrap">${regsHTML(d)}</td>
           <td class="full">${esc(trunc(d.descricao_atual, 120))}</td><td data-l="Abertura" class="nowrap">${esc(fD(d.aberta_em))}</td>
           <td class="num" data-l="Dias">${d.atrasada ? `<b style="color:var(--red)">${d.dias}</b>` : d.dias}</td>
-          <td><span class="badge" data-st="${esc(d.status)}">${esc(d.status)}</span></td></tr>`).join('')}</tbody></table></div>`
+          <td><span class="badge" data-st="${esc(d.status)}">${esc(d.status)}</span></td>
+          <td class="nowrap" style="text-align:right"><button type="button" class="ib" data-act="editar" data-id="${esc(d.id)}" title="Editar" aria-label="Editar">${ic('lapis')}</button> <button type="button" class="ib del" data-act="excluir" data-id="${esc(d.id)}" title="Excluir" aria-label="Excluir">${ic('lixo')}</button></td></tr>`).join('')}</tbody></table></div>`
         : `<div class="empty">${ic('inbox')}<b>Nenhuma demanda para este cliente</b></div>`;
       pane += `<div class="form-actions" style="justify-content:center"><a class="btn primary" href="#/demandas?novo=${encodeURIComponent(c.codigo)}">${ic('mais')} Nova demanda para este cliente</a></div>`;
     } else if (aba === 'dados') {
@@ -1199,19 +1392,19 @@
     const prev = $('#rel-prev'); if (prev) prev.innerHTML = relatorioHTML(r.linhas, 'resumido');
   }
   function relatorioHTML(rows, modo = 'resumido', titulo = 'Relatório de demandas em aberto') {
-    const k = { ab: rows.length, oc: rows.filter(d => d.tipo === 'OC').length, ci: rows.filter(d => d.tipo === 'CI').length, at: rows.filter(d => d.atrasada).length };
+    const k = { ab: rows.length, oc: rows.filter(d => d.tem_oc).length, ci: rows.filter(d => d.tem_ci).length, at: rows.filter(d => d.atrasada).length };
     const det = modo === 'detalhado';
     const cols = det
       ? [['Cliente (Código)', 15], ['Tipo / Reg.', 8], ['Consultor', 8], ['Abertura', 7], ['Descrição anterior', 19], ['Situação atual', 21], ['Próxima ação', 10], ['Dias', 4], ['Status', 8]]
       : [['Cliente (Código)', 21], ['Tipo / Reg.', 11], ['Consultor', 10], ['Situação atual', 32], ['Atualização', 11], ['Dias', 5], ['Status', 10]];
     const cel = d => det ? [
       `<b>${esc(d.cliente)}</b> (${esc(d.codigo)})${d.contato || d.telefone ? `<br><span style="color:#5b6b80">${esc(d.contato || '')} ${esc(d.telefone ? fTel(d.telefone) : '')}</span>` : ''}`,
-      `${esc(d.tipo)}/${esc(d.numero_registro || '—')}<br><span style="color:#5b6b80">${esc(d.origem)}</span>`,
+      `${esc(regsTexto(d))}<br><span style="color:#5b6b80">${esc(d.origem)}</span>`,
       esc(d.consultor), esc(fD(d.aberta_em)), esc(d.descricao_anterior || '—'), esc(d.descricao_atual),
       esc(d.proxima_acao ? d.proxima_acao + (d.prazo_proxima_acao ? ` (até ${fData(d.prazo_proxima_acao)})` : '') : '—'),
       `<b>${d.dias}</b>`, `<span class="badge" data-st="${esc(d.status)}">${esc(d.status)}</span>`
     ] : [
-      `<b>${esc(d.cliente)}</b><br>(${esc(d.codigo)})`, `${esc(d.tipo)}/${esc(d.numero_registro || '—')}`, esc(d.consultor),
+      `<b>${esc(d.cliente)}</b><br>(${esc(d.codigo)})`, esc(regsTexto(d)).replace(' · ', '<br>'), esc(d.consultor),
       esc(d.descricao_atual), esc(fDTs(d.atualizada_em)), `<b>${d.dias}</b>`, `<span class="badge" data-st="${esc(d.status)}">${esc(d.status)}</span>`
     ];
     return `<div class="sheet">
@@ -1233,14 +1426,14 @@
   // evento pode chegar antes da impressão terminar de montar as páginas.
 
   function exportarCSV(rows, nome) {
-    const cab = ['Data abertura', 'Consultor', 'COD', 'Cliente', 'Contato / Nome', 'Telefone', 'Origem', 'Tipo', 'Nº Registro',
+    const cab = ['Data abertura', 'Consultor', 'COD', 'Cliente', 'Contato / Nome', 'Telefone', 'Origem', 'Tipo', 'Nº OC (Salesforce)', 'Nº CI (TOTVS)',
       'Demanda/Descrição (Anterior)', 'Demanda/Descrição (Atualizada)', 'Última atualização', 'Status', 'Dias em aberto', 'Atrasada (>5 dias)',
       'Próxima ação', 'Prazo próxima ação', 'Concluída em'];
     const texto = v => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
     const numTexto = v => { const s = String(v ?? ''); return /^\d+$/.test(s) ? `="${s}"` : texto(s); };
     const linhas = rows.map(d => [
       texto(fDT(d.aberta_em)), texto(d.consultor), numTexto(d.codigo), texto(d.cliente), texto(d.contato), texto(d.telefone ? fTel(d.telefone) : ''),
-      texto(d.origem), texto(d.tipo), numTexto(d.numero_registro), texto(d.descricao_anterior), texto(d.descricao_atual), texto(fDT(d.atualizada_em)),
+      texto(d.origem), texto(d.tipo), d.tem_oc ? numTexto(d.numero_oc) : texto(''), d.tem_ci ? numTexto(d.numero_ci) : texto(''), texto(d.descricao_anterior), texto(d.descricao_atual), texto(fDT(d.atualizada_em)),
       texto(d.status), texto(d.dias), texto(d.atrasada ? 'Sim' : 'Não'), texto(d.proxima_acao), texto(d.prazo_proxima_acao ? fData(d.prazo_proxima_acao) : ''),
       texto(d.concluida_em ? fDT(d.concluida_em) : '')
     ].join(';'));
@@ -1356,6 +1549,26 @@
         case 'bulk-limpar': S.sel.clear(); $$('.dm [data-act=sel]').forEach(c => { c.checked = false; }); atualizarBulk(); break;
         case 'bulk-print': { const rows = await linhasSelecionadas(); imprimir(rows, 'resumido', 'Relatório de demandas selecionadas'); break; }
         case 'bulk-csv': { const rows = await linhasSelecionadas(); exportarCSV(rows, `tarefa-diaria-selecionadas-${carimbo()}.csv`); break; }
+        case 'bulk-excluir': { if (await excluirDemandas([...S.sel])) carregarLista(S.escopo); break; }
+        case 'bulk-restaurar': restaurarDemandas([...S.sel]); break;
+        // editar / excluir / restaurar
+        case 'editar': fecharMenuPerfil(); abrirEdicao(el.dataset.id); break;
+        case 'excluir': {
+          const id = el.dataset.id;
+          const naPagina = S.det && S.det.demanda.id === id && $('#pane');
+          if (!(await excluirDemandas([id]))) break;
+          if (naPagina) { location.hash = '#/demandas'; break; }
+          if ($('#dl') && S.escopo) {
+            const row = linhaEl(id);
+            if (row) { row.classList.add('saindo'); await sleep(400); }
+            carregarLista(S.escopo);
+          } else if ($('.cli-head')) route();
+          break;
+        }
+        case 'restaurar': restaurarDemandas([el.dataset.id]); break;
+        case 'hist-editar': abrirEdicaoHistorico(el); break;
+        case 'hist-cancelar': { const li = el.closest('li[data-hid]'); li.querySelector('.hist-form').remove(); li.querySelector('.txt').hidden = false; break; }
+        case 'hist-excluir': excluirHistorico(el.dataset.hid); break;
         // detalhe
         case 'det-aba': renderDemanda(el.dataset.aba); break;
         case 'ir-atualizar': { renderDemanda('historico'); const f = $('#det-upd'); if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => f.t.focus({ preventScroll: true }), 300); } break; }
@@ -1390,6 +1603,8 @@
     const f = e.target;
     const id = f.id;
     if (f.classList.contains('dm-write')) { e.preventDefault(); return salvarLinha(f); }
+    if (f.classList.contains('edit-form')) { e.preventDefault(); return salvarEdicao(f); }
+    if (f.classList.contains('hist-form')) { e.preventDefault(); return salvarHistorico(f); }
     const map = {
       'login-form': () => entrar(f),
       'pin-form': () => salvarPin(f),
@@ -1397,7 +1612,6 @@
       'busca-form': () => { const L = S.listas[S.escopo]; clearTimeout(buscaT); L.f.q = $('#busca').value.trim(); L.page = 1; $('#busca').blur(); carregarLista(S.escopo, { manterScroll: false }); },
       'cli-busca-form': () => { clearTimeout(cliBuscaT); S.cli.q = $('#cli-busca').value.trim(); S.cli.page = 1; carregarClientes(); },
       'det-upd': () => detSalvarAtualizacao(f),
-      'det-edit': () => detSalvarEdicao(f),
       'cli-novo-form': () => salvarCliente(f),
       'cli-edit': () => salvarCliente(f),
       'cli-obs': () => { const c = S.cliDet.cliente; return salvarCliente(f, { id: c.id, codigo: c.codigo, nome: c.nome }); },
@@ -1444,7 +1658,7 @@
     if (t.matches('select.st[data-act=status]')) return mudarStatus(t);
     if (t.matches('[data-filtro]') && t.tagName === 'SELECT') return aplicarFiltro(S.escopo, t.dataset.filtro, t.value);
     if (t.matches('[data-act=pag-size]')) { const L = S.listas[S.escopo]; L.size = Number(t.value); L.page = 1; carregarLista(S.escopo, { manterScroll: false }); return; }
-    if (t.form && (t.form.id === 'qa-form' || t.form.id === 'det-edit') && t.name === 'origem') { const b = $('#qa-tipo'); if (b && t.form.id === 'qa-form') b.textContent = TIPO[t.value]; }
+    if (t.form && (t.name === 'tem_oc' || t.name === 'tem_ci')) { sincronizarOrigens(t.form, t.checked ? t.name.slice(4) : ''); return; }
     if (t.form && t.form.id === 'qa-form' && t.name === 'codigo') { clearTimeout(qaT); qaBuscarCodigo(); }
   });
 

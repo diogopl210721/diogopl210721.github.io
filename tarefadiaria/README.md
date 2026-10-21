@@ -19,10 +19,12 @@ Sistema de gestão de demandas publicado em **https://www.ddsinovacao.com.br/tar
 
 | Regra | Como ficou |
 |---|---|
-| Origem × tipo | Salesforce → sempre **OC**; TOTVS → sempre **CI** (garantido também no banco) |
+| Origem × tipo | Salesforce = **OC**, TOTVS = **CI**. A mesma demanda pode ter **as duas** (cada uma com seu número) |
 | Atrasada | aberta há **mais de 120 horas** (5 dias corridos), independente de atualizações |
 | Parada | aviso separado: mais de 120 h sem nenhuma atualização |
-| Histórico | append-only (trigger impede UPDATE/DELETE). Abertura, atualização, mudança de status, conclusão, reabertura e edição |
+| Histórico | nada é apagado do banco. O texto de abertura/atualizações pode ser corrigido (o original fica em `descricao_original`) e atualizações podem ser marcadas como excluídas |
+| Excluir demanda | vai para a **Lixeira** (recuperável, com o histórico). Restaurar devolve tudo |
+| Editar tudo | cliente (troca pelo código ou corrige o nome), contato, telefone, consultor, OC/CI, status, data/hora de abertura, descrição atual, próxima ação — cada mudança vira um evento “edição” no histórico |
 | Antes / Agora | ao salvar uma atualização, a descrição atual vira “anterior” e o texto novo vira “atual”, na mesma transação |
 | Concluído | sai da lista de abertas e vai para Concluídas; trocar o status reabre sem perder histórico |
 | Clientes | identificados pelo código (normalizado: sem espaços, maiúsculo). O mesmo cliente pode ter N demandas. Mudanças de nome/código/contato/telefone ficam em auditoria |
@@ -39,7 +41,9 @@ tarefadiaria/
 │   ├── app.js       aplicação
 │   └── config.js    URL + chave publicável do Supabase
 ├── supabase/
-│   └── migrations/001_tarefa_diaria.sql   estrutura completa (tabelas, gatilhos, funções, permissões)
+│   └── migrations/
+│       ├── 001_tarefa_diaria.sql            estrutura inicial (tabelas, gatilhos, funções, permissões)
+│       └── 002_oc_ci_lixeira_edicao.sql     OC+CI na mesma demanda, lixeira, edição completa e do histórico
 └── README.md
 ```
 
@@ -54,7 +58,9 @@ tarefadiaria/
 | `td_demanda(p_id)` | demanda + cliente + histórico completo |
 | `td_criar_demanda(p)` | cria cliente (se novo) + demanda + evento de abertura; avisa conflito de código |
 | `td_registrar(p_id, p_texto, p_status)` | atualização e/ou mudança de status (com conclusão/reabertura) |
-| `td_editar_demanda(p_id, p)` | consultor, origem, registro, contato, telefone, próxima ação (registra “edição”) |
+| `td_editar_demanda(p_id, p)` | edição completa: código/nome do cliente, contato, telefone, consultor, `tem_oc`/`numero_oc`, `tem_ci`/`numero_ci`, status, `aberta_em`, `descricao_atual`, próxima ação |
+| `td_editar_historico(p_id, p_texto)` / `td_excluir_historico(p_id)` | corrigir ou excluir uma atualização |
+| `td_excluir_demandas(p_ids jsonb)` / `td_restaurar_demanda(p_id)` | lixeira |
 | `td_clientes_listar`, `td_cliente`, `td_cliente_por_codigo`, `td_salvar_cliente` | clientes |
 | `td_consultores_listar`, `td_salvar_consultor` | lista de consultores |
 | `td_usuarios_listar`, `td_salvar_usuario`, `td_backup` | administração (só admin) |
