@@ -764,7 +764,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
 .et-ia-b{position:relative;width:64px;height:6px;border-radius:9px;background:#1b2b45;overflow:hidden}.et-ia-b i{position:absolute;inset:0 auto 0 0;border-radius:9px;background:linear-gradient(90deg,#3be3f0,#7ff6ff)}
 .et-ia.alto .et-ia-b i{background:linear-gradient(90deg,#f2b648,#ff9a3c)}.et-ia.fim .et-ia-b i{background:#e5484d}.et-ia.fim{border-color:#e5484d88}
 .et-ia-n{font-family:var(--f-mono,monospace);font-weight:500}
-.et-ia.nr-ia{position:absolute;z-index:3;top:calc(52px + env(safe-area-inset-top,0px));left:calc(12px + env(safe-area-inset-left,0px))}
+.et-ia.nr-ia{position:absolute;z-index:3;top:calc(14px + env(safe-area-inset-top,0px));left:calc(12px + env(safe-area-inset-left,0px))}
 .inv .et-ia{margin-top:10px}
 
 </style>
@@ -2500,7 +2500,7 @@ function drawHud(V, time) {
   const fz = px => `${px / k}px`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = '#E9FDFF'; ctx.font = `700 ${fz(V.interactive ? 15 : 12)} "IBM Plex Mono", ui-monospace, monospace`;
-  ctx.fillText(V.book >= 0 ? S.books[V.book].a.toUpperCase() : V.convo ? ({ idle: 'BINAH', listening: 'OUVINDO', thinking: 'PENSANDO', speaking: 'FALANDO' }[HUDFX.mode] || 'BINAH') : 'BINAH', cx, cy - 0.035 * s);
+  ctx.fillText(V.book >= 0 ? S.books[V.book].a.toUpperCase() : V.convo ? ({ idle: 'BINAH', listening: 'ATENTO', thinking: 'PENSANDO', speaking: 'RESPONDENDO' }[HUDFX.mode] || 'BINAH') : 'BINAH', cx, cy - 0.035 * s);
   ctx.fillStyle = '#9FE9F0'; ctx.font = `500 ${fz(V.interactive ? 11.5 : 10)} "IBM Plex Mono", ui-monospace, monospace`;
   const nb = V.book >= 0 ? V.nodes.filter(d => (d.n.refs || []).some(r => split(r)[0] === V.book)).length : V.nodes.length;
   ctx.fillText(fmt(nb) + ' nós', cx, cy + 0.045 * s);
@@ -3668,7 +3668,7 @@ const HUDFX = {
   setMode(m) {
     this.mode = m;
     const o = $('#orb'); if (o) { o.classList.remove('m-listening', 'm-thinking', 'm-speaking'); if (m !== 'idle') o.classList.add('m-' + m); }
-    const st = $('#binahState'); if (st) { st.classList.remove('m-idle', 'm-listening', 'm-thinking', 'm-speaking'); st.classList.add('m-' + m); st.lastChild.textContent = { idle: 'PRONTO', listening: 'OUVINDO', thinking: 'PENSANDO', speaking: 'FALANDO' }[m]; }
+    const st = $('#binahState'); if (st) { st.classList.remove('m-idle', 'm-listening', 'm-thinking', 'm-speaking'); st.classList.add('m-' + m); st.lastChild.textContent = { idle: 'PRONTO', listening: 'ATENTO', thinking: 'PENSANDO', speaking: 'RESPONDENDO' }[m]; }
   },
 };
 function hudEnv(age, dur) { const a = Math.min(1, age / 180), b = Math.min(1, (dur - age) / (dur * 0.35)); return Math.max(0, Math.min(a, b)); }
@@ -3758,14 +3758,14 @@ function falavel(t) {
     .replace(/[֐-׿Ͱ-Ͽἀ-῿]+/g, '').replace(/\(\s*[,;·]?\s*\)/g, '').replace(/\s+([,.;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
 }
 const VOZ = {
-  ok: 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window,
+  ok: false, // voz desligada: o Binah conversa só por escrito (sem leitura em voz alta nem microfone)
   on: store.get('voz', true), voice: null, pend: 0, busy: false, unlocked: false, onDone: null, sub: null,
-  pick() { if (!this.ok) return; const vs = speechSynthesis.getVoices(); const pt = vs.filter(v => /^pt/i.test(v.lang)), br = pt.filter(v => /BR/i.test(v.lang)), pool = br.length ? br : pt; this.voice = pool.find(v => /Antonio|Felipe|Daniel|Donato|Fabio|Humberto|Julio|Nicolau|Valerio|Ricardo|Thiago/i.test(v.name)) || pool.find(v => /Google|Luciana|Francisca|Thalita|Natural|Online/i.test(v.name)) || pool[0] || null; },
+  pick() { if (!this.ok) return; const vs = speechSynthesis.getVoices(); const pt = vs.filter(v => /^pt/i.test(v.lang)), br = pt.filter(v => /BR/i.test(v.lang)), pool = br.length ? br : pt; this.voice = pool.find(v => /Google|Luciana|Francisca|Thalita|Felipe|Natural|Online/i.test(v.name)) || pool[0] || null; },
   unlock() { if (!this.ok || this.unlocked) return; try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'pt-BR'; speechSynthesis.speak(u); this.unlocked = true; } catch {} },
   say(sentence) {
     if (!this.ok) return; const txt = falavel(sentence); if (!txt || !/[\p{L}\d]/u.test(txt)) return;
     if (!this.voice) this.pick();
-    const u = new SpeechSynthesisUtterance(txt); u.lang = this.voice?.lang || 'pt-BR'; if (this.voice) u.voice = this.voice; u.rate = 1.02; u.pitch = 0.88;
+    const u = new SpeechSynthesisUtterance(txt); u.lang = this.voice?.lang || 'pt-BR'; if (this.voice) u.voice = this.voice; u.rate = 1.04; u.pitch = 0.95;
     u.onstart = () => { this.busy = true; this.started = true; HUDFX.setMode('speaking'); HUDFX.bump(1); if (this.sub) { this.sub.hidden = false; this.sub.textContent = txt; } };
     u.onboundary = () => HUDFX.bump(0.9 + Math.random() * 0.3);
     const end = () => { this.pend = Math.max(0, this.pend - 1); if (!this.pend && this.streamDone) this.finish(); };
@@ -3788,7 +3788,7 @@ function binahLog(txt) {
 function binahInstr() {
   const t = hebToday(), sem = semana(), bk = S.books[S.book];
   const nV = [...S.brain.values()].filter(n => n.status === 'verificado').length, nR = [...S.brain.values()].filter(n => n.status === 'rascunho').length;
-  return `Você é Binah (בִּינָה, "entendimento"), o Segundo Cérebro de estudo bíblico de ${ETN()}, dentro do app Escola da Torá. Você fala como um assistente pessoal de voz, no estilo do JARVIS: cordial, direto e preciso, em português do Brasil, com frases curtas que soam bem em voz alta.
+  return `Você é Binah (בִּינָה, "entendimento"), o Segundo Cérebro de estudo bíblico de ${ETN()}, dentro do app Escola da Torá. Você responde por escrito, como um assistente pessoal no estilo do JARVIS: cordial, direto e preciso, em português do Brasil, com frases curtas e claras.
 
 REGRAS:
 1. Use as ferramentas para verificar o texto, o original, as conexões, os lugares, as jornadas e o cérebro de ${ETN()} antes de afirmar algo sobre eles.
@@ -3855,13 +3855,12 @@ async function askBinah(q, ui) {
     const tools = binahTools(); if (tools.length && S.sampleTools) opts.tools = tools; else opts.cache = false;
     const res = await S.sample(msgs, opts);
     const text = res.text || ''; bub.set(text, true); BINAH.hist.push({ role: 'assistant', content: text });
-    if (CONVERSA.on) VOZ.onDone = () => CONVERSA.continuar();
     VOZ.streamDone = true; feed(text, true); if (!voice || !VOZ.pend) { HUDFX.setMode('idle'); VOZ.finish(); } else setTimeout(() => { if (!VOZ.started && VOZ.pend) VOZ.stop(); }, 3500);
     const vids = citedVids(text).slice(0, 8); vids.forEach((v, i) => HUDFX.emit({ type: 'verse', vid: v }, 300 + i * 450));
     if (vids.length) binahLog(vids.length + (vids.length === 1 ? ' versículo citado' : ' versículos citados'));
     bub.actions(q, text, vids);
   } catch (e) {
-    CONVERSA.parar(); BINAH.hist.pop(); VOZ.stop(); HUDFX.setMode('idle');
+    BINAH.hist.pop(); VOZ.stop(); HUDFX.setMode('idle');
     const msg = e?.et && e?.message ? e.message : e?.code === 'no_sample' ? 'A conversa usa o Claude dentro desta página e não está disponível nesta visualização. Abra o app pelo claude.ai.'
       : e?.code === 'cancelled' ? (e.text ? null : 'Parei.')
       : (e?.code === 'not_granted' || e?.code === 'sampling_disabled' || e?.code === 'not_declared') ? 'O uso do Claude não foi liberado nesta página. Libere em Permissões do artefato e tente de novo.'
@@ -3889,7 +3888,7 @@ function openBinahFS() {
       const ta = h('textarea', { id: 'binahQ', rows: 1, placeholder: 'Pergunte ao Binah…', 'aria-label': 'Mensagem para o Binah' });
       const mic = h('button', { class: 'mic', 'aria-label': 'Ditar com a voz', title: 'Ditar', html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>' });
       const go = h('button', { class: 'send', 'aria-label': 'Enviar', html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h13M13 6l6 6-6 6"/></svg>' });
-      const chat = h('div', { class: 'binah-chat' }, list, sugs, h('div', { class: 'bc-comp' }, mic, ta, go));
+      const chat = h('div', { class: 'binah-chat' }, list, sugs, h('div', { class: 'bc-comp' }, ta, go));
       stage.append(h('div', { class: 'binah' }, hud, chat));
       VOZ.sub = sub;
       const scroll = () => { list.scrollTop = list.scrollHeight; };
@@ -3927,7 +3926,6 @@ function openBinahFS() {
       ta.addEventListener('focus', () => { if (!BINAH.busy && !VOZ.busy) HUDFX.setMode('listening'); });
       ta.addEventListener('blur', () => { if (!BINAH.busy && HUDFX.mode === 'listening') HUDFX.setMode('idle'); });
       mic.onclick = () => {
-        if (window.ESCUTA?.ok) { if (!ESCUTA.rec) VOZ.stop(); ESCUTA.toggle(mic, ta, () => go.click(), t => list.append(h('div', { class: 'bm tip', text: t }))); return; }
         ta.focus();
         if (!BINAH.tipShown) { BINAH.tipShown = true; list.append(h('div', { class: 'bm tip', text: 'Para falar, toque no microfone do teclado do celular e dite a pergunta: eu vou ouvindo enquanto você fala. O microfone direto fica bloqueado dentro do app do Claude; na versão no escoladatora.com.br ele funciona sem o teclado.' })); scroll(); }
       };
@@ -4117,19 +4115,19 @@ const NEURO = {
     const histBtn = h('button', { type: 'button', class: 'nr-ib', 'aria-label': 'Conversa completa', title: 'Conversa', html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 4z"/></svg>' });
     const mic = h('button', { type: 'button', class: 'nr-ib', 'aria-label': 'Ditar com a voz', title: 'Ditar', html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>' });
     const go = h('button', { type: 'submit', class: 'nr-go', 'aria-label': 'Enviar', html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h13M13 6l6 6-6 6"/></svg>' });
-    const bar = h('form', { class: 'nr-bar' }, histBtn, mic, inp, go);
+    const bar = h('form', { class: 'nr-bar' }, histBtn, inp, go);
     const hist = h('aside', { class: 'nr-hist', hidden: true, 'aria-label': 'Conversa com o Binah' });
     const close = h('button', { type: 'button', class: 'iconbtn nr-x', 'aria-label': 'Fechar o cérebro', html: XSVG });
     const vozBtn = VOZ.ok ? h('button', { type: 'button', class: 'nr-voz', 'aria-pressed': String(VOZ.on), text: VOZ.on ? 'Voz ligada' : 'Voz desligada' }) : null;
     const scrim = h('div', { class: 'nr-scrim' });
     const el = h('div', { class: 'neuro', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Segundo Cérebro' }, scrim, stage, card, sub, bar, close, vozBtn, window.ET ? ET.medidor('nr-ia') : null, hist);
     document.body.append(el);
-    Object.assign(this, { el, cv, stage, card, sub, inp, hist, scrim, bar, go, mic });
+    Object.assign(this, { el, cv, stage, card, sub, inp, hist, scrim, bar, go });
     scrim.addEventListener('click', () => this.close());
     close.onclick = () => this.close();
     if (vozBtn) vozBtn.onclick = () => { VOZ.on = !VOZ.on; store.set('voz', VOZ.on); vozBtn.setAttribute('aria-pressed', String(VOZ.on)); vozBtn.textContent = VOZ.on ? 'Voz ligada' : 'Voz desligada'; if (!VOZ.on) VOZ.stop(); else VOZ.unlock(); };
     histBtn.onclick = () => { hist.hidden = !hist.hidden; if (!hist.hidden) this.renderHist(); };
-    mic.onclick = () => { if (window.ESCUTA?.ok) { if (ESCUTA.rec) { CONVERSA.parar(); this.say('Pausei. Toque no microfone quando quiser falar.', true); HUDFX.setMode('idle'); return; } VOZ.stop(); VOZ.unlock(); CONVERSA.on = true; CONVERSA.vazios = 0; CONVERSA.ouvir(this, false); return; } inp.focus(); if (!BINAH.tipShown) { BINAH.tipShown = true; this.say('Este navegador não deixa usar o microfone direto. Toque no microfone do teclado do celular e dite.', true); } };
+    mic.onclick = () => { inp.focus(); if (!BINAH.tipShown) { BINAH.tipShown = true; this.say('Para falar, toque no microfone do teclado do celular e dite. O microfone direto fica bloqueado dentro do app do Claude.', true); } };
     bar.onsubmit = e => { e.preventDefault(); if (BINAH.busy) { BINAH.abort?.abort(); return; } const q = inp.value.trim(); if (!q) { inp.focus(); return; } inp.value = ''; this.card.hidden = true; askBinah(q, this.ui()); };
     inp.addEventListener('input', () => { if (!BINAH.busy) { if (HUDFX.mode !== 'listening') HUDFX.setMode('listening'); HUDFX.bump(0.7 + Math.random() * 0.3); } });
     inp.addEventListener('focus', () => { if (!BINAH.busy && !VOZ.busy) HUDFX.setMode('listening'); });
@@ -4171,11 +4169,10 @@ const NEURO = {
     if (opts.verse) setTimeout(() => { if (this.isOpen) this.showVerse(opts.verse); }, 420);
     HUDFX.setMode('idle');
     if (opts.focus || FINE) setTimeout(() => this.inp.focus(), 500);
-    if (!opts.focus && !opts.verse) CONVERSA.abrir(this);
   },
   close() {
     if (!this.isOpen) return; this.isOpen = false;
-    CONVERSA.parar(); BINAH.abort?.abort(); VOZ.stop(); HUDFX.setMode('idle');
+    BINAH.abort?.abort(); VOZ.stop(); HUDFX.setMode('idle');
     const o = this.origin || { ox: this.D / 2, oy: this.D / 2, r: 20 };
     this.el.classList.remove('on'); this.stage.style.clipPath = `circle(${o.r}px at ${o.ox}px ${o.oy}px)`;
     this.card.hidden = true; this.hist.hidden = true;
@@ -4797,47 +4794,6 @@ function renderLib() {
       h('span', { class: 'es-card-m' }, h('span', { class: 'chip st-' + E.status, text: E.status }), h('span', { class: 'muted', text: (E.secoes || []).length + ' seções · ' + kids + ' descobertas' }))));
   });
 }
-
-/* ================= conversa por voz (estilo JARVIS) ================= */
-const CONVERSA = {
-  on: false, saudou: false, vazios: 0,
-  fala() {
-    const hr = new Date().getHours(), p = hr >= 5 && hr < 12 ? 'Bom dia' : hr >= 12 && hr < 18 ? 'Boa tarde' : 'Boa noite';
-    let par = ''; try { const sem = semana(); if (sem?.par) par = ' Esta semana é a parashá ' + parashaPt(sem.par.names) + '.'; } catch {}
-    return `${p}, ${ETN()}.${par} O que vamos estudar hoje?`;
-  },
-  abrir(n) {
-    if (this.saudou || !VOZ.ok || !VOZ.on || BINAH.hist.length) return;
-    this.saudou = true; this.vazios = 0; this.on = !!window.ESCUTA?.ok; VOZ.unlock();
-    const f = this.fala();
-    setTimeout(() => { if (!n.isOpen) return; n.say(f); VOZ.sayAll(f, () => this.continuar()); }, 750);
-  },
-  continuar() { if (!this.on || !NEURO.isOpen || BINAH.busy) return; setTimeout(() => { if (this.on && NEURO.isOpen && !BINAH.busy && !VOZ.busy) this.ouvir(NEURO); }, 300); },
-  ouvir(n, auto = true) {
-    if (!window.ESCUTA?.ok || ESCUTA.rec) return;
-    this.auto = auto;
-    HUDFX.setMode('listening'); n.say('Pode falar, estou ouvindo…', true);
-    const ok = ESCUTA.toggle(n.mic, n.inp, () => this.enviar(n), t => n.say(t, true), { vazio: m => this.vazio(n, m) });
-    if (!ok) { this.on = false; HUDFX.setMode('idle'); n.say('Toque no microfone para falar comigo.', true); }
-  },
-  enviar(n) {
-    const q = n.inp.value.trim();
-    if (/^(tchau|até (logo|mais|amanhã)|pode parar|para de ouvir|encerrar|obrigad[oa],? (binah,? )?(é só|por hoje|por enquanto)|boa noite,? binah)/i.test(q)) {
-      n.inp.value = ''; this.on = false; HUDFX.setMode('idle');
-      const f = 'Até logo, ' + ETN() + '. Quando quiser, é só me chamar.'; n.say(f); VOZ.sayAll(f); return;
-    }
-    this.vazios = 0;
-    if (n.bar.requestSubmit) n.bar.requestSubmit(); else n.bar.dispatchEvent(new Event('submit', { cancelable: true }));
-  },
-  vazio(n, motivo) {
-    HUDFX.setMode('idle');
-    if (motivo === 'bloqueado' && this.auto) { this.on = false; n.say('Toque no microfone para falar comigo.', true); return; }
-    if (motivo === 'bloqueado') { this.on = false; n.say('O microfone está bloqueado. Toque nele de novo; se não funcionar, libere o microfone para este site nas configurações do navegador.', true); return; }
-    if (++this.vazios >= 2 || !this.on) { this.on = false; this.vazios = 0; n.say('Fiquei em silêncio. Toque no microfone quando quiser falar.', true); return; }
-    setTimeout(() => { if (this.on && n.isOpen) this.ouvir(n); }, 300);
-  },
-  parar() { this.on = false; this.vazios = 0; if (window.ESCUTA?.rec) ESCUTA.stop(); },
-};
 
 /* ================= boot ================= */
 async function boot() {
