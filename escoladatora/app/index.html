@@ -1069,17 +1069,55 @@ html.et-locked,html.et-locked body{overflow:hidden}
 
   /* ---------------- Claude pela função et-claude ---------------- */
   const FN = ET.url + '/functions/v1/et-claude';
-  async function chamar(body, signal) {
+  // A resposta chega aos poucos (linhas JSON) com sinal de vida: respostas longas não caem no celular.
+  // Se a conexão cair mesmo assim (tela apagou, app em segundo plano, internet oscilou), tenta de novo sozinho.
+  const REDE = () => ({ code: 'rede', et: true, message: 'A conexão com a IA caiu (a tela apagou, o app foi para segundo plano ou a internet oscilou). Tente de novo.' });
+  const espera = ms => new Promise(r => setTimeout(r, ms));
+  const quandoVisivel = () => !document.hidden ? null : new Promise(r => {
+    const f = () => { if (!document.hidden) { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f); setTimeout(() => { document.removeEventListener('visibilitychange', f); r(); }, 120000);
+  });
+  const anota = j => { if (j && j.usados != null) { ET.usados = j.usados; ET.limite = j.limite; ET.contaUI(); } };
+  async function chamarUma(body, signal, onTexto) {
     const { data } = await sb.auth.getSession();
     const tok = data.session?.access_token;
     if (!tok) throw { code: 'sessao', et: true, message: 'Sua sessão expirou. Entre de novo.' };
     let r;
-    try { r = await fetch(FN, { method: 'POST', signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok, apikey: ET.key }, body: JSON.stringify(body) }); }
-    catch (e) { if (e?.name === 'AbortError') throw { code: 'cancelled' }; throw { code: 'rede', et: true, message: 'Sem conexão com a IA agora. Verifique a internet.' }; }
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw { code: r.status === 429 ? 'rate_limited' : (j.code || 'erro'), et: true, message: j.error || 'A IA não respondeu agora. Tente de novo.' };
-    if (j.usados != null) { ET.usados = j.usados; ET.limite = j.limite; ET.contaUI(); }
-    return j;
+    try { r = await fetch(FN, { method: 'POST', signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok, apikey: ET.key }, body: JSON.stringify({ ...body, stream: true }) }); }
+    catch (e) { if (e?.name === 'AbortError' || signal?.aborted) throw { code: 'cancelled' }; throw REDE(); }
+    const ct = r.headers.get('content-type') || '';
+    if (!r.ok || !ct.includes('ndjson') || !r.body) {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw { code: r.status === 429 ? 'rate_limited' : (j.code || 'erro'), et: true, message: j.error || 'A IA não respondeu agora. Tente de novo.' };
+      anota(j); return j;
+    }
+    const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '', txt = '', fim = null;
+    try {
+      for (;;) {
+        const { value, done } = await rd.read(); if (done) break;
+        buf += dec.decode(value, { stream: true }); let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const ln = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (!ln) continue;
+          let o; try { o = JSON.parse(ln); } catch { continue; }
+          if (o.t) { txt += o.t; try { onTexto?.(txt); } catch {} }
+          else if (o.fim) fim = o.fim;
+          else if (o.erro) throw { code: o.code || 'erro', et: true, message: o.erro, srv: true };
+        }
+      }
+    } catch (e) { if (e?.srv) throw e; if (e?.name === 'AbortError' || signal?.aborted) throw { code: 'cancelled' }; throw REDE(); }
+    if (!fim) throw REDE();
+    anota(fim); return fim;
+  }
+  async function chamar(body, signal, onTexto) {
+    for (let tent = 0; ; tent++) {
+      try { return await chamarUma(body, signal, onTexto); }
+      catch (e) {
+        if (!(e?.code === 'rede' || e?.code === 'ocupada') || tent >= 2 || signal?.aborted) throw e;
+        const v = quandoVisivel(); if (v) await v;
+        await espera(tent ? 4000 : 1500);
+        if (signal?.aborted) throw { code: 'cancelled' };
+      }
+    }
   }
   const normMsgs = input => typeof input === 'string' ? [{ role: 'user', content: input }]
     : (input || []).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
@@ -1087,15 +1125,16 @@ html.et-locked,html.et-locked body{overflow:hidden}
     const msgs = normMsgs(input);
     const tools = Array.isArray(opts.tools) ? opts.tools : [];
     const apiTools = tools.map(t => ({ name: t.name, description: t.description || '', input_schema: t.inputSchema || t.input_schema || { type: 'object', properties: {} } }));
-    let text = '';
+    let text = '', antes = '';
+    const junta = t => opts._json ? t : (antes && t ? antes + '\n\n' + t : antes || t);
     for (let volta = 0; volta < 10; volta++) {
       if (opts.signal?.aborted) throw { code: 'cancelled' };
-      const out = await chamar({ tier: opts.modelTier || 'default', system: opts.system, messages: msgs, tools: apiTools.length ? apiTools : undefined, max_tokens: opts.maxTokens || (opts._json ? 7000 : 2500) }, opts.signal);
+      const out = await chamar({ tier: opts.modelTier || 'default', system: opts.system, messages: msgs, tools: apiTools.length ? apiTools : undefined, max_tokens: opts.maxTokens || (opts._json ? 7000 : 2500) }, opts.signal, t => opts.onText?.({ text: junta(t) }));
       const content = out.content || [];
       const t = content.filter(c => c.type === 'text').map(c => c.text).join('');
       const usos = content.filter(c => c.type === 'tool_use');
-      if (out.stop_reason !== 'tool_use' || !usos.length || !tools.length) { text = t; break; }
-      if (t.trim() && !opts._json) opts.onText?.({ text: t });
+      if (out.stop_reason !== 'tool_use' || !usos.length || !tools.length) { text = junta(t); break; }
+      if (t.trim() && !opts._json) { antes = junta(t.trim()); opts.onText?.({ text: antes }); }
       msgs.push({ role: 'assistant', content });
       const res = [];
       for (const u of usos) {
@@ -4582,21 +4621,27 @@ Use nos stops nomes de lugares em português como aparecem na Bíblia; só lugar
 "judaica":"markdown: Talmud, midrash e comentaristas, com o nome da obra","crista":"markdown: leituras cristãs (Pais da Igreja, tipologia)","arqueologia":"markdown: arqueologia e história",
 "fontes":[{"t":"nome da obra ou página","u":"link se tiver certeza, senão vazio"}]}
 Até 6 palavras e 6 pares.`;
-  return base + `PARTE 3. Responda só com um objeto JSON:
-{"teses":[{"t":"tese","a":"a favor","c":"contra"}],"sintese":"markdown: resumo geográfico, teológico e das teses, tudo interligado","perguntas":["perguntas para continuar"],
-"nos":[{"tipo":"descoberta|conexao|palavra|geografia|arqueologia|rabinico|tipologia|pergunta","titulo":"curto","texto":"2-4 frases","refs":["Livro c:v"]}]}
-Até 4 teses, 5 perguntas e 8 nós (as descobertas principais, cada uma independente).`;
+  // a parte final foi dividida em duas respostas menores: uma resposta muito longa passava do tempo máximo do servidor
+  if (parte === 3) return base + `PARTE 3. Responda só com um objeto JSON:
+{"teses":[{"t":"tese","a":"a favor","c":"contra"}],"sintese":"markdown: resumo geográfico, teológico e das teses, tudo interligado","perguntas":["perguntas para continuar"]}
+Até 4 teses e 5 perguntas. Síntese em até 4 parágrafos.`;
+  return base + `PARTE 4. Responda só com um objeto JSON:
+{"nos":[{"tipo":"descoberta|conexao|palavra|geografia|arqueologia|rabinico|tipologia|pergunta","titulo":"curto","texto":"2-4 frases","refs":["Livro c:v"]}]}
+Até 8 nós: as descobertas principais deste trecho, cada uma independente e com os versículos.`;
 }
 async function investigar(q, ui) {
   if (INV.busy) return; if (!S.sample) { toast('O investigador usa o Claude dentro desta página e não está disponível nesta visualização.'); return; }
   INV.busy = true; INV.abort = new AbortController(); ui.start();
+  // se a última tentativa desta mesma busca caiu no meio, reaproveita as partes já prontas
+  const SV = INV.salvo?.q === q ? INV.salvo : (INV.salvo = { q, partes: {} });
   try {
     await GEO.idx().catch(() => null);
     // 1. resolver a passagem
     ui.step('Localizando a passagem');
     let r = parseRef(q), de, ate;
     const rng = /(\d+):(\d+)\s*[-–]\s*(?:(\d+):)?(\d+)\s*$/.exec(q);
-    if (r) { de = vid(r.b, r.c, r.v || 1); const nv = S.books[r.b].v[r.c - 1]; ate = rng ? vid(r.b, rng[3] ? +rng[3] : r.c, +rng[4]) : r.v ? (r.ve ? vid(r.b, r.c, r.ve) : vid(r.b, r.c, r.v)) : vid(r.b, r.c, nv); }
+    if (SV.de) { de = SV.de; ate = SV.ate; }
+    else if (r) { de = vid(r.b, r.c, r.v || 1); const nv = S.books[r.b].v[r.c - 1]; ate = rng ? vid(r.b, rng[3] ? +rng[3] : r.c, +rng[4]) : r.v ? (r.ve ? vid(r.b, r.c, r.ve) : vid(r.b, r.c, r.v)) : vid(r.b, r.c, nv); }
     else {
       const res = await S.sample.json(`Qual passagem bíblica corresponde a "${q}"? Responda só com JSON: {"de":"Livro c:v","ate":"Livro c:v"} usando abreviações em português (ex.: "2 Rs 4:8"). Escolha o trecho narrativo completo.`, { modelTier: 'quick', signal: INV.abort.signal });
       const a = parseRef(String(res?.de || '')), b = parseRef(String(res?.ate || ''));
@@ -4604,6 +4649,7 @@ async function investigar(q, ui) {
       de = vid(a.b, a.c, a.v); ate = b && b.v ? vid(b.b, b.c, b.v) : de;
     }
     if (ate < de) ate = de;
+    SV.de = de; SV.ate = ate;
     const [b0, c0, v0] = split(de), [, c1, v1] = split(ate);
     const rot = refLabel(de, true) + (ate !== de ? '–' + (c1 === c0 ? v1 : c1 + ':' + v1) : '');
     ui.step('Lendo ' + rot); HUDFX.emit({ type: 'book', b: b0 });
@@ -4614,10 +4660,10 @@ async function investigar(q, ui) {
     if (rel.length) { ui.step(rel.length + ' notas suas já ligadas a este trecho'); HUDFX.emit({ type: 'nodes', ids: rel.map(n => n.id) }); }
     const ctx = `PASSAGEM: ${rot}\nTEXTO (Bíblia Livre):\n${lines.join('\n')}\n\nLUGARES QUE O APP ACHOU NO TRECHO: ${places.map(p => p.lab + ' (hoje ' + (p.modPt || '?') + ')').join('; ') || 'nenhum'}\n\nO QUE ${ETN().toUpperCase()} JÁ TEM NO CÉREBRO SOBRE ESTE TRECHO:\n${rel.map(n => '• ' + n.titulo + ' (' + n.status + '): ' + (n.texto || '').slice(0, 220)).join('\n') || 'nada ainda'}`;
     const tools = S.sampleTools ? binahTools().filter(t => t.name !== 'gravar_no_cerebro' && t.name !== 'briefing_de_hoje') : undefined;
-    const call = async (parte, label) => { ui.step(label); HUDFX.setMode('thinking'); let n = 0; return S.sample.json(invPrompt(parte, ctx), { modelTier: 'complex', signal: INV.abort.signal, tools, onText: u => { const L = (u.text || '').length; if (L - n > 400) { n = L; ui.sub(label + ' · ' + fmt(L) + ' caracteres'); HUDFX.bump(0.8); } } }); };
+    const call = async (parte, label) => { if (SV.partes[parte]) { ui.step(label + ' · já estava pronto'); return SV.partes[parte]; } ui.step(label); HUDFX.setMode('thinking'); let n = 0; return SV.partes[parte] = await S.sample.json(invPrompt(parte, ctx), { modelTier: 'complex', signal: INV.abort.signal, tools, onText: u => { const L = (u.text || '').length; if (L - n > 400) { n = L; ui.sub(label + ' · ' + fmt(L) + ' caracteres'); HUDFX.bump(0.8); } } }); };
     const A = await call(1, 'Montando passagem, geografia e contas');
     const B = await call(2, 'Buscando palavras, conexões e tradições');
-    const C = await call(3, 'Escrevendo teses, síntese e descobertas');
+    const C = { ...(await call(3, 'Escrevendo teses e síntese')), ...(await call(4, 'Separando as descobertas para o cérebro')) };
     HUDFX.setMode('idle');
     // 2. montar o estudo
     ui.step('Calculando as jornadas no mapa');
@@ -4649,11 +4695,13 @@ async function investigar(q, ui) {
     if (!S.db) throw { code: 'sem_db' };
     await S.db.collection('privado').doc(id).set(hubDoc);
     for (const k of kids) { const { id: kid, ...d } = k; await S.db.collection('privado').doc(kid).set({ ...d, status: 'rascunho', autor: 'claude', estudo: id, fontes: [{ t: 'Investigação do Binah (Claude) — conferir', u: '' }], selo: 'claude', criado: now, atualizado: now }); HUDFX.emit({ type: 'birth', id: kid }); }
+    INV.salvo = null;
     ui.done(id);
   } catch (e) {
     HUDFX.setMode('idle');
     const msg = e?.et && e?.message ? e.message : e?.code === 'cancelled' ? 'Investigação interrompida.' : e?.code === 'sem_passagem' ? 'Não achei a passagem. Tente com a referência, por exemplo "2 Rs 4:8-37".' : e?.code === 'sem_db' ? 'O cérebro não está disponível nesta visualização; o estudo não foi gravado.' : e?.code === 'invalid_json' ? 'A resposta veio incompleta. Tente de novo ou peça um trecho menor.' : (e?.code === 'not_granted' || e?.code === 'sampling_disabled') ? 'O uso do Claude não foi liberado nesta página (Permissões do artefato).' : e?.code === 'rate_limited' ? 'Muitas chamadas seguidas. Espere um pouco.' : 'Não consegui concluir a investigação. Tente de novo.';
-    ui.fail(msg); console.warn(e);
+    const feitas = Object.keys(INV.salvo?.partes || {}).length;
+    ui.fail(msg + (feitas && e?.code !== 'cancelled' && e?.code !== 'sem_db' ? ' O que já estava pronto ficou guardado: em “Tentar de novo” eu continuo de onde parei.' : '')); console.warn(e);
   } finally { INV.busy = false; }
 }
 
@@ -4670,13 +4718,14 @@ VIEWS.descobertas = (root, opts = {}) => {
     const go = h('button', { class: 'btn primary big', text: 'Investigar' });
     const prog = h('div', { class: 'inv-prog', hidden: true });
     const steps = h('ol', { class: 'inv-steps' }); const sub = h('div', { class: 'inv-sub mono' }); const core = h('canvas', { 'aria-hidden': 'true' });
-    prog.append(h('div', { class: 'inv-core' }, core), h('div', { style: 'min-width:0;flex:1' }, h('div', { class: 'brief-h', text: 'Binah investigando' }), steps, sub, h('button', { class: 'btn', style: 'margin-top:8px', text: 'Parar', onclick: () => INV.abort?.abort() })));
+    const stop = h('button', { class: 'btn', style: 'margin-top:8px' });
+    prog.append(h('div', { class: 'inv-core' }, core), h('div', { style: 'min-width:0;flex:1' }, h('div', { class: 'brief-h', text: 'Binah investigando' }), steps, sub, stop));
     const ui = {
-      start() { prog.hidden = false; steps.innerHTML = ''; sub.textContent = ''; go.disabled = true; coreFx(core); },
+      start() { prog.hidden = false; steps.innerHTML = ''; sub.textContent = ''; go.disabled = true; coreFx(core); stop.hidden = false; stop.className = 'btn'; stop.textContent = 'Parar'; stop.onclick = () => INV.abort?.abort(); },
       step(t) { $$('li', steps).forEach(li => li.classList.add('ok')); steps.append(h('li', { text: t })); sub.textContent = ''; },
       sub(t) { sub.textContent = t; },
-      done(id) { $$('li', steps).forEach(li => li.classList.add('ok')); go.disabled = false; toast('Estudo gravado no cérebro (rascunho)'); setTimeout(() => openEstudo(id), 900); },
-      fail(m) { go.disabled = false; steps.append(h('li', { class: 'err', text: m })); },
+      done(id) { $$('li', steps).forEach(li => li.classList.add('ok')); go.disabled = false; stop.hidden = true; toast('Estudo gravado no cérebro (rascunho)'); setTimeout(() => openEstudo(id), 900); },
+      fail(m) { go.disabled = false; steps.append(h('li', { class: 'err', text: m })); stop.className = 'btn primary'; stop.textContent = 'Tentar de novo'; stop.onclick = () => go.click(); },
     };
     go.onclick = () => { const q = inp.value.trim(); if (!q) { inp.focus(); return; } investigar(q, ui); };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
