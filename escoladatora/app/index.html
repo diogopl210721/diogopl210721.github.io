@@ -437,7 +437,11 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .cover-hello{position:absolute;left:18px;right:18px;top:54px;pointer-events:none;animation:rvIn .7s ease-out both}
 .cover-hi{font-family:var(--f-text);font-weight:700;font-size:clamp(26px,3.4vw,38px);line-height:1.12;color:#FFFFFF;text-shadow:0 2px 18px #000c,0 0 24px color-mix(in srgb,var(--glow) 45%,transparent)}
 .cover-hi .caret{display:inline-block;width:2px;height:.9em;margin-left:3px;vertical-align:-.08em;background:var(--glow);animation:blink 1s steps(1) infinite}
-.cover-hi-s{margin-top:4px;font-size:clamp(13px,1.5vw,15.5px);font-weight:600;color:#DDF6FF;text-shadow:0 1px 10px #000d}
+.cover-hi-s{margin-top:4px;max-width:30em;font-size:clamp(13px,1.5vw,15.5px);font-weight:600;color:#DDF6FF;text-shadow:0 1px 10px #000d}
+.cover-hi-s::first-letter{text-transform:uppercase}
+.cover-binah{pointer-events:auto;margin-top:10px;display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13.5px;color:#E9FDFF;background:color-mix(in srgb,var(--glow) 22%,#02050Acc);border:1px solid color-mix(in srgb,var(--glow) 60%,transparent);box-shadow:0 0 18px color-mix(in srgb,var(--glow) 30%,transparent);backdrop-filter:blur(2px)}
+.cover-binah:hover{background:color-mix(in srgb,var(--glow) 34%,#02050Acc)}
+@media (max-width:720px){.cover-face{aspect-ratio:5/5.1}.cover-hint{display:none}}
 .cover-chip{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#F7E7B4;background:#02050Aa8;border:1px solid #f2b6484d;border-radius:999px;padding:4px 10px}
 .cover-copy{position:absolute;left:0;right:0;bottom:0;padding:22px 20px 18px;display:flex;flex-direction:column;gap:4px;background:linear-gradient(0deg,#02050Ad9,#02050A00);pointer-events:none}
 .cover-he{font-family:var(--f-heb);font-size:clamp(38px,5.4vw,60px);line-height:1.05;color:#F7E7B4;text-shadow:0 0 22px #f2b64899}
@@ -445,7 +449,7 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .cover-meta{color:#B6C3D8;font-size:12.5px;font-family:var(--f-mono)}
 .cover-go{pointer-events:auto;align-self:flex-start;margin-top:8px;border:1px solid #f2b64880;background:#02050Acc;color:#F7E7B4;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700}
 .cover-go:hover{background:#1a1406}
-.cover-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:12.5px;font-weight:600;color:#E8EEF7;background:#02050Ab3;border:1px solid #ffffff22;border-radius:999px;padding:7px 14px;pointer-events:none;white-space:nowrap;animation:hintfade .8s ease 5s forwards}
+.cover-hint{position:absolute;left:auto;right:14px;top:auto;bottom:14px;transform:none;font-size:12.5px;font-weight:600;color:#E8EEF7;background:#02050Ab3;border:1px solid #ffffff22;border-radius:999px;padding:7px 14px;pointer-events:none;white-space:nowrap;animation:hintfade .8s ease 5s forwards}
 
 .brief{position:relative;display:grid;grid-template-columns:120px minmax(0,1fr);gap:20px;align-items:start;border:1px solid color-mix(in srgb,var(--cyan) 30%,transparent);border-radius:18px;padding:18px 20px;background:linear-gradient(160deg,#061826,#03090f 70%);color:var(--text)}
 .brief::before{content:"";position:absolute;inset:-1px;border-radius:18px;pointer-events:none;background:linear-gradient(var(--cyan),var(--cyan)) top left/18px 2px no-repeat,linear-gradient(var(--cyan),var(--cyan)) top left/2px 18px no-repeat,linear-gradient(var(--cyan),var(--cyan)) bottom right/18px 2px no-repeat,linear-gradient(var(--cyan),var(--cyan)) bottom right/2px 18px no-repeat;opacity:.8}
@@ -555,7 +559,6 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
   .cal{padding:4px 10px}
   .cal .pa{display:none}
   .cal .ptd .lg{display:none}.cal .ptd .sh{display:inline}
-  .cover-top .cover-chip:last-child{display:none}
   .binah-log{font-size:10.5px;top:34px}.binah-log div.old:nth-last-child(n+4){display:none}
   .brief{grid-template-columns:minmax(0,1fr);padding:16px}
   .brief-core{width:96px;height:96px;position:absolute;right:10px;top:10px}
@@ -800,6 +803,29 @@ html.et-locked,html.et-locked body{overflow:hidden}
 @keyframes etDot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.45);opacity:.75}}
 @media (prefers-reduced-motion:reduce){.et-i-orbit,.et-i-logo,.et-i-dot,.et-intro,.et-gate:not(.intro) .et-card{animation:none}}
 
+/* perfil */
+.et-msg.ok{color:#8ff0bf}
+.et-btn.sm{width:auto;padding:9px 14px;font-size:14px;border-radius:12px}
+.et-av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 15px var(--f-ui,system-ui);color:#02050A;background:linear-gradient(135deg,#7FF6FF,#3BE3F0 45%,#F2B648);border:2px solid #ffffff2e;box-shadow:0 0 14px #3be3f055;cursor:pointer;padding:0}
+.et-av.big{width:52px;height:52px;font-size:22px;cursor:default}
+header.top .et-av{margin-left:2px}
+@media (max-width:720px){header.top .et-av{width:38px;height:38px;font-size:15px;order:4;margin-left:0}header.top:has(.et-av) .search{flex-basis:calc(100% - 50px);min-width:0}}
+.et-gate[data-v=perfil] .et-card>.et-sub,.et-gate[data-v=perfil] .et-card>.et-he,.et-gate[data-v=nova][data-logado='1'] .et-card>.et-sub{display:none}
+.et-gate[data-v=perfil] .et-card>.et-title,.et-gate[data-v=nova][data-logado='1'] .et-card>.et-title{font-size:clamp(26px,6.5vw,32px)}
+.et-pf{display:flex;flex-direction:column;gap:14px;margin-top:14px;text-align:left}
+.et-pf-head{display:flex;align-items:center;gap:12px}
+.et-pf-id{display:flex;flex-direction:column;min-width:0}
+.et-pf-id strong{font-size:17px}
+.et-pf-id span{font-size:13px;color:var(--muted,#7F90AB);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.et-pf-nome{gap:8px}
+.et-pf-nome .et-btn{align-self:flex-start}
+.et-pf-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:14px;border-top:1px solid color-mix(in srgb,#3be3f0 14%,var(--line,#1C2A43))}
+.et-pf-t{display:flex;flex-direction:column;min-width:0;flex:1 1 180px}
+.et-pf-t strong{font-size:15px}
+.et-pf-t span{font-size:13px;color:var(--muted,#7F90AB)}
+.et-pf-acts{display:flex;gap:8px;flex-wrap:wrap}
+.et-pf-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;padding-top:14px;border-top:1px solid color-mix(in srgb,#3be3f0 14%,var(--line,#1C2A43))}
+
 </style>
 
 </head>
@@ -911,9 +937,10 @@ html.et-locked,html.et-locked body{overflow:hidden}
     const msg = $e('p', { class: 'et-msg', role: 'status', 'aria-live': 'polite' });
     const body = $e('div', { class: 'et-body' });
     const cv = $e('canvas', { class: 'et-bg', 'aria-hidden': 'true' });
+    const titulo = $e('h1', { class: 'et-title', text: 'Escola da Torá' });
     const card = $e('div', { class: 'et-card' },
       $e('div', { class: 'et-logo', html: '<svg width="54" height="54" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="etgS" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#62B2E6"/><stop offset="1" stop-color="#1B4F8C"/></linearGradient></defs><path d="M32 5 L56 46 H8 Z" fill="none" stroke="url(#etgS)" stroke-width="4" stroke-linejoin="round"/><path d="M32 59 L8 18 H56 Z" fill="none" stroke="#E8EEF7" stroke-width="4" stroke-linejoin="round" opacity=".92"/><circle cx="32" cy="32" r="3.2" fill="#F2B648"/></svg>' }),
-      $e('h1', { class: 'et-title', text: 'Escola da Torá' }),
+      titulo,
       $e('p', { class: 'et-he' }, $e('span', { lang: 'he', dir: 'rtl', text: 'בית ספר תורני' }), ' · escola de Torá'),
       $e('p', { class: 'et-sub', text: 'Leitor com hebraico e grego, 344 mil ligações entre versículos, mapas com as jornadas e o Binah, um segundo cérebro que estuda com você.' }),
       body, msg,
@@ -1048,15 +1075,42 @@ html.et-locked,html.et-locked body{overflow:hidden}
           const { data: s } = await sb.auth.getSession();
           if (s.session) entrou(s.session); else show('entrar');
         } }, $e('p', { class: 'et-sub', text: logado ? 'Troque a senha da sua conta (' + ET.email + ').' : 'Crie a sua nova senha.' }), l1, l2, go,
-          logado ? $e('div', { class: 'et-links' }, $e('button', { type: 'button', class: 'et-link', text: 'Cancelar', onclick: () => hide() })) : null);
+          logado ? $e('div', { class: 'et-links' }, $e('button', { type: 'button', class: 'et-link', text: 'Voltar ao perfil', onclick: () => show('perfil') })) : null);
         return [f, pw];
       },
       carregando() { return [$e('div')]; },
+      perfil() {
+        const ini = (ET.nome || '?').charAt(0).toUpperCase();
+        const [l1, nm] = field('Seu nome', { type: 'text', autocomplete: 'name', maxlength: '40', value: ET.nomeCompleto || ET.nome || '' });
+        const salvar = $e('button', { class: 'et-btn sm', type: 'submit', text: 'Salvar nome' });
+        const f = $e('form', { class: 'et-form et-pf-nome', onsubmit: async ev => {
+          ev.preventDefault(); say(''); const v = nm.value.trim().replace(/\s+/g, ' ');
+          if (!v) { nm.focus(); return say('Escreva o seu nome.', 'err'); }
+          busy(salvar, true, 'Salvando…');
+          const { error } = await sb.auth.updateUser({ data: { nome: v } });
+          busy(salvar, false, 'Salvar nome');
+          if (error) return say(traduz(error), 'err');
+          const velho = ET.nome; ET.nomeCompleto = v; ET.nome = v.split(' ')[0];
+          document.querySelectorAll('.cover-hi').forEach(e => { if (velho) e.textContent = e.textContent.replace(velho, ET.nome); });
+          document.querySelectorAll('.et-av').forEach(b => { b.textContent = ET.nome.charAt(0).toUpperCase(); });
+          head.querySelector('strong').textContent = v; head.querySelector('.et-av').textContent = ET.nome.charAt(0).toUpperCase();
+          say('Nome salvo. É assim que o app vai te chamar.', 'ok');
+        } }, l1, salvar);
+        const head = $e('div', { class: 'et-pf-head' }, $e('span', { class: 'et-av big', 'aria-hidden': 'true', text: ini }), $e('div', { class: 'et-pf-id' }, $e('strong', { text: ET.nomeCompleto || ET.nome || '' }), $e('span', { text: ET.email })));
+        const row = (t, d, ...acts) => $e('div', { class: 'et-pf-row' }, $e('div', { class: 'et-pf-t' }, $e('strong', { text: t }), $e('span', { text: d })), $e('div', { class: 'et-pf-acts' }, ...acts));
+        const bt = (t, fn, cls = 'ghost') => $e('button', { class: 'et-btn sm ' + cls, type: 'button', text: t, onclick: fn });
+        const wrap = $e('div', { class: 'et-pf' }, head, f,
+          row('Senha', 'Troque a sua senha quando quiser.', bt('Trocar senha', () => show('nova'))),
+          row('Meu cérebro', 'Guarde uma cópia das suas anotações ou traga de um arquivo.', bt('Exportar', () => ET.exportar()), bt('Importar', () => ET.importar())),
+          row('Uso da IA hoje', 'Zera à meia-noite.', ET.medidor('et-pf-ia')),
+          $e('div', { class: 'et-pf-foot' }, bt('Voltar ao app', () => hide(), ''), bt('Sair da conta', () => ET.sair())));
+        return [wrap, null];
+      },
       aviso(t) {
         return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), ET.uid ? null : $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
       },
     };
-    function show(v, arg) { say(''); body.innerHTML = ''; el.classList.toggle('intro', v === 'carregando'); const [node, focus] = views[v](arg); body.append(node); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
+    function show(v, arg) { say(''); body.innerHTML = ''; el.classList.toggle('intro', v === 'carregando'); el.dataset.v = v; el.dataset.logado = ET.uid ? '1' : ''; titulo.textContent = v === 'perfil' ? 'Meu perfil' : v === 'nova' && ET.uid ? 'Trocar senha' : 'Escola da Torá'; const [node, focus] = views[v](arg); body.append(node); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
     function hide() { el.classList.add('out'); document.documentElement.classList.remove('et-locked'); setTimeout(() => { el.hidden = true; el.classList.remove('out'); stopAnim(); }, 450); }
     // fundo: neurônios devagar
     let raf = 0;
@@ -1088,7 +1142,10 @@ html.et-locked,html.et-locked body{overflow:hidden}
     gate.intro.etapa(34, 58, 'Abrindo o seu cérebro…');
     const u = session.user; ET.uid = u.id; ET.email = u.email || '';
     const md = u.user_metadata || {};
-    ET.nome = String(md.nome || md.name || md.full_name || '').trim().split(/\s+/)[0] || cap((ET.email.split('@')[0].match(/[A-Za-zÀ-ú]+/) || [''])[0]) || 'você';
+    ET.nomeCompleto = String(md.nome || md.name || md.full_name || '').trim();
+    ET.nome = ET.nomeCompleto.split(/\s+/)[0] || cap((ET.email.split('@')[0].match(/[A-Za-zÀ-ú]+/) || [''])[0]) || 'você';
+    const poeAvatar = () => { const top = document.querySelector('header.top'); if (!top || top.querySelector('.et-av')) return; top.append($e('button', { class: 'et-av', type: 'button', 'aria-label': 'Meu perfil', title: 'Meu perfil', text: ET.nome.charAt(0).toUpperCase(), onclick: () => gate.show('perfil') })); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poeAvatar); else poeAvatar();
     try { const { data } = await sb.rpc('et_assumir_biblioteca'); ET.admin = !!data?.admin; } catch { ET.admin = false; }
     try { const { data } = await sb.rpc('et_meu_uso'); if (data) { ET.usados = data.usados || 0; ET.limite = data.limite || null; } } catch {}
     gate.intro.etapa(58, 88, 'Trazendo as suas anotações…');
@@ -1297,7 +1354,7 @@ html.et-locked,html.et-locked body{overflow:hidden}
     if (!ET.uid) return p;
     const ia = ET.usados != null ? `IA hoje: ${ET.usados}${ET.limite ? ' de ' + ET.limite : ''}` : '';
     const link = (t, fn) => $e('a', { href: '#', text: t, onclick: e => { e.preventDefault(); fn(); } });
-    p.append(...(ia ? [ia, ' · '] : []), link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Trocar senha', () => gate.show('nova')), ' · ', link('Sair', ET.sair));
+    p.append(...(ia ? [ia, ' · '] : []), link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Meu perfil', () => gate.show('perfil')), ' · ', link('Sair', ET.sair));
     return p;
   };
   const pintaIA = s => {
@@ -3672,8 +3729,6 @@ const PORTAL = {
     const host = $('#briefHost'); if (!host) return;
     const B = await buildBriefing(); if (!host.isConnected) return;
     host.innerHTML = '';
-    const head = B.dia.charAt(0).toUpperCase() + B.dia.slice(1) + '.';
-    const hi = h('div', { class: 'brief-hi', 'aria-label': head });
     const items = h('div', { class: 'brief-items' });
     if (B.sem?.par) { const p = B.sem.par, r = p.range; items.append(h('div', { class: 'bi' }, h('span', { class: 'k', text: 'Parashá da semana' }), h('span', { class: 'v' }, p.names.join('–') + ' · ', h('span', { class: 'he', text: p.he })), h('span', { class: 's', text: parashaPt(p.names) + (r ? ' · ' + refLabel(r.start) + ' – ' + refLabel(r.end) : '') }), r ? h('span', { class: 'acts' }, h('button', { class: 'btn', text: 'Ler a parashá', onclick: () => gotoVerse(r.start) })) : null)); }
     if (B.sem?.fests?.length) { const f = B.sem.fests[0], n = diasAte(f.date); items.append(h('div', { class: 'bi' }, h('span', { class: 'k', text: 'Próxima festa' }), h('span', { class: 'v' }, f.n + ' · ', h('span', { class: 'he', text: f.he })), h('span', { class: 's', text: f.date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' }) + ' · ' + diasTxt(n) }), h('span', { class: 'acts' }, h('button', { class: 'btn', text: 'Calendário', onclick: () => setTab('mesa') })))); }
@@ -3687,11 +3742,8 @@ const PORTAL = {
     const core = h('canvas', { 'aria-hidden': 'true' });
     host.append(h('div', { class: 'brief-core' }, core), h('div', { style: 'min-width:0' },
       h('div', { class: 'brief-h' }, h('span', { text: 'Binah · briefing de hoje' }), h('span', { class: 'he', style: 'font-family:var(--f-heb);letter-spacing:0;font-size:13px;color:var(--gold)', text: B.t?.heb || '' })),
-      hi, B.t ? h('p', { class: 'brief-date', text: B.t.label + '.' }) : null, items,
-      h('div', { class: 'brief-acts' }, ouvir, h('button', { class: 'btn primary', text: 'Conversar com o Binah', onclick: e => NEURO.open({ from: e.currentTarget, focus: true }) }))));
+      items, ouvir ? h('div', { class: 'brief-acts' }, ouvir) : null));
     coreFx(core); core.style.cursor = 'pointer'; core.onclick = () => NEURO.open({ from: core });
-    if (REDUCE || store.get('briefDia', '') === new Date().toDateString()) hi.textContent = head;
-    else { store.set('briefDia', new Date().toDateString()); let i = 0; const caret = h('span', { class: 'caret' }); const tick = () => { if (!hi.isConnected) return; hi.textContent = head.slice(0, ++i); hi.append(caret); if (i < head.length) setTimeout(tick, 45); else setTimeout(() => caret.remove(), 1600); }; tick(); }
   },
 };
 VIEWS.inicio = root => {
@@ -3699,12 +3751,15 @@ VIEWS.inicio = root => {
   const wrap = h('div', { class: 'portal' });
   // capa (com a saudação logo em cima: a pessoa é acolhida assim que entra)
   const cv = h('canvas', { 'aria-hidden': 'true' });
-  const helloT = h('div', { class: 'cover-hi', role: 'heading', 'aria-level': '2' }), hello = h('div', { class: 'cover-hello' }, helloT, h('div', { class: 'cover-hi-s', text: 'Shalom! Que bom ter você aqui.' }));
+  const diaHoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const helloT = h('div', { class: 'cover-hi', role: 'heading', 'aria-level': '2' }), hello = h('div', { class: 'cover-hello' }, helloT,
+    h('div', { class: 'cover-hi-s', text: 'Shalom! Hoje é ' + diaHoje + (t ? ' · ' + t.label : '') + '.' }),
+    h('button', { class: 'cover-binah', html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 5h16v11H8l-4 4z"/></svg> Falar com o Binah', onclick: e => NEURO.open({ from: e.currentTarget, focus: true }) }));
   { const txt = saudacao(), hoje = new Date().toDateString();
     if (REDUCE || store.get('heroDia', '') === hoje) helloT.textContent = txt;
     else { store.set('heroDia', hoje); let i = 0; const caret = h('span', { class: 'caret' }); const tick = () => { if (!helloT.isConnected && i) return; helloT.textContent = txt.slice(0, ++i); helloT.append(caret); if (i < txt.length) setTimeout(tick, 55); else setTimeout(() => caret.remove(), 1400); }; setTimeout(tick, 350); } }
   const face = h('div', { class: 'cover-face', role: 'img', 'aria-label': 'Capa interativa com as letras do alef-bet' }, cv, h('div', { class: 'glare' }),
-    h('div', { class: 'cover-top' }, h('span', { class: 'cover-chip', text: 'Parashá da semana' }), h('span', { class: 'cover-chip', text: t ? t.label : 'calendário' })),
+    h('div', { class: 'cover-top' }, h('span', { class: 'cover-chip', text: 'Parashá da semana' })),
     hello,
     h('div', { class: 'cover-copy' }, h('span', { class: 'cover-he', lang: 'he', dir: 'rtl', text: par?.he || 'בְּרֵאשִׁית' }), h('span', { class: 'cover-pt', text: par ? par.names.join('–') + ' · ' + parashaPt(par.names) : 'Bereshit · No princípio' }),
       par?.range ? h('span', { class: 'cover-meta', text: refLabel(par.range.start, true) + ' – ' + refLabel(par.range.end) }) : null,
@@ -3719,7 +3774,6 @@ VIEWS.inicio = root => {
       h('span', {}, h('span', { class: 'badge-name', text: 'Escola da Torá' }), h('span', { class: 'badge-sub' }, h('span', { class: 'heb', lang: 'he', text: 'בית ספר תורני' }), 'escola de Torá'))),
     h('h1', { class: 'mega', 'aria-label': 'Estudar, conectar, lembrar' }, lines.map(([w, cap, fn], i) => h('button', { class: 'ln', style: '--i:' + i, onclick: fn }, h('span', { class: 'w', text: w }), h('span', { class: 'cap', text: cap + ' →' })))),
     h('p', { class: 'lede-big', text: 'Leia no hebraico e no grego, siga as 344.799 ligações entre os textos, calcule as jornadas no mapa e guarde cada descoberta num cérebro que conversa com você.' }),
-    h('div', { class: 'cta-row' }, h('button', { class: 'btn primary big', text: 'Continuar em ' + (bk ? bk.n + ' ' + S.chap : 'Gênesis 1'), onclick: () => setTab('leitor') }), h('button', { class: 'btn big glow', text: 'Falar com o Binah', onclick: e => NEURO.open({ from: e.currentTarget, focus: true }) })),
     h('div', { class: 'cores' }, h('span', { class: 'lbl', text: 'Cores' }), TEMAS.map(tm => swatch(tm, true))));
   wrap.append(h('section', { class: 'hero' }, copy, cover));
   // briefing
