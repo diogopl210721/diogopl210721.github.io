@@ -1,7 +1,8 @@
 // Estude+ — cache simples do app (rede primeiro, cache se estiver offline). Nunca guarda chamadas ao Supabase.
-const VERSAO = 'estude-v5';
-const ARQUIVOS = ['./', 'index.html', 'styles.css?v=5', 'efeitos.js?v=5', 'app.js?v=5', 'voz.js?v=5', 'biblioteca.js?v=5', 'tutor.js?v=5', 'comunidade.js?v=5',
-  'fontes/shantell-sans.woff2', 'fontes/atkinson-next.woff2', 'fontes/atkinson-next-italic.woff2', 'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'];
+const VERSAO = 'estude-v6';
+const ARQUIVOS = ['./', 'index.html', 'styles.css?v=6', 'efeitos.js?v=6', 'app.js?v=6', 'voz.js?v=6', 'biblioteca.js?v=6', 'tutor.js?v=6', 'comunidade.js?v=6',
+  'fontes/unbounded.woff2', 'fontes/atkinson-next.woff2', 'fontes/atkinson-next-italic.woff2', 'adesivos/fogo.webp', 'adesivos/caderno.webp', 'adesivos/fichas.webp', 'adesivos/capelo.webp', 'adesivos/lapis.webp', 'adesivos/trofeu.webp', 'adesivos/escola.webp', 'adesivos/camera.webp', 'adesivos/medalha3.webp',
+  'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));

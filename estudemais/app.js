@@ -1,4 +1,4 @@
-/* Estude+ — evolução do Bora Estudar
+/* Estude+
    Front estático (GitHub Pages) + Supabase. Regras de XP, plano, revisão e simulado ficam no banco (rpc). */
 
 const SUPABASE_URL = 'https://arffptuclrrzuzdrcmuc.supabase.co';
@@ -151,11 +151,24 @@ function telaAtual() {
   return a ? a.id.replace('screen-', '') : null;
 }
 
+// profundidade de cada tela: entrar mais fundo desliza da direita, voltar desliza da esquerda, trocar de aba só funde
+const NIVEL_TELA = {
+  login: 0, cadastro: 1, recuperar: 1, codigo: 2,
+  home: 0, materias: 0, tutor: 0, biblioteca: 0, comunidade: 0,
+  enem: 1, liga: 1, grupos: 1, perfil: 1, materia: 1, 'tutor-chat': 1, resumo: 1, sala: 1,
+  upload: 2, quiz: 2, cards: 2, publicar: 2, autor: 2, simulado: 2, redacao: 2, painel: 2,
+  pronto: 3, 'quiz-fim': 3, 'cards-fim': 3, 'simulado-fim': 3,
+};
+
 function go(nome, opts = {}) {
-  estado.telaAnterior = telaAtual();
-  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+  const de = telaAtual();
+  estado.telaAnterior = de;
+  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active', 'vai', 'volta', 'aba'));
   const tela = $('screen-' + nome);
-  tela.classList.add('active');
+  const a = NIVEL_TELA[de] ?? 0, b = NIVEL_TELA[nome] ?? 1;
+  const jeito = !de || de === nome ? 'aba' : b > a ? 'vai' : b < a ? 'volta' : 'aba';
+  void tela.offsetWidth;
+  tela.classList.add('active', jeito);
   if (!opts.manterScroll) tela.scrollTop = 0;
   document.querySelectorAll('.navbar .nav-item').forEach((n) => n.classList.toggle('active', n.dataset.s === NAV_DE[nome]));
   document.querySelectorAll('.sidebar .nav-item').forEach((n) => n.classList.toggle('active', n.dataset.s === LADO_DE[nome]));
@@ -169,7 +182,20 @@ function go(nome, opts = {}) {
   $('composer-sala').hidden = nome !== 'sala';
   if (nome !== 'sala' && window.pararSala) window.pararSala();
   if (typeof Voz !== 'undefined') Voz.pararFala();
+  moverGota();
 }
+
+// a "gota" atrás da aba ativa desliza até a aba tocada
+function moverGota() {
+  const gota = $('nav-gota');
+  if (!gota) return;
+  const ativo = document.querySelector('.navbar .nav-item.active');
+  if (!ativo || ativo.classList.contains('central') || $('navbar').style.display === 'none') { gota.style.opacity = '0'; return; }
+  gota.style.opacity = '1';
+  gota.style.setProperty('--x', ativo.offsetLeft + 'px');
+  gota.style.setProperty('--w', ativo.offsetWidth + 'px');
+}
+window.addEventListener('resize', () => moverGota());
 
 // textarea que cresce com o texto e Enter que envia (Shift+Enter pula linha)
 function autoAltura(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 130) + 'px'; }
@@ -419,7 +445,7 @@ async function carregarHoje() {
       : `${pend} pra revisar${novos ? ` + ${novos} novo${novos === 1 ? '' : 's'}` : ''} · antes de esquecer`;
 
     const div = DIVISOES[r.divisao] || DIVISOES.bronze;
-    $('home-liga-medal').textContent = div[0];
+    $('home-liga-medal').src = 'adesivos/' + ({ bronze: 'medalha3', prata: 'medalha2', ouro: 'medalha1', diamante: 'diamante' }[r.divisao] || 'medalha3') + '.webp';
     if (r.liga) {
       $('home-liga-t').textContent = `Liga ${div[1]} · ${r.liga.posicao}º de ${r.liga.total}`;
       $('home-liga-s').textContent = `${r.liga.xp_semana} XP essa semana · os 5 primeiros sobem`;
@@ -469,10 +495,10 @@ function htmlTarefa(t, opts = {}) {
   let ferramentas = '';
   let editar = '';
   if (opts.editavel && !t.feita) {
-    editar = `<button class="icon-btn edit" title="mudar o dia ou tirar do plano" onclick="this.closest('.task').classList.toggle('editando')">✎</button>`;
+    editar = `<button class="icon-btn edit" title="mudar o dia ou tirar do plano" aria-label="mudar o dia ou tirar do plano" onclick="this.closest('.task').classList.toggle('editando')"><svg class="ico"><use href="#i-editar"/></svg></button>`;
     ferramentas = `<div class="task-tools">
       <input type="date" value="${t.dia}" min="${hoje}" onchange="moverTarefa('${t.id}', this.value)" title="mudar o dia">
-      <button class="icon-btn" title="tirar do plano" onclick="excluirTarefa('${t.id}')">✕</button></div>`;
+      <button class="icon-btn" title="tirar do plano" aria-label="tirar do plano" onclick="excluirTarefa('${t.id}')"><svg class="ico"><use href="#i-lixo"/></svg></button></div>`;
   }
   return `<div class="task ${t.feita ? 'done' : ''}" data-id="${t.id}">
     <button class="check" title="${t.feita ? 'desmarcar' : 'marcar como feita'}" onclick="alternarTarefa('${t.id}')">${t.feita ? '✓' : ''}</button>
@@ -486,6 +512,11 @@ function renderTarefasHoje(r) {
   const feitas = lista.filter((t) => t.feita && t.dia === r.hoje).length;
   const deHoje = lista.filter((t) => t.dia === r.hoje).length;
   $('home-plano-sub').textContent = deHoje ? `${feitas} de ${deHoje} feitas` : '';
+  const anel = $('home-anel');
+  $('home-anel-n').textContent = `${feitas}/${deHoje}`;
+  anel.classList.toggle('completo', deHoje > 0 && feitas === deHoje);
+  anel.classList.toggle('zero', feitas === 0);
+  requestAnimationFrame(() => anel.style.setProperty('--p', deHoje ? Math.round((feitas / deHoje) * 100) : 0));
   if (!lista.length) {
     $('home-tarefas').innerHTML = (r.provas || []).length
       ? '<div class="empty">nada marcado pra hoje — aproveita pra revisar os flashcards 😉</div>'
@@ -869,12 +900,13 @@ function novaMateria(opts = {}) {
   $('input-data-prova').min = hojeISO();
   $('foto-placeholder').style.display = 'flex';
   $('foto-preview').style.display = 'none';
+  $('foto-moldura').classList.remove('com-foto');
   $('foto-status').textContent = 'toque pra tirar a foto';
-  $('pdf-icone').textContent = '📄';
+  $('pdf-caixa').classList.remove('pronto');
   $('pdf-status').textContent = 'toque pra escolher um PDF (até 15 MB)';
   $('upload-passos-materia').hidden = !!u.materiaAlvo;
   $('upload-passo-fonte').innerHTML = u.materiaAlvo ? 'de onde vem o material novo?' : '<b>3</b> de onde vem o material?';
-  $('upload-titulo').textContent = u.materiaAlvo ? 'Adicionar material' : (u.grupoId ? 'Nova matéria da turma' : 'Nova matéria de estudo');
+  $('upload-titulo').textContent = u.materiaAlvo ? 'Adicionar material' : (u.grupoId ? 'Matéria da turma' : 'Nova matéria');
   $('upload-grupo').textContent = u.grupoId ? `vai aparecer pra todo mundo de ${u.grupoNome || 'a turma'}` : (u.materiaAlvo ? `em ${estado.detalhe ? estado.detalhe.materia.nome : 'essa matéria'}` : '');
   setSource('foto');
   go('upload');
@@ -916,7 +948,9 @@ function fotoSelecionada(ev) {
     $('foto-placeholder').style.display = 'none';
     $('foto-preview').src = dataUrl;
     $('foto-preview').style.display = 'block';
-    $('foto-status').textContent = 'foto pronta ✓';
+    const moldura = $('foto-moldura');
+    moldura.classList.remove('com-foto'); void moldura.offsetWidth; moldura.classList.add('com-foto');
+    $('foto-status').textContent = 'foto pronta, toque pra trocar';
   };
   reader.readAsDataURL(file);
 }
@@ -928,8 +962,10 @@ function pdfSelecionado(ev) {
   const reader = new FileReader();
   reader.onload = (e) => {
     estado.upload.pdf = e.target.result.split(',')[1];
-    $('pdf-icone').textContent = '✅';
-    $('pdf-status').textContent = file.name + ' pronto';
+    const caixa = $('pdf-caixa');
+    caixa.classList.remove('pronto'); void caixa.offsetWidth; caixa.classList.add('pronto');
+    const kb = file.size / 1024;
+    $('pdf-status').innerHTML = `<b>${esc(file.name)}</b><br><span class="small muted">${kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB'}, pronto pra gerar</span>`;
   };
   reader.readAsDataURL(file);
 }

@@ -1,6 +1,6 @@
 /* Estude+ — movimentos e efeitos.
-   Confete de furador, carimbo VISTO, caneta vermelha de correção, XP que voa, estrelinha de nível,
-   tela de geração com marca-texto passando e ficha que voa. Tudo respeita "reduzir movimento". */
+   Confete de papel, carimbo de dia completo, caneta de correção no quiz, XP que voa, subida de nível,
+   geração do material em etapas e ficha que voa. Com "reduzir movimento" ligado sai o que se mexe e ficam fades e barras. */
 
 const Fx = (() => {
   const reduz = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -8,7 +8,7 @@ const Fx = (() => {
   const $id = (id) => document.getElementById(id);
 
   /* ---------- confete de furador (bolinhas de papel) e tirinhas ---------- */
-  const CORES = ['#FFD21F', '#FF7DC8', '#5BC0F8', '#3FD07E', '#FFA640', '#B9A4FF', '#DA2128', '#2033A6'];
+  const CORES = ['#FFE34D', '#FF5C9D', '#1F4BFF', '#12B981', '#FF8A3D', '#8457F0', '#7FB2FF', '#FFE34D'];
   let canvas = null, ctx = null, parts = [], raf = null;
   function ajustar() {
     canvas = canvas || $id('fx-canvas');
@@ -181,9 +181,16 @@ const Fx = (() => {
   function fecharNivel() { $id('fx-nivel').hidden = true; }
 
   /* ---------- tela de geração (IA trabalhando) ---------- */
-  const MSGS = ['lendo seu material', 'separando os tópicos', 'escrevendo o resumo', 'desenhando o mapa mental',
-    'criando os flashcards', 'inventando as perguntas', 'montando a prova simulada', 'organizando o plano até a prova'];
   let gerMsgT = null, gerBarT = null;
+  // etapas da geração: a IA não conta onde está, então cada etapa acende pelo tempo típico e a última espera a resposta
+  const ETAPAS_S = [0, 3, 9, 16, 24];
+  const TITULOS = ['Lendo seu material', 'Separando os tópicos', 'Escrevendo o resumo', 'Criando quiz e flashcards', 'Montando seu plano'];
+  function pintarEtapas(atual, todasFeitas = false) {
+    document.querySelectorAll('#ger-etapas li').forEach((li, k) => {
+      li.classList.toggle('feito', todasFeitas || k < atual);
+      li.classList.toggle('atual', !todasFeitas && k === atual);
+    });
+  }
   function gerandoInicio(fotoSrc) {
     const w = $id('fx-gerando');
     const foto = $id('ger-foto');
@@ -191,27 +198,44 @@ const Fx = (() => {
     if (fotoSrc) { img.src = fotoSrc; foto.classList.add('com-foto'); } else { img.removeAttribute('src'); foto.classList.remove('com-foto'); }
     const msg = $id('ger-msg');
     const bar = $id('ger-bar');
-    let i = 0;
-    msg.textContent = MSGS[0];
-    bar.style.width = '3%';
+    const pct = $id('ger-pct');
+    w.classList.remove('falhou');
+    msg.textContent = TITULOS[0];
+    bar.style.width = '2%';
+    pct.textContent = '0';
+    pintarEtapas(0);
     w.hidden = false;
     const t0 = Date.now();
+    let etapa = 0;
     clearInterval(gerMsgT); clearInterval(gerBarT);
-    gerMsgT = setInterval(() => {
-      i = Math.min(i + 1, MSGS.length - 1);
-      msg.textContent = MSGS[i];
-      msg.classList.remove('troca'); void msg.offsetWidth; msg.classList.add('troca');
-    }, 3800);
     gerBarT = setInterval(() => {
       const s = (Date.now() - t0) / 1000;
-      bar.style.width = Math.min(94, 100 * (1 - Math.exp(-s / 15))) + '%';
-    }, 600);
+      const p = Math.min(95, Math.round(100 * (1 - Math.exp(-s / 13))));
+      bar.style.width = Math.max(2, p) + '%';
+      pct.textContent = String(p);
+      let e = 0;
+      ETAPAS_S.forEach((lim, k) => { if (s >= lim) e = k; });
+      if (e !== etapa) {
+        etapa = e;
+        pintarEtapas(e);
+        msg.textContent = TITULOS[e];
+        msg.classList.remove('troca'); void msg.offsetWidth; msg.classList.add('troca');
+      }
+    }, 250);
   }
   function gerandoFim(ok = true) {
     clearInterval(gerMsgT); clearInterval(gerBarT);
     const w = $id('fx-gerando');
-    if (ok) { $id('ger-bar').style.width = '100%'; $id('ger-msg').textContent = 'pronto!'; }
-    return new Promise((res) => setTimeout(() => { w.hidden = true; res(); }, ok && !reduz() ? 380 : 0));
+    if (ok) {
+      $id('ger-bar').style.width = '100%';
+      $id('ger-pct').textContent = '100';
+      $id('ger-msg').textContent = 'Pronto!';
+      pintarEtapas(5, true);
+    } else {
+      w.classList.add('falhou');
+      $id('ger-msg').textContent = 'Não deu certo dessa vez';
+    }
+    return new Promise((res) => setTimeout(() => { w.hidden = true; res(); }, ok ? (reduz() ? 350 : 750) : 0));
   }
 
   /* ---------- ficha de flashcard que voa ---------- */
