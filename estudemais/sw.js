@@ -1,6 +1,6 @@
 // Estude+ — cache simples do app (rede primeiro, cache se estiver offline). Nunca guarda chamadas ao Supabase.
-const VERSAO = 'estude-v3';
-const ARQUIVOS = ['./', 'index.html', 'styles.css?v=3', 'efeitos.js?v=3', 'app.js?v=3', 'voz.js?v=3', 'biblioteca.js?v=3', 'tutor.js?v=3', 'comunidade.js?v=3',
+const VERSAO = 'estude-v4';
+const ARQUIVOS = ['./', 'index.html', 'styles.css?v=4', 'efeitos.js?v=4', 'app.js?v=4', 'voz.js?v=4', 'biblioteca.js?v=4', 'tutor.js?v=4', 'comunidade.js?v=4',
   'fontes/shantell-sans.woff2', 'fontes/atkinson-next.woff2', 'fontes/atkinson-next-italic.woff2', 'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
