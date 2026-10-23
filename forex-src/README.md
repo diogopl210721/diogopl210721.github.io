@@ -106,6 +106,16 @@ configuração extra.
 As migrações estão em `supabase/migrations/` na ordem do nome. Elas foram aplicadas no projeto em partes
 (nomes `dds_finance_*` no histórico do Supabase). Para mudar uma função, crie uma nova migração com `create or replace`.
 
+**Estado em 23/10/2026 (conferido função por função contra o banco):**
+
+| Arquivo | Situação |
+|---|---|
+| `…120000_tables`, `…120100_auth`, `…130000_sessions`, `…140000_ptax` | aplicados (o banco guarda as funções sem os comentários) |
+| `…120200_import` até a Parte C | aplicado |
+| `…120200_import` **Parte D** (`dds_finance_delete_my_financial_data`, `dds_finance_delete_account`, `dds_finance__cleanup` e o job `dds_finance_cleanup`) | **pendente de aprovação** — sem ela, "Apagar meus dados" e "Excluir conta" em Configurações dão erro |
+| `…130500_cleanup_auth_uid` (DROP das funções da primeira versão) | não aplicado; substituído por `…210000_revoke_legacy_auth_uid` |
+| `…210000_revoke_legacy_auth_uid` | aplicado: as funções antigas continuam no banco, mas ninguém consegue executá-las |
+
 ### Edge Function
 `supabase/functions/forex-ptax/index.ts` — publicar com `supabase functions deploy forex-ptax --no-verify-jwt`
 (ou pelo painel). Não precisa de segredo extra.
