@@ -130,26 +130,83 @@ function ocupado(btn, texto) {
 }
 
 /* ===================== navegação ===================== */
+// aba de baixo (celular) e item da barra lateral (computador) de cada tela
 const NAV_DE = {
-  home: 'home', 'cards': 'home', 'cards-fim': 'home',
+  home: 'home', cards: 'home', 'cards-fim': 'home', liga: 'home', perfil: 'home',
+  enem: 'home', simulado: 'home', 'simulado-fim': 'home', redacao: 'home',
   materias: 'materias', materia: 'materias', upload: 'materias', pronto: 'materias', quiz: 'materias', 'quiz-fim': 'materias',
-  enem: 'enem', simulado: 'enem', 'simulado-fim': 'enem', redacao: 'enem',
+  tutor: 'tutor', 'tutor-chat': 'tutor',
+  biblioteca: 'biblioteca', resumo: 'biblioteca', publicar: 'biblioteca', autor: 'biblioteca',
+  comunidade: 'comunidade', sala: 'comunidade', grupos: 'comunidade', painel: 'comunidade',
+};
+const LADO_DE = {
+  ...NAV_DE, enem: 'enem', simulado: 'enem', 'simulado-fim': 'enem', redacao: 'enem',
   liga: 'liga', grupos: 'grupos', painel: 'grupos', perfil: 'perfil',
 };
 const SEM_NAV = ['login', 'cadastro', 'recuperar', 'nova-senha', 'codigo'];
+const TELAS_CHAT = ['tutor-chat', 'sala'];
 
-function go(nome) {
+function telaAtual() {
+  const a = document.querySelector('.screen.active');
+  return a ? a.id.replace('screen-', '') : null;
+}
+
+function go(nome, opts = {}) {
+  estado.telaAnterior = telaAtual();
   document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
   const tela = $('screen-' + nome);
   tela.classList.add('active');
-  tela.scrollTop = 0;
-  const nav = NAV_DE[nome];
-  document.querySelectorAll('.nav-item').forEach((n) => n.classList.toggle('active', n.dataset.s === nav));
+  if (!opts.manterScroll) tela.scrollTop = 0;
+  document.querySelectorAll('.navbar .nav-item').forEach((n) => n.classList.toggle('active', n.dataset.s === NAV_DE[nome]));
+  document.querySelectorAll('.sidebar .nav-item').forEach((n) => n.classList.toggle('active', n.dataset.s === LADO_DE[nome]));
   const semNav = SEM_NAV.includes(nome);
-  $('navbar').style.display = semNav ? 'none' : 'flex';
+  $('navbar').style.display = semNav || TELAS_CHAT.includes(nome) ? 'none' : 'flex';
   $('persistentCredit').classList.toggle('no-nav', semNav);
   $('persistentCredit').style.display = semNav ? 'block' : 'none';
   $('sidebar').classList.toggle('sidebar-hidden', semNav);
+  $('fab-publicar').hidden = nome !== 'biblioteca';
+  $('composer-tutor').hidden = nome !== 'tutor-chat';
+  $('composer-sala').hidden = nome !== 'sala';
+  if (nome !== 'sala' && window.pararSala) window.pararSala();
+  if (typeof Voz !== 'undefined') Voz.pararFala();
+}
+
+// textarea que cresce com o texto e Enter que envia (Shift+Enter pula linha)
+function autoAltura(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 130) + 'px'; }
+function enterEnvia(ev, fn) { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); fn(); } }
+
+// lê uma foto, reduz e devolve em JPEG (para IA e para a tela)
+function lerImagemComprimida(file, lado = 1600, qualidade = 0.8) {
+  return new Promise((ok, falha) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = () => falha(new Error('não consegui ler a foto'));
+    reader.onload = (e) => { img.src = e.target.result; };
+    img.onerror = () => falha(new Error('esse arquivo não parece uma foto'));
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const escala = Math.min(1, lado / Math.max(img.width, img.height));
+      canvas.width = Math.round(img.width * escala);
+      canvas.height = Math.round(img.height * escala);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', qualidade);
+      ok({ dataUrl, base64: dataUrl.split(',')[1] });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function quando(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const min = Math.round((Date.now() - d.getTime()) / 60000);
+  if (min < 1) return 'agora';
+  if (min < 60) return `${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${h} h`;
+  const dias = Math.round(h / 24);
+  if (dias < 7) return `${dias} d`;
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
 function toggleForm(tipo) {
@@ -176,6 +233,7 @@ function setRole(role) {
   $('role-aluno').classList.toggle('on', role === 'aluno');
   $('role-professor').classList.toggle('on', role === 'professor');
   $('label-escola').textContent = role === 'professor' ? 'nome da escola em que você trabalha' : 'nome da escola em que você estuda';
+  $('campo-serie').hidden = role === 'professor';
 }
 
 async function sha256Cliente(texto) {
@@ -186,6 +244,7 @@ async function sha256Cliente(texto) {
 
 async function criarPerfilSeNaoExistir(usuarioAuth) {
   const authId = usuarioAuth.id;
+  estado.eu = null;
   const { data: existente } = await sb.from('be_usuarios').select('id, papel').eq('auth_user_id', authId).maybeSingle();
   if (existente) {
     estado.usuarioId = existente.id;
@@ -198,6 +257,7 @@ async function criarPerfilSeNaoExistir(usuarioAuth) {
     auth_user_id: authId, nome, papel: papelSelecionado,
     escola: $('input-escola').value.trim(), cidade: $('input-cidade').value.trim(),
   };
+  if (papelSelecionado === 'aluno' && $('input-serie').value) dados.serie = $('input-serie').value;
   const pergunta = $('input-pergunta-seguranca').value.trim();
   const resposta = $('input-resposta-seguranca').value.trim();
   if (pergunta && resposta) {
@@ -371,6 +431,8 @@ async function carregarHoje() {
     verificarNivel(r.nivel);
 
     renderTarefasHoje(r);
+    pintarAvatarHome();
+    if (typeof carregarHomeBiblio === 'function') { carregarHomeBiblio(); contarNaoLidas(); }
 
     const pend = r.cards_pendentes || 0;
     const novos = Math.min(r.cards_novos || 0, 20);
@@ -400,6 +462,14 @@ async function carregarHoje() {
   } catch (err) {
     $('home-tarefas').innerHTML = `<div class="empty">não consegui carregar seu dia (${esc(err.message)})</div>`;
   }
+}
+
+async function pintarAvatarHome() {
+  if (!estado.eu) {
+    const { data } = await sb.from('be_usuarios').select('nome, avatar_base64, serie').eq('id', estado.usuarioId).maybeSingle();
+    estado.eu = data || {};
+  }
+  pintarAvatar($('home-avatar'), estado.eu);
 }
 
 function verificarNivel(nivel) {
@@ -733,7 +803,10 @@ function paragrafos(texto) {
 
 function renderResumo(d) {
   const curi = (d.curiosidades && d.curiosidades.lista) || [];
-  $('mat-resumo').innerHTML = (d.resumo ? `<div class="card texto-resumo">${paragrafos(d.resumo.texto)}</div>` : '<div class="card"><div class="empty">nenhum resumo ainda, adicione um material</div></div>')
+  const barra = d.resumo ? `<div class="barra-ouvir">
+      <button class="ghost-btn" id="mat-ouvir" onclick="botaoOuvir(this, estado.detalhe.resumo.texto)"><svg class="ico"><use href="#i-som"/></svg><span>Ouvir resumo</span></button>
+      <button class="ghost-btn" onclick="novoResumo({ materiaId: estado.materiaId })"><svg class="ico"><use href="#i-biblioteca"/></svg><span>Publicar na biblioteca</span></button></div>` : '';
+  $('mat-resumo').innerHTML = barra + (d.resumo ? `<div class="card texto-resumo">${paragrafos(d.resumo.texto)}</div>` : '<div class="card"><div class="empty">nenhum resumo ainda, adicione um material</div></div>')
     + (curi.length ? `<div class="card"><h3>Curiosidades</h3>${curi.map((c) => `<div class="ranking-row"><span>💡 ${esc(c)}</span></div>`).join('')}</div>` : '')
     + botaoConcluir(['estudar', 'revisao_geral']);
 }
@@ -1085,6 +1158,7 @@ function mostrarCard() {
   Fx.fichaEntra(f);
   $('cards-notas').hidden = true;
   $('cards-virar').hidden = false;
+  if (window.prepararVozCard) prepararVozCard();
   $('flash-topico').textContent = [card.materia_nome, card.topico].filter(Boolean).join(' · ') + (card.novo ? ' · novo' : '');
   $('flash-frente').textContent = card.frente;
   $('flash-verso').textContent = card.verso;
@@ -1097,7 +1171,7 @@ function mostrarCard() {
 function virarCard() {
   const f = $('flash');
   f.classList.toggle('flipped');
-  if (f.classList.contains('flipped')) { $('cards-notas').hidden = false; $('cards-virar').hidden = true; }
+  if (f.classList.contains('flipped')) { $('cards-notas').hidden = false; $('cards-virar').hidden = true; $('cards-voz').hidden = true; }
 }
 
 async function avaliarCard(nota) {
@@ -1577,7 +1651,7 @@ async function verPerfil() {
   const { data: u, error } = await sb.from('be_usuarios').select('*').eq('id', estado.usuarioId).single();
   if (error || !u) return;
   $('perfil-nome').textContent = u.nome;
-  $('perfil-meta').textContent = `nível ${u.nivel} · ${u.papel === 'professor' ? 'professor(a)' : 'aluno(a)'}${u.escola ? ' · ' + u.escola : ''}`;
+  $('perfil-meta').textContent = `nível ${u.nivel} · ${u.papel === 'professor' ? 'professor(a)' : (u.serie || 'aluno(a)')}${u.escola ? ' · ' + u.escola : ''}`;
   pintarAvatar($('perfil-avatar'), u);
   pintarAvatar($('perfil-avatar-preview'), u);
   $('perfil-xp').textContent = u.xp + ' XP, nível ' + u.nivel;
@@ -1592,6 +1666,8 @@ async function verPerfil() {
   $('input-editar-nome').value = u.nome || '';
   $('input-editar-escola').value = u.escola || '';
   $('input-editar-cidade').value = u.cidade || '';
+  $('input-editar-serie').value = u.serie || '';
+  estado.eu = u;
   avatarNovo = null;
 
   const dias = new Set(u.dias_estudo || [1, 2, 3, 4, 5, 6]);
@@ -1631,6 +1707,8 @@ function marcarTema() {
 }
 
 function escolherTema(t) {
+  if (t === 'caderno') t = 'claro';
+  if (t === 'lousa') t = 'escuro';
   try { if (t) localStorage.setItem('estude-tema', t); else localStorage.removeItem('estude-tema'); } catch (_) { /* só nesta sessão */ }
   if (t) document.documentElement.dataset.tema = t; else delete document.documentElement.dataset.tema;
   marcarTema();
@@ -1660,7 +1738,7 @@ async function salvarPerfil() {
   if (!nome) return avisar('o nome não pode ficar vazio');
   const pronto = ocupado($('btn-salvar-perfil'), 'Salvando...');
   try {
-    const dados = { nome, escola: $('input-editar-escola').value.trim(), cidade: $('input-editar-cidade').value.trim() };
+    const dados = { nome, escola: $('input-editar-escola').value.trim(), cidade: $('input-editar-cidade').value.trim(), serie: $('input-editar-serie').value || null };
     if (avatarNovo) dados.avatar_base64 = avatarNovo;
     const { error } = await sb.from('be_usuarios').update(dados).eq('id', estado.usuarioId);
     if (error) throw error;

@@ -1,7 +1,7 @@
 {
   "name": "Estude+ · seu plano de estudo",
   "short_name": "Estude+",
-  "description": "Resumo, quiz, flashcards e um plano de estudo até o dia da prova. Simulados e redação do ENEM.",
+  "description": "Resumos da comunidade, tutor que resolve pela foto, flashcards com voz e um plano de estudo até o dia da prova. Simulados e redação do ENEM.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",

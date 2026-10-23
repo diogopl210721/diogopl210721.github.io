@@ -241,18 +241,23 @@ const Fx = (() => {
 
 /* ---------- bilhetes no lugar de alert/confirm ---------- */
 let filaBilhete = Promise.resolve();
-function abrirBilhete(texto, { ok = 'OK', nao = null } = {}) {
+function abrirBilhete(texto, { ok = 'OK', nao = null, campo = null } = {}) {
   const mostrar = () => new Promise((resolve) => {
     const d = document.getElementById('dlg');
     const bOk = document.getElementById('dlg-ok');
     const bNao = document.getElementById('dlg-nao');
+    const caixa = document.getElementById('dlg-campo');
     const anterior = document.activeElement;
     document.getElementById('dlg-texto').textContent = texto;
+    document.getElementById('dlg-campo-wrap').hidden = !campo;
+    caixa.value = '';
+    caixa.placeholder = (campo && campo.placeholder) || '';
     bOk.textContent = ok;
     bNao.textContent = nao || '';
     bNao.hidden = !nao;
     d.hidden = false;
     const fim = (v) => {
+      if (campo) v = v ? caixa.value.trim() : null;
       d.hidden = true;
       bOk.onclick = bNao.onclick = d.onclick = null;
       document.removeEventListener('keydown', tecla, true);
@@ -261,13 +266,13 @@ function abrirBilhete(texto, { ok = 'OK', nao = null } = {}) {
     };
     const tecla = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); fim(!nao); }
-      if (e.key === 'Enter') { e.preventDefault(); fim(true); }
+      if (e.key === 'Enter' && !(campo && e.shiftKey)) { e.preventDefault(); fim(true); }
     };
     bOk.onclick = () => fim(true);
     bNao.onclick = () => fim(false);
     d.onclick = (e) => { if (e.target === d && nao) fim(false); };
     document.addEventListener('keydown', tecla, true);
-    setTimeout(() => bOk.focus(), 30);
+    setTimeout(() => (campo ? caixa : bOk).focus(), 30);
   });
   const p = filaBilhete.then(mostrar);
   filaBilhete = p.catch(() => {});
@@ -275,5 +280,6 @@ function abrirBilhete(texto, { ok = 'OK', nao = null } = {}) {
 }
 function avisar(msg) { return abrirBilhete(String(msg ?? '')); }
 function confirmar(msg, { sim = 'Sim', nao = 'Cancelar' } = {}) { return abrirBilhete(String(msg ?? ''), { ok: sim, nao }); }
+function perguntarTexto(msg, { ok = 'Enviar', placeholder = '' } = {}) { return abrirBilhete(String(msg ?? ''), { ok, nao: 'Cancelar', campo: { placeholder } }); }
 
 window.addEventListener('resize', () => { const c = document.getElementById('fx-canvas'); if (c) { c.width = 0; c.height = 0; } });

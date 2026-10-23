@@ -4,47 +4,44 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Estude+ · seu plano de estudo</title>
-<meta name="description" content="Estude+: transforma seu material em resumo, quiz, flashcards e um plano de estudo até o dia da prova. Com simulados e correção de redação do ENEM.">
-<meta name="theme-color" content="#2033A6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1F3B33" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Estude+: resumos de alunos, tutor de IA que resolve exercício por foto, plano de estudo até a prova, flashcards, simulados do ENEM e comunidade.">
+<meta name="theme-color" content="#2E45E6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1331" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preload" href="fontes/shantell-sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fontes/atkinson-next.woff2" as="font" type="font/woff2" crossorigin>
 <script>
-  // tema escolhido no perfil (caderno = claro, lousa = escuro); sem escolha, segue o aparelho
-  try { var t = localStorage.getItem('estude-tema'); if (t === 'lousa' || t === 'caderno') document.documentElement.dataset.tema = t; } catch (e) {}
+  // tema escolhido no perfil; sem escolha, segue o aparelho (nomes antigos continuam valendo)
+  try {
+    var t = localStorage.getItem('estude-tema');
+    if (t === 'caderno') t = 'claro'; if (t === 'lousa') t = 'escuro';
+    if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
+  } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="styles.css?v=3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<!-- ícones desenhados (traço de caneta) e filtros de tinta -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <filter id="tinta-carimbo" x="-10%" y="-10%" width="120%" height="120%">
-      <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="ruido"/>
-      <feColorMatrix in="ruido" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.6 1.25" result="falhas"/>
-      <feComposite in="SourceGraphic" in2="falhas" operator="in" result="tinta"/>
-      <feTurbulence type="turbulence" baseFrequency=".06" numOctaves="1" seed="3" result="onda"/>
-      <feDisplacementMap in="tinta" in2="onda" scale="2.2"/>
-    </filter>
-  </defs>
   <symbol id="i-hoje" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M8.6 14.6l2.3 2.2 4.6-4.6"/></symbol>
   <symbol id="i-materias" viewBox="0 0 24 24"><path d="M6.5 3.5h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-11z"/><path d="M4 7h4.5M4 11h4.5M4 15h4.5M4 19h4.5"/><path d="M11.5 8.5h5M11.5 12h3.5"/></symbol>
-  <symbol id="i-enem" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="8.5" cy="8" r="1.6"/><circle cx="12" cy="8" r="1.6" class="cheio" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8" r="1.6"/><circle cx="8.5" cy="13" r="1.6" class="cheio" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="1.6"/><circle cx="15.5" cy="13" r="1.6"/><path d="M8 17.5h8"/></symbol>
+  <symbol id="i-tutor" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3.5a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v.2h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3.5z"/><path d="M19.8 2.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5z"/></symbol>
+  <symbol id="i-biblioteca" viewBox="0 0 24 24"><rect x="3" y="4" width="4.5" height="16" rx="1"/><rect x="9" y="4" width="4.5" height="16" rx="1"/><path d="M15.4 5.4l3.9-1.1 3.4 14-3.9 1.1z"/><path d="M3 8h4.5M9 16h4.5"/></symbol>
+  <symbol id="i-comunidade" viewBox="0 0 24 24"><path d="M3.5 4.5h10a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H8l-3.5 3v-3h-1A1.5 1.5 0 0 1 2 12V6a1.5 1.5 0 0 1 1.5-1.5z"/><path d="M17.5 8.5h3A1.5 1.5 0 0 1 22 10v5.5a1.5 1.5 0 0 1-1.5 1.5H20v2.5L17 17h-4.5a1.5 1.5 0 0 1-1.5-1.5v-.5"/></symbol>
+  <symbol id="i-enem" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="8.5" cy="8" r="1.6"/><circle cx="12" cy="8" r="1.6" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8" r="1.6"/><circle cx="8.5" cy="13" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="1.6"/><circle cx="15.5" cy="13" r="1.6"/><path d="M8 17.5h8"/></symbol>
   <symbol id="i-liga" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5.5H5.2a3 3 0 0 0 3 4.3M16 5.5h2.8a3 3 0 0 1-3 4.3"/><path d="M12 13v3.5M9.5 16.5h5l.6 4h-6.2z"/></symbol>
   <symbol id="i-grupos" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><circle cx="16.8" cy="9.6" r="2.4"/><path d="M15.6 14.3a4.6 4.6 0 0 1 5.4 5.2"/></symbol>
-  <symbol id="i-perfil" viewBox="0 0 24 24"><rect x="4" y="6.5" width="16" height="14" rx="2.5"/><path d="M10 3.5h4v5h-4z"/><circle cx="9.5" cy="13" r="2"/><path d="M6.8 17.8a3 3 0 0 1 5.4 0M14.5 12h3M14.5 15.5h3"/></symbol>
+  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
   <symbol id="i-plano" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2"/></symbol>
   <symbol id="i-resumo" viewBox="0 0 24 24"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5v13"/></symbol>
   <symbol id="i-mapa" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="4.8" cy="5.5" r="2"/><circle cx="19.2" cy="5.5" r="2"/><circle cx="4.8" cy="18.5" r="2"/><circle cx="19.2" cy="18.5" r="2"/><path d="M6.3 7l3.4 3M17.7 7l-3.4 3M6.3 17l3.4-3M17.7 17l-3.4-3"/></symbol>
   <symbol id="i-cards" viewBox="0 0 24 24"><path d="M5 8.2l9.8-1.6"/><rect x="7.5" y="7" width="13.5" height="11" rx="1.5"/><path d="M4.2 9.5l1.3 9.4 2-.3"/><path d="M10.5 10.5h7.5M10.5 13.5h5"/></symbol>
   <symbol id="i-quiz" viewBox="0 0 24 24"><path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5v-3.5H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><path d="M10 9a2 2 0 1 1 2.8 1.8c-.6.3-.8.7-.8 1.3"/><path d="M12 14.6v.2"/></symbol>
   <symbol id="i-prova" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M8.5 11h4.5M8.5 14.5h3.5"/><path d="M13.3 18.8l1.4 1.3 3-3.2"/></symbol>
-  <symbol id="i-raio" viewBox="0 0 24 24"><path d="M13.5 2.5L5.5 13.5h6l-1 8 8-11h-6z"/></symbol>
+  <symbol id="i-redacao" viewBox="0 0 24 24"><path d="M15.5 4.5l4 4L9 19l-5 1 1-5z"/><path d="M13.5 6.5l4 4"/></symbol>
   <symbol id="i-foto" viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.5h6.8L17 8h3a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
   <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M6 3h8.5L19 7.5V21H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 16.5h6"/></symbol>
   <symbol id="i-texto" viewBox="0 0 24 24"><path d="M15.5 4.5l4 4L9 19l-5 1 1-5z"/><path d="M13.5 6.5l4 4"/></symbol>
@@ -54,16 +51,28 @@
   <symbol id="i-globo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5z"/></symbol>
   <symbol id="i-frasco" viewBox="0 0 24 24"><path d="M9.5 3h5M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.4 15h9.2"/></symbol>
   <symbol id="i-esquadro" viewBox="0 0 24 24"><path d="M4 20.5V4l16.5 16.5z"/><path d="M8 16.5v-4.6l4.6 4.6z"/><path d="M4 8h2M4 12h2"/></symbol>
-  <symbol id="i-dado" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.2" class="cheio" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" class="cheio" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" class="cheio" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-chama" viewBox="0 0 24 24"><path class="cheio" fill="currentColor" stroke="none" d="M12 21.5c-3.9 0-6.6-2.7-6.6-6.3 0-3.4 2.4-5.4 3.7-8.3.4 1.7 1.3 2.8 2.4 3.3.1-3.5 1.6-6.1 4.5-7.4-.5 2.6.7 4.4 2 6.2 1 1.4 1.5 2.9 1.5 4.8 0 4.6-3.3 7.7-7.5 7.7z"/></symbol>
+  <symbol id="i-dado" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-chama" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 21.5c-3.9 0-6.6-2.7-6.6-6.3 0-3.4 2.4-5.4 3.7-8.3.4 1.7 1.3 2.8 2.4 3.3.1-3.5 1.6-6.1 4.5-7.4-.5 2.6.7 4.4 2 6.2 1 1.4 1.5 2.9 1.5 4.8 0 4.6-3.3 7.7-7.5 7.7z"/></symbol>
   <symbol id="i-estrela" viewBox="0 0 24 24"><path d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></symbol>
-  <symbol id="i-voltar" viewBox="0 0 24 24"><path d="M19.5 12.3c-4.5-.4-9.5-.2-14 .1M10.8 5.8C8.6 8 6.8 10 5 12.4c1.9 2 3.9 4 6 5.9"/></symbol>
+  <symbol id="i-voltar" viewBox="0 0 24 24"><path d="M19 12H5.5M11 5.5L4.8 12l6.2 6.5"/></symbol>
   <symbol id="i-sair" viewBox="0 0 24 24"><path d="M14 4H6v16h8"/><path d="M10 12h10M16.5 8.5L20 12l-3.5 3.5"/></symbol>
   <symbol id="i-lixo" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/></symbol>
   <symbol id="i-lua" viewBox="0 0 24 24"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
   <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
   <symbol id="i-chave" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16.5 6.5l2.5 2.5M14.5 8.5l2 2"/></symbol>
   <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></symbol>
+  <symbol id="i-coracao" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></symbol>
+  <symbol id="i-salvar" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/></symbol>
+  <symbol id="i-enviar" viewBox="0 0 24 24"><path d="M21 3.5L10 14M21 3.5l-7 17-4-6.5-6.5-4z"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol>
+  <symbol id="i-som" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+  <symbol id="i-pare" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></symbol>
+  <symbol id="i-olho" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-bandeira" viewBox="0 0 24 24"><path d="M5 21V4M5 4.5h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-bloquear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></symbol>
+  <symbol id="i-teclado" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M7.5 14h9"/></symbol>
 </svg>
 
 <canvas id="fx-canvas" aria-hidden="true"></canvas>
@@ -71,11 +80,15 @@
 <div class="app-shell">
   <aside class="sidebar sidebar-hidden" id="sidebar">
     <div class="brand side">Estude<span class="plus">+</span></div>
-    <span class="sidebar-tagline">um pouquinho todo dia</span>
+    <span class="sidebar-tagline">estudar junto é mais fácil</span>
     <nav class="sidebar-nav">
       <button class="nav-item side-item" data-s="home" onclick="verHoje()"><svg class="ico"><use href="#i-hoje"/></svg><span>Hoje</span></button>
       <button class="nav-item side-item" data-s="materias" onclick="verMaterias()"><svg class="ico"><use href="#i-materias"/></svg><span>Matérias</span></button>
-      <button class="nav-item side-item" data-s="enem" onclick="verEnem()"><svg class="ico"><use href="#i-enem"/></svg><span>ENEM</span></button>
+      <button class="nav-item side-item" data-s="tutor" onclick="verTutor()"><svg class="ico"><use href="#i-tutor"/></svg><span>Tutor</span></button>
+      <button class="nav-item side-item" data-s="biblioteca" onclick="verBiblioteca()"><svg class="ico"><use href="#i-biblioteca"/></svg><span>Biblioteca</span></button>
+      <button class="nav-item side-item" data-s="comunidade" onclick="verComunidade()"><svg class="ico"><use href="#i-comunidade"/></svg><span>Comunidade</span></button>
+      <span class="grupo-nav">praticar</span>
+      <button class="nav-item side-item" data-s="enem" onclick="verEnem()"><svg class="ico"><use href="#i-enem"/></svg><span>ENEM e redação</span></button>
       <button class="nav-item side-item" data-s="liga" onclick="verLiga()"><svg class="ico"><use href="#i-liga"/></svg><span>Liga</span></button>
       <button class="nav-item side-item" data-s="grupos" onclick="verGrupos()"><svg class="ico"><use href="#i-grupos"/></svg><span>Turmas e grupos</span></button>
       <button class="nav-item side-item" data-s="perfil" onclick="verPerfil()"><svg class="ico"><use href="#i-perfil"/></svg><span>Perfil</span></button>
@@ -100,7 +113,7 @@
       </svg>
       <div class="brand xl">Estude<span class="plus">+</span></div>
       <h1>Entrar na conta</h1>
-      <span class="hand">seu plano de estudo te espera</span>
+      <span class="hand">resumos, tutor e seu plano até a prova</span>
       <div class="onboard-field"><label for="input-email-login">e-mail</label><input type="email" id="input-email-login" placeholder="voce@email.com" autocomplete="email"></div>
       <div class="onboard-field"><label for="input-senha-login">senha</label><input type="password" id="input-senha-login" placeholder="sua senha" autocomplete="current-password"></div>
       <button class="onboard-btn" id="btn-login" onclick="entrarComEmailSenha()">Entrar</button>
@@ -127,6 +140,8 @@
         <button class="role-pill" id="role-professor" onclick="setRole('professor')"><span class="r-ic">🍎</span><span class="r-lbl">Sou professor</span></button>
       </div>
       <div class="onboard-field"><label for="input-nome">seu nome</label><input type="text" id="input-nome" placeholder="ex: Ana Souza" autocomplete="name"></div>
+      <div class="onboard-field" id="campo-serie"><label for="input-serie">sua série</label>
+        <select id="input-serie"><option value="">escolhe</option><option>6º ano</option><option>7º ano</option><option>8º ano</option><option>9º ano</option><option>1º EM</option><option>2º EM</option><option>3º EM</option><option>Cursinho</option><option>Faculdade</option></select></div>
       <div class="onboard-field"><label for="input-email-cadastro">e-mail</label><input type="email" id="input-email-cadastro" placeholder="voce@email.com" autocomplete="email"></div>
       <div class="onboard-field"><label for="input-senha-cadastro">senha</label><input type="password" id="input-senha-cadastro" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
       <div class="onboard-field"><label for="input-senha-cadastro-confirma">confirmar senha</label><input type="password" id="input-senha-cadastro-confirma" placeholder="digita a senha de novo" autocomplete="new-password"></div>
@@ -191,7 +206,10 @@
           <h1 id="home-saudacao">Oi!</h1>
           <span class="hand" id="home-sub">bora pro plano de hoje?</span>
         </div>
-        <div class="energy-pill" id="home-energia" title="gerações de IA restantes hoje">7</div>
+        <div class="header-direita">
+          <div class="energy-pill" id="home-energia" title="gerações de IA restantes hoje">7</div>
+          <button class="avatar-btn" id="home-avatar" onclick="verPerfil()" aria-label="meu perfil">?</button>
+        </div>
       </header>
 
       <div id="install-wrap"></div>
@@ -199,46 +217,57 @@
       <div class="streak-card">
         <div class="streak-top">
           <div class="chama-wrap" id="home-chama"><svg class="chama"><use href="#i-chama"/></svg></div>
-          <div>
-            <span class="num" id="home-streak">0 dias</span>
-            <span class="eyebrow">de sequência</span>
-          </div>
+          <div><span class="num" id="home-streak">0 dias</span><span class="eyebrow">de sequência</span></div>
         </div>
         <div class="stamps" id="home-stamps"></div>
         <div class="xp-mini"><span id="home-nivel">nível 1</span><div class="xp-track"><div class="xp-fill" id="home-xp-fill" style="width:0%"></div></div><span id="home-xp">0 XP</span></div>
       </div>
 
-      <div class="card folha-pautada" id="home-plano">
+      <div class="atalhos">
+        <button class="atalho c-azul" onclick="verMaterias()"><span class="bolinha"><svg class="ico"><use href="#i-materias"/></svg></span>Matérias</button>
+        <button class="atalho c-rosa" onclick="abrirRevisaoCards()"><span class="bolinha"><svg class="ico"><use href="#i-cards"/></svg></span>Flashcards</button>
+        <button class="atalho c-verde" onclick="verEnem()"><span class="bolinha"><svg class="ico"><use href="#i-enem"/></svg></span>ENEM</button>
+        <button class="atalho c-laranja" onclick="novaRedacao()"><span class="bolinha"><svg class="ico"><use href="#i-redacao"/></svg></span>Redação</button>
+        <button class="atalho c-amarelo" onclick="verLiga()"><span class="bolinha"><svg class="ico"><use href="#i-liga"/></svg></span>Liga</button>
+        <button class="atalho c-roxo" onclick="verGrupos()"><span class="bolinha"><svg class="ico"><use href="#i-grupos"/></svg></span>Turmas</button>
+      </div>
+
+      <div class="card" id="home-plano">
         <div class="card-head"><h3>Seu plano de hoje</h3><span class="hand" id="home-plano-sub"></span></div>
         <div id="home-tarefas"><div class="loading">carregando...</div></div>
       </div>
 
-      <div class="review-card" id="home-revisao" onclick="abrirRevisaoCards()" role="button" tabindex="0">
-        <div class="big" id="home-cards-n">0</div>
-        <div><div class="t">Flashcards pra revisar</div><div class="s" id="home-cards-s">revisão espaçada: no momento certo, antes de esquecer</div></div>
+      <div id="home-lado">
+        <div class="tutor-cta" onclick="abrirTutorFoto()" role="button" tabindex="0">
+          <div class="bolinha"><svg class="ico"><use href="#i-foto"/></svg></div>
+          <div><div class="t">Travou num exercício?</div><div class="s">tira uma foto e o tutor resolve passo a passo</div></div>
+        </div>
+        <div class="review-card" id="home-revisao" onclick="abrirRevisaoCards()" role="button" tabindex="0">
+          <div class="big" id="home-cards-n">0</div>
+          <div><div class="t">Flashcards pra revisar</div><div class="s" id="home-cards-s">revisão espaçada: no momento certo, antes de esquecer</div></div>
+        </div>
+        <div class="league-mini" id="home-liga" onclick="verLiga()" role="button" tabindex="0">
+          <div class="medal-big" id="home-liga-medal">🥉</div>
+          <div><div class="t" id="home-liga-t">Liga da semana</div><div class="s" id="home-liga-s">ganhe XP estudando e suba de divisão</div></div>
+        </div>
+        <div id="home-provas"></div>
+        <div class="upload-cta" onclick="novaMateria()" role="button" tabindex="0">
+          <h3>Tem matéria nova?</h3>
+          <p>Foto do caderno, PDF, texto ou vídeo viram resumo, quiz, flashcards e um plano até o dia da prova.</p>
+          <button class="upload-btn"><svg class="ico"><use href="#i-mais"/></svg>Adicionar material</button>
+        </div>
       </div>
 
-      <div class="league-mini" id="home-liga" onclick="verLiga()" role="button" tabindex="0">
-        <div class="medal-big" id="home-liga-medal">🥉</div>
-        <div><div class="t" id="home-liga-t">Liga da semana</div><div class="s" id="home-liga-s">ganhe XP estudando e suba de divisão</div></div>
-      </div>
-
-      <div id="home-provas"></div>
-
-      <div class="upload-cta" onclick="novaMateria()" role="button" tabindex="0">
-        <h3>Tem matéria nova?</h3>
-        <p>Foto do caderno, PDF, texto ou vídeo viram resumo, quiz, flashcards e um plano até o dia da prova.</p>
-        <button class="upload-btn"><svg class="ico"><use href="#i-foto"/></svg>Adicionar material</button>
-      </div>
+      <div id="home-biblio"></div>
     </div>
   </section>
 
   <!-- ============ MATÉRIAS ============ -->
   <section class="screen" id="screen-materias">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verHoje()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Minhas matérias</h2></div>
+      <div class="topbar"><h2>Minhas matérias</h2></div>
       <div id="lista-materias"><div class="loading">carregando...</div></div>
-      <button class="create-btn" onclick="novaMateria()">Nova matéria</button>
+      <button class="create-btn" onclick="novaMateria()"><svg class="ico"><use href="#i-mais"/></svg>Nova matéria</button>
     </div>
   </section>
 
@@ -274,7 +303,7 @@
 
       <div class="step-label">materiais anexados</div>
       <div id="mat-materiais"></div>
-      <div class="new-group-row"><button class="ghost-btn" onclick="adicionarMaterialNaMateria()">+ adicionar material</button></div>
+      <div class="new-group-row"><button class="ghost-btn" onclick="adicionarMaterialNaMateria()"><svg class="ico"><use href="#i-mais"/></svg>adicionar material</button></div>
       <button class="ghost-btn perigo" id="btn-excluir-materia" onclick="excluirMateriaAtual()"><svg class="ico"><use href="#i-lixo"/></svg>excluir essa matéria inteira</button>
     </div>
   </section>
@@ -287,13 +316,9 @@
 
       <div id="upload-passos-materia">
         <div class="step-label"><b>1</b> qual matéria é essa?</div>
-        <div class="date-field">
-          <input type="text" id="input-materia" placeholder="ex: Biologia, Direito Civil, Inglês..." aria-label="nome da matéria">
-        </div>
+        <div class="date-field"><input type="text" id="input-materia" placeholder="ex: Biologia, Direito Civil, Inglês..." aria-label="nome da matéria"></div>
         <div class="step-label"><b>2</b> quando é a prova? <span class="muted">com a data eu monto seu plano</span></div>
-        <div class="date-field data">
-          <input type="date" id="input-data-prova" aria-label="data da prova">
-        </div>
+        <div class="date-field data"><input type="date" id="input-data-prova" aria-label="data da prova"></div>
       </div>
 
       <div class="step-label" id="upload-passo-fonte"><b>3</b> de onde vem o material?</div>
@@ -319,13 +344,11 @@
         <input type="file" id="input-galeria" accept="image/*" hidden onchange="fotoSelecionada(event)">
       </div>
       <div class="source-panel" id="src-pdf">
-        <div class="file-box" onclick="$('input-pdf').click()" role="button" tabindex="0">
-          <span class="ic" id="pdf-icone">📄</span><span id="pdf-status">toque pra escolher um PDF (até 15 MB)</span>
-        </div>
+        <div class="file-box" onclick="$('input-pdf').click()" role="button" tabindex="0"><span class="ic" id="pdf-icone">📄</span><span id="pdf-status">toque pra escolher um PDF (até 15 MB)</span></div>
         <input type="file" id="input-pdf" accept="application/pdf" hidden onchange="pdfSelecionado(event)">
       </div>
       <div class="source-panel" id="src-texto">
-        <div class="field"><textarea id="input-texto" class="pautado" aria-label="texto do material" placeholder="cola aqui suas anotações, o texto do livro ou o que o professor passou no quadro"></textarea></div>
+        <div class="field"><textarea id="input-texto" aria-label="texto do material" placeholder="cola aqui suas anotações, o texto do livro ou o que o professor passou no quadro"></textarea></div>
       </div>
       <div class="source-panel" id="src-youtube">
         <div class="link-box"><svg class="ico"><use href="#i-video"/></svg><input type="text" id="input-youtube" placeholder="cole o link do vídeo do YouTube" aria-label="link do YouTube"></div>
@@ -362,7 +385,7 @@
     <div class="sheet">
       <div class="topbar"><button class="back-btn" onclick="sairDoQuiz()" aria-label="sair do quiz"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="quiz-titulo">Quiz</h2></div>
       <div class="quiz-topbar"><span class="quiz-progress-label" id="quiz-progress-label">pergunta 1 de 5</span><span class="points" id="quiz-points">+0 XP</span></div>
-      <div class="bar-track regua"><div class="bar-fill" id="quiz-bar-fill" style="width:0%;"></div></div>
+      <div class="bar-track"><div class="bar-fill" id="quiz-bar-fill" style="width:0%;"></div></div>
       <div class="question-card"><div class="q-eyebrow" id="quiz-topico">gerado a partir do seu material</div><div class="q-text" id="quiz-pergunta-texto">Carregando...</div></div>
       <div class="options" id="quiz-opcoes"></div>
       <div class="feedback" id="quiz-feedback" hidden><span id="quiz-feedback-icon"></span><span class="hand" id="quiz-feedback-texto"></span></div>
@@ -393,7 +416,7 @@
     <div class="sheet">
       <div class="topbar"><button class="back-btn" onclick="sairDosCards()" aria-label="parar revisão"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="cards-titulo">Revisão de flashcards</h2></div>
       <div class="quiz-topbar"><span class="quiz-progress-label" id="cards-progresso">—</span><span class="points" id="cards-xp">+0 XP</span></div>
-      <div class="bar-track regua"><div class="bar-fill" id="cards-bar" style="width:0%;"></div></div>
+      <div class="bar-track"><div class="bar-fill" id="cards-bar" style="width:0%;"></div></div>
       <div class="flash-wrap">
         <div class="pilha" aria-hidden="true"><i></i><i></i></div>
         <div class="flash" id="flash" onclick="virarCard()">
@@ -401,6 +424,7 @@
           <div class="flash-face back"><span class="lbl">resposta</span><div class="txt" id="flash-verso"></div></div>
         </div>
       </div>
+      <div class="voz-resultado" id="cards-voz-res" hidden></div>
       <div id="cards-notas" hidden>
         <p class="hand muted center small">quão bem você lembrou?</p>
         <div class="grades">
@@ -410,7 +434,11 @@
           <button class="grade g4" onclick="avaliarCard(4)">Fácil<small>na hora</small></button>
         </div>
       </div>
-      <button class="btn full" id="cards-virar" onclick="virarCard()">Mostrar resposta</button>
+      <div class="voz-linha" id="cards-voz">
+        <button class="btn" id="cards-falar" onclick="responderFalando()"><svg class="ico"><use href="#i-mic"/></svg><span>Responder falando</span></button>
+        <button class="btn" id="cards-digitar" onclick="responderDigitando()" aria-label="responder digitando"><svg class="ico"><use href="#i-teclado"/></svg></button>
+      </div>
+      <button class="btn coral full" id="cards-virar" onclick="virarCard()">Mostrar resposta</button>
     </div>
   </section>
 
@@ -424,6 +452,134 @@
         <div class="stat-box"><div class="n" id="cardsfim-xp">0</div><div class="l">XP ganho</div></div>
       </div>
       <div class="stack-gap"><button class="btn coral full" onclick="verHoje()">Voltar pro Hoje</button></div>
+    </div>
+  </section>
+
+  <!-- ============ TUTOR ============ -->
+  <section class="screen" id="screen-tutor">
+    <div class="sheet">
+      <div class="topbar"><h2>Tutor</h2><span class="pill" id="tutor-restantes"></span></div>
+      <div class="tutor-hero">
+        <h2>Travou em alguma coisa?</h2>
+        <p>Tira uma foto do exercício ou escreve a dúvida. O tutor explica passo a passo, sem pressa.</p>
+        <button class="btn branco" onclick="$('tutor-foto-input').click()"><svg class="ico"><use href="#i-foto"/></svg>Tirar foto do exercício</button>
+        <div class="ou">
+          <input id="tutor-pergunta-rapida" placeholder="ou escreve aqui sua dúvida" onkeydown="if (event.key === 'Enter') perguntarRapido()" aria-label="sua dúvida">
+          <button onclick="perguntarRapido()" aria-label="perguntar"><svg class="ico"><use href="#i-enviar"/></svg></button>
+        </div>
+      </div>
+      <div class="step-label">de qual matéria?</div>
+      <div class="chip-toggle" id="tutor-materias"></div>
+      <div class="section-title"><h2>Suas conversas</h2></div>
+      <div id="tutor-lista"><div class="loading">carregando...</div></div>
+      <input type="file" id="tutor-foto-input" accept="image/*" capture="environment" hidden onchange="tutorFotoEscolhida(event)">
+    </div>
+  </section>
+
+  <section class="screen chat-tela" id="screen-tutor-chat">
+    <div class="sheet">
+      <div class="topbar">
+        <button class="back-btn" onclick="verTutor()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
+        <div class="titulos"><h2 id="tchat-titulo">Tutor</h2><span class="sub" id="tchat-sub">explica passo a passo</span></div>
+        <button class="icone-btn" id="tchat-apagar" onclick="apagarConversaAtual()" aria-label="apagar conversa"><svg class="ico"><use href="#i-lixo"/></svg></button>
+      </div>
+      <div class="mensagens" id="tchat-mensagens"></div>
+    </div>
+  </section>
+
+  <!-- ============ BIBLIOTECA ============ -->
+  <section class="screen" id="screen-biblioteca">
+    <div class="sheet">
+      <div class="topbar"><h2>Biblioteca</h2></div>
+      <div class="busca"><svg class="ico"><use href="#i-busca"/></svg><input type="search" id="bib-busca" placeholder="buscar resumo, matéria ou assunto" oninput="buscarBibliotecaDepois()" aria-label="buscar na biblioteca"></div>
+      <div class="segmento" id="bib-ordem">
+        <button class="on" data-o="populares" onclick="ordemBiblioteca('populares')">Em alta</button>
+        <button data-o="recentes" onclick="ordemBiblioteca('recentes')">Novos</button>
+        <button data-o="seguindo" onclick="ordemBiblioteca('seguindo')">Seguindo</button>
+        <button data-o="salvos" onclick="ordemBiblioteca('salvos')">Salvos</button>
+        <button data-o="meus" onclick="ordemBiblioteca('meus')">Meus</button>
+      </div>
+      <div class="filtros">
+        <select id="bib-materia" onchange="carregarBiblioteca()" aria-label="matéria"><option value="">todas as matérias</option></select>
+        <select id="bib-serie" onchange="carregarBiblioteca()" aria-label="série"><option value="">todas as séries</option><option>6º ano</option><option>7º ano</option><option>8º ano</option><option>9º ano</option><option>1º EM</option><option>2º EM</option><option>3º EM</option><option>Cursinho</option><option>Faculdade</option></select>
+      </div>
+      <div class="grade-resumos" id="bib-lista"><div class="loading">carregando...</div></div>
+      <div class="mais-btn"><button class="btn" id="bib-mais" hidden onclick="carregarBiblioteca(true)">Carregar mais</button></div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-resumo">
+    <div class="sheet">
+      <div class="resumo-hero" id="res-hero">
+        <div class="topbar">
+          <button class="back-btn" onclick="voltarDoResumo()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
+          <div style="flex:1"></div>
+        </div>
+        <span class="mat" id="res-materia"></span>
+        <h1 id="res-titulo"></h1>
+        <div class="meta" id="res-meta"></div>
+      </div>
+      <div class="autor-linha" id="res-autor"></div>
+      <div id="res-aviso"></div>
+      <div class="acoes-resumo">
+        <button id="res-curtir" onclick="curtirResumoAtual()"><svg class="ico"><use href="#i-coracao"/></svg><span id="res-curtidas">0</span></button>
+        <button id="res-salvar" onclick="salvarResumoAtual()"><svg class="ico"><use href="#i-salvar"/></svg><span>Salvar</span></button>
+        <button id="res-ouvir" onclick="ouvirResumoAtual()"><svg class="ico"><use href="#i-som"/></svg><span>Ouvir</span></button>
+      </div>
+      <div class="card conteudo-resumo" id="res-conteudo"></div>
+      <div id="res-cards"></div>
+      <div id="res-mais-autor"></div>
+      <button class="denunciar-link" id="res-denunciar" onclick="denunciarResumoAtual()">denunciar esse resumo</button>
+      <button class="ghost-btn perigo" id="res-apagar" hidden onclick="apagarResumoAtual()"><svg class="ico"><use href="#i-lixo"/></svg>apagar meu resumo</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-publicar">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="voltarDoPublicar()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Publicar resumo</h2></div>
+      <p class="hand">Seu resumo fica na biblioteca pra alunos do Brasil todo. Antes de aparecer, a IA confere se está tudo certo.</p>
+      <div class="field"><label for="pub-origem">começar de uma matéria minha <span class="opt">(opcional)</span></label><select id="pub-origem" onchange="importarDaMateria()"><option value="">escrever do zero</option></select></div>
+      <div class="previa-capa" id="pub-previa"></div>
+      <div class="field"><label for="pub-titulo">título</label><input type="text" id="pub-titulo" maxlength="120" placeholder="ex: Mitose em 5 minutos" oninput="previaCapa()"></div>
+      <div class="inline-form on" style="padding:0; box-shadow:none; background:none; margin:0;">
+        <div class="row">
+          <div><label for="pub-materia">matéria</label><input type="text" id="pub-materia" list="lista-materias-pub" maxlength="60" placeholder="ex: Biologia" oninput="previaCapa()"></div>
+          <div><label for="pub-serie">série</label><select id="pub-serie"><option value="">qualquer</option><option>6º ano</option><option>7º ano</option><option>8º ano</option><option>9º ano</option><option>1º EM</option><option>2º EM</option><option>3º EM</option><option>Cursinho</option><option>Faculdade</option></select></div>
+        </div>
+      </div>
+      <datalist id="lista-materias-pub"><option>Matemática</option><option>Português</option><option>Redação</option><option>Biologia</option><option>Química</option><option>Física</option><option>História</option><option>Geografia</option><option>Inglês</option><option>Espanhol</option><option>Filosofia</option><option>Sociologia</option><option>Artes</option></datalist>
+      <label class="step-label" style="margin-top:4px;">cor da capa</label>
+      <div class="cores" id="pub-cores"></div>
+      <div class="field"><label for="pub-conteudo">resumo</label><textarea id="pub-conteudo" style="min-height:260px" oninput="previaCapa()" placeholder="escreve com suas palavras: o que é, como funciona, exemplos e o que mais cai na prova"></textarea>
+        <p class="small muted" style="margin-top:6px;">dica: linha começando com # vira título e com - vira lista</p></div>
+      <div class="card" id="pub-cards-wrap" hidden><h3>Flashcards junto</h3><p class="small muted" id="pub-cards-info"></p></div>
+      <button class="create-btn" id="btn-publicar" onclick="publicarResumo()">Publicar na biblioteca</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-autor">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="voltarDoAutor()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Perfil</h2></div>
+      <div id="autor-conteudo"><div class="loading">carregando...</div></div>
+    </div>
+  </section>
+
+  <!-- ============ COMUNIDADE ============ -->
+  <section class="screen" id="screen-comunidade">
+    <div class="sheet">
+      <div class="topbar"><h2>Comunidade</h2></div>
+      <div class="regras"><span style="font-size:20px;">🛡️</span><div><b>Combinado da comunidade</b>Respeito sempre. Nada de link, telefone ou @ de rede social. Viu algo estranho? Toque na mensagem e denuncie.</div></div>
+      <div id="salas-lista"><div class="loading">carregando...</div></div>
+    </div>
+  </section>
+
+  <section class="screen chat-tela" id="screen-sala">
+    <div class="sheet">
+      <div class="topbar">
+        <button class="back-btn" onclick="verComunidade()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
+        <div class="titulos"><h2 id="sala-titulo">Sala</h2><span class="sub" id="sala-sub"></span></div>
+      </div>
+      <div class="mensagens" id="sala-mensagens"></div>
     </div>
   </section>
 
@@ -490,10 +646,7 @@
   <section class="screen" id="screen-simulado-fim">
     <div class="sheet">
       <div class="topbar"><button class="back-btn" onclick="verEnem()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Resultado</h2></div>
-      <div class="nota-hero">
-        <div class="score-big" id="simfim-score">0/10</div>
-        <p class="hand muted" id="simfim-sub"></p>
-      </div>
+      <div class="nota-hero"><div class="score-big" id="simfim-score">0/10</div><p class="hand muted" id="simfim-sub"></p></div>
       <div class="card"><h3>Por área</h3><div id="simfim-areas"></div></div>
       <div class="card"><h3>Correção</h3><p class="small muted">toque numa questão pra rever com o gabarito</p><div class="qgrid" id="simfim-grid"></div></div>
       <div class="stack-gap"><button class="btn coral full" onclick="verEnem()">Fazer outro simulado</button></div>
@@ -507,7 +660,7 @@
       <div id="redacao-form">
         <div class="field"><label for="redacao-tema">tema</label><select id="redacao-tema" onchange="temaMudou()"></select></div>
         <div class="field" id="redacao-tema-outro-wrap" hidden><label for="redacao-tema-outro">escreve o tema</label><input type="text" id="redacao-tema-outro" placeholder="ex: Caminhos para combater a evasão escolar no Brasil"></div>
-        <div class="field folha-redacao"><label for="redacao-texto">sua redação <span id="redacao-linhas">· 0 linhas</span></label><textarea id="redacao-texto" class="pautado" oninput="contarLinhas()" placeholder="título (opcional) e o texto dissertativo-argumentativo, de 7 a 30 linhas"></textarea></div>
+        <div class="field"><label for="redacao-texto">sua redação <span id="redacao-linhas">· 0 linhas</span></label><textarea id="redacao-texto" oninput="contarLinhas()" placeholder="título (opcional) e o texto dissertativo-argumentativo, de 7 a 30 linhas"></textarea></div>
         <button class="btn coral full" id="btn-corrigir" onclick="corrigirRedacao()">Corrigir minha redação</button>
         <p class="hand muted center small">usa 1 de energia</p>
       </div>
@@ -525,6 +678,8 @@
         <ul class="xp-lista">
           <li><span>tarefa do plano concluída</span><b>15 XP</b><em>+20 se fechar o dia</em></li>
           <li><span>resposta certa no quiz</span><b>10 XP</b><em>errada vale 3</em></li>
+          <li><span>resumo publicado na biblioteca</span><b>25 XP</b><em>+2 por curtida que você recebe</em></li>
+          <li><span>pergunta ao tutor</span><b>3 XP</b><em>até 5 por dia</em></li>
           <li><span>flashcard revisado</span><b>2 XP</b></li>
           <li><span>simulado ENEM</span><b>10 XP</b><em>+5 por acerto</em></li>
           <li><span>redação corrigida</span><b>30 XP</b></li>
@@ -532,7 +687,6 @@
         </ul>
         <p class="small muted">Toda segunda a liga fecha: os 5 primeiros sobem de divisão e os 5 últimos descem. Bronze, Prata, Ouro e Diamante.</p>
       </div>
-      <div class="new-group-row"><button class="ghost-btn" onclick="verGrupos()">ver minhas turmas e grupos</button></div>
     </div>
   </section>
 
@@ -542,7 +696,7 @@
       <div class="topbar"><button class="back-btn" onclick="verHoje()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Turmas e grupos</h2></div>
       <div id="lista-grupos"><div class="loading">carregando...</div></div>
       <div class="new-group-row">
-        <button class="ghost-btn" onclick="toggleForm('criar')">+ criar grupo</button>
+        <button class="ghost-btn" onclick="toggleForm('criar')"><svg class="ico"><use href="#i-mais"/></svg>criar grupo</button>
         <button class="ghost-btn" onclick="toggleForm('entrar')"><svg class="ico"><use href="#i-chave"/></svg>entrar com código</button>
       </div>
       <div class="inline-form" id="form-criar">
@@ -554,7 +708,7 @@
         <label for="input-codigo-grupo">código</label><input type="text" id="input-codigo-grupo" class="codigo-input" placeholder="KX9F2A">
         <button class="go-btn" id="btn-entrar-grupo" onclick="entrarComCodigoNoGrupo()">Entrar no grupo</button>
       </div>
-      <p class="hand muted small">Professor cria a turma e passa o código. O material que ele importa aparece pra todo mundo, e cada aluno ganha seu próprio plano até a prova.</p>
+      <p class="hand muted small">Professor cria a turma e passa o código. O material que ele importa aparece pra todo mundo, cada aluno ganha seu próprio plano até a prova e a turma ganha uma sala de conversa na Comunidade.</p>
     </div>
   </section>
 
@@ -584,8 +738,9 @@
         <div class="stat-box"><div class="n" id="perfil-maior">0</div><div class="l">maior sequência</div></div>
         <div class="stat-box"><div class="n" id="perfil-divisao">🥉</div><div class="l">divisão</div></div>
       </div>
+      <div class="new-group-row"><button class="ghost-btn" onclick="abrirAutor(estado.usuarioId)"><svg class="ico"><use href="#i-biblioteca"/></svg>meu perfil público</button></div>
 
-      <div class="section-title"><h2>Álbum de figurinhas</h2><span class="hand" id="perfil-album-n"></span></div>
+      <div class="section-title"><h2>Conquistas</h2><span class="hand" id="perfil-album-n"></span></div>
       <div class="badges" id="perfil-badges"></div>
 
       <div class="card">
@@ -596,27 +751,29 @@
           <select id="perfil-minutos"><option value="20">20 minutos</option><option value="40">40 minutos</option><option value="60">1 hora</option><option value="90">1h30</option><option value="120">2 horas</option></select>
         </div>
         <button class="btn full" id="btn-salvar-rotina" onclick="salvarRotina()">Salvar rotina</button>
-        <p class="small muted">O plano de cada matéria usa só esses dias. Depois de mudar, toque em "refazer plano" na matéria.</p>
+        <p class="small muted" style="margin-top:8px;">O plano de cada matéria usa só esses dias. Depois de mudar, toque em "refazer plano" na matéria.</p>
       </div>
 
       <div class="card tema-card">
         <h3>Aparência</h3>
-        <div class="chip-toggle" id="perfil-tema">
+        <div class="chip-toggle" id="perfil-tema" style="margin-bottom:0;">
           <button class="chip small" data-t="" onclick="escolherTema('')">igual ao aparelho</button>
-          <button class="chip small" data-t="caderno" onclick="escolherTema('caderno')">caderno</button>
-          <button class="chip small" data-t="lousa" onclick="escolherTema('lousa')"><svg class="ico"><use href="#i-lua"/></svg>lousa</button>
+          <button class="chip small" data-t="claro" onclick="escolherTema('claro')"><svg class="ico"><use href="#i-sol"/></svg>claro</button>
+          <button class="chip small" data-t="escuro" onclick="escolherTema('escuro')"><svg class="ico"><use href="#i-lua"/></svg>escuro</button>
         </div>
       </div>
 
       <div class="new-group-row"><button class="ghost-btn" onclick="toggleForm('editar-perfil')"><svg class="ico"><use href="#i-texto"/></svg>editar perfil</button><button class="ghost-btn" onclick="toggleForm('trocar-senha')"><svg class="ico"><use href="#i-cadeado"/></svg>trocar senha</button></div>
       <div class="inline-form" id="form-editar-perfil">
-        <label>foto de perfil</label>
+        <label>foto de perfil <span class="opt">(aparece só pra você; nos lugares públicos ficam suas iniciais)</span></label>
         <div class="avatar-troca">
           <div class="big-avatar mini" id="perfil-avatar-preview">?</div>
           <button class="ghost-btn" onclick="$('input-avatar').click()">trocar foto</button>
           <input type="file" id="input-avatar" accept="image/*" hidden onchange="avatarSelecionado(event)">
         </div>
         <label for="input-editar-nome">nome</label><input type="text" id="input-editar-nome">
+        <label for="input-editar-serie">série</label>
+        <select id="input-editar-serie"><option value="">não informar</option><option>6º ano</option><option>7º ano</option><option>8º ano</option><option>9º ano</option><option>1º EM</option><option>2º EM</option><option>3º EM</option><option>Cursinho</option><option>Faculdade</option></select>
         <label for="input-editar-escola">escola</label><input type="text" id="input-editar-escola">
         <label for="input-editar-cidade">cidade</label><input type="text" id="input-editar-cidade">
         <button class="go-btn" id="btn-salvar-perfil" onclick="salvarPerfil()">Salvar alterações</button>
@@ -632,14 +789,30 @@
     </div>
   </section>
 
+  <button class="fab" id="fab-publicar" hidden onclick="novoResumo()"><svg class="ico"><use href="#i-mais"/></svg>Publicar resumo</button>
+
+  <div class="composer" id="composer-tutor" hidden>
+    <div class="composer-foto" id="tchat-foto" hidden><img id="tchat-foto-img" alt="foto do exercício"><button onclick="tirarFotoTutor()" aria-label="tirar foto">✕</button></div>
+    <button class="cb" onclick="$('tchat-foto-input').click()" aria-label="mandar foto"><svg class="ico"><use href="#i-foto"/></svg></button>
+    <textarea id="tchat-texto" rows="1" placeholder="pergunta pro tutor" oninput="autoAltura(this)" onkeydown="enterEnvia(event, enviarTutor)" aria-label="mensagem pro tutor"></textarea>
+    <button class="cb" id="tchat-mic" onclick="ditarTutor()" aria-label="falar"><svg class="ico"><use href="#i-mic"/></svg></button>
+    <button class="cb enviar" id="tchat-enviar" onclick="enviarTutor()" aria-label="enviar"><svg class="ico"><use href="#i-enviar"/></svg></button>
+    <input type="file" id="tchat-foto-input" accept="image/*" hidden onchange="tutorFotoComposer(event)">
+  </div>
+
+  <div class="composer" id="composer-sala" hidden>
+    <textarea id="sala-texto" rows="1" maxlength="500" placeholder="escreve pra sala" oninput="autoAltura(this)" onkeydown="enterEnvia(event, enviarSala)" aria-label="mensagem pra sala"></textarea>
+    <button class="cb enviar" id="sala-enviar" onclick="enviarSala()" aria-label="enviar"><svg class="ico"><use href="#i-enviar"/></svg></button>
+  </div>
+
   <div class="persistent-credit no-nav" id="persistentCredit">© 2026 Diogo Soares · Estude+</div>
 
   <nav class="navbar" id="navbar" style="display:none;">
     <button class="nav-item" data-s="home" onclick="verHoje()"><svg class="nav-icon"><use href="#i-hoje"/></svg>Hoje</button>
     <button class="nav-item" data-s="materias" onclick="verMaterias()"><svg class="nav-icon"><use href="#i-materias"/></svg>Matérias</button>
-    <button class="nav-item" data-s="enem" onclick="verEnem()"><svg class="nav-icon"><use href="#i-enem"/></svg>ENEM</button>
-    <button class="nav-item" data-s="liga" onclick="verLiga()"><svg class="nav-icon"><use href="#i-liga"/></svg>Liga</button>
-    <button class="nav-item" data-s="perfil" onclick="verPerfil()"><svg class="nav-icon"><use href="#i-perfil"/></svg>Perfil</button>
+    <button class="nav-item central" data-s="tutor" onclick="verTutor()"><svg class="nav-icon"><use href="#i-tutor"/></svg>Tutor</button>
+    <button class="nav-item" data-s="biblioteca" onclick="verBiblioteca()"><svg class="nav-icon"><use href="#i-biblioteca"/></svg>Biblioteca</button>
+    <button class="nav-item" data-s="comunidade" onclick="verComunidade()"><svg class="nav-icon"><use href="#i-comunidade"/></svg>Comunidade<span class="ponto" id="nav-nao-lidas" hidden></span></button>
   </nav>
 </main>
 </div>
@@ -648,9 +821,8 @@
 <div class="fx-gerando" id="fx-gerando" hidden>
   <div class="ger-folha">
     <div class="ger-foto" id="ger-foto"><img id="ger-img" alt=""><div class="ger-linhas"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="ger-scan"></div></div>
-    <svg class="ger-lapis" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 54l6-16 30-30 10 10-30 30z" /><path d="M16 38l10 10M40 14l10 10"/><path d="M10 54l4-1-3-3z" class="ponta"/></svg>
     <div class="ger-msg" id="ger-msg" aria-live="polite">lendo seu material</div>
-    <div class="bar-track regua"><div class="bar-fill" id="ger-bar"></div></div>
+    <div class="bar-track"><div class="bar-fill" id="ger-bar"></div></div>
     <p class="hand muted small">isso leva uns 30 segundos, pode esperar aqui</p>
   </div>
 </div>
@@ -669,12 +841,17 @@
 <div class="dlg" id="dlg" hidden>
   <div class="bilhete" role="alertdialog" aria-modal="true" aria-describedby="dlg-texto">
     <p id="dlg-texto"></p>
+    <div class="field" id="dlg-campo-wrap" hidden><textarea id="dlg-campo" rows="3" style="min-height:90px"></textarea></div>
     <div class="dlg-botoes"><button class="btn ghost" id="dlg-nao">Cancelar</button><button class="btn coral" id="dlg-ok">OK</button></div>
   </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="efeitos.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="efeitos.js?v=3"></script>
+<script src="app.js?v=3"></script>
+<script src="voz.js?v=3"></script>
+<script src="biblioteca.js?v=3"></script>
+<script src="tutor.js?v=3"></script>
+<script src="comunidade.js?v=3"></script>
 </body>
 </html>
