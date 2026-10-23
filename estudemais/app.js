@@ -605,8 +605,9 @@ async function abrirMateria(id, aba = 'plano') {
   $('mat-titulo').textContent = m.nome;
 
   const pills = [];
-  pills.push(`<button class="pill btn" onclick="toggleForm('data-prova')">${m.data_prova ? `prova ${fmtData(m.data_prova)}, ${faltam(m.dias)}` : 'definir data da prova'}</button>`);
-  if (m.grupo_nome) pills.push(`<span class="pill lilac">turma ${esc(m.grupo_nome)}</span>`);
+  const rotuloProva = m.data_prova ? `prova ${fmtData(m.data_prova)}, ${faltam(m.dias)}` : (m.pode_editar ? 'definir data da prova' : 'sem data de prova');
+  pills.push(m.pode_editar ? `<button class="pill btn" onclick="toggleForm('data-prova')">${rotuloProva}</button>` : `<span class="pill">${rotuloProva}</span>`);
+  if (m.grupo_nome) pills.push(`<span class="pill lilac">${m.grupo_tipo === 'grupo_amigos' ? 'grupo' : 'turma'} ${esc(m.grupo_nome)}</span>`);
   if (d.topicos.length) pills.push(`<span class="pill">${d.topicos.length} tópicos</span>`);
   $('mat-meta').innerHTML = pills.join('');
   $('input-mat-data').value = m.data_prova || '';
@@ -629,6 +630,8 @@ async function abrirMateria(id, aba = 'plano') {
       ${mt.meu ? `<span class="m-del" title="excluir" onclick="excluirMaterial('${mt.id}')">✕</span>` : ''}
     </div>`).join('') : '<div class="empty" style="margin-bottom:10px;">nenhum material ainda</div>';
   $('btn-excluir-materia').hidden = !m.dono;
+  // na turma do professor só ele adiciona material; no grupo de amigos, qualquer membro
+  $('mat-add-row').hidden = !m.pode_editar;
 
   abaMateria(aba);
 }
@@ -650,7 +653,7 @@ function renderArquivada(d) {
       : `<div class="grande">${pct}%</div><p class="hand" style="font-size:13px; opacity:.9; margin:0;">de acerto em ${r.respondidas} respostas</p>`}
     ${d.materia.nota_real !== null && d.materia.nota_real !== undefined
       ? `<p class="hand" style="margin-top:10px;">Sua nota real: <b>${esc(d.materia.nota_real)}</b></p>`
-      : `<div class="nota-real-row"><input type="number" step="0.1" min="0" max="10" id="input-nota-real" placeholder="0-10"><button onclick="salvarNotaReal()">salvar nota da prova</button></div>`}
+      : d.materia.pode_editar ? `<div class="nota-real-row"><input type="number" step="0.1" min="0" max="10" id="input-nota-real" placeholder="0-10"><button onclick="salvarNotaReal()">salvar nota da prova</button></div>` : ''}
   </div>`;
 }
 
@@ -680,7 +683,7 @@ function renderPlanoMateria(d) {
   let html = '';
   if (!m.data_prova) {
     html += `<div class="card center"><p class="hand muted" style="margin:0 0 12px;">Me diz quando é a prova que eu distribuo os tópicos até lá, com revisão e prova simulada na véspera.</p>
-      <button class="btn coral" onclick="toggleForm('data-prova')">Definir data da prova</button></div>`;
+      ${m.pode_editar ? `<button class="btn coral" onclick="toggleForm('data-prova')">Definir data da prova</button>` : '<p class="small muted" style="margin:0;">o professor ainda não marcou a data</p>'}</div>`;
   } else {
     const porDia = {};
     d.tarefas.forEach((t) => { (porDia[t.dia] = porDia[t.dia] || []).push(t); });
@@ -806,12 +809,12 @@ function renderCardsMateria(d) {
       <p class="hand muted" style="margin:6px 0 14px;">pra revisar hoje · ${d.cards_total} cards na matéria</p>
       <button class="btn coral full" ${d.cards_total ? '' : 'disabled'} onclick="abrirRevisaoCards('${d.materia.id}')">Revisar agora</button>
     </div>
-    <div class="card"><h3>Criar card</h3>
+    ${d.materia.pode_editar ? `<div class="card"><h3>Criar card</h3>
       <div class="field"><label>frente (pergunta)</label><input type="text" id="nc-frente" placeholder="ex: O que é osmose?"></div>
       <div class="field"><label>verso (resposta)</label><textarea id="nc-verso" style="min-height:70px;" placeholder="ex: passagem de água do meio menos concentrado pro mais concentrado"></textarea></div>
       ${opts ? `<div class="field"><label>tópico</label><select id="nc-topico"><option value="">—</option>${opts}</select></div>` : ''}
       <button class="btn full" onclick="criarCard()">Adicionar card</button>
-    </div>`;
+    </div>` : ''}`;
 }
 
 async function criarCard() {
@@ -883,7 +886,10 @@ function adicionarMaterialNaMateria() {
 
 function voltarDoUpload() {
   if (estado.upload.materiaAlvo) return abrirMateria(estado.upload.materiaAlvo, abaAtual);
-  if (estado.upload.grupoId) return abrirPainel(estado.upload.grupoId);
+  if (estado.upload.grupoId) {
+    const g = (estado.grupos || []).find((x) => x.id === estado.upload.grupoId);
+    return g && g.papel !== 'admin' ? verGrupos() : abrirPainel(estado.upload.grupoId);
+  }
   verHoje();
 }
 
@@ -1508,6 +1514,7 @@ async function verGrupos() {
   const lista = $('lista-grupos');
   let grupos;
   try { grupos = await rpc('be_meus_grupos'); } catch (err) { lista.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
+  estado.grupos = grupos;
   if (!grupos.length) { lista.innerHTML = '<div class="empty">você ainda não participa de nenhum grupo</div>'; return; }
   lista.innerHTML = grupos.map((g) => `
     <div class="group-card">
@@ -1517,8 +1524,15 @@ async function verGrupos() {
         ${g.papel === 'admin' ? '<span class="teacher-tag">você é o admin</span>' : ''}
       </div></div>
       <div class="code-chip">${esc(g.codigo)} <span class="copy" onclick="copiarCodigo('${esc(g.codigo)}')">copiar código</span></div>
-      ${g.papel === 'admin' ? `<span class="panel-link" role="button" tabindex="0" onclick="abrirPainel('${g.id}')">abrir painel da turma</span>` : ''}
+      ${g.pode_editar ? `<button class="ghost-btn" style="margin-top:10px;" onclick="novaMateriaDoGrupo('${g.id}')"><svg class="ico"><use href="#i-mais"/></svg>${g.tipo === 'turma_professor' ? 'matéria nova pra turma' : 'matéria nova pro grupo'}</button>` : ''}
+      ${g.papel === 'admin' ? `<span class="panel-link" role="button" tabindex="0" onclick="abrirPainel('${g.id}')">${g.tipo === 'turma_professor' ? 'abrir painel da turma' : 'abrir painel do grupo'}</span>` : ''}
+      ${!g.pode_editar ? '<p class="small muted" style="margin-top:8px;">o professor coloca o material e você ganha seu plano</p>' : ''}
     </div>`).join('');
+}
+
+function novaMateriaDoGrupo(id) {
+  const g = (estado.grupos || []).find((x) => x.id === id);
+  if (g) novaMateria({ grupoId: g.id, grupoNome: g.nome });
 }
 
 function copiarCodigo(c) {

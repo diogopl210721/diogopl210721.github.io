@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -286,7 +286,7 @@
 
       <div class="step-label">materiais anexados</div>
       <div id="mat-materiais"></div>
-      <div class="new-group-row"><button class="ghost-btn" onclick="adicionarMaterialNaMateria()"><svg class="ico"><use href="#i-mais"/></svg>adicionar material</button></div>
+      <div class="new-group-row" id="mat-add-row"><button class="ghost-btn" onclick="adicionarMaterialNaMateria()"><svg class="ico"><use href="#i-mais"/></svg>adicionar material</button></div>
       <button class="ghost-btn perigo" id="btn-excluir-materia" onclick="excluirMateriaAtual()"><svg class="ico"><use href="#i-lixo"/></svg>excluir essa matéria inteira</button>
     </div>
   </section>
@@ -691,7 +691,7 @@
         <label for="input-codigo-grupo">código</label><input type="text" id="input-codigo-grupo" class="codigo-input" placeholder="KX9F2A">
         <button class="go-btn" id="btn-entrar-grupo" onclick="entrarComCodigoNoGrupo()">Entrar no grupo</button>
       </div>
-      <p class="hand muted small">Professor cria a turma e passa o código. O material que ele importa aparece pra todo mundo, cada aluno ganha seu próprio plano até a prova e a turma ganha uma sala de conversa na Comunidade.</p>
+      <p class="hand muted small"><b>Professor</b> cria a turma e passa o código: só ele coloca material, e cada aluno ganha seu próprio plano até a prova.<br><b>Aluno</b> também pode criar um grupo de amigos: aí qualquer um do grupo coloca material.<br>Cada turma ou grupo ganha uma sala só dele na Comunidade.</p>
     </div>
   </section>
 
@@ -830,11 +830,11 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="efeitos.js?v=4"></script>
-<script src="app.js?v=4"></script>
-<script src="voz.js?v=4"></script>
-<script src="biblioteca.js?v=4"></script>
-<script src="tutor.js?v=4"></script>
-<script src="comunidade.js?v=4"></script>
+<script src="efeitos.js?v=5"></script>
+<script src="app.js?v=5"></script>
+<script src="voz.js?v=5"></script>
+<script src="biblioteca.js?v=5"></script>
+<script src="tutor.js?v=5"></script>
+<script src="comunidade.js?v=5"></script>
 </body>
 </html>
