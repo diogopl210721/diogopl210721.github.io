@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Estude+ · seu plano de estudo</title>
+<meta name="description" content="Estude+: transforma seu material em resumo, quiz, flashcards e um plano de estudo até o dia da prova. Com simulados e correção de redação do ENEM.">
+<meta name="theme-color" content="#2C4870">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Kalam:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="app-shell">
+  <div class="sidebar sidebar-hidden" id="sidebar">
+    <div class="brand side">Estude<span class="plus">+</span></div>
+    <span class="sidebar-tagline">um pouquinho todo dia ✏️</span>
+    <nav class="sidebar-nav">
+      <button class="nav-item side-item" data-s="home" onclick="verHoje()"><span class="side-icon-badge">🏠</span> Hoje</button>
+      <button class="nav-item side-item" data-s="materias" onclick="verMaterias()"><span class="side-icon-badge">📚</span> Matérias</button>
+      <button class="nav-item side-item" data-s="enem" onclick="verEnem()"><span class="side-icon-badge">🎯</span> ENEM</button>
+      <button class="nav-item side-item" data-s="liga" onclick="verLiga()"><span class="side-icon-badge">🏆</span> Liga</button>
+      <button class="nav-item side-item" data-s="grupos" onclick="verGrupos()"><span class="side-icon-badge">👥</span> Turmas e grupos</button>
+      <button class="nav-item side-item" data-s="perfil" onclick="verPerfil()"><span class="side-icon-badge">👤</span> Perfil</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="energy-pill" id="sidebar-energia" title="gerações de IA restantes hoje">⚡ 7</div>
+      <div class="sidebar-credit">© 2026 Diogo Soares · DDS Inovação<br>Estude+</div>
+    </div>
+  </div>
+
+<div class="phone">
+  <div class="spiral"></div>
+
+  <!-- ============ LOGIN ============ -->
+  <div class="screen active" id="screen-login">
+    <div class="onboard-wrap">
+      <div class="brand xl">Estude<span class="plus">+</span></div>
+      <h1>Entrar na conta</h1>
+      <span class="hand">seu plano de estudo te espera</span>
+      <div class="onboard-field"><label>e-mail</label><input type="email" id="input-email-login" placeholder="voce@email.com" autocomplete="email"></div>
+      <div class="onboard-field"><label>senha</label><input type="password" id="input-senha-login" placeholder="sua senha" autocomplete="current-password"></div>
+      <button class="onboard-btn" id="btn-login" onclick="entrarComEmailSenha()">Entrar</button>
+      <span class="onboard-skip" onclick="go('recuperar')" style="display:block; margin-bottom:20px;">esqueci minha senha</span>
+      <div class="onboard-divider">ou</div>
+      <button class="google-btn" onclick="entrarComGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.8 2.73v2.27h2.92c1.7-1.57 2.68-3.87 2.68-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.71H.96v2.33C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.7c-.18-.54-.28-1.11-.28-1.7s.1-1.16.28-1.7V4.97H.96C.35 6.17 0 7.55 0 9s.35 2.83.96 4.03l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.97l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+        Entrar com Google
+      </button>
+      <div class="onboard-divider">ainda não tem conta?</div>
+      <div class="ghost-btn" style="border-color:var(--ink-blue); color:var(--ink-blue); font-weight:700;" onclick="go('cadastro')">✨ criar minha conta</div>
+      <div class="footer-credit">quem já usava o Bora Estudar entra com a mesma conta</div>
+    </div>
+  </div>
+
+  <!-- ============ CADASTRO ============ -->
+  <div class="screen" id="screen-cadastro">
+    <div class="onboard-wrap">
+      <div class="brand lg">Estude<span class="plus">+</span></div>
+      <h1>Vamos criar sua conta</h1>
+      <span class="hand">primeiro, me conta quem é você</span>
+      <div class="role-toggle">
+        <div class="role-pill on" id="role-aluno" onclick="setRole('aluno')"><span class="r-ic">🎒</span><span class="r-lbl">Sou aluno</span></div>
+        <div class="role-pill" id="role-professor" onclick="setRole('professor')"><span class="r-ic">🧑‍🏫</span><span class="r-lbl">Sou professor</span></div>
+      </div>
+      <div class="onboard-field"><label>seu nome</label><input type="text" id="input-nome" placeholder="ex: Ana Souza" autocomplete="name"></div>
+      <div class="onboard-field"><label>e-mail</label><input type="email" id="input-email-cadastro" placeholder="voce@email.com" autocomplete="email"></div>
+      <div class="onboard-field"><label>senha</label><input type="password" id="input-senha-cadastro" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
+      <div class="onboard-field"><label>confirmar senha</label><input type="password" id="input-senha-cadastro-confirma" placeholder="digita a senha de novo" autocomplete="new-password"></div>
+      <div class="onboard-field"><label id="label-escola">nome da escola que você estuda</label><input type="text" id="input-escola" placeholder="ex: Colégio Estadual do Paraná"></div>
+      <div class="onboard-field"><label>cidade</label><input type="text" id="input-cidade" placeholder="ex: Curitiba - PR"></div>
+      <div class="onboard-field"><label>pergunta de segurança <span class="opt">(pra recuperar a senha sem e-mail)</span></label><input type="text" id="input-pergunta-seguranca" placeholder="ex: nome do meu primeiro pet"></div>
+      <div class="onboard-field"><label>resposta</label><input type="text" id="input-resposta-seguranca" placeholder="a resposta dessa pergunta"></div>
+      <button class="onboard-btn" id="btn-cadastro" onclick="criarConta()">Continuar</button>
+      <span class="onboard-skip" onclick="go('login')">já tenho conta, entrar</span>
+    </div>
+  </div>
+
+  <!-- ============ RECUPERAR SENHA ============ -->
+  <div class="screen" id="screen-recuperar">
+    <div class="onboard-wrap">
+      <div class="brand lg">Estude<span class="plus">+</span></div>
+      <h1>Esqueceu a senha?</h1>
+      <span class="hand">acontece 🙂 vamos resolver na hora</span>
+      <div class="onboard-field"><label>seu e-mail</label><input type="email" id="input-email-recuperar" placeholder="voce@email.com"></div>
+      <button class="onboard-btn" id="btn-buscar-pergunta" onclick="buscarPerguntaSeguranca()">Continuar</button>
+      <div id="bloco-pergunta-seguranca" style="display:none; width:100%;">
+        <div class="onboard-field"><label id="label-pergunta-mostrada">pergunta de segurança</label><input type="text" id="input-resposta-recuperar" placeholder="sua resposta"></div>
+        <div class="onboard-field"><label>senha nova</label><input type="password" id="input-nova-senha-pergunta" placeholder="mínimo 6 caracteres"></div>
+        <div class="onboard-field"><label>confirmar senha nova</label><input type="password" id="input-nova-senha-pergunta-confirma" placeholder="repete a senha nova"></div>
+        <button class="onboard-btn" id="btn-resetar-com-pergunta" onclick="resetarSenhaComPergunta()">Trocar senha</button>
+      </div>
+      <span class="onboard-skip" onclick="enviarRecuperacaoSenha()" style="display:block; margin-top:6px;">prefiro receber um link no e-mail</span>
+      <span class="onboard-skip" onclick="go('login')" style="display:block; margin-top:14px;">lembrei, quero entrar</span>
+    </div>
+  </div>
+
+  <!-- ============ NOVA SENHA (link do e-mail) ============ -->
+  <div class="screen" id="screen-nova-senha">
+    <div class="onboard-wrap">
+      <div class="brand lg">Estude<span class="plus">+</span></div>
+      <h1>Criar nova senha</h1>
+      <span class="hand">escolhe uma senha nova pra sua conta</span>
+      <div class="onboard-field"><label>senha nova</label><input type="password" id="input-nova-senha-recuperacao" placeholder="mínimo 6 caracteres"></div>
+      <div class="onboard-field"><label>confirmar senha nova</label><input type="password" id="input-nova-senha-recuperacao-confirma" placeholder="repete a senha nova"></div>
+      <button class="onboard-btn" id="btn-definir-nova-senha" onclick="definirNovaSenha()">Salvar nova senha</button>
+    </div>
+  </div>
+
+  <!-- ============ CÓDIGO DE TURMA ============ -->
+  <div class="screen" id="screen-codigo">
+    <div class="onboard-wrap">
+      <div class="brand lg">Estude<span class="plus">+</span></div>
+      <h1>Tem um código?</h1>
+      <span class="hand">se um professor ou amigo te passou um código de turma, é aqui que ele entra</span>
+      <div class="onboard-field"><label>código de turma ou grupo <span class="opt">(opcional)</span></label><input type="text" id="input-codigo" placeholder="ex: KX9F2A" style="text-transform:uppercase;"></div>
+      <button class="onboard-btn" id="btn-codigo" onclick="entrarComCodigo()">Entrar</button>
+      <span class="onboard-skip" onclick="verHoje()">não tenho código, quero estudar sozinho(a)</span>
+    </div>
+  </div>
+
+  <!-- ============ HOJE ============ -->
+  <div class="screen" id="screen-home">
+    <div class="sheet">
+      <div class="header">
+        <div class="greet">
+          <div class="brand md">Estude<span class="plus">+</span></div>
+          <h1 id="home-saudacao" style="margin-top:8px;">Oi 👋</h1>
+          <span class="hand" id="home-sub">bora pro plano de hoje?</span>
+        </div>
+        <div class="energy-pill" id="home-energia" title="gerações de IA restantes hoje">⚡ 7</div>
+      </div>
+
+      <div id="install-wrap"></div>
+
+      <div class="streak-card">
+        <div class="streak-top">
+          <span class="eyebrow">sequência de estudo</span>
+          <span class="num" id="home-streak">0 dias 🔥</span>
+        </div>
+        <div class="stamps" id="home-stamps"></div>
+        <div class="xp-mini"><span id="home-nivel">nível 1</span><div class="xp-track"><div class="xp-fill" id="home-xp-fill" style="width:0%"></div></div><span id="home-xp">0 XP</span></div>
+      </div>
+
+      <div class="card" id="home-plano">
+        <div class="card-head"><h3>Seu plano de hoje</h3><span class="hand" id="home-plano-sub"></span></div>
+        <div id="home-tarefas"><div class="loading">carregando...</div></div>
+      </div>
+
+      <div class="review-card" id="home-revisao" onclick="abrirRevisaoCards()">
+        <div class="big" id="home-cards-n">0</div>
+        <div><div class="t">Flashcards pra revisar</div><div class="s" id="home-cards-s">revisão espaçada: no momento certo, antes de esquecer</div></div>
+      </div>
+
+      <div class="league-mini" id="home-liga" onclick="verLiga()">
+        <div class="medal-big" id="home-liga-medal">🥉</div>
+        <div><div class="t" id="home-liga-t">Liga da semana</div><div class="s" id="home-liga-s">ganhe XP estudando e suba de divisão</div></div>
+      </div>
+
+      <div id="home-provas"></div>
+
+      <div class="upload-cta" onclick="novaMateria()">
+        <h3>Tem matéria nova?</h3>
+        <p>Foto do caderno, PDF, texto ou vídeo viram resumo, quiz, flashcards e um plano até o dia da prova.</p>
+        <button class="upload-btn">📷 Adicionar material</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MATÉRIAS ============ -->
+  <div class="screen" id="screen-materias">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="verHoje()">←</div><h2>Minhas matérias</h2></div>
+      <div id="lista-materias"><div class="loading">carregando...</div></div>
+      <button class="create-btn" onclick="novaMateria()">+ nova matéria</button>
+    </div>
+  </div>
+
+  <!-- ============ MATÉRIA ============ -->
+  <div class="screen" id="screen-materia">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="voltarDaMateria()">←</div><h2 id="mat-titulo">Matéria</h2></div>
+      <div class="meta-line" id="mat-meta"></div>
+
+      <div class="inline-form" id="form-data-prova">
+        <label>data da prova</label>
+        <input type="date" id="input-mat-data">
+        <button class="go-btn" onclick="salvarDataProva()">Salvar e montar o plano</button>
+      </div>
+
+      <div id="mat-arquivada"></div>
+
+      <div class="content-menu" id="mat-menu">
+        <div class="content-menu-btn on" data-tipo="plano" onclick="abaMateria('plano')"><span>🗓️</span>Plano</div>
+        <div class="content-menu-btn" data-tipo="resumo" onclick="abaMateria('resumo')"><span>📖</span>Resumo</div>
+        <div class="content-menu-btn" data-tipo="mapa" onclick="abaMateria('mapa')"><span>🧠</span>Mapa mental</div>
+        <div class="content-menu-btn" data-tipo="cards" onclick="abaMateria('cards')"><span>🗂️</span>Flashcards</div>
+        <div class="content-menu-btn" data-tipo="quiz" onclick="abaMateria('quiz')"><span>📝</span>Quiz</div>
+        <div class="content-menu-btn" data-tipo="prova" onclick="abaMateria('prova')"><span>🎓</span>Prova</div>
+      </div>
+
+      <div class="mat-painel" id="mat-plano"></div>
+      <div class="mat-painel" id="mat-resumo" hidden></div>
+      <div class="mat-painel" id="mat-mapa" hidden></div>
+      <div class="mat-painel" id="mat-cards" hidden></div>
+      <div class="mat-painel" id="mat-quiz" hidden></div>
+      <div class="mat-painel" id="mat-prova" hidden></div>
+
+      <div class="step-label" style="margin-top:8px;">materiais anexados</div>
+      <div id="mat-materiais"></div>
+      <div class="new-group-row"><div class="ghost-btn" onclick="adicionarMaterialNaMateria()">+ adicionar material</div></div>
+      <div class="ghost-btn" id="btn-excluir-materia" style="border-color:var(--coral); color:var(--coral);" onclick="excluirMateriaAtual()">🗑️ excluir essa matéria inteira</div>
+    </div>
+  </div>
+
+  <!-- ============ NOVA MATÉRIA / UPLOAD ============ -->
+  <div class="screen" id="screen-upload">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="voltarDoUpload()">←</div><h2 id="upload-titulo">Nova matéria de estudo</h2></div>
+      <div class="hand muted" id="upload-grupo" style="margin:-14px 0 18px;"></div>
+
+      <div id="upload-passos-materia">
+        <div class="step-label">passo 1 · qual matéria é essa?</div>
+        <div class="date-field" style="margin-bottom:28px;">
+          <input type="text" id="input-materia" placeholder="ex: Biologia, Direito Civil, Inglês..." style="border:none; background:transparent; width:100%; font-family:'Inter'; font-size:14.5px; color:var(--ink);">
+        </div>
+        <div class="step-label">passo 2 · quando é a prova? <span class="muted" style="text-transform:none; letter-spacing:0;">(com a data eu monto seu plano)</span></div>
+        <div class="date-field">
+          <input type="date" id="input-data-prova" style="border:none; background:transparent; width:100%; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:15px; color:var(--ink-blue);">
+        </div>
+      </div>
+
+      <div class="step-label" id="upload-passo-fonte">passo 3 · de onde vem o material?</div>
+      <div class="source-tabs">
+        <div class="src-tab on" data-fonte="foto" onclick="setSource('foto')">📷 Foto</div>
+        <div class="src-tab" data-fonte="pdf" onclick="setSource('pdf')">📄 PDF</div>
+        <div class="src-tab" data-fonte="texto" onclick="setSource('texto')">✍️ Texto</div>
+        <div class="src-tab" data-fonte="youtube" onclick="setSource('youtube')">▶️ YouTube</div>
+        <div class="src-tab" data-fonte="link" onclick="setSource('link')">🔗 Site</div>
+      </div>
+
+      <div class="source-panel on" id="src-foto">
+        <div class="camera-frame" onclick="$('input-camera').click()">
+          <div class="shutter" id="foto-placeholder"></div>
+          <img id="foto-preview" alt="" style="display:none; width:100%; height:100%; object-fit:cover;">
+          <div class="corner-tag" id="foto-status">toque pra tirar a foto</div>
+        </div>
+        <div class="capture-row">
+          <div class="capture-side" title="Usar câmera" onclick="$('input-camera').click()">📷</div>
+          <div class="ghost-btn" style="flex:0 0 auto; padding:12px 20px;" onclick="$('input-galeria').click()">🖼️ Escolher da galeria</div>
+        </div>
+        <input type="file" id="input-camera" accept="image/*" capture="environment" hidden onchange="fotoSelecionada(event)">
+        <input type="file" id="input-galeria" accept="image/*" hidden onchange="fotoSelecionada(event)">
+      </div>
+      <div class="source-panel" id="src-pdf">
+        <div class="file-box" onclick="$('input-pdf').click()" style="cursor:pointer;">
+          <span class="ic" id="pdf-icone">📄</span><span id="pdf-status">toque pra escolher um PDF (até 15 MB)</span>
+        </div>
+        <input type="file" id="input-pdf" accept="application/pdf" hidden onchange="pdfSelecionado(event)">
+      </div>
+      <div class="source-panel" id="src-texto">
+        <div class="field"><textarea id="input-texto" placeholder="cola aqui suas anotações, o texto do livro ou o que o professor passou no quadro"></textarea></div>
+      </div>
+      <div class="source-panel" id="src-youtube">
+        <div class="link-box"><div class="ic">▶️</div><input type="text" id="input-youtube" placeholder="cole o link do vídeo do YouTube"></div>
+        <p class="hand muted center small" style="margin:0 0 10px;">a gente puxa a transcrição da aula</p>
+      </div>
+      <div class="source-panel" id="src-link">
+        <div class="link-box"><div class="ic">🔗</div><input type="text" id="input-link" placeholder="cole o link do artigo ou site"></div>
+      </div>
+
+      <button class="create-btn" id="btn-criar-jornada" onclick="criarJornada()" style="margin-top:14px;">✨ Gerar meu material de estudo</button>
+      <p class="hand muted center small" style="margin-top:10px;">usa 1 ⚡ de energia · leva uns 30 segundos</p>
+    </div>
+  </div>
+
+  <!-- ============ PRONTO (pós-geração) ============ -->
+  <div class="screen" id="screen-pronto">
+    <div class="sheet">
+      <div class="done-hero"><div class="big">✨</div><h2 id="pronto-titulo">Pronto!</h2><p class="hand muted" id="pronto-sub"></p></div>
+      <div class="stat-row three">
+        <div class="stat-box"><div class="n" id="pronto-cards">0</div><div class="l">flashcards</div></div>
+        <div class="stat-box"><div class="n" id="pronto-quiz">0</div><div class="l">perguntas</div></div>
+        <div class="stat-box"><div class="n" id="pronto-plano">—</div><div class="l">tarefas no plano</div></div>
+      </div>
+      <div class="stack-gap">
+        <button class="btn coral full" onclick="comecarQuizPronto()">🎮 Começar pelo quiz</button>
+        <button class="btn full" onclick="abrirMateria(estado.materiaId, 'plano')">🗓️ Ver meu plano</button>
+        <button class="btn ghost full" onclick="verHoje()">Voltar pro Hoje</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ QUIZ ============ -->
+  <div class="screen" id="screen-quiz">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="sairDoQuiz()">←</div><h2 id="quiz-titulo">Quiz</h2></div>
+      <div class="quiz-topbar"><span class="quiz-progress-label" id="quiz-progress-label">pergunta 1 de 5</span><span class="points" id="quiz-points">⭐ +0 XP</span></div>
+      <div class="bar-track"><div class="bar-fill" id="quiz-bar-fill" style="width:0%;"></div></div>
+      <div class="question-card"><div class="q-eyebrow" id="quiz-topico">gerado a partir do seu material</div><div class="q-text" id="quiz-pergunta-texto">Carregando...</div></div>
+      <div class="options" id="quiz-opcoes"></div>
+      <div class="feedback" id="quiz-feedback" hidden><span id="quiz-feedback-icon" style="font-size:20px;">🎉</span><span class="hand" id="quiz-feedback-texto"></span></div>
+      <button class="next-btn" id="quiz-next-btn" onclick="proximaPergunta()" disabled style="opacity:.5;">Responda pra continuar</button>
+    </div>
+  </div>
+
+  <!-- ============ FIM DO QUIZ ============ -->
+  <div class="screen" id="screen-quiz-fim">
+    <div class="sheet">
+      <div class="done-hero"><div class="big" id="quizfim-emoji">🎉</div><h2 id="quizfim-titulo">Mandou bem!</h2><p class="hand muted" id="quizfim-sub"></p></div>
+      <div class="stat-row three">
+        <div class="stat-box"><div class="n" id="quizfim-acertos">0</div><div class="l">acertos</div></div>
+        <div class="stat-box"><div class="n" id="quizfim-pct">0%</div><div class="l">aproveitamento</div></div>
+        <div class="stat-box"><div class="n" id="quizfim-xp">0</div><div class="l">XP ganho</div></div>
+      </div>
+      <div class="card" id="quizfim-erros-wrap" hidden><h3 style="margin-bottom:8px;">Pra revisar</h3><div id="quizfim-erros"></div></div>
+      <div class="stack-gap">
+        <button class="btn coral full" onclick="refazerQuiz()">↻ Fazer de novo</button>
+        <button class="btn full" onclick="abrirMateria(estado.materiaId, 'plano')">Voltar pra matéria</button>
+        <button class="btn ghost full" onclick="verHoje()">Ir pro Hoje</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FLASHCARDS ============ -->
+  <div class="screen" id="screen-cards">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="sairDosCards()">←</div><h2 id="cards-titulo">Revisão de flashcards</h2></div>
+      <div class="quiz-topbar"><span class="quiz-progress-label" id="cards-progresso">—</span><span class="points" id="cards-xp">⭐ +0 XP</span></div>
+      <div class="bar-track"><div class="bar-fill" id="cards-bar" style="width:0%;"></div></div>
+      <div class="flash-wrap">
+        <div class="flash" id="flash" onclick="virarCard()">
+          <div class="flash-face front"><span class="lbl" id="flash-topico">pergunta</span><div class="txt" id="flash-frente"></div><span class="hint">toque pra ver a resposta</span></div>
+          <div class="flash-face back"><span class="lbl">resposta</span><div class="txt" id="flash-verso"></div></div>
+        </div>
+      </div>
+      <div id="cards-notas" hidden>
+        <p class="hand muted center small" style="margin:0 0 8px;">quão bem você lembrou?</p>
+        <div class="grades">
+          <button class="grade g1" onclick="avaliarCard(1)">Errei<small>de novo hoje</small></button>
+          <button class="grade g2" onclick="avaliarCard(2)">Difícil<small>lembrei com esforço</small></button>
+          <button class="grade g3" onclick="avaliarCard(3)">Bom<small>lembrei</small></button>
+          <button class="grade g4" onclick="avaliarCard(4)">Fácil<small>na hora</small></button>
+        </div>
+      </div>
+      <button class="btn full" id="cards-virar" onclick="virarCard()">Mostrar resposta</button>
+    </div>
+  </div>
+
+  <!-- ============ FIM DOS CARDS ============ -->
+  <div class="screen" id="screen-cards-fim">
+    <div class="sheet">
+      <div class="done-hero"><div class="big">🗂️</div><h2>Revisão feita!</h2><p class="hand muted" id="cardsfim-sub"></p></div>
+      <div class="stat-row three">
+        <div class="stat-box"><div class="n" id="cardsfim-n">0</div><div class="l">cards revisados</div></div>
+        <div class="stat-box"><div class="n" id="cardsfim-lembrou">0%</div><div class="l">lembrou</div></div>
+        <div class="stat-box"><div class="n" id="cardsfim-xp">0</div><div class="l">XP ganho</div></div>
+      </div>
+      <div class="stack-gap"><button class="btn full" onclick="verHoje()">Voltar pro Hoje</button></div>
+    </div>
+  </div>
+
+  <!-- ============ ENEM ============ -->
+  <div class="screen" id="screen-enem">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="verHoje()">←</div><h2>ENEM</h2></div>
+      <div class="card">
+        <div class="card-head"><h3>Simulado com questões oficiais</h3><span class="hand">2009 a 2023</span></div>
+        <div class="area-grid" id="enem-areas">
+          <div class="area-btn" data-area="linguagens" onclick="escolherArea('linguagens')"><div class="ic">💬</div><div class="nm">Linguagens</div><div class="ds">português, literatura, artes, língua estrangeira</div></div>
+          <div class="area-btn" data-area="ciencias-humanas" onclick="escolherArea('ciencias-humanas')"><div class="ic">🌎</div><div class="nm">Humanas</div><div class="ds">história, geografia, filosofia, sociologia</div></div>
+          <div class="area-btn" data-area="ciencias-natureza" onclick="escolherArea('ciencias-natureza')"><div class="ic">🧪</div><div class="nm">Natureza</div><div class="ds">biologia, química, física</div></div>
+          <div class="area-btn" data-area="matematica" onclick="escolherArea('matematica')"><div class="ic">📐</div><div class="nm">Matemática</div><div class="ds">e suas tecnologias</div></div>
+          <div class="area-btn wide on" data-area="" onclick="escolherArea('')"><div class="ic">🎲</div><div class="nm">Misto</div><div class="ds">um pouco de cada área</div></div>
+        </div>
+        <div class="step-label">quantas questões?</div>
+        <div class="chip-toggle" id="enem-qtd" style="margin-bottom:16px;">
+          <div class="chip small sel" data-v="10" onclick="escolherQtd(10)">10 · ~30 min</div>
+          <div class="chip small" data-v="20" onclick="escolherQtd(20)">20 · ~1h</div>
+          <div class="chip small" data-v="45" onclick="escolherQtd(45)">45 · prova de verdade</div>
+        </div>
+        <div class="step-label">língua estrangeira</div>
+        <div class="chip-toggle" id="enem-idioma" style="margin-bottom:18px;">
+          <div class="chip small sel" data-v="ingles" onclick="escolherIdioma('ingles')">Inglês</div>
+          <div class="chip small" data-v="espanhol" onclick="escolherIdioma('espanhol')">Espanhol</div>
+        </div>
+        <button class="btn coral full" id="btn-iniciar-simulado" onclick="iniciarSimulado()">🎯 Começar simulado</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Redação nota 1000?</h3><span class="hand">correção nas 5 competências</span></div>
+        <p class="small muted" style="margin:0 0 12px;">Escreve sua redação e a IA corrige como a banca: nota por competência, o que melhorar e um parágrafo reescrito de exemplo.</p>
+        <button class="btn full" onclick="novaRedacao()">✍️ Corrigir uma redação</button>
+      </div>
+
+      <div class="card"><div class="card-head"><h3>Seus simulados</h3></div><div id="enem-historico"><div class="loading">carregando...</div></div></div>
+      <div class="card"><div class="card-head"><h3>Suas redações</h3></div><div id="redacao-historico"><div class="loading">carregando...</div></div></div>
+      <p class="small muted center">Questões oficiais do INEP, organizadas pelo projeto aberto <a href="https://enem.dev" target="_blank" rel="noopener">enem.dev</a>.</p>
+    </div>
+  </div>
+
+  <!-- ============ SIMULADO ============ -->
+  <div class="screen" id="screen-simulado">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="sairDoSimulado()">←</div><h2 id="sim-titulo">Simulado</h2></div>
+      <div class="sim-top"><span id="sim-progresso">questão 1 de 10</span><span class="timer" id="sim-timer">⏱ 00:00</span></div>
+      <div class="question-card">
+        <div class="q-eyebrow" id="sim-meta">ENEM</div>
+        <div class="q-ctx" id="sim-contexto"></div>
+        <div class="q-intro" id="sim-intro"></div>
+      </div>
+      <div class="options" id="sim-opcoes"></div>
+      <div class="sim-nav">
+        <button class="btn ghost" onclick="navSimulado(-1)">← anterior</button>
+        <button class="btn" id="sim-proxima" onclick="navSimulado(1)">próxima →</button>
+      </div>
+      <div class="qgrid" id="sim-grid"></div>
+      <button class="btn coral full" id="btn-entregar" onclick="entregarSimulado()">Entregar simulado</button>
+    </div>
+  </div>
+
+  <!-- ============ RESULTADO DO SIMULADO ============ -->
+  <div class="screen" id="screen-simulado-fim">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="verEnem()">←</div><h2>Resultado</h2></div>
+      <div class="card center">
+        <div class="score-big" id="simfim-score">0/10</div>
+        <p class="hand muted" id="simfim-sub" style="margin:6px 0 0;"></p>
+      </div>
+      <div class="card"><h3 style="margin-bottom:12px;">Por área</h3><div id="simfim-areas"></div></div>
+      <div class="card"><h3 style="margin-bottom:8px;">Correção</h3><p class="small muted" style="margin:0 0 6px;">toque numa questão pra rever com o gabarito</p><div class="qgrid" id="simfim-grid"></div></div>
+      <div class="stack-gap"><button class="btn coral full" onclick="verEnem()">Fazer outro simulado</button></div>
+    </div>
+  </div>
+
+  <!-- ============ REDAÇÃO ============ -->
+  <div class="screen" id="screen-redacao">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="verEnem()">←</div><h2>Redação</h2></div>
+      <div id="redacao-form">
+        <div class="field"><label>tema</label><select id="redacao-tema" onchange="temaMudou()"></select></div>
+        <div class="field" id="redacao-tema-outro-wrap" hidden><label>escreve o tema</label><input type="text" id="redacao-tema-outro" placeholder="ex: Caminhos para combater a evasão escolar no Brasil"></div>
+        <div class="field"><label>sua redação <span id="redacao-linhas" style="text-transform:none; letter-spacing:0;">· 0 linhas</span></label><textarea id="redacao-texto" style="min-height:320px;" oninput="contarLinhas()" placeholder="título (opcional) e o texto dissertativo-argumentativo, de 7 a 30 linhas"></textarea></div>
+        <button class="btn coral full" id="btn-corrigir" onclick="corrigirRedacao()">✍️ Corrigir minha redação</button>
+        <p class="hand muted center small" style="margin-top:10px;">usa 1 ⚡ de energia</p>
+      </div>
+      <div id="redacao-resultado" hidden></div>
+    </div>
+  </div>
+
+  <!-- ============ LIGA ============ -->
+  <div class="screen" id="screen-liga">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="verHoje()">←</div><h2>Liga da semana</h2></div>
+      <div id="liga-conteudo"><div class="loading">carregando...</div></div>
+      <div class="card" style="margin-top:18px;">
+        <h3 style="margin-bottom:8px;">Como ganhar XP</h3>
+        <div class="small" style="line-height:1.7;">
+          ✅ tarefa do plano concluída · <b>15 XP</b> (+20 se fechar o dia)<br>
+          📝 resposta certa no quiz · <b>10 XP</b> (errada vale 3)<br>
+          🗂️ flashcard revisado · <b>2 XP</b><br>
+          🎯 simulado ENEM · <b>10 XP + 5 por acerto</b><br>
+          ✍️ redação corrigida · <b>30 XP</b><br>
+          📷 material novo · <b>20 XP</b>
+        </div>
+        <p class="small muted" style="margin:10px 0 0;">Toda segunda a liga fecha: os 5 primeiros sobem de divisão e os 5 últimos descem. Bronze → Prata → Ouro → Diamante.</p>
+      </div>
+      <div class="new-group-row" style="margin-top:6px;"><div class="ghost-btn" onclick="verGrupos()">👥 ver minhas turmas e grupos</div></div>
+    </div>
+  </div>
+
+  <!-- ============ GRUPOS ============ -->
+  <div class="screen" id="screen-grupos">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="verHoje()">←</div><h2>Turmas e grupos</h2></div>
+      <div class="step-label">seus grupos</div>
+      <div id="lista-grupos"><div class="loading">carregando...</div></div>
+      <div class="new-group-row">
+        <div class="ghost-btn" onclick="toggleForm('criar')">+ criar grupo</div>
+        <div class="ghost-btn" onclick="toggleForm('entrar')">🔑 entrar com código</div>
+      </div>
+      <div class="inline-form" id="form-criar">
+        <label>nome</label><input type="text" id="input-nome-grupo" placeholder="ex: Química - 3ºB">
+        <label>matéria</label><input type="text" id="input-materia-grupo" placeholder="ex: Química">
+        <button class="go-btn" id="btn-criar-grupo" onclick="criarGrupoReal()">Criar e gerar código</button>
+      </div>
+      <div class="inline-form" id="form-entrar">
+        <label>código</label><input type="text" id="input-codigo-grupo" placeholder="ex: KX9F2A" style="text-transform:uppercase;">
+        <button class="go-btn" id="btn-entrar-grupo" onclick="entrarComCodigoNoGrupo()">Entrar no grupo</button>
+      </div>
+      <p class="hand muted small">Professor cria a turma e passa o código. O material que ele importa aparece pra todo mundo, e cada aluno ganha seu próprio plano até a prova.</p>
+    </div>
+  </div>
+
+  <!-- ============ PAINEL DA TURMA ============ -->
+  <div class="screen" id="screen-painel">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="verGrupos()">←</div><div><h2 id="painel-nome">Painel</h2><span class="hand muted small" id="painel-meta"></span></div></div>
+      <div id="painel-alerta"></div>
+      <div class="card"><div class="card-head"><h3>Matérias da turma</h3><button class="link-btn" onclick="novaMateria({grupoId: estado.grupoId, grupoNome: estado.grupoNome})">+ nova</button></div><div id="painel-materias"></div></div>
+      <div class="card"><div class="card-head"><h3>Onde a turma está fraca</h3><span class="hand">domínio médio por tópico</span></div><div id="painel-topicos"></div></div>
+      <div class="card"><div class="card-head"><h3>Engajamento</h3><span class="hand">últimos 7 dias</span></div><div id="painel-membros"></div></div>
+    </div>
+  </div>
+
+  <!-- ============ PERFIL ============ -->
+  <div class="screen" id="screen-perfil">
+    <div class="sheet">
+      <div class="topbar"><div class="back-btn" onclick="verHoje()">←</div><h2>Meu perfil</h2></div>
+      <div class="profile-head">
+        <div class="big-avatar" id="perfil-avatar">?</div>
+        <div><h1 id="perfil-nome">carregando...</h1><span class="hand" id="perfil-meta">—</span></div>
+      </div>
+      <div class="xp-row"><span id="perfil-xp">0 XP</span><span id="perfil-proximo-nivel">—</span></div>
+      <div class="xp-track"><div class="xp-fill" id="perfil-xp-fill" style="width:0%;"></div></div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="n" id="perfil-streak">0🔥</div><div class="l">sequência</div></div>
+        <div class="stat-box"><div class="n" id="perfil-maior">0</div><div class="l">maior sequência</div></div>
+        <div class="stat-box"><div class="n" id="perfil-divisao">🥉</div><div class="l">divisão</div></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:10px;">Minha rotina de estudo</h3>
+        <div class="step-label">dias que eu estudo</div>
+        <div class="chip-toggle" id="perfil-dias" style="margin-bottom:14px;"></div>
+        <div class="field"><label>tempo por dia</label>
+          <select id="perfil-minutos"><option value="20">20 minutos</option><option value="40">40 minutos</option><option value="60">1 hora</option><option value="90">1h30</option><option value="120">2 horas</option></select>
+        </div>
+        <button class="btn full" id="btn-salvar-rotina" onclick="salvarRotina()">Salvar rotina</button>
+        <p class="small muted" style="margin:8px 0 0;">O plano de cada matéria usa só esses dias. Depois de mudar, toque em "refazer plano" na matéria.</p>
+      </div>
+
+      <div class="new-group-row"><div class="ghost-btn" onclick="toggleForm('editar-perfil')">✏️ editar perfil</div><div class="ghost-btn" onclick="toggleForm('trocar-senha')">🔒 trocar senha</div></div>
+      <div class="inline-form" id="form-editar-perfil">
+        <label>foto de perfil</label>
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:14px;">
+          <div class="big-avatar" id="perfil-avatar-preview" style="width:52px; height:52px; font-size:19px;">?</div>
+          <div class="ghost-btn" style="padding:9px 16px;" onclick="$('input-avatar').click()">trocar foto</div>
+          <input type="file" id="input-avatar" accept="image/*" hidden onchange="avatarSelecionado(event)">
+        </div>
+        <label>nome</label><input type="text" id="input-editar-nome">
+        <label>escola</label><input type="text" id="input-editar-escola">
+        <label>cidade</label><input type="text" id="input-editar-cidade">
+        <button class="go-btn" id="btn-salvar-perfil" onclick="salvarPerfil()">Salvar alterações</button>
+      </div>
+      <div class="inline-form" id="form-trocar-senha">
+        <label>senha atual</label><input type="password" id="input-senha-atual">
+        <label>senha nova</label><input type="password" id="input-senha-nova" placeholder="mínimo 6 caracteres">
+        <label>confirmar senha nova</label><input type="password" id="input-senha-nova-confirma">
+        <button class="go-btn" id="btn-trocar-senha" onclick="trocarSenha()">Trocar senha</button>
+      </div>
+
+      <div class="section-title"><h2>Conquistas</h2></div>
+      <div class="badges" id="perfil-badges"></div>
+      <div class="ghost-btn" style="border-color:var(--coral); color:var(--coral); margin-top:16px;" onclick="sair()">🚪 Sair da conta</div>
+    </div>
+  </div>
+
+  <div class="persistent-credit no-nav" id="persistentCredit">© 2026 Diogo Soares · Estude+</div>
+
+  <div class="navbar" id="navbar" style="display:none;">
+    <button class="nav-item" data-s="home" onclick="verHoje()"><div class="nav-icon">🏠</div>Hoje</button>
+    <button class="nav-item" data-s="materias" onclick="verMaterias()"><div class="nav-icon">📚</div>Matérias</button>
+    <button class="nav-item" data-s="enem" onclick="verEnem()"><div class="nav-icon">🎯</div>ENEM</button>
+    <button class="nav-item" data-s="liga" onclick="verLiga()"><div class="nav-icon">🏆</div>Liga</button>
+    <button class="nav-item" data-s="perfil" onclick="verPerfil()"><div class="nav-icon">👤</div>Perfil</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="app.js?v=1"></script>
+</body>
+</html>
