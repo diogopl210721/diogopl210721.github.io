@@ -166,7 +166,6 @@ p { margin: 0 0 10px; }
 .onboard-skip { display: block; margin: 14px auto 0; background: none; border: none; color: var(--texto-2); font-size: 14.5px; font-weight: 600; cursor: pointer; }
 .onboard-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 14px; color: var(--texto-3); font-size: 13.5px; }
 .onboard-divider::before, .onboard-divider::after { content: ""; flex: 1; height: 1.5px; background: var(--borda); }
-.google-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--cartao); color: var(--texto); border: 1.5px solid var(--borda); border-radius: 14px; padding: 13px; font-weight: 700; font-size: 16px; cursor: pointer; }
 .footer-credit { margin-top: 24px; text-align: center; font-size: 13px; color: var(--texto-3); }
 .role-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 .role-pill { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 10px; cursor: pointer; background: var(--cartao); border: 2px solid var(--borda); border-radius: var(--raio); transition: border-color .2s, transform .2s; }

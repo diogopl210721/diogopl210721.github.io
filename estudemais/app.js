@@ -143,7 +143,7 @@ const LADO_DE = {
   ...NAV_DE, enem: 'enem', simulado: 'enem', 'simulado-fim': 'enem', redacao: 'enem',
   liga: 'liga', grupos: 'grupos', painel: 'grupos', perfil: 'perfil',
 };
-const SEM_NAV = ['login', 'cadastro', 'recuperar', 'nova-senha', 'codigo'];
+const SEM_NAV = ['login', 'cadastro', 'recuperar', 'codigo'];
 const TELAS_CHAT = ['tutor-chat', 'sala'];
 
 function telaAtual() {
@@ -285,13 +285,19 @@ async function criarConta() {
   }
   const pronto = ocupado($('btn-cadastro'), 'Criando...');
   try {
-    const { data, error } = await sb.auth.signUp({ email, password: senha });
-    if (error) throw error;
-    if (!data.session) {
-      avisar('Quase lá! Mandamos um link de confirmação pro seu e-mail. Depois de confirmar, volta aqui e entra.');
-      go('login');
-      return;
+    // a conta nasce confirmada (sem e-mail de confirmação) e já entra com a senha
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/estude-cadastro`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ email, senha, nome }),
+    });
+    let r = {};
+    try { r = await resp.json(); } catch (_) { /* sem corpo */ }
+    if (!resp.ok) {
+      if (resp.status === 409) { $('input-email-login').value = email; go('login'); }
+      return avisar(r.error || 'não consegui criar sua conta agora, tenta de novo');
     }
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+    if (error) throw error;
     await criarPerfilSeNaoExistir(data.user);
     go('codigo');
   } catch (err) {
@@ -310,13 +316,10 @@ async function entrarComEmailSenha() {
     await criarPerfilSeNaoExistir(data.user);
     verHoje();
   } catch (err) {
-    avisar('Não consegui entrar: ' + (err.message === 'Invalid login credentials' ? 'e-mail ou senha errados' : err.message));
+    const msg = err.message === 'Invalid login credentials' ? 'e-mail ou senha errados'
+      : /not confirmed/i.test(err.message) ? 'essa conta ainda não foi liberada, fala com o suporte' : err.message;
+    avisar('Não consegui entrar: ' + msg);
   } finally { pronto(); }
-}
-
-async function entrarComGoogle() {
-  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
-  if (error) avisar('Não consegui abrir o Google: ' + error.message);
 }
 
 async function buscarPerguntaSeguranca() {
@@ -356,32 +359,6 @@ async function resetarSenhaComPergunta() {
     go('login');
   } catch (err) { avisar(err.message); } finally { pronto(); }
 }
-
-async function enviarRecuperacaoSenha() {
-  const email = $('input-email-recuperar').value.trim();
-  if (!email) return avisar('digita seu e-mail primeiro');
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-  if (error) return avisar('Não consegui enviar: ' + error.message);
-  avisar('Mandamos um link pro ' + email + '. Abre ele nesse mesmo aparelho.');
-  go('login');
-}
-
-async function definirNovaSenha() {
-  const nova = $('input-nova-senha-recuperacao').value;
-  if (!nova || nova.length < 6) return avisar('a senha precisa ter pelo menos 6 caracteres');
-  if (nova !== $('input-nova-senha-recuperacao-confirma').value) return avisar('as duas senhas não são iguais');
-  const pronto = ocupado($('btn-definir-nova-senha'), 'Salvando...');
-  try {
-    const { error } = await sb.auth.updateUser({ password: nova });
-    if (error) throw error;
-    const { data: s } = await sb.auth.getSession();
-    if (s && s.session) await criarPerfilSeNaoExistir(s.session.user);
-    avisar('Senha criada! Bora estudar 🎉');
-    verHoje();
-  } catch (err) { falhou(err, 'Não consegui salvar a senha'); } finally { pronto(); }
-}
-
-sb.auth.onAuthStateChange((evento) => { if (evento === 'PASSWORD_RECOVERY') go('nova-senha'); });
 
 async function entrarComCodigo() {
   const codigo = $('input-codigo').value.trim().toUpperCase();
@@ -1790,7 +1767,6 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 /* ===================== início ===================== */
 (async function boot() {
-  if (location.hash.includes('type=recovery')) return go('nova-senha');
   const { data } = await sb.auth.getSession();
   if (data && data.session && data.session.user) {
     try {

@@ -118,11 +118,6 @@
       <div class="onboard-field"><label for="input-senha-login">senha</label><input type="password" id="input-senha-login" placeholder="sua senha" autocomplete="current-password"></div>
       <button class="onboard-btn" id="btn-login" onclick="entrarComEmailSenha()">Entrar</button>
       <button class="onboard-skip" onclick="go('recuperar')">esqueci minha senha</button>
-      <div class="onboard-divider">ou</div>
-      <button class="google-btn" onclick="entrarComGoogle()">
-        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.8 2.73v2.27h2.92c1.7-1.57 2.68-3.87 2.68-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.71H.96v2.33C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.7c-.18-.54-.28-1.11-.28-1.7s.1-1.16.28-1.7V4.97H.96C.35 6.17 0 7.55 0 9s.35 2.83.96 4.03l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.97l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
-        Entrar com Google
-      </button>
       <div class="onboard-divider">ainda não tem conta?</div>
       <button class="ghost-btn forte" onclick="go('cadastro')">criar minha conta</button>
       <div class="footer-credit">quem já usava o Bora Estudar entra com a mesma conta</div>
@@ -145,6 +140,7 @@
       <div class="onboard-field"><label for="input-email-cadastro">e-mail</label><input type="email" id="input-email-cadastro" placeholder="voce@email.com" autocomplete="email"></div>
       <div class="onboard-field"><label for="input-senha-cadastro">senha</label><input type="password" id="input-senha-cadastro" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
       <div class="onboard-field"><label for="input-senha-cadastro-confirma">confirmar senha</label><input type="password" id="input-senha-cadastro-confirma" placeholder="digita a senha de novo" autocomplete="new-password"></div>
+      <p class="small muted" style="margin:-4px 0 10px; width:100%;">sem e-mail de confirmação: a conta já fica pronta pra usar</p>
       <div class="onboard-field"><label id="label-escola" for="input-escola">nome da escola em que você estuda</label><input type="text" id="input-escola" placeholder="ex: Colégio Estadual do Paraná"></div>
       <div class="onboard-field"><label for="input-cidade">cidade</label><input type="text" id="input-cidade" placeholder="ex: Curitiba - PR"></div>
       <div class="onboard-field"><label for="input-pergunta-seguranca">pergunta de segurança <span class="opt">(pra recuperar a senha sem e-mail)</span></label><input type="text" id="input-pergunta-seguranca" placeholder="ex: nome do meu primeiro pet"></div>
@@ -159,7 +155,7 @@
     <div class="onboard-wrap">
       <div class="brand lg">Estude<span class="plus">+</span></div>
       <h1>Esqueceu a senha?</h1>
-      <span class="hand">acontece, a gente resolve agora</span>
+      <span class="hand">responde a pergunta de segurança que você criou no cadastro</span>
       <div class="onboard-field"><label for="input-email-recuperar">seu e-mail</label><input type="email" id="input-email-recuperar" placeholder="voce@email.com"></div>
       <button class="onboard-btn" id="btn-buscar-pergunta" onclick="buscarPerguntaSeguranca()">Continuar</button>
       <div id="bloco-pergunta-seguranca" style="display:none; width:100%;">
@@ -168,20 +164,7 @@
         <div class="onboard-field"><label for="input-nova-senha-pergunta-confirma">confirmar senha nova</label><input type="password" id="input-nova-senha-pergunta-confirma" placeholder="repete a senha nova"></div>
         <button class="onboard-btn" id="btn-resetar-com-pergunta" onclick="resetarSenhaComPergunta()">Trocar senha</button>
       </div>
-      <button class="onboard-skip" onclick="enviarRecuperacaoSenha()">prefiro receber um link no e-mail</button>
       <button class="onboard-skip" onclick="go('login')">lembrei, quero entrar</button>
-    </div>
-  </section>
-
-  <!-- ============ NOVA SENHA (link do e-mail) ============ -->
-  <section class="screen" id="screen-nova-senha">
-    <div class="onboard-wrap">
-      <div class="brand lg">Estude<span class="plus">+</span></div>
-      <h1>Criar nova senha</h1>
-      <span class="hand">escolhe uma senha nova pra sua conta</span>
-      <div class="onboard-field"><label for="input-nova-senha-recuperacao">senha nova</label><input type="password" id="input-nova-senha-recuperacao" placeholder="mínimo 6 caracteres"></div>
-      <div class="onboard-field"><label for="input-nova-senha-recuperacao-confirma">confirmar senha nova</label><input type="password" id="input-nova-senha-recuperacao-confirma" placeholder="repete a senha nova"></div>
-      <button class="onboard-btn" id="btn-definir-nova-senha" onclick="definirNovaSenha()">Salvar nova senha</button>
     </div>
   </section>
 
