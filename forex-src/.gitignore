@@ -1,0 +1,7 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+supabase/tests/.local/
+*.local
+tests/.local/
