@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=7">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -155,13 +155,12 @@
       <div class="onboard-field" id="campo-serie"><label for="input-serie">sua série</label>
         <select id="input-serie"><option value="">escolhe</option><option>6º ano</option><option>7º ano</option><option>8º ano</option><option>9º ano</option><option>1º EM</option><option>2º EM</option><option>3º EM</option><option>Cursinho</option><option>Faculdade</option></select></div>
       <div class="onboard-field"><label for="input-email-cadastro">e-mail</label><input type="email" id="input-email-cadastro" placeholder="voce@email.com" autocomplete="email"></div>
+      <div class="onboard-field"><label for="input-email-cadastro-confirma">confirmar e-mail</label><input type="email" id="input-email-cadastro-confirma" placeholder="digita o e-mail de novo" autocomplete="off"></div>
       <div class="onboard-field"><label for="input-senha-cadastro">senha</label><input type="password" id="input-senha-cadastro" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
       <div class="onboard-field"><label for="input-senha-cadastro-confirma">confirmar senha</label><input type="password" id="input-senha-cadastro-confirma" placeholder="digita a senha de novo" autocomplete="new-password"></div>
       <p class="small muted" style="margin:-4px 0 10px; width:100%;">sem e-mail de confirmação: a conta já fica pronta pra usar</p>
       <div class="onboard-field"><label id="label-escola" for="input-escola">nome da escola em que você estuda</label><input type="text" id="input-escola" placeholder="ex: Colégio Estadual do Paraná"></div>
       <div class="onboard-field"><label for="input-cidade">cidade</label><input type="text" id="input-cidade" placeholder="ex: Curitiba - PR"></div>
-      <div class="onboard-field"><label for="input-pergunta-seguranca">pergunta de segurança <span class="opt">(pra recuperar a senha sem e-mail)</span></label><input type="text" id="input-pergunta-seguranca" placeholder="ex: nome do meu primeiro pet"></div>
-      <div class="onboard-field"><label for="input-resposta-seguranca">resposta</label><input type="text" id="input-resposta-seguranca" placeholder="a resposta dessa pergunta"></div>
       <button class="onboard-btn" id="btn-cadastro" onclick="criarConta()">Continuar</button>
       <button class="onboard-skip" onclick="go('login')">já tenho conta, entrar</button>
     </div>
@@ -172,7 +171,7 @@
     <div class="onboard-wrap">
       <div class="brand lg">Estude<span class="plus">+</span></div>
       <h1>Esqueceu a senha?</h1>
-      <span class="hand">responde a pergunta de segurança que você criou no cadastro</span>
+      <span class="hand">se a sua conta tem pergunta de segurança, dá pra trocar a senha aqui</span>
       <div class="onboard-field"><label for="input-email-recuperar">seu e-mail</label><input type="email" id="input-email-recuperar" placeholder="voce@email.com"></div>
       <button class="onboard-btn" id="btn-buscar-pergunta" onclick="buscarPerguntaSeguranca()">Continuar</button>
       <div id="bloco-pergunta-seguranca" style="display:none; width:100%;">
@@ -865,11 +864,11 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="efeitos.js?v=6"></script>
-<script src="app.js?v=6"></script>
-<script src="voz.js?v=6"></script>
-<script src="biblioteca.js?v=6"></script>
-<script src="tutor.js?v=6"></script>
-<script src="comunidade.js?v=6"></script>
+<script src="efeitos.js?v=7"></script>
+<script src="app.js?v=7"></script>
+<script src="voz.js?v=7"></script>
+<script src="biblioteca.js?v=7"></script>
+<script src="tutor.js?v=7"></script>
+<script src="comunidade.js?v=7"></script>
 </body>
 </html>

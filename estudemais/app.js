@@ -262,12 +262,6 @@ function setRole(role) {
   $('campo-serie').hidden = role === 'professor';
 }
 
-async function sha256Cliente(texto) {
-  const dados = new TextEncoder().encode(texto.trim().toLowerCase());
-  const hash = await crypto.subtle.digest('SHA-256', dados);
-  return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 async function criarPerfilSeNaoExistir(usuarioAuth) {
   const authId = usuarioAuth.id;
   estado.eu = null;
@@ -284,12 +278,6 @@ async function criarPerfilSeNaoExistir(usuarioAuth) {
     escola: $('input-escola').value.trim(), cidade: $('input-cidade').value.trim(),
   };
   if (papelSelecionado === 'aluno' && $('input-serie').value) dados.serie = $('input-serie').value;
-  const pergunta = $('input-pergunta-seguranca').value.trim();
-  const resposta = $('input-resposta-seguranca').value.trim();
-  if (pergunta && resposta) {
-    dados.pergunta_seguranca = pergunta;
-    dados.resposta_seguranca_hash = await sha256Cliente(resposta);
-  }
   const { data: novo, error } = await sb.from('be_usuarios').insert(dados).select('id, papel').single();
   if (error) throw error;
   estado.usuarioId = novo.id;
@@ -300,15 +288,14 @@ async function criarPerfilSeNaoExistir(usuarioAuth) {
 async function criarConta() {
   const nome = $('input-nome').value.trim();
   const email = $('input-email-cadastro').value.trim();
+  const emailConf = $('input-email-cadastro-confirma').value.trim();
   const senha = $('input-senha-cadastro').value;
   const conf = $('input-senha-cadastro-confirma').value;
   if (!nome) return avisar('digite seu nome pra continuar');
   if (!email) return avisar('digite seu e-mail');
+  if (email.toLowerCase() !== emailConf.toLowerCase()) return avisar('os dois e-mails não são iguais, confere de novo');
   if (!senha || senha.length < 6) return avisar('a senha precisa ter pelo menos 6 caracteres');
   if (senha !== conf) return avisar('as duas senhas não são iguais');
-  if (!$('input-pergunta-seguranca').value.trim() || !$('input-resposta-seguranca').value.trim()) {
-    return avisar('preenche a pergunta e a resposta de segurança — é como você recupera a senha sem e-mail');
-  }
   const pronto = ocupado($('btn-cadastro'), 'Criando...');
   try {
     // a conta nasce confirmada (sem e-mail de confirmação) e já entra com a senha
@@ -358,7 +345,11 @@ async function buscarPerguntaSeguranca() {
       body: JSON.stringify({ email, apenas_buscar_pergunta: true }),
     });
     const r = await resp.json();
-    if (!resp.ok) throw new Error(r.error || 'não achei essa conta');
+    if (!resp.ok) {
+      throw new Error(/pergunta de segurança/.test(r.error || '')
+        ? 'Essa conta não tem pergunta de segurança. Pra trocar a senha, fala com o suporte do Estude+.'
+        : (r.error || 'não achei essa conta'));
+    }
     $('label-pergunta-mostrada').textContent = r.pergunta;
     $('bloco-pergunta-seguranca').style.display = 'block';
     $('btn-buscar-pergunta').style.display = 'none';
