@@ -118,7 +118,7 @@ async function chamarFuncao(slug, corpo) {
 
 function falhou(err, onde = '') {
   console.error(onde, err);
-  alert((onde ? onde + ': ' : '') + (err && err.message ? err.message : err));
+  avisar((onde ? onde + ': ' : '') + (err && err.message ? err.message : err));
 }
 
 function ocupado(btn, texto) {
@@ -164,8 +164,8 @@ function toggleForm(tipo) {
 function atualizarEnergia(restante) {
   if (restante === undefined || restante === null) return;
   const v = Math.max(0, restante);
-  $('home-energia').textContent = '⚡ ' + v;
-  $('sidebar-energia').textContent = '⚡ ' + v;
+  $('home-energia').textContent = v;
+  $('sidebar-energia').textContent = v;
 }
 
 /* ===================== conta ===================== */
@@ -216,19 +216,19 @@ async function criarConta() {
   const email = $('input-email-cadastro').value.trim();
   const senha = $('input-senha-cadastro').value;
   const conf = $('input-senha-cadastro-confirma').value;
-  if (!nome) return alert('digite seu nome pra continuar');
-  if (!email) return alert('digite seu e-mail');
-  if (!senha || senha.length < 6) return alert('a senha precisa ter pelo menos 6 caracteres');
-  if (senha !== conf) return alert('as duas senhas não são iguais');
+  if (!nome) return avisar('digite seu nome pra continuar');
+  if (!email) return avisar('digite seu e-mail');
+  if (!senha || senha.length < 6) return avisar('a senha precisa ter pelo menos 6 caracteres');
+  if (senha !== conf) return avisar('as duas senhas não são iguais');
   if (!$('input-pergunta-seguranca').value.trim() || !$('input-resposta-seguranca').value.trim()) {
-    return alert('preenche a pergunta e a resposta de segurança — é como você recupera a senha sem e-mail');
+    return avisar('preenche a pergunta e a resposta de segurança — é como você recupera a senha sem e-mail');
   }
   const pronto = ocupado($('btn-cadastro'), 'Criando...');
   try {
     const { data, error } = await sb.auth.signUp({ email, password: senha });
     if (error) throw error;
     if (!data.session) {
-      alert('Quase lá! Mandamos um link de confirmação pro seu e-mail. Depois de confirmar, volta aqui e entra.');
+      avisar('Quase lá! Mandamos um link de confirmação pro seu e-mail. Depois de confirmar, volta aqui e entra.');
       go('login');
       return;
     }
@@ -242,7 +242,7 @@ async function criarConta() {
 async function entrarComEmailSenha() {
   const email = $('input-email-login').value.trim();
   const senha = $('input-senha-login').value;
-  if (!email || !senha) return alert('preenche e-mail e senha');
+  if (!email || !senha) return avisar('preenche e-mail e senha');
   const pronto = ocupado($('btn-login'), 'Entrando...');
   try {
     const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
@@ -250,18 +250,18 @@ async function entrarComEmailSenha() {
     await criarPerfilSeNaoExistir(data.user);
     verHoje();
   } catch (err) {
-    alert('Não consegui entrar: ' + (err.message === 'Invalid login credentials' ? 'e-mail ou senha errados' : err.message));
+    avisar('Não consegui entrar: ' + (err.message === 'Invalid login credentials' ? 'e-mail ou senha errados' : err.message));
   } finally { pronto(); }
 }
 
 async function entrarComGoogle() {
   const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
-  if (error) alert('Não consegui abrir o Google: ' + error.message);
+  if (error) avisar('Não consegui abrir o Google: ' + error.message);
 }
 
 async function buscarPerguntaSeguranca() {
   const email = $('input-email-recuperar').value.trim();
-  if (!email) return alert('digita seu e-mail');
+  if (!email) return avisar('digita seu e-mail');
   const pronto = ocupado($('btn-buscar-pergunta'), 'Buscando...');
   try {
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/resetar-senha-segura`, {
@@ -273,16 +273,16 @@ async function buscarPerguntaSeguranca() {
     $('label-pergunta-mostrada').textContent = r.pergunta;
     $('bloco-pergunta-seguranca').style.display = 'block';
     $('btn-buscar-pergunta').style.display = 'none';
-  } catch (err) { alert(err.message); } finally { pronto(); }
+  } catch (err) { avisar(err.message); } finally { pronto(); }
 }
 
 async function resetarSenhaComPergunta() {
   const email = $('input-email-recuperar').value.trim();
   const resposta = $('input-resposta-recuperar').value.trim();
   const nova = $('input-nova-senha-pergunta').value;
-  if (!resposta) return alert('responde a pergunta de segurança');
-  if (!nova || nova.length < 6) return alert('a senha nova precisa ter pelo menos 6 caracteres');
-  if (nova !== $('input-nova-senha-pergunta-confirma').value) return alert('as duas senhas não são iguais');
+  if (!resposta) return avisar('responde a pergunta de segurança');
+  if (!nova || nova.length < 6) return avisar('a senha nova precisa ter pelo menos 6 caracteres');
+  if (nova !== $('input-nova-senha-pergunta-confirma').value) return avisar('as duas senhas não são iguais');
   const pronto = ocupado($('btn-resetar-com-pergunta'), 'Trocando...');
   try {
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/resetar-senha-segura`, {
@@ -291,32 +291,32 @@ async function resetarSenhaComPergunta() {
     });
     const r = await resp.json();
     if (!resp.ok) throw new Error(r.error || 'erro desconhecido');
-    alert('Senha trocada! Agora é só entrar com ela.');
+    avisar('Senha trocada! Agora é só entrar com ela.');
     $('input-email-login').value = email;
     go('login');
-  } catch (err) { alert(err.message); } finally { pronto(); }
+  } catch (err) { avisar(err.message); } finally { pronto(); }
 }
 
 async function enviarRecuperacaoSenha() {
   const email = $('input-email-recuperar').value.trim();
-  if (!email) return alert('digita seu e-mail primeiro');
+  if (!email) return avisar('digita seu e-mail primeiro');
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-  if (error) return alert('Não consegui enviar: ' + error.message);
-  alert('Mandamos um link pro ' + email + '. Abre ele nesse mesmo aparelho.');
+  if (error) return avisar('Não consegui enviar: ' + error.message);
+  avisar('Mandamos um link pro ' + email + '. Abre ele nesse mesmo aparelho.');
   go('login');
 }
 
 async function definirNovaSenha() {
   const nova = $('input-nova-senha-recuperacao').value;
-  if (!nova || nova.length < 6) return alert('a senha precisa ter pelo menos 6 caracteres');
-  if (nova !== $('input-nova-senha-recuperacao-confirma').value) return alert('as duas senhas não são iguais');
+  if (!nova || nova.length < 6) return avisar('a senha precisa ter pelo menos 6 caracteres');
+  if (nova !== $('input-nova-senha-recuperacao-confirma').value) return avisar('as duas senhas não são iguais');
   const pronto = ocupado($('btn-definir-nova-senha'), 'Salvando...');
   try {
     const { error } = await sb.auth.updateUser({ password: nova });
     if (error) throw error;
     const { data: s } = await sb.auth.getSession();
     if (s && s.session) await criarPerfilSeNaoExistir(s.session.user);
-    alert('Senha criada! Bora estudar 🎉');
+    avisar('Senha criada! Bora estudar 🎉');
     verHoje();
   } catch (err) { falhou(err, 'Não consegui salvar a senha'); } finally { pronto(); }
 }
@@ -330,13 +330,13 @@ async function entrarComCodigo() {
   try {
     const nome = await entrarNoGrupoPorCodigo(codigo);
     if (!nome) return;
-    alert('Você entrou em: ' + nome + ' 🎉');
+    avisar('Você entrou em: ' + nome + ' 🎉');
     verHoje();
   } catch (err) { falhou(err, 'Não consegui entrar no grupo'); } finally { pronto(); }
 }
 
 async function sair() {
-  if (!confirm('Sair da conta?')) return;
+  if (!(await confirmar('Sair da conta?', { sim: 'Sair' }))) return;
   await sb.auth.signOut();
   location.reload();
 }
@@ -349,10 +349,12 @@ async function carregarHoje() {
     const r = await rpc('be_resumo_hoje');
     estado.resumo = r;
     estado.papel = r.papel;
-    $('home-saudacao').textContent = 'Oi, ' + (r.nome || '').split(' ')[0] + ' 👋';
+    $('home-saudacao').textContent = 'Oi, ' + ((r.nome || '').split(' ')[0] || 'estudante') + '!';
+    $('home-sub').textContent = r.estudou_hoje ? 'hoje já tem visto, continua assim' : 'bora pro plano de hoje?';
     atualizarEnergia(r.energia);
 
-    $('home-streak').textContent = `${r.streak} dia${r.streak === 1 ? '' : 's'} 🔥`;
+    Fx.contar($('home-streak'), r.streak, { fmt: (v) => `${v} dia${v === 1 ? '' : 's'}`, dur: 600 });
+    $('home-chama').classList.toggle('acesa', r.streak > 0 && r.estudou_hoje);
     const stamps = $('home-stamps');
     stamps.innerHTML = '';
     for (let i = 0; i < 7; i++) {
@@ -365,13 +367,14 @@ async function carregarHoje() {
     }
     $('home-nivel').textContent = 'nível ' + r.nivel;
     $('home-xp').textContent = r.xp + ' XP';
-    $('home-xp-fill').style.width = ((r.xp % 200) / 2) + '%';
+    requestAnimationFrame(() => { $('home-xp-fill').style.width = Math.max(3, (r.xp % 200) / 2) + '%'; });
+    verificarNivel(r.nivel);
 
     renderTarefasHoje(r);
 
     const pend = r.cards_pendentes || 0;
     const novos = Math.min(r.cards_novos || 0, 20);
-    $('home-cards-n').textContent = pend + novos;
+    Fx.contar($('home-cards-n'), pend + novos, { dur: 500 });
     $('home-cards-s').textContent = pend + novos === 0
       ? 'nada pra revisar agora — os cards voltam no dia certo'
       : `${pend} pra revisar${novos ? ` + ${novos} novo${novos === 1 ? '' : 's'}` : ''} · antes de esquecer`;
@@ -391,12 +394,20 @@ async function carregarHoje() {
       <div class="section-title"><h2>Próximas provas</h2></div>
       <div class="exam-row" style="margin-bottom:22px;">${provas.map((p) => `
         <div class="exam-chip" onclick="abrirMateria('${p.id}')">
-          <div class="d">${p.dias === 0 ? 'hoje' : p.dias + 'd'}</div>
-          <div class="n">${esc(p.nome)}</div><div class="w">${fmtData(p.data_prova)}</div>
+          <div class="d">${p.dias === 0 ? 'hoje' : p.dias}</div><div class="w">${p.dias === 0 ? 'é a prova' : p.dias === 1 ? 'dia' : 'dias'}</div>
+          <div class="n">${esc(p.nome)}</div><div class="w">prova ${fmtData(p.data_prova)}</div>
         </div>`).join('')}</div>` : '';
   } catch (err) {
     $('home-tarefas').innerHTML = `<div class="empty">não consegui carregar seu dia (${esc(err.message)})</div>`;
   }
+}
+
+function verificarNivel(nivel) {
+  if (!estado.usuarioId || !nivel) return;
+  const chave = 'estude-nivel-' + estado.usuarioId;
+  let antes = null;
+  try { antes = Number(localStorage.getItem(chave)) || null; localStorage.setItem(chave, String(nivel)); } catch (_) { return; }
+  if (antes && nivel > antes) setTimeout(() => Fx.nivel(nivel), 500);
 }
 
 function htmlTarefa(t, opts = {}) {
@@ -405,7 +416,7 @@ function htmlTarefa(t, opts = {}) {
   if (opts.comMateria && t.materia) meta.push(esc(t.materia));
   meta.push(`${t.minutos} min`);
   if (t.atrasada && !t.feita) meta.push(`<span class="late">atrasada · ${fmtData(t.dia)}</span>`);
-  const acao = t.feita ? 'refazer' : 'fazer →';
+  const acao = t.feita ? 'refazer' : 'fazer';
   const hoje = hojeISO();
   const botao = (!opts.editavel || t.dia <= hoje) ? `<button class="go-small" onclick="fazerTarefa('${t.id}')">${acao}</button>` : '';
   let ferramentas = '';
@@ -416,7 +427,7 @@ function htmlTarefa(t, opts = {}) {
       <input type="date" value="${t.dia}" min="${hoje}" onchange="moverTarefa('${t.id}', this.value)" title="mudar o dia">
       <button class="icon-btn" title="tirar do plano" onclick="excluirTarefa('${t.id}')">✕</button></div>`;
   }
-  return `<div class="task ${t.feita ? 'done' : ''}">
+  return `<div class="task ${t.feita ? 'done' : ''}" data-id="${t.id}">
     <button class="check" title="${t.feita ? 'desmarcar' : 'marcar como feita'}" onclick="alternarTarefa('${t.id}')">${t.feita ? '✓' : ''}</button>
     <div class="task-body"><div class="task-title">${esc(t.titulo)}</div><div class="task-meta">${meta.join(' · ')}</div>${ferramentas}</div>
     ${editar}${botao}
@@ -442,12 +453,20 @@ function renderTarefasHoje(r) {
 
 async function alternarTarefa(id) {
   const t = estado.tarefas[id];
-  if (!t) return;
+  if (!t || alternarTarefa.ocupado) return;
+  alternarTarefa.ocupado = true;
+  const el = document.querySelector(`.screen.active .task[data-id="${id}"]`);
+  const marcando = !t.feita;
+  if (el && marcando) { el.classList.add('done', 'recem'); Fx.vistoMini(el); }
   try {
-    const r = await rpc('be_marcar_tarefa', { p_tarefa: id, p_feita: !t.feita });
-    if (r.dia_completo) toast(`Dia completo! +${r.xp} XP 🎉`, 'xp'); else toastXp(r.xp);
-    recarregarTelaAtual();
-  } catch (err) { falhou(err); }
+    const r = await rpc('be_marcar_tarefa', { p_tarefa: id, p_feita: marcando });
+    if (marcando && el) Fx.xp(el.querySelector('.check'), r.xp);
+    if (r.dia_completo) { Fx.visto('dia completo'); toast(`Dia completo! +${r.xp} XP`, 'xp'); }
+    setTimeout(recarregarTelaAtual, marcando ? (r.dia_completo ? 1500 : 750) : 0);
+  } catch (err) {
+    if (el && marcando) el.classList.remove('done', 'recem');
+    falhou(err);
+  } finally { setTimeout(() => { alternarTarefa.ocupado = false; }, 400); }
 }
 
 function recarregarTelaAtual() {
@@ -463,8 +482,8 @@ async function concluirTarefaAtual() {
   if (!t || t.feita) return;
   try {
     const r = await rpc('be_marcar_tarefa', { p_tarefa: t.id, p_feita: true });
-    if (r.dia_completo) toast(`Tarefa feita · dia completo! +${r.xp} XP 🎉`, 'xp');
-    else toast(`Tarefa do plano feita · +${r.xp} XP`, 'xp');
+    if (r.dia_completo) { Fx.visto('dia completo'); toast(`Tarefa feita, dia completo! +${r.xp} XP`, 'xp'); }
+    else toast(`Tarefa do plano feita: +${r.xp} XP`, 'xp');
   } catch (err) { console.warn(err); }
 }
 
@@ -539,8 +558,8 @@ async function abrirMateria(id, aba = 'plano') {
   $('mat-titulo').textContent = m.nome;
 
   const pills = [];
-  pills.push(`<span class="pill btn" onclick="toggleForm('data-prova')">📅 ${m.data_prova ? `prova ${fmtData(m.data_prova)} · ${faltam(m.dias)}` : 'definir data da prova'}</span>`);
-  if (m.grupo_nome) pills.push(`<span class="pill lilac">👥 ${esc(m.grupo_nome)}</span>`);
+  pills.push(`<button class="pill btn" onclick="toggleForm('data-prova')">${m.data_prova ? `prova ${fmtData(m.data_prova)}, ${faltam(m.dias)}` : 'definir data da prova'}</button>`);
+  if (m.grupo_nome) pills.push(`<span class="pill lilac">turma ${esc(m.grupo_nome)}</span>`);
   if (d.topicos.length) pills.push(`<span class="pill">${d.topicos.length} tópicos</span>`);
   $('mat-meta').innerHTML = pills.join('');
   $('input-mat-data').value = m.data_prova || '';
@@ -558,8 +577,8 @@ async function abrirMateria(id, aba = 'plano') {
   const icones = { foto: '📷', pdf: '📄', youtube: '▶️', link: '🔗', texto: '✍️' };
   const nomes = { foto: 'Foto', pdf: 'PDF', youtube: 'Vídeo do YouTube', link: 'Site', texto: 'Texto colado' };
   $('mat-materiais').innerHTML = d.materiais.length ? d.materiais.map((mt) => `
-    <div class="material-item"><span class="m-ic">${icones[mt.tipo] || '📄'}</span>
-      <div style="flex:1;"><div class="m-name">${nomes[mt.tipo] || esc(mt.tipo)}</div><div class="m-meta">adicionado ${new Date(mt.created_at).toLocaleDateString('pt-BR')}</div></div>
+    <div class="material-item"><span class="m-ic">${mt.tipo === 'link' && !mt.tem_url ? icones.texto : (icones[mt.tipo] || '📄')}</span>
+      <div style="flex:1;"><div class="m-name">${mt.tipo === 'link' && !mt.tem_url ? nomes.texto : (nomes[mt.tipo] || esc(mt.tipo))}</div><div class="m-meta">adicionado ${new Date(mt.created_at).toLocaleDateString('pt-BR')}</div></div>
       ${mt.meu ? `<span class="m-del" title="excluir" onclick="excluirMaterial('${mt.id}')">✕</span>` : ''}
     </div>`).join('') : '<div class="empty" style="margin-bottom:10px;">nenhum material ainda</div>';
   $('btn-excluir-materia').hidden = !m.dono;
@@ -590,7 +609,7 @@ function renderArquivada(d) {
 
 async function salvarNotaReal() {
   const v = parseFloat($('input-nota-real').value);
-  if (isNaN(v) || v < 0 || v > 10) return alert('digita uma nota entre 0 e 10');
+  if (isNaN(v) || v < 0 || v > 10) return avisar('digita uma nota entre 0 e 10');
   const { error } = await sb.from('be_materias').update({ nota_real: v }).eq('id', estado.materiaId);
   if (error) return falhou(error);
   abrirMateria(estado.materiaId, abaAtual);
@@ -614,7 +633,7 @@ function renderPlanoMateria(d) {
   let html = '';
   if (!m.data_prova) {
     html += `<div class="card center"><p class="hand muted" style="margin:0 0 12px;">Me diz quando é a prova que eu distribuo os tópicos até lá, com revisão e prova simulada na véspera.</p>
-      <button class="btn coral" onclick="toggleForm('data-prova')">📅 definir data da prova</button></div>`;
+      <button class="btn coral" onclick="toggleForm('data-prova')">Definir data da prova</button></div>`;
   } else {
     const porDia = {};
     d.tarefas.forEach((t) => { (porDia[t.dia] = porDia[t.dia] || []).push(t); });
@@ -633,7 +652,7 @@ function renderPlanoMateria(d) {
     });
     if (dias.length > VISIVEIS) {
       html += `</div><button class="btn ghost full" style="margin-top:12px;" id="btn-plano-resto"
-        onclick="$('plano-resto').hidden = false; this.remove();">ver o plano completo (+${dias.length - VISIVEIS} dias até a prova)</button>`;
+        onclick="$('plano-resto').hidden = false; this.remove();">ver o plano completo (mais ${dias.length - VISIVEIS} dias até a prova)</button>`;
     }
     html += `<div class="new-group-row" style="margin:14px 0 0;"><div class="ghost-btn" onclick="toggleForm('nova-tarefa')">+ tarefa minha</div></div>
       <div class="inline-form" id="form-nova-tarefa" style="margin:12px 0 0;">
@@ -649,19 +668,19 @@ function renderPlanoMateria(d) {
 
 async function salvarDataProva() {
   const data = $('input-mat-data').value;
-  if (!data) return alert('escolhe a data da prova');
-  if (data < hojeISO()) return alert('a data precisa ser hoje ou depois');
+  if (!data) return avisar('escolhe a data da prova');
+  if (data < hojeISO()) return avisar('a data precisa ser hoje ou depois');
   try {
     const { error } = await sb.from('be_materias').update({ data_prova: data }).eq('id', estado.materiaId);
     if (error) throw error;
     const n = await rpc('be_gerar_plano', { p_materia: estado.materiaId });
-    toast(`Plano montado: ${n} tarefas até a prova 🗓️`);
+    toast(`Plano montado: ${n} tarefas até a prova`);
     abrirMateria(estado.materiaId, 'plano');
   } catch (err) { falhou(err, 'Não consegui salvar a data'); }
 }
 
 async function refazerPlano() {
-  if (!confirm('Refazer o plano? As tarefas futuras que ainda não foram feitas são redistribuídas, priorizando os tópicos em que você está mais fraco. As que você criou à mão continuam.')) return;
+  if (!(await confirmar('Refazer o plano?\nAs tarefas futuras que ainda não foram feitas são redistribuídas, começando pelos tópicos em que você está mais fraco. As que você criou à mão continuam.', { sim: 'Refazer' }))) return;
   try {
     const n = await rpc('be_gerar_plano', { p_materia: estado.materiaId });
     toast(`Plano refeito: ${n} tarefas`);
@@ -678,7 +697,7 @@ async function moverTarefa(id, dia) {
 }
 
 async function excluirTarefa(id) {
-  if (!confirm('Tirar essa tarefa do plano?')) return;
+  if (!(await confirmar('Tirar essa tarefa do plano?', { sim: 'Tirar' }))) return;
   const { error } = await sb.from('be_plano_tarefas').delete().eq('id', id);
   if (error) return falhou(error);
   abrirMateria(estado.materiaId, 'plano');
@@ -688,8 +707,8 @@ async function adicionarTarefa() {
   const titulo = $('nt-titulo').value.trim();
   const dia = $('nt-dia').value;
   const minutos = parseInt($('nt-min').value, 10) || 20;
-  if (!titulo) return alert('escreve o que você vai fazer');
-  if (!dia) return alert('escolhe o dia');
+  if (!titulo) return avisar('escreve o que você vai fazer');
+  if (!dia) return avisar('escolhe o dia');
   const { error } = await sb.from('be_plano_tarefas').insert({
     usuario_id: estado.usuarioId, materia_id: estado.materiaId, dia, tipo: 'estudar', titulo, minutos, manual: true, ordem: 9,
   });
@@ -700,7 +719,7 @@ async function adicionarTarefa() {
 function botaoConcluir(tipos) {
   const t = estado.tarefaAtual;
   if (!t || t.materia_id !== estado.materiaId || !tipos.includes(t.tipo)) return '';
-  return `<button class="btn coral full" style="margin-bottom:22px;" onclick="concluirLeitura()">✓ Estudei, marcar tarefa como feita</button>`;
+  return `<button class="btn coral full" style="margin-bottom:22px;" onclick="concluirLeitura()">Estudei, marcar tarefa como feita</button>`;
 }
 
 async function concluirLeitura() {
@@ -709,13 +728,13 @@ async function concluirLeitura() {
 }
 
 function paragrafos(texto) {
-  return String(texto || '').split(/\n{2,}|\n/).filter((p) => p.trim()).map((p) => `<p style="font-size:14px; line-height:1.65; margin:0 0 10px;">${esc(p)}</p>`).join('');
+  return String(texto || '').split(/\n{2,}|\n/).filter((p) => p.trim()).map((p) => `<p>${esc(p)}</p>`).join('');
 }
 
 function renderResumo(d) {
   const curi = (d.curiosidades && d.curiosidades.lista) || [];
-  $('mat-resumo').innerHTML = (d.resumo ? `<div class="card">${paragrafos(d.resumo.texto)}</div>` : '<div class="card"><div class="empty">nenhum resumo ainda — adicione um material</div></div>')
-    + (curi.length ? `<div class="card"><h3 style="margin-bottom:8px;">💡 Curiosidades</h3>${curi.map((c) => `<div class="ranking-row"><span style="font-size:13px;">${esc(c)}</span></div>`).join('')}</div>` : '')
+  $('mat-resumo').innerHTML = (d.resumo ? `<div class="card texto-resumo">${paragrafos(d.resumo.texto)}</div>` : '<div class="card"><div class="empty">nenhum resumo ainda, adicione um material</div></div>')
+    + (curi.length ? `<div class="card"><h3>Curiosidades</h3>${curi.map((c) => `<div class="ranking-row"><span>💡 ${esc(c)}</span></div>`).join('')}</div>` : '')
     + botaoConcluir(['estudar', 'revisao_geral']);
 }
 
@@ -725,7 +744,7 @@ function renderMapa(d) {
     $('mat-mapa').innerHTML = '<div class="card"><div class="empty">sem mapa mental ainda</div></div>' + botaoConcluir(['estudar', 'revisao_geral']);
     return;
   }
-  $('mat-mapa').innerHTML = `<div class="card"><div class="mind-center">${esc(mapa.tema_central || d.materia.nome)}</div>
+  $('mat-mapa').innerHTML = `<div class="card mapa"><div class="mind-center">${esc(mapa.tema_central || d.materia.nome)}</div>
     ${mapa.ramos.map((r) => `<div class="mind-branch"><div class="t">${esc(r.titulo)}</div><ul>${(r.pontos || []).map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div>`).join('')}
   </div>` + botaoConcluir(['estudar', 'revisao_geral']);
 }
@@ -733,28 +752,28 @@ function renderMapa(d) {
 function renderCardsMateria(d) {
   const opts = d.topicos.map((t) => `<option value="${t.id}">${esc(t.nome)}</option>`).join('');
   $('mat-cards').innerHTML = `<div class="card center">
-      <div class="score-big" style="color:var(--lilac);">${d.cards_pendentes}</div>
+      <div class="score-big">${d.cards_pendentes}</div>
       <p class="hand muted" style="margin:6px 0 14px;">pra revisar hoje · ${d.cards_total} cards na matéria</p>
-      <button class="btn coral full" ${d.cards_total ? '' : 'disabled'} onclick="abrirRevisaoCards('${d.materia.id}')">🗂️ Revisar agora</button>
+      <button class="btn coral full" ${d.cards_total ? '' : 'disabled'} onclick="abrirRevisaoCards('${d.materia.id}')">Revisar agora</button>
     </div>
-    <div class="card"><h3 style="margin-bottom:10px;">Criar card</h3>
+    <div class="card"><h3>Criar card</h3>
       <div class="field"><label>frente (pergunta)</label><input type="text" id="nc-frente" placeholder="ex: O que é osmose?"></div>
       <div class="field"><label>verso (resposta)</label><textarea id="nc-verso" style="min-height:70px;" placeholder="ex: passagem de água do meio menos concentrado pro mais concentrado"></textarea></div>
       ${opts ? `<div class="field"><label>tópico</label><select id="nc-topico"><option value="">—</option>${opts}</select></div>` : ''}
-      <button class="btn full" onclick="criarCard()">+ adicionar card</button>
+      <button class="btn full" onclick="criarCard()">Adicionar card</button>
     </div>`;
 }
 
 async function criarCard() {
   const frente = $('nc-frente').value.trim();
   const verso = $('nc-verso').value.trim();
-  if (!frente || !verso) return alert('preenche a frente e o verso');
+  if (!frente || !verso) return avisar('preenche a frente e o verso');
   const topico = $('nc-topico') ? $('nc-topico').value || null : null;
   const { error } = await sb.from('be_cards').insert({
     materia_id: estado.materiaId, frente, verso, origem: 'manual', criado_por: estado.usuarioId, topico_id: topico,
   });
   if (error) return falhou(error, error.code === '23505' ? 'Já existe um card com essa frente' : 'Não consegui criar o card');
-  toast('Card criado 🗂️');
+  toast('Card criado');
   abrirMateria(estado.materiaId, 'cards');
 }
 
@@ -766,21 +785,21 @@ function renderQuizMateria(d, tipo) {
   alvo.innerHTML = `<div class="card center">
     <div class="score-big">${lista.length}</div>
     <p class="hand muted" style="margin:6px 0 14px;">${tipo === 'quiz' ? 'perguntas rápidas de prática' : 'perguntas simulando a prova de verdade'}</p>
-    <button class="btn coral full" onclick="iniciarQuizMateria('${d.materia.id}', '${tipo}')">${tipo === 'quiz' ? '🎮 Jogar o quiz' : '🎓 Fazer a prova'}</button>
+    <button class="btn coral full" onclick="iniciarQuizMateria('${d.materia.id}', '${tipo}')">${tipo === 'quiz' ? 'Jogar o quiz' : 'Fazer a prova'}</button>
     ${tipo === 'quiz' && topicosComPerguntas.length > 1 ? `<div class="step-label" style="margin-top:16px;">ou só um tópico</div>
       <div class="chip-toggle" style="justify-content:center;">${topicosComPerguntas.map((t) => `<div class="chip small" onclick="iniciarQuizMateria('${d.materia.id}', 'quiz', '${t.id}')">${esc(t.nome)}</div>`).join('')}</div>` : ''}
   </div>`;
 }
 
 async function excluirMaterial(id) {
-  if (!confirm('Excluir esse material? O resumo e o quiz continuam com o que já foi gerado.')) return;
+  if (!(await confirmar('Excluir esse material?\nO resumo e o quiz continuam com o que já foi gerado.', { sim: 'Excluir' }))) return;
   const { error } = await sb.from('be_materiais').delete().eq('id', id);
   if (error) return falhou(error);
   abrirMateria(estado.materiaId, abaAtual);
 }
 
 async function excluirMateriaAtual() {
-  if (!confirm('Excluir essa matéria inteira? Apaga materiais, quiz, flashcards, plano e histórico dela. Não dá pra desfazer.')) return;
+  if (!(await confirmar('Excluir essa matéria inteira?\nApaga materiais, quiz, flashcards, plano e histórico dela. Não dá pra desfazer.', { sim: 'Excluir tudo' }))) return;
   const { error } = await sb.from('be_materias').delete().eq('id', estado.materiaId);
   if (error) return falhou(error);
   verMaterias();
@@ -801,9 +820,9 @@ function novaMateria(opts = {}) {
   $('pdf-icone').textContent = '📄';
   $('pdf-status').textContent = 'toque pra escolher um PDF (até 15 MB)';
   $('upload-passos-materia').hidden = !!u.materiaAlvo;
-  $('upload-passo-fonte').textContent = u.materiaAlvo ? 'de onde vem o material novo?' : 'passo 3 · de onde vem o material?';
+  $('upload-passo-fonte').innerHTML = u.materiaAlvo ? 'de onde vem o material novo?' : '<b>3</b> de onde vem o material?';
   $('upload-titulo').textContent = u.materiaAlvo ? 'Adicionar material' : (u.grupoId ? 'Nova matéria da turma' : 'Nova matéria de estudo');
-  $('upload-grupo').textContent = u.grupoId ? `👥 vai aparecer pra todo mundo de ${u.grupoNome || 'a turma'}` : (u.materiaAlvo ? `em ${estado.detalhe ? estado.detalhe.materia.nome : 'essa matéria'}` : '');
+  $('upload-grupo').textContent = u.grupoId ? `vai aparecer pra todo mundo de ${u.grupoNome || 'a turma'}` : (u.materiaAlvo ? `em ${estado.detalhe ? estado.detalhe.materia.nome : 'essa matéria'}` : '');
   setSource('foto');
   go('upload');
 }
@@ -849,7 +868,7 @@ function fotoSelecionada(ev) {
 function pdfSelecionado(ev) {
   const file = ev.target.files[0];
   if (!file) return;
-  if (file.size > 15 * 1024 * 1024) return alert('Esse PDF está grande demais (máx. 15 MB).');
+  if (file.size > 15 * 1024 * 1024) return avisar('Esse PDF está grande demais (máx. 15 MB).');
   const reader = new FileReader();
   reader.onload = (e) => {
     estado.upload.pdf = e.target.result.split(',')[1];
@@ -877,26 +896,27 @@ function payloadDaFonte() {
 async function criarJornada() {
   const u = estado.upload;
   let payload;
-  try { payload = payloadDaFonte(); } catch (err) { return alert(err.message); }
+  try { payload = payloadDaFonte(); } catch (err) { return avisar(err.message); }
 
   let materiaId = u.materiaAlvo;
   let criadaAgora = false;
   const nome = $('input-materia').value.trim();
   const dataProva = $('input-data-prova').value || null;
   if (!materiaId) {
-    if (!nome) return alert('escreve o nome da matéria primeiro');
-    if (dataProva && dataProva < hojeISO()) return alert('a data da prova precisa ser hoje ou depois');
+    if (!nome) return avisar('escreve o nome da matéria primeiro');
+    if (dataProva && dataProva < hojeISO()) return avisar('a data da prova precisa ser hoje ou depois');
     if (!u.grupoId) {
       const { data: repetida } = await sb.from('be_materias').select('id, nome')
         .eq('usuario_id', estado.usuarioId).eq('status', 'ativa').ilike('nome', nome).maybeSingle();
       if (repetida) {
-        if (!confirm(`Você já tem a matéria "${repetida.nome}". Adicionar esse material nela?\n\nOK = usar a que já existe\nCancelar = escolher outro nome`)) return;
+        if (!(await confirmar(`Você já tem a matéria "${repetida.nome}". Quer adicionar esse material nela?`, { sim: 'Usar essa', nao: 'Escolher outro nome' }))) return;
         materiaId = repetida.id;
       }
     }
   }
 
-  const pronto = ocupado($('btn-criar-jornada'), '✨ Gerando com IA... uns 30 segundos');
+  const pronto = ocupado($('btn-criar-jornada'), 'Gerando...');
+  Fx.gerandoInicio(u.fonte === 'foto' && u.foto ? $('foto-preview').src : null);
   try {
     if (!materiaId) {
       const linha = u.grupoId ? { grupo_id: u.grupoId, nome, data_prova: dataProva } : { usuario_id: estado.usuarioId, nome, data_prova: dataProva };
@@ -910,13 +930,16 @@ async function criarJornada() {
     estado.detalhe = null;
     atualizarEnergia(r.energia_restante);
     $('pronto-titulo').textContent = r.titulo || 'Pronto!';
-    $('pronto-sub').textContent = `${r.topicos || 0} tópicos organizados · +20 XP`;
-    $('pronto-cards').textContent = r.cards_novos ?? 0;
-    $('pronto-quiz').textContent = (r.quiz || []).length + (r.prova || []).length;
-    $('pronto-plano').textContent = r.plano_tarefas ?? '—';
+    $('pronto-sub').textContent = `${r.topicos || 0} tópicos organizados, +20 XP`;
+    await Fx.gerandoFim(true);
     go('pronto');
+    Fx.contar($('pronto-cards'), r.cards_novos ?? 0, { atraso: 250 });
+    Fx.contar($('pronto-quiz'), (r.quiz || []).length + (r.prova || []).length, { atraso: 350 });
+    if (r.plano_tarefas) Fx.contar($('pronto-plano'), r.plano_tarefas, { atraso: 450 }); else $('pronto-plano').textContent = '—';
+    setTimeout(() => Fx.confete({ y: innerHeight * 0.28, n: 110 }), 300);
     toastXp(20, 'pelo material novo');
   } catch (err) {
+    await Fx.gerandoFim(false);
     if (criadaAgora && materiaId) await sb.from('be_materias').delete().eq('id', materiaId);
     falhou(err, 'Não consegui gerar o conteúdo');
   } finally { pronto(); }
@@ -938,7 +961,7 @@ async function iniciarQuizMateria(materiaId, tipo = 'quiz', topicoId = null) {
     if (doTopico.length >= 2) { perguntas = doTopico; topicoNome = (d.topicos.find((t) => t.id === topicoId) || {}).nome; }
   }
   if (!perguntas.length) {
-    alert('Essa matéria ainda não tem perguntas. Adicione um material primeiro.');
+    avisar('Essa matéria ainda não tem perguntas. Adicione um material primeiro.');
     return abrirMateria(materiaId, 'plano');
   }
   estado.quiz = { tipo, perguntas, i: 0, xp: 0, acertos: 0, erros: [], titulo: d.materia.nome + (tipo === 'prova' ? ' · prova' : topicoNome ? ' · ' + topicoNome : ''), topicoId, inicio: 0 };
@@ -951,7 +974,7 @@ function renderPergunta() {
   const q = estado.quiz;
   const p = q.perguntas[q.i];
   $('quiz-progress-label').textContent = `pergunta ${q.i + 1} de ${q.perguntas.length}`;
-  $('quiz-points').textContent = `⭐ +${q.xp} XP`;
+  $('quiz-points').textContent = `+${q.xp} XP`;
   $('quiz-bar-fill').style.width = Math.round((q.i / q.perguntas.length) * 100) + '%';
   $('quiz-topico').textContent = p.topico ? p.topico : 'gerado a partir do seu material';
   $('quiz-pergunta-texto').textContent = p.pergunta;
@@ -959,7 +982,9 @@ function renderPergunta() {
     `<div class="option" data-l="${esc(l)}" onclick="responder('${esc(l)}')"><div class="letter">${esc(l)}</div> <span>${esc(t)}</span></div>`).join('');
   $('quiz-feedback').hidden = true;
   const b = $('quiz-next-btn');
-  b.disabled = true; b.style.opacity = '.5'; b.textContent = 'Responda pra continuar';
+  b.disabled = true; b.textContent = 'Responda pra continuar';
+  const card = document.querySelector('#screen-quiz .question-card');
+  if (q.i > 0 && card && !Fx.reduz()) { card.classList.remove('entra-q'); void card.offsetWidth; card.classList.add('entra-q'); }
   q.inicio = Date.now();
   q.respondida = false;
 }
@@ -972,23 +997,27 @@ async function responder(letra) {
   document.querySelectorAll('#quiz-opcoes .option').forEach((o) => { o.style.pointerEvents = 'none'; });
   try {
     const r = await rpc('be_responder_pergunta', { p_pergunta: p.id, p_resposta: letra, p_tempo_ms: Date.now() - q.inicio });
+    let certaEl = null, minhaEl = null;
     document.querySelectorAll('#quiz-opcoes .option').forEach((o) => {
-      if (o.dataset.l === r.correta) o.classList.add('correct');
-      else if (o.dataset.l === letra) o.classList.add('wrong');
+      if (o.dataset.l === r.correta) { o.classList.add('correct'); certaEl = o; }
+      else if (o.dataset.l === letra) { o.classList.add('wrong'); minhaEl = o; }
     });
+    if (minhaEl) { Fx.riscar(minhaEl); setTimeout(() => Fx.circular(certaEl), 380); } else Fx.circular(certaEl);
+    if (r.xp) Fx.xp(r.acertou ? certaEl : minhaEl, r.xp);
     q.xp += r.xp;
     if (r.acertou) q.acertos++; else q.erros.push({ pergunta: p.pergunta, correta: `${r.correta}) ${p.opcoes[r.correta]}`, explicacao: r.explicacao });
-    $('quiz-feedback-icon').textContent = r.acertou ? '🎉' : '📖';
-    $('quiz-feedback-texto').textContent = (r.acertou ? 'Isso! ' : 'Quase. ') + (r.explicacao || '');
+    $('quiz-feedback-icon').textContent = r.acertou ? '✔' : '✎';
+    $('quiz-feedback-texto').textContent = (r.acertou ? 'Isso! ' : `Quase. A certa é a ${r.correta}. `) + (r.explicacao || '');
+    $('quiz-feedback').classList.toggle('ok', !!r.acertou);
     $('quiz-feedback').hidden = false;
-    $('quiz-points').textContent = `⭐ +${q.xp} XP`;
+    $('quiz-points').textContent = `+${q.xp} XP`;
   } catch (err) {
     q.respondida = false;
     document.querySelectorAll('#quiz-opcoes .option').forEach((o) => { o.style.pointerEvents = ''; });
     return falhou(err, 'Não consegui registrar a resposta');
   }
   const b = $('quiz-next-btn');
-  b.disabled = false; b.style.opacity = '1';
+  b.disabled = false;
   b.textContent = q.i === q.perguntas.length - 1 ? 'Ver resultado' : 'Próxima pergunta';
 }
 
@@ -1006,13 +1035,14 @@ async function fimQuiz() {
   $('quizfim-emoji').textContent = pct >= 80 ? '🏆' : pct >= 50 ? '🎉' : '💪';
   $('quizfim-titulo').textContent = pct >= 80 ? 'Mandou muito!' : pct >= 50 ? 'Bom trabalho!' : 'Bora revisar e tentar de novo';
   $('quizfim-sub').textContent = q.titulo;
-  $('quizfim-acertos').textContent = `${q.acertos}/${total}`;
-  $('quizfim-pct').textContent = pct + '%';
-  $('quizfim-xp').textContent = q.xp;
+  Fx.contar($('quizfim-acertos'), q.acertos, { fmt: (v) => `${v}/${total}`, atraso: 200 });
+  Fx.contar($('quizfim-pct'), pct, { fmt: (v) => v + '%', atraso: 300 });
+  Fx.contar($('quizfim-xp'), q.xp, { atraso: 400 });
+  if (pct >= 80) setTimeout(() => Fx.confete({ y: innerHeight * 0.25, n: 120 }), 350);
   $('quizfim-erros-wrap').hidden = !q.erros.length;
   $('quizfim-erros').innerHTML = q.erros.map((e) => `<div class="ranking-row" style="display:block;">
     <div style="font-weight:600; font-size:13px;">${esc(e.pergunta)}</div>
-    <div class="small" style="color:var(--mint); margin-top:3px;">✓ ${esc(e.correta)}</div>
+    <div class="small" style="color:var(--verde-forte); margin-top:3px; font-weight:650;">✓ ${esc(e.correta)}</div>
     ${e.explicacao ? `<div class="small muted" style="margin-top:2px;">${esc(e.explicacao)}</div>` : ''}</div>`).join('');
   go('quiz-fim');
   const t = estado.tarefaAtual;
@@ -1024,8 +1054,8 @@ function refazerQuiz() {
   iniciarQuizMateria(estado.materiaId, q.tipo, q.topicoId);
 }
 
-function sairDoQuiz() {
-  if (estado.quiz && estado.quiz.i > 0 && !confirm('Sair do quiz? As respostas que você já deu ficam salvas.')) return;
+async function sairDoQuiz() {
+  if (estado.quiz && estado.quiz.i > 0 && !(await confirmar('Sair do quiz?\nAs respostas que você já deu ficam salvas.', { sim: 'Sair' }))) return;
   abrirMateria(estado.materiaId, abaAtual);
 }
 
@@ -1036,7 +1066,7 @@ async function abrirRevisaoCards(materiaId = null) {
   if (!fila || !fila.length) {
     const t = estado.tarefaAtual;
     if (t && t.tipo === 'cards') { await concluirTarefaAtual(); toast('Nenhum card vencido hoje — tarefa concluída ✓'); recarregarTelaAtual(); return; }
-    return toast('Nada pra revisar agora 🎉 os cards voltam no dia certo');
+    return toast('Nada pra revisar agora, os cards voltam no dia certo');
   }
   estado.cards = { materiaId, fila, i: 0, feitos: 0, lembrou: 0, xp: 0, repetidos: new Set() };
   $('cards-titulo').textContent = materiaId && estado.detalhe && estado.detalhe.materia.id === materiaId ? 'Flashcards · ' + estado.detalhe.materia.nome : 'Revisão de flashcards';
@@ -1047,7 +1077,12 @@ async function abrirRevisaoCards(materiaId = null) {
 function mostrarCard() {
   const c = estado.cards;
   const card = c.fila[c.i];
-  $('flash').classList.remove('flipped');
+  const f = $('flash');
+  f.style.transition = 'none';
+  f.classList.remove('flipped');
+  void f.offsetWidth;
+  f.style.transition = '';
+  Fx.fichaEntra(f);
   $('cards-notas').hidden = true;
   $('cards-virar').hidden = false;
   $('flash-topico').textContent = [card.materia_nome, card.topico].filter(Boolean).join(' · ') + (card.novo ? ' · novo' : '');
@@ -1055,7 +1090,7 @@ function mostrarCard() {
   $('flash-verso').textContent = card.verso;
   $('cards-progresso').textContent = `card ${c.i + 1} de ${c.fila.length}`;
   $('cards-bar').style.width = Math.round((c.i / c.fila.length) * 100) + '%';
-  $('cards-xp').textContent = `⭐ +${c.xp} XP`;
+  $('cards-xp').textContent = `+${c.xp} XP`;
   c.ocupado = false;
 }
 
@@ -1073,7 +1108,10 @@ async function avaliarCard(nota) {
   try {
     const r = await rpc('be_revisar_card', { p_card: card.card_id, p_nota: nota });
     c.xp += r.xp;
+    Fx.xp(document.querySelector('.grade.g' + nota), r.xp);
   } catch (err) { c.ocupado = false; return falhou(err, 'Não consegui salvar a revisão'); }
+  $('cards-notas').hidden = true;
+  await Fx.fichaSai($('flash'), nota);
   c.feitos++;
   if (nota >= 2) c.lembrou++;
   if (nota === 1 && !c.repetidos.has(card.card_id)) { c.repetidos.add(card.card_id); c.fila.push(card); }
@@ -1084,17 +1122,18 @@ async function avaliarCard(nota) {
 
 async function fimCards() {
   const c = estado.cards;
-  $('cardsfim-n').textContent = c.feitos;
-  $('cardsfim-lembrou').textContent = Math.round((c.lembrou / Math.max(1, c.feitos)) * 100) + '%';
-  $('cardsfim-xp').textContent = c.xp;
   $('cardsfim-sub').textContent = 'os cards que você lembrou fácil só voltam daqui a alguns dias';
   go('cards-fim');
+  Fx.contar($('cardsfim-n'), c.feitos, { atraso: 200 });
+  Fx.contar($('cardsfim-lembrou'), Math.round((c.lembrou / Math.max(1, c.feitos)) * 100), { fmt: (v) => v + '%', atraso: 300 });
+  Fx.contar($('cardsfim-xp'), c.xp, { atraso: 400 });
+  if (c.feitos >= 5) setTimeout(() => Fx.confete({ y: innerHeight * 0.25, n: 90 }), 350);
   const t = estado.tarefaAtual;
   if (t && t.tipo === 'cards') await concluirTarefaAtual();
 }
 
-function sairDosCards() {
-  if (estado.cards && estado.cards.feitos && !confirm('Parar a revisão? O que você já revisou fica salvo.')) return;
+async function sairDosCards() {
+  if (estado.cards && estado.cards.feitos && !(await confirmar('Parar a revisão?\nO que você já revisou fica salvo.', { sim: 'Parar' }))) return;
   verHoje();
 }
 
@@ -1155,7 +1194,7 @@ function atualizarTimer() {
   const s = Math.floor((Date.now() - estado.sim.inicio) / 1000);
   const mm = String(Math.floor(s / 60)).padStart(2, '0');
   const ss = String(s % 60).padStart(2, '0');
-  $('sim-timer').textContent = `⏱ ${mm}:${ss}`;
+  $('sim-timer').textContent = `${mm}:${ss}`;
 }
 
 const RAW_ENEM = 'https://raw.githubusercontent.com/yunger7/enem-api/main/public/';
@@ -1209,11 +1248,12 @@ function renderQuestao() {
     if (s.revisao) {
       if (a.letter === certa) cls += ' correct';
       else if (a.letter === minha) cls += ' wrong';
-    } else if (a.letter === minha) cls += ' sel';
+    } else if (a.letter === minha) cls += ' sel' + (s.recem === a.letter ? ' recem' : '');
     const conteudo = (a.text ? `<span>${md(a.text).replace(/^<p>|<\/p>$/g, '')}</span>` : '') + (a.file ? imgEnem(a.file).replace('<img ', '<img class="alt-img" ') : '');
     return `<div class="${cls}" ${s.revisao ? '' : `onclick="marcarAlternativa('${a.letter}')"`}><div class="letter">${a.letter}</div><div style="flex:1;">${conteudo}</div></div>`;
   }).join('');
-  $('sim-proxima').textContent = s.i === s.questoes.length - 1 ? (s.revisao ? 'fim' : 'revisar →') : 'próxima →';
+  $('sim-proxima').textContent = s.i === s.questoes.length - 1 ? (s.revisao ? 'ver resultado' : 'revisar') : 'próxima';
+  s.recem = null;
   renderGridSim($('sim-grid'));
   $('screen-simulado').scrollTop = 0;
 }
@@ -1232,7 +1272,10 @@ function renderGridSim(alvo, ehResultado = false) {
 function marcarAlternativa(letra) {
   const s = estado.sim;
   s.respostas[s.questoes[s.i].id] = letra;
+  s.recem = letra;
+  const y = $('screen-simulado').scrollTop;
   renderQuestao();
+  $('screen-simulado').scrollTop = y;
 }
 
 function navSimulado(delta) {
@@ -1253,19 +1296,20 @@ function irParaQuestao(i) {
 async function entregarSimulado() {
   const s = estado.sim;
   const vazias = s.questoes.filter((q) => !s.respostas[q.id]).length;
-  if (vazias && !confirm(`Faltam ${vazias} questão(ões) sem resposta. Entregar assim mesmo?`)) return;
+  if (vazias && !(await confirmar(`Faltam ${vazias} ${vazias === 1 ? 'questão' : 'questões'} sem resposta. Entregar assim mesmo?`, { sim: 'Entregar', nao: 'Voltar' }))) return;
   const pronto = ocupado($('btn-entregar'), 'Corrigindo...');
   try {
     const dur = Math.floor((Date.now() - s.inicio) / 1000);
+    $('simfim-score').textContent = '';
     const r = await rpc('be_finalizar_simulado', { p_simulado: s.id, p_respostas: s.respostas, p_duracao_seg: dur });
     pararTimer();
     s.revisao = true;
     s.gabarito = r.gabarito;
     $('btn-entregar').hidden = true;
-    $('simfim-score').textContent = `${r.acertos}/${r.total}`;
+    const placar = $('simfim-score');
     const min = Math.round(dur / 60);
     const tempo = min < 1 ? 'menos de 1 min' : `${min} min`;
-    $('simfim-sub').textContent = `${Math.round((r.acertos / r.total) * 100)}% de acerto em ${tempo} · +${r.xp} XP`;
+    $('simfim-sub').textContent = `${Math.round((r.acertos / r.total) * 100)}% de acerto em ${tempo}, +${r.xp} XP`;
     $('simfim-areas').innerHTML = Object.entries(r.por_area || {}).map(([a, v]) => {
       const pct = Math.round((v.acertos / v.total) * 100);
       const cls = pct < 40 ? 'lo' : pct < 70 ? 'mid' : 'hi';
@@ -1275,13 +1319,16 @@ async function entregarSimulado() {
     renderGridSim($('simfim-grid'), true);
     toastXp(r.xp);
     go('simulado-fim');
+    Fx.contar(placar, r.acertos, { fmt: (v) => `${v}/${r.total}`, dur: 900, atraso: 200 });
+    setTimeout(() => Fx.circular(placar), 1150);
+    if (r.total && r.acertos / r.total >= 0.6) setTimeout(() => Fx.confete({ y: innerHeight * 0.25, n: 120 }), 1200);
   } catch (err) { falhou(err, 'Não consegui entregar'); } finally { pronto(); }
 }
 
-function sairDoSimulado() {
+async function sairDoSimulado() {
   const s = estado.sim;
   if (s && s.revisao) return go('simulado-fim');
-  if (s && !confirm('Sair do simulado? Ele fica incompleto e não conta pontos.')) return;
+  if (s && !(await confirmar('Sair do simulado?\nEle fica incompleto e não conta pontos.', { sim: 'Sair' }))) return;
   verEnem();
 }
 
@@ -1309,8 +1356,8 @@ function contarLinhas() {
 async function corrigirRedacao() {
   const tema = $('redacao-tema').value === '__outro' ? $('redacao-tema-outro').value.trim() : $('redacao-tema').value;
   const texto = $('redacao-texto').value.trim();
-  if (!tema) return alert('escreve o tema');
-  if (texto.length < 400) return alert('a redação está curta demais pra corrigir (escreve pelo menos umas 8 linhas)');
+  if (!tema) return avisar('escreve o tema');
+  if (texto.length < 400) return avisar('a redação está curta demais pra corrigir (escreve pelo menos umas 8 linhas)');
   const pronto = ocupado($('btn-corrigir'), 'Corrigindo como a banca... uns 20 segundos');
   try {
     const r = await chamarFuncao('estude-corrigir-redacao', { tema, texto });
@@ -1324,10 +1371,10 @@ async function abrirRedacao(id) {
   const { data, error } = await sb.from('be_redacoes').select('tema, total, notas, feedback').eq('id', id).single();
   if (error) return falhou(error);
   go('redacao');
-  mostrarCorrecao(data);
+  mostrarCorrecao(data, 'historico');
 }
 
-function mostrarCorrecao(r) {
+function mostrarCorrecao(r, origem = 'nova') {
   const nomes = {
     c1: 'C1 · norma culta', c2: 'C2 · tema e repertório', c3: 'C3 · argumentação', c4: 'C4 · coesão', c5: 'C5 · proposta de intervenção',
   };
@@ -1338,7 +1385,7 @@ function mostrarCorrecao(r) {
   res.hidden = false;
   res.innerHTML = `
     <div class="card center"><div class="hand muted small" style="margin-bottom:6px;">${esc(r.tema)}</div>
-      <div class="score-big" style="color:${r.total >= 800 ? 'var(--mint)' : r.total >= 600 ? 'var(--ink-blue)' : 'var(--coral)'};">${r.total}</div>
+      <div class="nota-hero"><div class="score-big" id="redacao-nota">${r.total}</div></div>
       <div class="hand muted">de 1000</div></div>
     <div class="card">${Object.keys(nomes).map((c) => {
       const n = (r.notas || {})[c] ?? 0;
@@ -1348,11 +1395,15 @@ function mostrarCorrecao(r) {
         <div class="mastery-track"><div class="mastery-fill ${cls}" style="width:${Math.max(pct, 3)}%"></div></div>
         ${coment[c] ? `<p>${esc(coment[c])}</p>` : ''}</div>`;
     }).join('')}</div>
-    ${(f.pontos_fortes || []).length ? `<div class="card"><h3>👍 Pontos fortes</h3><ul class="bullets">${f.pontos_fortes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
-    ${(f.melhorias || []).length ? `<div class="card"><h3>🎯 Pra subir a nota</h3><ul class="bullets">${f.melhorias.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
-    ${f.paragrafo_reescrito ? `<div class="card"><h3>✍️ Um parágrafo reescrito</h3><div class="rewrite">${esc(f.paragrafo_reescrito)}</div></div>` : ''}
+    ${(f.pontos_fortes || []).length ? `<div class="card"><h3>Pontos fortes</h3><ul class="bullets">${f.pontos_fortes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    ${(f.melhorias || []).length ? `<div class="card"><h3>Pra subir a nota</h3><ul class="bullets">${f.melhorias.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    ${f.paragrafo_reescrito ? `<div class="card"><h3>Um parágrafo reescrito</h3><div class="rewrite">${esc(f.paragrafo_reescrito)}</div></div>` : ''}
     <div class="stack-gap"><button class="btn coral full" onclick="novaRedacao()">Escrever outra</button><button class="btn ghost full" onclick="verEnem()">Voltar pro ENEM</button></div>`;
   $('screen-redacao').scrollTop = 0;
+  const nota = $('redacao-nota');
+  Fx.contar(nota, Number(r.total) || 0, { dur: 1000, atraso: 150 });
+  setTimeout(() => Fx.circular(nota), 1200);
+  if (r.total >= 800 && origem !== 'historico') setTimeout(() => Fx.confete({ y: innerHeight * 0.22, n: 130 }), 1250);
 }
 
 /* ===================== LIGA ===================== */
@@ -1368,7 +1419,15 @@ async function verLiga() {
   const dias = diasEntre(hojeISO(), r.termina_em);
   const zonaQueda = r.caem > 0 && n >= 10 ? n - r.caem : Infinity;
   let html = `<div class="league-head"><span class="medal-big">${div[0]}</span><h1>Liga ${div[1]}</h1>
-    <span class="hand muted">fecha ${dias <= 1 ? 'hoje à meia-noite' : `em ${dias} dias`} · ${n} participante${n === 1 ? '' : 's'}</span></div>`;
+    <span class="hand muted">fecha ${dias <= 1 ? 'hoje à meia-noite' : `em ${dias} dias`}, ${n} participante${n === 1 ? '' : 's'}</span></div>`;
+  const top = membros.slice(0, 3);
+  if (top.length) {
+    const ordem = [top[1], top[0], top[2]].filter(Boolean);
+    html += `<div class="podio" aria-label="quadro de honra">${ordem.map((m) => `
+      <div class="degrau p${m.posicao} ${m.eu ? 'eu' : ''}">
+        <div class="av">${esc(m.iniciais)}</div><div class="nm">${esc(m.nome)}${m.eu ? ' (você)' : ''}</div><div class="xp">${m.xp} XP</div>
+        <div class="bloco">${m.posicao}</div></div>`).join('')}</div>`;
+  }
   let zonaMostrada = { up: false, mid: false, down: false };
   membros.forEach((m) => {
     const sobe = r.sobem > 0 && m.posicao <= r.sobem && m.xp > 0;
@@ -1403,22 +1462,22 @@ async function verGrupos() {
     <div class="group-card">
       <div class="group-card-top"><div>
         <h3>${esc(g.nome)}</h3>
-        <span class="hand">${esc(g.materia || 'sem matéria definida')} · ${g.tipo === 'turma_professor' ? 'turma' : 'grupo de amigos'} · ${g.membros} membro${g.membros === 1 ? '' : 's'}</span>
-        ${g.papel === 'admin' ? '<span class="teacher-tag">👑 você é o admin</span>' : ''}
+        <span class="hand">${esc(g.materia || 'sem matéria definida')}, ${g.tipo === 'turma_professor' ? 'turma' : 'grupo de amigos'}, ${g.membros} membro${g.membros === 1 ? '' : 's'}</span><br>
+        ${g.papel === 'admin' ? '<span class="teacher-tag">você é o admin</span>' : ''}
       </div></div>
       <div class="code-chip">${esc(g.codigo)} <span class="copy" onclick="copiarCodigo('${esc(g.codigo)}')">copiar código</span></div>
-      ${g.papel === 'admin' ? `<span class="panel-link" onclick="abrirPainel('${g.id}')">📊 abrir painel →</span>` : ''}
+      ${g.papel === 'admin' ? `<span class="panel-link" role="button" tabindex="0" onclick="abrirPainel('${g.id}')">abrir painel da turma</span>` : ''}
     </div>`).join('');
 }
 
 function copiarCodigo(c) {
-  (navigator.clipboard ? navigator.clipboard.writeText(c) : Promise.reject()).then(() => toast('Código copiado: ' + c), () => alert('Código: ' + c));
+  (navigator.clipboard ? navigator.clipboard.writeText(c) : Promise.reject()).then(() => toast('Código copiado: ' + c), () => avisar('Código: ' + c));
 }
 
 async function criarGrupoReal() {
   const nome = $('input-nome-grupo').value.trim();
   const materia = $('input-materia-grupo').value.trim();
-  if (!nome) return alert('dá um nome pro grupo');
+  if (!nome) return avisar('dá um nome pro grupo');
   const pronto = ocupado($('btn-criar-grupo'), 'Criando...');
   try {
     const tipo = estado.papel === 'professor' ? 'turma_professor' : 'grupo_amigos';
@@ -1429,7 +1488,7 @@ async function criarGrupoReal() {
     if (e2) throw e2;
     $('input-nome-grupo').value = ''; $('input-materia-grupo').value = '';
     $('form-criar').classList.remove('on');
-    alert(`Grupo criado! Código: ${codigo}`);
+    avisar(`Grupo criado! Código: ${codigo}`);
     verGrupos();
   } catch (err) { falhou(err, 'Não consegui criar o grupo'); } finally { pronto(); }
 }
@@ -1437,7 +1496,7 @@ async function criarGrupoReal() {
 async function entrarNoGrupoPorCodigo(codigo) {
   const { data: g, error } = await sb.from('be_grupos').select('id, nome').eq('codigo', codigo).maybeSingle();
   if (error) throw error;
-  if (!g) { alert('Código não encontrado. Confere com quem te passou.'); return null; }
+  if (!g) { avisar('Código não encontrado. Confere com quem te passou.'); return null; }
   const { error: e2 } = await sb.from('be_grupo_membros').insert({ grupo_id: g.id, usuario_id: estado.usuarioId });
   if (e2 && e2.code !== '23505') throw e2;
   return g.nome;
@@ -1445,14 +1504,14 @@ async function entrarNoGrupoPorCodigo(codigo) {
 
 async function entrarComCodigoNoGrupo() {
   const codigo = $('input-codigo-grupo').value.trim().toUpperCase();
-  if (!codigo) return alert('digita o código');
+  if (!codigo) return avisar('digita o código');
   const pronto = ocupado($('btn-entrar-grupo'), 'Entrando...');
   try {
     const nome = await entrarNoGrupoPorCodigo(codigo);
     if (!nome) return;
     $('input-codigo-grupo').value = '';
     $('form-entrar').classList.remove('on');
-    toast('Você entrou em ' + nome + ' 🎉');
+    toast('Você entrou em ' + nome);
     verGrupos();
   } catch (err) { falhou(err, 'Não consegui entrar'); } finally { pronto(); }
 }
@@ -1469,7 +1528,7 @@ async function abrirPainel(grupoId) {
   $('painel-meta').textContent = `${alunos.length} aluno${alunos.length === 1 ? '' : 's'} · código ${r.grupo.codigo}`;
 
   const sumidos = alunos.filter((m) => m.dias_sem_estudar === null || m.dias_sem_estudar >= 3).length;
-  $('painel-alerta').innerHTML = sumidos ? `<div class="alert-banner"><span style="font-size:20px;">⚠️</span><span class="hand">${sumidos} aluno${sumidos === 1 ? '' : 's'} sem estudar há 3 dias ou mais.</span></div>` : '';
+  $('painel-alerta').innerHTML = sumidos ? `<div class="alert-banner"><span style="font-size:20px;">⚠</span><span class="hand">${sumidos} aluno${sumidos === 1 ? '' : 's'} sem estudar há 3 dias ou mais.</span></div>` : '';
 
   $('painel-materias').innerHTML = r.materias.length ? r.materias.map((m) => `
     <div class="hist-row" onclick="abrirMateria('${m.id}')"><span>${m.status === 'arquivada' ? '📦 ' : ''}${esc(m.nome)}</span>
@@ -1521,12 +1580,13 @@ async function verPerfil() {
   $('perfil-meta').textContent = `nível ${u.nivel} · ${u.papel === 'professor' ? 'professor(a)' : 'aluno(a)'}${u.escola ? ' · ' + u.escola : ''}`;
   pintarAvatar($('perfil-avatar'), u);
   pintarAvatar($('perfil-avatar-preview'), u);
-  $('perfil-xp').textContent = u.xp + ' XP';
+  $('perfil-xp').textContent = u.xp + ' XP, nível ' + u.nivel;
+  verificarNivel(u.nivel);
   $('perfil-proximo-nivel').textContent = `faltam ${200 - (u.xp % 200)} pro nível ${u.nivel + 1}`;
-  $('perfil-xp-fill').style.width = ((u.xp % 200) / 2) + '%';
+  requestAnimationFrame(() => { $('perfil-xp-fill').style.width = Math.max(3, (u.xp % 200) / 2) + '%'; });
   const hoje = hojeISO();
   const streak = u.ultima_atividade && u.ultima_atividade >= somaDias(hoje, -1) ? u.streak_atual : 0;
-  $('perfil-streak').textContent = streak + '🔥';
+  Fx.contar($('perfil-streak'), streak, { dur: 500 });
   $('perfil-maior').textContent = u.streak_maior;
   $('perfil-divisao').textContent = (DIVISOES[u.divisao] || DIVISOES.bronze)[0];
   $('input-editar-nome').value = u.nome || '';
@@ -1543,19 +1603,37 @@ async function verPerfil() {
     sb.from('be_usuario_conquistas').select('conquista_id').eq('usuario_id', estado.usuarioId),
   ]);
   const ganhas = new Set((minhas || []).map((m) => m.conquista_id));
+  const chave = 'estude-figurinhas-' + estado.usuarioId;
+  let vistas = null;
+  try { const v = localStorage.getItem(chave); vistas = v ? new Set(JSON.parse(v)) : null; localStorage.setItem(chave, JSON.stringify([...ganhas])); } catch (_) { vistas = null; }
+  const novas = vistas ? [...ganhas].filter((id) => !vistas.has(id)) : [];
   const cores = ['gold', 'mint', 'coral', 'lilac'];
-  $('perfil-badges').innerHTML = (cat || []).map((c, i) => `<div class="badge" title="${esc(c.descricao)}">
+  $('perfil-album-n').textContent = `${ganhas.size} de ${(cat || []).length} coladas`;
+  $('perfil-badges').innerHTML = (cat || []).map((c, i) => `<div class="badge ${novas.includes(c.id) ? 'nova' : ''}" title="${esc(c.descricao)}">
     <div class="badge-icon ${ganhas.has(c.id) ? cores[i % 4] : 'locked'}">${esc(c.icone)}</div><span class="lbl">${esc(c.nome)}</span></div>`).join('');
+  if (novas.length) { setTimeout(() => Fx.confete({ y: innerHeight * 0.5, n: 80 }), 400); toast(novas.length === 1 ? 'Figurinha nova no álbum!' : `${novas.length} figurinhas novas no álbum!`); }
+  marcarTema();
 }
 
 async function salvarRotina() {
   const dias = Array.from(document.querySelectorAll('#perfil-dias .chip.sel')).map((c) => Number(c.dataset.d));
-  if (!dias.length) return alert('escolhe pelo menos um dia de estudo');
+  if (!dias.length) return avisar('escolhe pelo menos um dia de estudo');
   const pronto = ocupado($('btn-salvar-rotina'), 'Salvando...');
   const { error } = await sb.from('be_usuarios').update({ dias_estudo: dias, minutos_por_dia: Number($('perfil-minutos').value) }).eq('id', estado.usuarioId);
   pronto();
   if (error) return falhou(error);
-  toast('Rotina salva ✓');
+  toast('Rotina salva');
+}
+
+function marcarTema() {
+  const atual = document.documentElement.dataset.tema || '';
+  document.querySelectorAll('#perfil-tema .chip').forEach((c) => c.classList.toggle('sel', c.dataset.t === atual));
+}
+
+function escolherTema(t) {
+  try { if (t) localStorage.setItem('estude-tema', t); else localStorage.removeItem('estude-tema'); } catch (_) { /* só nesta sessão */ }
+  if (t) document.documentElement.dataset.tema = t; else delete document.documentElement.dataset.tema;
+  marcarTema();
 }
 
 function avatarSelecionado(ev) {
@@ -1579,7 +1657,7 @@ function avatarSelecionado(ev) {
 
 async function salvarPerfil() {
   const nome = $('input-editar-nome').value.trim();
-  if (!nome) return alert('o nome não pode ficar vazio');
+  if (!nome) return avisar('o nome não pode ficar vazio');
   const pronto = ocupado($('btn-salvar-perfil'), 'Salvando...');
   try {
     const dados = { nome, escola: $('input-editar-escola').value.trim(), cidade: $('input-editar-cidade').value.trim() };
@@ -1594,21 +1672,21 @@ async function salvarPerfil() {
 async function trocarSenha() {
   const atual = $('input-senha-atual').value;
   const nova = $('input-senha-nova').value;
-  if (!atual) return alert('digita sua senha atual');
-  if (!nova || nova.length < 6) return alert('a senha nova precisa ter pelo menos 6 caracteres');
-  if (nova !== $('input-senha-nova-confirma').value) return alert('a senha nova e a confirmação não são iguais');
+  if (!atual) return avisar('digita sua senha atual');
+  if (!nova || nova.length < 6) return avisar('a senha nova precisa ter pelo menos 6 caracteres');
+  if (nova !== $('input-senha-nova-confirma').value) return avisar('a senha nova e a confirmação não são iguais');
   const pronto = ocupado($('btn-trocar-senha'), 'Trocando...');
   try {
     const { data: s } = await sb.auth.getSession();
     const email = s && s.session ? s.session.user.email : null;
-    if (!email) { alert('sua sessão expirou, entra de novo.'); return go('login'); }
+    if (!email) { avisar('sua sessão expirou, entra de novo.'); return go('login'); }
     const { error: e1 } = await sb.auth.signInWithPassword({ email, password: atual });
-    if (e1) return alert('senha atual incorreta');
+    if (e1) return avisar('senha atual incorreta');
     const { error: e2 } = await sb.auth.updateUser({ password: nova });
     if (e2) throw e2;
     ['input-senha-atual', 'input-senha-nova', 'input-senha-nova-confirma'].forEach((id) => { $(id).value = ''; });
     $('form-trocar-senha').classList.remove('on');
-    toast('Senha trocada ✓');
+    toast('Senha trocada');
   } catch (err) { falhou(err, 'Não consegui trocar a senha'); } finally { pronto(); }
 }
 

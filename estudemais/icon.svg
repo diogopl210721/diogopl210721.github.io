@@ -1,15 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#2C4870"/>
-  <g fill="#1E3352" transform="translate(10 10)">
-    <rect x="96" y="128" width="64" height="256" rx="10"/><rect x="96" y="128" width="180" height="60" rx="10"/>
-    <rect x="96" y="226" width="150" height="60" rx="10"/><rect x="96" y="324" width="180" height="60" rx="10"/>
-    <rect x="304" y="232" width="112" height="48" rx="10"/><rect x="336" y="200" width="48" height="112" rx="10"/>
+  <defs>
+    <pattern id="q" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity=".09" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#2033A6"/>
+  <rect width="512" height="512" rx="112" fill="url(#q)"/>
+  <g fill="#121F73" transform="translate(10 12)">
+    <rect x="96" y="128" width="64" height="256" rx="12"/><rect x="96" y="128" width="180" height="60" rx="12"/>
+    <rect x="96" y="226" width="150" height="60" rx="12"/><rect x="96" y="324" width="180" height="60" rx="12"/>
+    <g transform="rotate(8 360 256)"><rect x="304" y="232" width="112" height="48" rx="12"/><rect x="336" y="200" width="48" height="112" rx="12"/></g>
   </g>
-  <g fill="#FBF7EE">
-    <rect x="96" y="128" width="64" height="256" rx="10"/><rect x="96" y="128" width="180" height="60" rx="10"/>
-    <rect x="96" y="226" width="150" height="60" rx="10"/><rect x="96" y="324" width="180" height="60" rx="10"/>
+  <g fill="#FFFFFF">
+    <rect x="96" y="128" width="64" height="256" rx="12"/><rect x="96" y="128" width="180" height="60" rx="12"/>
+    <rect x="96" y="226" width="150" height="60" rx="12"/><rect x="96" y="324" width="180" height="60" rx="12"/>
   </g>
-  <g fill="#F5C93D">
-    <rect x="304" y="232" width="112" height="48" rx="10"/><rect x="336" y="200" width="48" height="112" rx="10"/>
+  <g fill="#FFE45E" transform="rotate(8 360 256)">
+    <rect x="304" y="232" width="112" height="48" rx="12"/><rect x="336" y="200" width="48" height="112" rx="12"/>
   </g>
 </svg>
