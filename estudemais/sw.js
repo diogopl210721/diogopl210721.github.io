@@ -1,6 +1,6 @@
 // Estude+ — cache simples do app (rede primeiro, cache se estiver offline). Nunca guarda chamadas ao Supabase.
-const VERSAO = 'estude-v8';
-const ARQUIVOS = ['./', 'index.html', 'styles.css?v=8', 'efeitos.js?v=8', 'app.js?v=8', 'voz.js?v=8', 'biblioteca.js?v=8', 'tutor.js?v=8', 'comunidade.js?v=8', 'criador.js?v=8',
+const VERSAO = 'estude-v9';
+const ARQUIVOS = ['./', 'index.html', 'styles.css?v=9', 'efeitos.js?v=9', 'app.js?v=9', 'voz.js?v=9', 'biblioteca.js?v=9', 'tutor.js?v=9', 'comunidade.js?v=9', 'criador.js?v=9',
   'fontes/unbounded.woff2', 'fontes/atkinson-next.woff2', 'fontes/atkinson-next-italic.woff2', 'adesivos/fogo.webp', 'adesivos/caderno.webp', 'adesivos/fichas.webp', 'adesivos/capelo.webp', 'adesivos/lapis.webp', 'adesivos/trofeu.webp', 'adesivos/escola.webp', 'adesivos/camera.webp', 'adesivos/medalha3.webp',
   'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'];
 

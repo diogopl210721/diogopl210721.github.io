@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -172,7 +172,7 @@
     <div class="onboard-wrap">
       <div class="brand lg">Estude<span class="plus">+</span></div>
       <h1>Esqueceu a senha?</h1>
-      <span class="hand">se a sua conta tem pergunta de segurança, dá pra trocar a senha aqui</span>
+      <span class="hand">se a sua conta tem pergunta de segurança, dá pra trocar a senha aqui. Se não tem, a equipe do Estude+ cria uma senha provisória pra você.</span>
       <div class="onboard-field"><label for="input-email-recuperar">seu e-mail</label><input type="email" id="input-email-recuperar" placeholder="voce@email.com"></div>
       <button class="onboard-btn" id="btn-buscar-pergunta" onclick="buscarPerguntaSeguranca()">Continuar</button>
       <div id="bloco-pergunta-seguranca" style="display:none; width:100%;">
@@ -755,6 +755,11 @@
         <div id="criador-fila"></div>
       </div>
       <div class="card">
+        <div class="card-head"><h3>Contas</h3><span class="hand">senha provisória pra quem esqueceu</span></div>
+        <div class="busca" style="margin-bottom:6px"><svg class="ico"><use href="#i-busca"/></svg><input type="search" id="criador-busca" placeholder="nome ou e-mail" oninput="buscarContasDepois()" aria-label="buscar conta pelo nome ou e-mail"></div>
+        <div id="criador-contas"><p class="small muted" style="margin:6px 2px 0">digita pelo menos 2 letras do nome ou do e-mail</p></div>
+      </div>
+      <div class="card">
         <div class="card-head"><h3>Silenciados agora</h3><span class="hand">não mandam mensagem nem publicam</span></div>
         <div id="criador-silenciados"></div>
       </div>
@@ -904,12 +909,12 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="efeitos.js?v=8"></script>
-<script src="app.js?v=8"></script>
-<script src="voz.js?v=8"></script>
-<script src="biblioteca.js?v=8"></script>
-<script src="tutor.js?v=8"></script>
-<script src="comunidade.js?v=8"></script>
-<script src="criador.js?v=8"></script>
+<script src="efeitos.js?v=9"></script>
+<script src="app.js?v=9"></script>
+<script src="voz.js?v=9"></script>
+<script src="biblioteca.js?v=9"></script>
+<script src="tutor.js?v=9"></script>
+<script src="comunidade.js?v=9"></script>
+<script src="criador.js?v=9"></script>
 </body>
 </html>

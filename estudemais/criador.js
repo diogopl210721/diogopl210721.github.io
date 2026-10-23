@@ -154,6 +154,63 @@ async function silenciar(id, dias) {
   else if (tela === 'autor') abrirAutor(id, { voltando: true });
 }
 
+// ---------- contas: achar pelo nome ou e-mail e criar senha provisória ----------
+let buscaContasTimer = null;
+function buscarContasDepois() {
+  clearTimeout(buscaContasTimer);
+  buscaContasTimer = setTimeout(buscarContas, 350);
+}
+
+async function buscarContas() {
+  const termo = $('criador-busca').value.trim();
+  const alvo = $('criador-contas');
+  if (termo.length < 2) { alvo.innerHTML = '<p class="small muted" style="margin:6px 2px 0">digita pelo menos 2 letras do nome ou do e-mail</p>'; return; }
+  alvo.innerHTML = '<div class="loading">buscando...</div>';
+  let lista;
+  try { lista = await rpc('be_buscar_contas', { p_busca: termo }); } catch (err) { alvo.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
+  if ($('criador-busca').value.trim() !== termo) return; // chegou resposta de uma busca antiga
+  cri.contas = lista;
+  pintarContas();
+}
+
+function pintarContas() {
+  const lista = cri.contas || [];
+  $('criador-contas').innerHTML = lista.length ? lista.map((c) => {
+    lembrarNome(c.id, c.nome);
+    const quem = c.equipe ? 'equipe Estude+' : c.papel === 'professor' ? 'professor(a)' : (c.serie || 'aluno(a)');
+    const visto = c.ultima_atividade ? `estudou ${rotuloDia(String(c.ultima_atividade).slice(0, 10)).toLowerCase()}` : 'ainda não estudou';
+    return `<div class="fila-item">
+      <div class="topo"><h4 onclick="abrirAutor('${c.id}')">${esc(c.nome)}</h4>${c.silenciado_ate ? '<span class="tag">silenciado</span>' : ''}</div>
+      <span class="quem">${esc(c.email || 'sem e-mail')} · ${esc(quem)}${c.escola ? ' · ' + esc(c.escola) : ''} · ${visto}</span>
+      ${c.equipe ? '' : `<div class="fila-acoes">
+        <button onclick="novaSenhaProvisoria('${c.id}', this)">${ico('i-chave', 15)}senha provisória</button>
+        ${c.silenciado_ate ? `<button class="liberar" onclick="silenciar('${c.id}', 0)">${ico('i-check', 15)}tirar o silêncio</button>` : `<button onclick="silenciar('${c.id}', 7)">${ico('i-bloquear', 15)}silenciar 7 dias</button>`}
+      </div>`}
+    </div>`;
+  }).join('') : '<div class="empty">nenhuma conta com esse nome ou e-mail</div>';
+}
+
+// senha fácil de ditar: 8 letras e números sem os que confundem (0/O, 1/I/L)
+function gerarSenhaProvisoria() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const rnd = crypto.getRandomValues(new Uint32Array(8));
+  let s = '';
+  for (let i = 0; i < 8; i++) s += chars[rnd[i] % chars.length] + (i === 3 ? '-' : '');
+  return s;
+}
+
+async function novaSenhaProvisoria(id, btn) {
+  const nome = nomeDe(id);
+  if (!(await confirmar(`Criar uma senha provisória pra ${nome}?\nA senha de agora para de funcionar na hora.`, { sim: 'Criar senha' }))) return;
+  const senha = gerarSenhaProvisoria();
+  if (btn) btn.disabled = true;
+  try {
+    await chamarFuncao('estude-criador-senha', { usuario_id: id, senha });
+  } catch (err) { return falhou(err, 'Não consegui trocar a senha'); } finally { if (btn) btn.disabled = false; }
+  try { if (navigator.clipboard) await navigator.clipboard.writeText(senha); } catch (_) { /* sem área de transferência */ }
+  avisar(`Senha provisória de ${nome}:\n\n${senha}\n\nPassa pra pessoa entrar com o e-mail dela e essa senha, e pedir pra ela trocar em Perfil → trocar senha.`);
+}
+
 // grupo novo: a conta do criador escolhe se é turma (só ele coloca material) ou grupo de amigos
 function escolherTipoGrupo(btn) {
   document.querySelectorAll('#criar-tipo .chip').forEach((c) => c.classList.toggle('sel', c === btn));

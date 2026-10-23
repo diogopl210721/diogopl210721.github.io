@@ -353,7 +353,7 @@ async function buscarPerguntaSeguranca() {
     const r = await resp.json();
     if (!resp.ok) {
       throw new Error(/pergunta de segurança/.test(r.error || '')
-        ? 'Essa conta não tem pergunta de segurança. Pra trocar a senha, fala com o suporte do Estude+.'
+        ? 'Essa conta não tem pergunta de segurança. Fala com a equipe do Estude+ (ou com seu professor, que avisa a gente): a gente cria uma senha provisória pra você e depois você troca em Perfil.'
         : (r.error || 'não achei essa conta'));
     }
     $('label-pergunta-mostrada').textContent = r.pergunta;
