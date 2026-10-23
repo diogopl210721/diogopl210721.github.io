@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -111,6 +111,7 @@
       <button class="nav-item side-item" data-s="liga" onclick="verLiga()"><svg class="ico"><use href="#i-liga"/></svg><span>Liga</span></button>
       <button class="nav-item side-item" data-s="grupos" onclick="verGrupos()"><svg class="ico"><use href="#i-grupos"/></svg><span>Turmas e grupos</span></button>
       <button class="nav-item side-item" data-s="perfil" onclick="verPerfil()"><svg class="ico"><use href="#i-perfil"/></svg><span>Perfil</span></button>
+      <button class="nav-item side-item" data-s="criador" id="side-criador" hidden onclick="verCriador()"><svg class="ico"><use href="#i-estrela"/></svg><span>Painel do criador</span></button>
     </nav>
     <div class="sidebar-foot">
       <div class="energy-pill" id="sidebar-energia" title="gerações de IA restantes hoje">7</div>
@@ -525,6 +526,7 @@
       </div>
       <div class="autor-linha" id="res-autor"></div>
       <div id="res-aviso"></div>
+      <div class="mod-barra" id="res-mod" hidden></div>
       <div class="acoes-resumo">
         <button id="res-curtir" onclick="curtirResumoAtual()"><svg class="ico"><use href="#i-coracao"/></svg><span id="res-curtidas">0</span></button>
         <button id="res-salvar" onclick="salvarResumoAtual()"><svg class="ico"><use href="#i-salvar"/></svg><span>Salvar</span></button>
@@ -706,6 +708,13 @@
       <div class="inline-form" id="form-criar">
         <label for="input-nome-grupo">nome</label><input type="text" id="input-nome-grupo" placeholder="ex: Química - 3ºB">
         <label for="input-materia-grupo">matéria</label><input type="text" id="input-materia-grupo" placeholder="ex: Química">
+        <div id="criar-tipo" hidden>
+          <label>tipo</label>
+          <div class="chip-toggle">
+            <button class="chip small sel" data-t="turma_professor" onclick="escolherTipoGrupo(this)">turma (só eu coloco material)</button>
+            <button class="chip small" data-t="grupo_amigos" onclick="escolherTipoGrupo(this)">grupo de amigos</button>
+          </div>
+        </div>
         <button class="go-btn" id="btn-criar-grupo" onclick="criarGrupoReal()">Criar e gerar código</button>
       </div>
       <div class="inline-form" id="form-entrar">
@@ -727,6 +736,32 @@
     </div>
   </section>
 
+  <!-- ============ PAINEL DO CRIADOR ============ -->
+  <section class="screen" id="screen-criador">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="verPerfil()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Painel do criador</h2><span class="hand muted small">só a sua conta vê essa tela</span></div>
+        <div class="acoes"><button class="back-btn" onclick="verCriador()" aria-label="atualizar"><svg class="ico"><use href="#i-refazer"/></svg></button></div></div>
+      <div class="criador-hero">
+        <img class="adesivo" src="adesivos/coroa.webp" alt="">
+        <div><h3>Conta master</h3><p>Sem limite de IA, tutor, publicação e mensagens. Você cria turma ou grupo e decide o que fica na biblioteca e nas salas.</p></div>
+      </div>
+      <div id="criador-numeros"><div class="loading">carregando...</div></div>
+      <div class="card">
+        <div class="card-head"><h3>Fila de moderação</h3><span class="hand" id="criador-fila-n"></span></div>
+        <div class="chip-toggle" id="criador-abas">
+          <button class="chip small sel" data-a="resumos" onclick="abaFila('resumos')">resumos</button>
+          <button class="chip small" data-a="mensagens" onclick="abaFila('mensagens')">mensagens</button>
+        </div>
+        <div id="criador-fila"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Silenciados agora</h3><span class="hand">não mandam mensagem nem publicam</span></div>
+        <div id="criador-silenciados"></div>
+      </div>
+      <p class="small muted">Nada é apagado: ocultar só tira de vista e dá pra liberar depois. Conversas com o tutor e matérias de cada aluno continuam privadas.</p>
+    </div>
+  </section>
+
   <!-- ============ PERFIL ============ -->
   <section class="screen" id="screen-perfil">
     <div class="sheet">
@@ -742,6 +777,11 @@
         <div class="stat-box"><div class="n" id="perfil-maior">0</div><div class="l">maior sequência</div></div>
         <div class="stat-box"><div class="n" id="perfil-divisao">🥉</div><div class="l">divisão</div></div>
       </div>
+      <button class="criador-atalho" id="perfil-criador" hidden onclick="verCriador()">
+        <img class="adesivo" src="adesivos/coroa.webp" alt="">
+        <span><b>Painel do criador</b><small>números do app, fila de denúncias e moderação</small></span>
+        <svg class="ico"><use href="#i-seta"/></svg>
+      </button>
       <div class="new-group-row"><button class="ghost-btn" onclick="abrirAutor(estado.usuarioId)"><svg class="ico"><use href="#i-biblioteca"/></svg>meu perfil público</button></div>
 
       <div class="section-title"><h2>Conquistas</h2><span class="hand" id="perfil-album-n"></span></div>
@@ -864,11 +904,12 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="efeitos.js?v=7"></script>
-<script src="app.js?v=7"></script>
-<script src="voz.js?v=7"></script>
-<script src="biblioteca.js?v=7"></script>
-<script src="tutor.js?v=7"></script>
-<script src="comunidade.js?v=7"></script>
+<script src="efeitos.js?v=8"></script>
+<script src="app.js?v=8"></script>
+<script src="voz.js?v=8"></script>
+<script src="biblioteca.js?v=8"></script>
+<script src="tutor.js?v=8"></script>
+<script src="comunidade.js?v=8"></script>
+<script src="criador.js?v=8"></script>
 </body>
 </html>

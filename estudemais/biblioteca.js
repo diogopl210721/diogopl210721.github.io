@@ -134,6 +134,7 @@ function voltarSocial() {
   if (v.tela === 'sala' && v.id) return abrirSala(v.id);
   if (v.tela === 'home') return verHoje();
   if (v.tela === 'comunidade') return verComunidade();
+  if (v.tela === 'criador') return verCriador();
   if (v.tela === 'materia' && estado.materiaId) return go('materia', { manterScroll: true });
   if (v.tela === 'biblioteca' || v.tela === 'publicar' || !v.tela) return verBiblioteca(true);
   go(v.tela, { manterScroll: true });
@@ -165,7 +166,7 @@ async function abrirResumo(id, { voltando = false } = {}) {
   $('res-meta').textContent = `${r.visualizacoes} ${r.visualizacoes === 1 ? 'visualização' : 'visualizações'} · publicado ${new Date(r.created_at).toLocaleDateString('pt-BR')}`;
   const a = r.autor || {};
   $('res-autor').innerHTML = `<span class="avatar" onclick="abrirAutor('${a.id}')">${esc(a.iniciais)}</span>
-    <div class="quem" onclick="abrirAutor('${a.id}')"><b>${esc(a.nome)}${a.professor ? ' · professor(a)' : ''}</b><span>nível ${a.nivel}</span></div>
+    <div class="quem" onclick="abrirAutor('${a.id}')"><b>${esc(a.nome)}${a.equipe ? selo(a) : a.professor ? ' · professor(a)' : ''}</b><span>nível ${a.nivel}</span></div>
     ${r.meu ? '' : `<button class="seguir-btn ${r.eu_sigo ? 'seguindo' : ''}" id="res-seguir" onclick="seguirAutor('${a.id}', this)">${r.eu_sigo ? 'Seguindo' : 'Seguir'}</button>`}`;
   if (r.status !== 'publicado') {
     $('res-aviso').innerHTML = `<div class="aviso-moderacao"><b>${r.status === 'recusado' ? 'Esse resumo não foi publicado.' : 'Esse resumo está escondido enquanto a gente revisa.'}</b> ${esc(r.motivo || '')}</div>`;
@@ -175,7 +176,15 @@ async function abrirResumo(id, { voltando = false } = {}) {
   const cartoes = Array.isArray(r.cartoes) ? r.cartoes : [];
   $('res-cards').innerHTML = cartoes.length ? `<div class="section-title"><h2>Flashcards</h2><span class="hand">toque pra virar</span></div>
     <div class="cards-resumo">${cartoes.map((c) => `<div class="mini-card" onclick="this.classList.toggle('virado')"><div class="lado frente">${esc(c.frente)}</div><div class="lado verso">${esc(c.verso)}</div></div>`).join('')}</div>` : '';
-  $('res-denunciar').hidden = r.meu;
+  $('res-denunciar').hidden = r.meu || estado.criador;
+  // conta do criador: decide na hora se o resumo fica ou sai
+  const mod = $('res-mod');
+  mod.hidden = !estado.criador || r.meu;
+  if (!mod.hidden) {
+    const n = r.denuncias || 0;
+    mod.innerHTML = `<div class="rot">${ico('i-estrela', 15)}moderação · só você vê${n ? ` · ${n} denúncia${n === 1 ? '' : 's'} aberta${n === 1 ? '' : 's'}` : ''}</div>`
+      + acoesModeracao('resumo', r.id, a, r.status !== 'publicado', n > 0, false);
+  }
   $('res-apagar').hidden = !r.meu;
 }
 
@@ -271,21 +280,25 @@ async function abrirAutor(id, { voltando = false } = {}) {
   let p;
   try { p = await rpc('be_perfil_publico', { p_usuario: id }); } catch (err) { alvo.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
   const div = (DIVISOES[p.divisao] || DIVISOES.bronze);
+  lembrarNome(p.id, p.nome);
   const resumos = (p.resumos || []).map((r) => ({ ...r, autor: { nome: p.nome, iniciais: p.iniciais } }));
   alvo.innerHTML = `<div class="perfil-publico">
       <div class="big-avatar">${esc(p.iniciais)}</div>
       <h1>${esc(p.nome)}</h1>
-      <span class="hand">nível ${p.nivel} · ${div[0]} ${div[1]}${p.professor ? ' · professor(a)' : p.serie ? ' · ' + esc(p.serie) : ''}</span>
+      <span class="hand">nível ${p.nivel} · ${div[0]} ${div[1]}${p.equipe ? ' · equipe Estude+' : p.professor ? ' · professor(a)' : p.serie ? ' · ' + esc(p.serie) : ''}</span>
       <div class="numeros"><div><b>${resumos.length}</b><span>resumos</span></div><div><b>${p.seguidores}</b><span>seguidores</span></div><div><b>${p.curtidas_recebidas}</b><span>curtidas</span></div></div>
       ${p.eh_eu ? '<p class="small muted">É assim que os outros veem seu perfil.</p>' : `<div class="perfil-acoes">
         <button class="seguir-btn ${p.eu_sigo ? 'seguindo' : ''}" onclick="seguirAutor('${p.id}', this)">${p.eu_sigo ? 'Seguindo' : 'Seguir'}</button>
-        <button class="ghost-btn" onclick="${p.bloqueado ? `desbloquear('${p.id}')` : `bloquearPessoa('${p.id}', '${esc(p.nome)}')`}">${ico('i-bloquear', 16)}${p.bloqueado ? 'Desbloquear' : 'Bloquear'}</button></div>`}
+        <button class="ghost-btn" onclick="${p.bloqueado ? `desbloquear('${p.id}')` : `bloquearPessoa('${p.id}')`}">${ico('i-bloquear', 16)}${p.bloqueado ? 'Desbloquear' : 'Bloquear'}</button></div>
+      ${estado.criador && !p.equipe ? `<div class="mod-barra" style="margin-top:12px;text-align:left"><div class="rot">${ico('i-estrela', 15)}moderação · só você vê${p.silenciado_ate ? ` · silenciado até ${dataHoraBR(p.silenciado_ate)}` : ''}</div>
+        <div class="fila-acoes">${p.silenciado_ate ? `<button class="liberar" onclick="silenciar('${p.id}', 0)">${ico('i-check', 15)}tirar o silêncio</button>` : `<button class="ocultar" onclick="silenciar('${p.id}', 7)">${ico('i-bloquear', 15)}silenciar 7 dias</button><button onclick="silenciar('${p.id}', 30)">30 dias</button>`}</div></div>` : ''}`}
     </div>
     <div class="section-title"><h2>Resumos</h2></div>
     <div class="grade-resumos">${resumos.map(htmlCapa).join('') || '<div class="empty" style="grid-column:1/-1">nenhum resumo publicado ainda</div>'}</div>`;
 }
 
-async function bloquearPessoa(id, nome) {
+async function bloquearPessoa(id) {
+  const nome = nomeDe(id);
   if (!(await confirmar(`Bloquear ${nome}?\nVocê para de ver os resumos e as mensagens dessa pessoa. Ela não fica sabendo.`, { sim: 'Bloquear' }))) return;
   try { await rpc('be_bloquear', { p_usuario: id }); toast('Pessoa bloqueada'); bib.cache = {}; abrirAutor(id, { voltando: true }); } catch (err) { falhou(err); }
 }

@@ -1042,6 +1042,51 @@ p { margin: 0 0 10px; }
   .camera-frame { max-width: 620px; }
 }
 
+/* ---------- conta do criador ---------- */
+.selo-equipe, .bolha .quem .selo-equipe { display: inline-block; font-style: normal; font-size: 11px; font-weight: 800; line-height: 1.5; padding: 0 7px; margin-left: 5px; border-radius: 999px; background: linear-gradient(120deg, var(--marca), var(--roxo)); color: #fff; vertical-align: 1px; letter-spacing: .01em; white-space: nowrap; }
+.criador-hero { position: relative; display: flex; gap: 14px; align-items: center; padding: 18px; margin-bottom: 16px; border-radius: var(--raio); color: #fff; background: linear-gradient(125deg, var(--marca) 0%, var(--roxo) 100%); box-shadow: var(--sombra-2); overflow: hidden; }
+.criador-hero::after { content: ""; position: absolute; inset: 0; background: var(--quadriculado); opacity: .6; pointer-events: none; }
+.criador-hero > * { position: relative; z-index: 1; }
+.criador-hero .adesivo { width: 64px; height: 64px; --giro: -10deg; animation: colar .6s var(--mola) both; }
+.criador-hero h3 { margin: 0 0 4px; color: #fff; font-family: var(--display); font-size: 18px; letter-spacing: -.02em; }
+.criador-hero p { margin: 0; font-size: 14px; line-height: 1.4; opacity: .94; }
+.nums-grupo { margin-bottom: 16px; }
+.nums-grupo .rot { margin: 0 2px 8px; font-size: 12.5px; font-weight: 800; color: var(--texto-2); text-transform: uppercase; letter-spacing: .05em; }
+.nums-grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.num-box { padding: 12px 12px 10px; background: var(--cartao); border-radius: 16px; box-shadow: var(--sombra-2); animation: chamada .35s var(--suave) both; }
+.num-box:nth-child(2) { animation-delay: .04s; } .num-box:nth-child(3) { animation-delay: .08s; } .num-box:nth-child(4) { animation-delay: .12s; } .num-box:nth-child(5) { animation-delay: .16s; } .num-box:nth-child(6) { animation-delay: .2s; }
+.num-box b { display: block; font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1.15; letter-spacing: -.04em; color: var(--texto); }
+.num-box span { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.25; font-weight: 700; color: var(--texto-2); }
+.num-box.destaque { box-shadow: inset 0 -4px 0 var(--marcatexto), var(--sombra-2); }
+.fila-item { padding: 14px 0; border-bottom: 1.5px dashed var(--borda); animation: chamada .3s var(--suave) both; }
+.fila-item:last-child { border-bottom: 0; padding-bottom: 2px; }
+.fila-item .topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.fila-item h4 { margin: 0; font-size: 15.5px; line-height: 1.3; cursor: pointer; }
+.fila-item .tag { flex: none; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; background: var(--erro-suave); color: var(--erro); white-space: nowrap; }
+.fila-item .tag.leve { background: var(--marcatexto-suave); color: var(--texto); }
+.fila-item .texto { margin: 6px 0 4px; font-size: 14px; line-height: 1.45; color: var(--texto); overflow-wrap: anywhere; }
+.fila-item .motivos { margin: 4px 0; font-size: 13px; color: var(--texto-2); }
+.fila-item .quem { font-size: 12.5px; font-weight: 700; color: var(--texto-3); }
+.fila-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fila-acoes button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border: 0; border-radius: 999px; font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; color: var(--texto); background: var(--cartao-2); transition: transform .2s var(--mola), background .2s; }
+.fila-acoes button:active { transform: scale(.94); }
+.fila-acoes button:disabled { opacity: .5; cursor: default; }
+.fila-acoes .ico { width: 15px; height: 15px; }
+.fila-acoes .liberar { background: var(--certo-suave); color: var(--certo-forte); }
+.fila-acoes .ocultar { background: var(--erro-suave); color: var(--erro); }
+.criador-atalho { display: flex; align-items: center; gap: 14px; width: 100%; margin: 14px 0; padding: 14px 16px; border: 0; border-radius: var(--raio); text-align: left; font: inherit; cursor: pointer; color: #fff; background: linear-gradient(125deg, var(--marca), var(--roxo)); box-shadow: var(--sombra-2); transition: transform .25s var(--mola); }
+.criador-atalho:active { transform: scale(.98); }
+.criador-atalho .adesivo { width: 46px; height: 46px; }
+.criador-atalho span { flex: 1; min-width: 0; }
+.criador-atalho b { display: block; font-family: var(--display); font-size: 16px; letter-spacing: -.02em; }
+.criador-atalho small { display: block; font-size: 13px; opacity: .9; }
+.criador-atalho > .ico { width: 20px; height: 20px; flex: none; }
+.mod-barra { margin-bottom: 14px; padding: 12px 14px; border-radius: 16px; background: var(--marca-suave); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--marca) 30%, transparent); }
+.mod-barra .rot { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: var(--marca); }
+.mod-barra .rot .ico { width: 15px; height: 15px; }
+.mod-barra .fila-acoes { margin-top: 8px; }
+.energy-pill.infinito { font-size: 17px; }
+
 /* reduzir movimento: sem deslocamento, giro, confete nem quique; mantém cores, fades e barras de progresso */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }

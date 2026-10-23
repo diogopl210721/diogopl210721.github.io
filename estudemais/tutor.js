@@ -28,7 +28,7 @@ async function carregarConversasTutor() {
   const hoje = new Date().toISOString().slice(0, 10);
   const { data: uso } = await sb.from('be_uso_tutor').select('quantidade').eq('usuario_id', estado.usuarioId).eq('data', hoje).maybeSingle();
   const restam = 60 - (uso ? uso.quantidade : 0);
-  $('tutor-restantes').textContent = restam > 0 ? `${restam} perguntas livres hoje` : 'volta amanhã';
+  $('tutor-restantes').textContent = estado.criador ? 'perguntas sem limite' : restam > 0 ? `${restam} perguntas livres hoje` : 'volta amanhã';
 }
 
 // atalho da home: abre a câmera direto

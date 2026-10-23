@@ -137,11 +137,11 @@ const NAV_DE = {
   materias: 'materias', materia: 'materias', upload: 'materias', pronto: 'materias', quiz: 'materias', 'quiz-fim': 'materias',
   tutor: 'tutor', 'tutor-chat': 'tutor',
   biblioteca: 'biblioteca', resumo: 'biblioteca', publicar: 'biblioteca', autor: 'biblioteca',
-  comunidade: 'comunidade', sala: 'comunidade', grupos: 'comunidade', painel: 'comunidade',
+  comunidade: 'comunidade', sala: 'comunidade', grupos: 'comunidade', painel: 'comunidade', criador: 'home',
 };
 const LADO_DE = {
   ...NAV_DE, enem: 'enem', simulado: 'enem', 'simulado-fim': 'enem', redacao: 'enem',
-  liga: 'liga', grupos: 'grupos', painel: 'grupos', perfil: 'perfil',
+  liga: 'liga', grupos: 'grupos', painel: 'grupos', perfil: 'perfil', criador: 'criador',
 };
 const SEM_NAV = ['login', 'cadastro', 'recuperar', 'codigo'];
 const TELAS_CHAT = ['tutor-chat', 'sala'];
@@ -155,7 +155,7 @@ function telaAtual() {
 const NIVEL_TELA = {
   login: 0, cadastro: 1, recuperar: 1, codigo: 2,
   home: 0, materias: 0, tutor: 0, biblioteca: 0, comunidade: 0,
-  enem: 1, liga: 1, grupos: 1, perfil: 1, materia: 1, 'tutor-chat': 1, resumo: 1, sala: 1,
+  enem: 1, liga: 1, grupos: 1, perfil: 1, criador: 2, materia: 1, 'tutor-chat': 1, resumo: 1, sala: 1,
   upload: 2, quiz: 2, cards: 2, publicar: 2, autor: 2, simulado: 2, redacao: 2, painel: 2,
   pronto: 3, 'quiz-fim': 3, 'cards-fim': 3, 'simulado-fim': 3,
 };
@@ -245,6 +245,11 @@ function toggleForm(tipo) {
 }
 
 function atualizarEnergia(restante) {
+  // conta do criador: sem limite diário
+  if (estado.criador) {
+    ['home-energia', 'sidebar-energia'].forEach((id) => { const el = $(id); el.textContent = '∞'; el.classList.add('infinito'); el.title = 'sem limite: conta do criador'; });
+    return;
+  }
   if (restante === undefined || restante === null) return;
   const v = Math.max(0, restante);
   $('home-energia').textContent = v;
@@ -327,6 +332,7 @@ async function entrarComEmailSenha() {
     const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
     if (error) throw error;
     await criarPerfilSeNaoExistir(data.user);
+    await carregarCriador();
     verHoje();
   } catch (err) {
     const msg = err.message === 'Invalid login credentials' ? 'e-mail ou senha errados'
@@ -1538,6 +1544,7 @@ function gerarCodigo() {
 
 async function verGrupos() {
   go('grupos');
+  $('criar-tipo').hidden = !estado.criador;
   const lista = $('lista-grupos');
   let grupos;
   try { grupos = await rpc('be_meus_grupos'); } catch (err) { lista.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
@@ -1572,7 +1579,7 @@ async function criarGrupoReal() {
   if (!nome) return avisar('dá um nome pro grupo');
   const pronto = ocupado($('btn-criar-grupo'), 'Criando...');
   try {
-    const tipo = estado.papel === 'professor' ? 'turma_professor' : 'grupo_amigos';
+    const tipo = tipoGrupoNovo();
     const codigo = gerarCodigo();
     const { data: g, error } = await sb.from('be_grupos').insert({ nome, materia, tipo, dono_id: estado.usuarioId, codigo }).select('id').single();
     if (error) throw error;
@@ -1669,7 +1676,8 @@ async function verPerfil() {
   const { data: u, error } = await sb.from('be_usuarios').select('*').eq('id', estado.usuarioId).single();
   if (error || !u) return;
   $('perfil-nome').textContent = u.nome;
-  $('perfil-meta').textContent = `nível ${u.nivel} · ${u.papel === 'professor' ? 'professor(a)' : (u.serie || 'aluno(a)')}${u.escola ? ' · ' + u.escola : ''}`;
+  $('perfil-meta').textContent = `nível ${u.nivel} · ${estado.criador ? 'criador do Estude+' : u.papel === 'professor' ? 'professor(a)' : (u.serie || 'aluno(a)')}${u.escola ? ' · ' + u.escola : ''}`;
+  $('perfil-criador').hidden = !estado.criador;
   pintarAvatar($('perfil-avatar'), u);
   pintarAvatar($('perfil-avatar-preview'), u);
   $('perfil-xp').textContent = u.xp + ' XP, nível ' + u.nivel;
@@ -1812,6 +1820,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   if (data && data.session && data.session.user) {
     try {
       await criarPerfilSeNaoExistir(data.session.user);
+      await carregarCriador();
       verHoje();
     } catch (err) {
       falhou(err, 'Não consegui carregar sua conta');

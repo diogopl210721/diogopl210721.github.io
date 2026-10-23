@@ -52,9 +52,10 @@ function htmlMensagem(m, anterior) {
   const a = m.autor || {};
   if (m.eu) return `${sep}<div class="bolha-linha minha" data-id="${m.id}"><div class="bolha">${esc(m.texto)}<span class="hora">${hora}</span></div></div>`;
   const mesmoAutor = anterior && !sep && anterior.autor && anterior.autor.id === a.id;
+  lembrarNome(a.id, a.nome);
   return `${sep}<div class="bolha-linha" data-id="${m.id}">
       <span class="avatar" style="${mesmoAutor ? 'visibility:hidden' : ''}" onclick="abrirAutor('${a.id}')">${esc(a.iniciais)}</span>
-      <div class="bolha" onclick="menuMensagem(event, '${m.id}', '${a.id}', '${esc(a.nome)}')">${mesmoAutor ? '' : `<span class="quem">${esc(a.nome)}${a.professor ? '<em>professor(a)</em>' : ''}</span>`}${esc(m.texto)}<span class="hora">${hora}</span></div>
+      <div class="bolha" onclick="menuMensagem(event, '${m.id}', '${a.id}')">${mesmoAutor ? '' : `<span class="quem">${esc(a.nome)}${a.equipe ? selo(a) : a.professor ? '<em>professor(a)</em>' : ''}</span>`}${esc(m.texto)}<span class="hora">${hora}</span></div>
     </div>`;
 }
 
@@ -138,15 +139,19 @@ async function enviarSala() {
   }
 }
 
-function menuMensagem(ev, msgId, autorId, nome) {
+function menuMensagem(ev, msgId, autorId) {
+  const nome = esc(nomeDe(autorId));
   ev.stopPropagation();
   fecharMenuMensagem();
   const menu = document.createElement('div');
   menu.className = 'menu-msg';
   menu.id = 'menu-msg';
   menu.innerHTML = `<button onclick="fecharMenuMensagem(); abrirAutor('${autorId}')"><svg class="ico"><use href="#i-perfil"/></svg>Ver perfil de ${nome}</button>
-    <button onclick="denunciarMensagem('${msgId}')"><svg class="ico"><use href="#i-bandeira"/></svg>Denunciar mensagem</button>
-    <button class="perigo" onclick="bloquearDaSala('${autorId}', '${nome}')"><svg class="ico"><use href="#i-bloquear"/></svg>Bloquear ${nome}</button>`;
+    ${estado.criador
+      ? `<button onclick="fecharMenuMensagem(); moderar('mensagem', '${msgId}', 'ocultar')"><svg class="ico"><use href="#i-x"/></svg>Esconder pra todo mundo</button>
+    <button class="perigo" onclick="fecharMenuMensagem(); silenciar('${autorId}', 7)"><svg class="ico"><use href="#i-bloquear"/></svg>Silenciar ${nome} por 7 dias</button>`
+      : `<button onclick="denunciarMensagem('${msgId}')"><svg class="ico"><use href="#i-bandeira"/></svg>Denunciar mensagem</button>
+    <button class="perigo" onclick="bloquearDaSala('${autorId}')"><svg class="ico"><use href="#i-bloquear"/></svg>Bloquear ${nome}</button>`}`;
   document.body.appendChild(menu);
   const r = ev.currentTarget.getBoundingClientRect();
   const w = menu.offsetWidth, h = menu.offsetHeight;
@@ -163,8 +168,9 @@ async function denunciarMensagem(id) {
   try { await rpc('be_denunciar', { p_tipo: 'mensagem', p_alvo: id }); toast('Obrigado por avisar'); } catch (err) { falhou(err); }
 }
 
-async function bloquearDaSala(id, nome) {
+async function bloquearDaSala(id) {
   fecharMenuMensagem();
+  const nome = nomeDe(id);
   if (!(await confirmar(`Bloquear ${nome}?\nVocê para de ver as mensagens e os resumos dessa pessoa. Ela não fica sabendo.`, { sim: 'Bloquear' }))) return;
   try {
     await rpc('be_bloquear', { p_usuario: id });
