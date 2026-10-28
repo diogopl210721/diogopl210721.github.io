@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
     if (action === 'list') {
       const { data, error } = await admin.from('crl_members')
         .select('id,auth_user_id,username,display_name,role,active,monitor_vinculo,resident_id,monitor_phone,monitor_started_on,salary_monthly,created_at')
-        .eq('institution_id', actor.institution_id).eq('role', 'monitor')
+        .eq('institution_id', actor.institution_id).eq('role', 'monitor').not('username', 'like', 'excluido.%')
         .order('display_name').limit(200);
       if (error) return reply({ error: 'Não foi possível consultar os monitores' }, 500, origin);
       // Junta do login: se ainda usa a senha provisória e quando entrou pela última vez
@@ -139,7 +139,7 @@ Deno.serve(async (req: Request) => {
       return reply({ success: true, username }, 201, origin);
     }
 
-    if (!['block', 'unblock', 'reset_password', 'change_vinculo'].includes(action))
+    if (!['block', 'unblock', 'reset_password', 'change_vinculo', 'delete'].includes(action))
       return reply({ error: 'Ação desconhecida' }, 400, origin);
 
     const memberId = String(input.member_id || '');
@@ -172,6 +172,30 @@ Deno.serve(async (req: Request) => {
         data: { username: target.username, previous: target.monitor_vinculo, current: vinculo },
       });
       return reply({ success: true }, 200, origin);
+    }
+    if (action === 'delete') {
+      // Sem registros: apaga de vez. Com registros: some da lista, perde o login e libera o usuário,
+      // mas o nome continua no histórico do que a pessoa registrou.
+      const { data: full } = await admin.from('crl_members').select('*').eq('id', target.id).maybeSingle();
+      let removed = false;
+      const { error: delErr } = await admin.from('crl_members').delete().eq('id', target.id).eq('institution_id', actor.institution_id).eq('role', 'monitor');
+      if (!delErr) {
+        const gone = await admin.auth.admin.deleteUser(target.auth_user_id);
+        if (gone.error) { if (full) await admin.from('crl_members').insert(full); } else removed = true;
+      }
+      if (!removed) {
+        const tag = 'excluido.' + String(target.id).slice(0, 8);
+        const { error: arcErr } = await admin.from('crl_members').update({ active: false, username: tag, monitor_vinculo: null, resident_id: null, salary_monthly: null })
+          .eq('id', target.id).eq('institution_id', actor.institution_id).eq('role', 'monitor');
+        if (arcErr) return reply({ error: 'Não foi possível excluir o monitor' }, 500, origin);
+        await admin.auth.admin.updateUserById(target.auth_user_id, { email: tag + '.' + String(target.auth_user_id).slice(0, 8) + EMAIL_DOMAIN, email_confirm: true, ban_duration: '87600h' });
+      }
+      await admin.from('crl_audit_events').insert({
+        institution_id: actor.institution_id, actor_id: auth.user.id,
+        action: removed ? 'monitor_deleted' : 'monitor_archived', entity_name: 'crl_members',
+        entity_id: target.id, data: { username: target.username },
+      });
+      return reply({ success: true, removed }, 200, origin);
     }
     if (action === 'block') {
       if (!target.active) return reply({ success: true, already_blocked: true }, 200, origin);

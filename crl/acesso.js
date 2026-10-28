@@ -478,6 +478,17 @@ async function adminMonitors(body){
  if(monitorPreview)throw Error('Prévia apenas visual: volte ao ADM para cadastrar.');
  return callFunction(db,'crl-admin-monitors',body);
 }
+// Excluir monitor: some da lista e perde o acesso; o histórico do que registrou fica
+function deleteMonitorButton(m){
+ const del=document.createElement('button');del.type='button';del.className='warn';del.textContent='🗑 Excluir monitor';
+ del.onclick=async()=>{
+  if(!confirm('Excluir '+m.display_name+'? A pessoa perde o acesso e sai da lista. O que ela já registrou continua no histórico.'))return;
+  del.disabled=true;
+  try{const r=await adminMonitors({action:'delete',member_id:m.id});status(r.removed?m.display_name+' excluído.':m.display_name+' excluído da equipe. O histórico do que registrou foi mantido.');await loadMonitors()}
+  catch(e){status(e.message||'Não foi possível excluir.',true);del.disabled=false}
+ };
+ return del;
+}
 async function loadMonitors(){
  const root=el('listArea');root.replaceChildren();
  if(member?.role!=='admin'){root.textContent='Acesso exclusivo do ADM.';return}
@@ -539,7 +550,7 @@ async function loadMonitors(){
      try{await adminMonitors({action:'unblock',member_id:m.id});status('Monitor reativado.');await loadMonitors()}
      catch(e){status(e.message||'Reativação não concluída.',true);activate.disabled=false}
     };
-    item.append(activate);continue;
+    item.append(activate,deleteMonitorButton(m));continue;
    }
    const controls=document.createElement('div');controls.className='manager-actions';
    const reset=document.createElement('button');reset.type='button';reset.textContent='🔑 Nova senha provisória';reset.onclick=()=>showMonitorReset(m,item);
@@ -568,7 +579,7 @@ async function loadMonitors(){
      else {status('Salário lançado nas despesas sem duplicidade.');await loadMonitors()}
     };controls.append(pay);
    }
-   controls.append(reset,block);item.append(controls);
+   controls.append(reset,block,deleteMonitorButton(m));item.append(controls);
   }
   const payroll=await db.from('crl_monitor_payroll')
    .select('member_id,competence,amount,created_at')
