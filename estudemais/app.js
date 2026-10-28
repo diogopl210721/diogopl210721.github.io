@@ -525,8 +525,22 @@ function renderTarefasHoje(r) {
     return;
   }
   const todasFeitas = deHoje > 0 && feitas === deHoje;
+  const ordem = [...lista.filter((t) => !t.feita), ...lista.filter((t) => t.feita)]; // o que falta fica no topo
   $('home-tarefas').innerHTML = (todasFeitas ? '<div class="empty" style="margin-bottom:6px;">dia completo! 🎉 volta amanhã pra manter a sequência</div>' : '')
-    + lista.map((t) => htmlTarefa(t, { comMateria: true })).join('');
+    + ordem.slice(0, VISIVEIS_HOJE).map((t) => htmlTarefa(t, { comMateria: true })).join('')
+    + (lista.length > VISIVEIS_HOJE
+      ? `<div class="tarefas-mais" ${estado.planoAberto ? '' : 'hidden'}>${ordem.slice(VISIVEIS_HOJE).map((t) => htmlTarefa(t, { comMateria: true })).join('')}</div>
+         <button class="ghost-btn ver-mais-plano" onclick="alternarPlanoHoje(this)">${estado.planoAberto ? 'ver menos' : `ver mais ${lista.length - VISIVEIS_HOJE}`}</button>`
+      : '');
+}
+
+// o plano da Hoje mostra só as primeiras tarefas; o resto abre no "ver mais" (e continua aberto ao marcar uma)
+const VISIVEIS_HOJE = 4;
+function alternarPlanoHoje(btn) {
+  estado.planoAberto = !estado.planoAberto;
+  const mais = btn.previousElementSibling;
+  mais.hidden = !estado.planoAberto;
+  btn.textContent = estado.planoAberto ? 'ver menos' : `ver mais ${mais.querySelectorAll('.task').length}`;
 }
 
 async function alternarTarefa(id) {

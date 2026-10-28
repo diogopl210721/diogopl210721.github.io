@@ -1398,3 +1398,5 @@ p { margin: 0 0 10px; }
   .toast.on { opacity: 1; }
   .xp-fill, .bar-fill, .anel .arco, .mastery-fill { transition-duration: .6s !important; }
 }
+/* plano da Hoje: "ver mais" depois das 4 primeiras tarefas */
+.ver-mais-plano { width: 100%; margin: 10px 0 0; }
