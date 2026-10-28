@@ -301,10 +301,10 @@ p { margin: 0 0 10px; }
 @keyframes reflexo { 40%, 100% { background-position: 260% 0; } }
 
 /* atalhos: figurinhas coladas na página */
-.atalhos { display: flex; gap: 4px; overflow-x: auto; margin: 0 -16px 14px; padding: 4px 12px 8px; scrollbar-width: none; scroll-snap-type: x proximity; -webkit-mask: linear-gradient(90deg, #000 82%, transparent); mask: linear-gradient(90deg, #000 82%, transparent); }
-.atalhos::-webkit-scrollbar { display: none; }
-.atalho { flex: 0 0 auto; width: 84px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 2px 6px; border: none; background: none; cursor: pointer; font-weight: 800; font-size: 13px; color: var(--texto); scroll-snap-align: start; border-radius: 18px; }
-.atalho .adesivo { width: 62px; height: 62px; }
+/* todos à vista, sem arrastar: 3 por linha no celular, 6 numa linha só a partir de 560px */
+.atalhos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 6px; margin: 0 0 14px; padding: 4px 0 6px; }
+.atalho { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 2px 6px; border: none; background: none; cursor: pointer; font-weight: 800; font-size: 13px; color: var(--texto); border-radius: 18px; }
+.atalho .adesivo { width: 58px; height: 58px; }
 .atalho:nth-child(2) .adesivo { --giro: 6deg; } .atalho:nth-child(3) .adesivo { --giro: -9deg; } .atalho:nth-child(4) .adesivo { --giro: 12deg; }
 .atalho:nth-child(5) .adesivo { --giro: -3deg; } .atalho:nth-child(6) .adesivo { --giro: 7deg; }
 .atalho:hover .adesivo { transform: rotate(calc(var(--giro) * -1)) translateY(-3px); }
@@ -1004,6 +1004,7 @@ p { margin: 0 0 10px; }
   .phone { width: 620px; height: calc(100dvh - 44px); border-radius: 32px; box-shadow: var(--sombra-3), 0 0 0 1px var(--borda); }
   .flash-wrap { height: 330px; }
   .grade-resumos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .atalhos { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .navbar { left: 50%; right: auto; width: min(520px, calc(100% - 24px)); transform: translateX(-50%); }
 }
 @media (min-width: 1024px) {
