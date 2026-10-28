@@ -1,4 +1,4 @@
-/* Estude+ — movimentos e efeitos.
+/* EstudeUp — movimentos e efeitos.
    Confete de papel, carimbo de dia completo, caneta de correção no quiz, XP que voa, subida de nível,
    geração do material em etapas e ficha que voa. Com "reduzir movimento" ligado sai o que se mexe e ficam fades e barras. */
 

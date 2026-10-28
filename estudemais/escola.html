@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Escola · EstudeUp</title>
+<meta name="description" content="Página da escola parceira no EstudeUp.">
+<meta property="og:title" content="Escola · EstudeUp">
+<meta property="og:description" content="Página da escola parceira no EstudeUp.">
+<meta name="theme-color" content="#F4F6FB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1230" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fontes/unbounded.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fontes/atkinson-next.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+  try {
+    var t = localStorage.getItem('estude-tema');
+    if (t === 'caderno') t = 'claro'; if (t === 'lousa') t = 'escuro';
+    if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="styles.css?v=10">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="pub" data-pagina="escola">
+<header class="pub-topo">
+  <a class="brand" href="escolas.html" aria-label="EstudeUp para escolas"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></a>
+  <nav aria-label="páginas">
+    <a href="oportunidades.html" class="">Oportunidades</a>
+    <a href="escolas.html" class="so-largo">Para escolas</a>
+    <a href="./" class="">Entrar no app</a>
+  </nav>
+</header>
+<main class="pub-conteudo">
+
+<a class="pub-voltar" href="oportunidades.html"><svg class="ico" style="width:18px;height:18px" aria-hidden="true"><use href="icones.svg#i-voltar"/></svg>oportunidades</a>
+<div id="escola"><div class="loading">carregando...</div></div>
+<section class="pub-secao">
+  <div class="pub-item" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+    <img class="adesivo " src="adesivos/caderno.webp" alt="">
+    <div style="flex:1;min-width:220px"><h3>Estuda com plano até a prova</h3><p>Manda a foto do caderno e o EstudeUp monta resumo, quiz, flashcards e um plano dia a dia até a data da prova.</p></div>
+    <a class="ghost-btn forte" style="width:auto" href="./">Entrar no EstudeUp</a>
+  </div>
+</section>
+
+</main>
+<footer class="pub-rodape">
+  <p><b>EstudeUp</b> · Seu próximo nível começa aqui.</p>
+  <p><a href="oportunidades.html">Oportunidades</a> · <a href="escolas.html">Para escolas</a> · <a href="privacidade.html">Aviso de privacidade</a> · <a href="./">Entrar no app</a></p>
+  <p>© 2026 Diogo Soares · DDS Inovação</p>
+</footer>
+<canvas id="fx-canvas" aria-hidden="true"></canvas>
+<div class="dlg" id="dlg" hidden>
+  <div class="bilhete" role="alertdialog" aria-modal="true" aria-describedby="dlg-texto">
+    <p id="dlg-texto"></p>
+    <div class="field" id="dlg-campo-wrap" hidden><textarea id="dlg-campo" rows="3" style="min-height:90px"></textarea></div>
+    <div class="dlg-botoes"><button class="btn ghost" id="dlg-nao">Cancelar</button><button class="btn coral" id="dlg-ok">OK</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="config.js?v=10"></script>
+<script src="efeitos.js?v=10"></script>
+<script src="vitrine.js?v=10"></script>
+<script src="publico.js?v=10"></script>
+</body>
+</html>

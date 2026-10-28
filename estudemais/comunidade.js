@@ -1,4 +1,4 @@
-/* Estude+ — comunidade: salas por matéria e a sala de cada turma. Sem mensagem privada entre alunos (proteção dos menores). */
+/* EstudeUp — comunidade: salas por matéria e a sala de cada turma. Sem mensagem privada entre alunos (proteção dos menores). */
 
 const com = { salaId: null, ultima: null, timer: null, canal: null, ids: new Set(), enviando: false, sala: null };
 

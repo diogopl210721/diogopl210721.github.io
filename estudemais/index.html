@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Estude+ · seu plano de estudo</title>
-<meta name="description" content="Estude+: resumos de alunos, tutor de IA que resolve exercício por foto, plano de estudo até a prova, flashcards, simulados do ENEM e comunidade.">
+<title>EstudeUp · seu próximo nível começa aqui</title>
+<meta name="description" content="EstudeUp: resumos de alunos, tutor de IA que resolve exercício por foto, plano de estudo até a prova, flashcards, simulados do ENEM e comunidade.">
 <meta name="theme-color" content="#F4F6FB" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1230" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="fontes/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fontes/atkinson-next.woff2" as="font" type="font/woff2" crossorigin>
 <script>
@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -92,14 +92,45 @@
 <symbol id="i-salvar-f" viewBox="0 0 256 256"><path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Z"/></symbol>
 <symbol id="i-estrela-f" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></symbol>
 <symbol id="i-chama-f" viewBox="0 0 256 256"><path d="M143.38,17.85a8,8,0,0,0-12.63,3.41l-22,60.41L84.59,58.26a8,8,0,0,0-11.93.89C51,87.53,40,116.08,40,144a88,88,0,0,0,176,0C216,84.55,165.21,36,143.38,17.85Zm40.51,135.49a57.6,57.6,0,0,1-46.56,46.55A7.65,7.65,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.63-16.85,33.44-33.45a8,8,0,0,1,15.78,2.68Z"/></symbol>
+<symbol id="i-whatsapp" viewBox="0 0 256 256"><path d="M187.3,159.06A36.09,36.09,0,0,1,152,188a84.09,84.09,0,0,1-84-84A36.09,36.09,0,0,1,96.94,68.7,12,12,0,0,1,110,75.1l11.48,23a12,12,0,0,1-.75,12l-8.52,12.78a44.56,44.56,0,0,0,20.91,20.91l12.78-8.52a12,12,0,0,1,12-.75l23,11.48A12,12,0,0,1,187.3,159.06ZM236,128A108,108,0,0,1,78.77,224.15L46.34,235A20,20,0,0,1,21,209.66l10.81-32.43A108,108,0,1,1,236,128Zm-24,0A84,84,0,1,0,55.27,170.06a12,12,0,0,1,1,9.81l-9.93,29.79,29.79-9.93a12.1,12.1,0,0,1,3.8-.62,12,12,0,0,1,6,1.62A84,84,0,0,0,212,128Z"/></symbol>
+<symbol id="i-instagram" viewBox="0 0 256 256"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,72a24,24,0,1,1,24-24A24,24,0,0,1,128,152ZM176,20H80A60.07,60.07,0,0,0,20,80v96a60.07,60.07,0,0,0,60,60h96a60.07,60.07,0,0,0,60-60V80A60.07,60.07,0,0,0,176,20Zm36,156a36,36,0,0,1-36,36H80a36,36,0,0,1-36-36V80A36,36,0,0,1,80,44h96a36,36,0,0,1,36,36ZM196,76a16,16,0,1,1-16-16A16,16,0,0,1,196,76Z"/></symbol>
+<symbol id="i-pin" viewBox="0 0 256 256"><path d="M128,60a44,44,0,1,0,44,44A44.05,44.05,0,0,0,128,60Zm0,64a20,20,0,1,1,20-20A20,20,0,0,1,128,124Zm0-112a92.1,92.1,0,0,0-92,92c0,77.36,81.64,135.4,85.12,137.83a12,12,0,0,0,13.76,0,259,259,0,0,0,42.18-39C205.15,170.57,220,136.37,220,104A92.1,92.1,0,0,0,128,12Zm31.3,174.71A249.35,249.35,0,0,1,128,216.89a249.35,249.35,0,0,1-31.3-30.18C80,167.37,60,137.31,60,104a68,68,0,0,1,136,0C196,137.31,176,167.37,159.3,186.71Z"/></symbol>
+<symbol id="i-telefone" viewBox="0 0 256 256"><path d="M224,154.8l-47.09-21.11-.18-.08a19.94,19.94,0,0,0-19,1.75,13.08,13.08,0,0,0-1.12.84l-22.31,19c-13-7.05-26.43-20.37-33.49-33.21l19.06-22.66a11.76,11.76,0,0,0,.85-1.15,20,20,0,0,0,1.66-18.83,1.42,1.42,0,0,1-.08-.18L101.2,32A20.06,20.06,0,0,0,80.42,20.15,60.27,60.27,0,0,0,28,80c0,81.61,66.39,148,148,148a60.27,60.27,0,0,0,59.85-52.42A20.06,20.06,0,0,0,224,154.8ZM176,204A124.15,124.15,0,0,1,52,80,36.29,36.29,0,0,1,80.48,44.46l18.82,42L80.14,109.28a12,12,0,0,0-.86,1.16A20,20,0,0,0,78,130.08c9.42,19.28,28.83,38.56,48.31,48A20,20,0,0,0,146,176.63a11.63,11.63,0,0,0,1.11-.85l22.43-19.07,42,18.81A36.29,36.29,0,0,1,176,204Z"/></symbol>
+<symbol id="i-email" viewBox="0 0 256 256"><path d="M224,44H32A12,12,0,0,0,20,56V192a20,20,0,0,0,20,20H216a20,20,0,0,0,20-20V56A12,12,0,0,0,224,44ZM193.15,68,128,127.72,62.85,68ZM44,188V83.28l75.89,69.57a12,12,0,0,0,16.22,0L212,83.28V188Z"/></symbol>
+<symbol id="i-capelo" viewBox="0 0 256 256"><path d="M249.8,85.49l-116-64a12,12,0,0,0-11.6,0l-116,64a12,12,0,0,0,0,21l21.8,12v47.76a19.89,19.89,0,0,0,5.09,13.32C46.63,194.7,77,220,128,220a136.88,136.88,0,0,0,40-5.75V240a12,12,0,0,0,24,0V204.12a119.53,119.53,0,0,0,30.91-24.51A19.89,19.89,0,0,0,228,166.29V118.53l21.8-12a12,12,0,0,0,0-21ZM128,45.71,219.16,96,186,114.3a1.88,1.88,0,0,1-.18-.12l-52-28.69a12,12,0,0,0-11.6,21l39,21.49L128,146.3,36.84,96ZM128,196c-40.42,0-64.65-19.07-76-31.27v-33l70.2,38.74a12,12,0,0,0,11.6,0L168,151.64v37.23A110.46,110.46,0,0,1,128,196Zm76-31.27a93.21,93.21,0,0,1-12,10.81V138.39l12-6.62Z"/></symbol>
+<symbol id="i-megafone" viewBox="0 0 256 256"><path d="M252,120a52.06,52.06,0,0,0-52-52H160.32c-3.44-.21-52.6-4-99.46-43.3A20,20,0,0,0,28,40V200a19.8,19.8,0,0,0,11.54,18.12,19.86,19.86,0,0,0,21.32-2.81A192.92,192.92,0,0,1,144,174.47v26.2a20,20,0,0,0,8.9,16.64,11.35,11.35,0,0,0,1.39.8l14.44,7.06A20,20,0,0,0,198.37,213l11.09-41.82A52.07,52.07,0,0,0,252,120ZM52,191.63V48.4c36.17,28.07,72.17,38.1,92,41.66V150C124.17,153.52,88.17,163.55,52,191.63ZM176.39,202.2,168,198.1V172h16.4ZM200,148H168V92h32a28,28,0,1,1,0,56Z"/></symbol>
+<symbol id="i-grafico" viewBox="0 0 256 256"><path d="M224,196h-4V40a12,12,0,0,0-12-12H152a12,12,0,0,0-12,12V76H96A12,12,0,0,0,84,88v36H48a12,12,0,0,0-12,12v60H32a12,12,0,0,0,0,24H224a12,12,0,0,0,0-24ZM164,52h32V196H164Zm-56,48h32v96H108ZM60,148H84v48H60Z"/></symbol>
+<symbol id="i-vitrine" viewBox="0 0 256 256"><path d="M236,96a12,12,0,0,0-.44-3.3L221.2,42.51A20.08,20.08,0,0,0,202,28H54A20.08,20.08,0,0,0,34.8,42.51L20.46,92.7A12,12,0,0,0,20,96h0v16a43.94,43.94,0,0,0,16,33.92V216a12,12,0,0,0,12,12H208a12,12,0,0,0,12-12V145.92A43.94,43.94,0,0,0,236,112V96ZM57.05,52H199l9.14,32H47.91Zm91,56v4a20,20,0,0,1-40,0v-4ZM53,128.71A20,20,0,0,1,44,112v-4H84v4a20,20,0,0,1-20,20,19.76,19.76,0,0,1-9.07-2.2A11.54,11.54,0,0,0,53,128.71ZM196,204H60V155.81c1.32.12,2.65.19,4,.19a43.86,43.86,0,0,0,32-13.85,43.89,43.89,0,0,0,64,0A43.86,43.86,0,0,0,192,156c1.35,0,2.68-.07,4-.19Zm16-92a20,20,0,0,1-9,16.71,11.66,11.66,0,0,0-1.88,1.09A20,20,0,0,1,172,112v-4h40Z"/></symbol>
+<symbol id="i-imagem" viewBox="0 0 256 256"><path d="M144,96a16,16,0,1,1,16,16A16,16,0,0,1,144,96Zm92-40V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56ZM44,60v79.72l33.86-33.86a20,20,0,0,1,28.28,0L147.31,147l17.18-17.17a20,20,0,0,1,28.28,0L212,149.09V60Zm0,136H162.34L92,125.66l-48,48Zm168,0V183l-33.37-33.37L164.28,164l32,32Z"/></symbol>
+<symbol id="i-tag" viewBox="0 0 256 256"><path d="M246.15,133.18,146.83,33.86A19.85,19.85,0,0,0,132.69,28H40A12,12,0,0,0,28,40v92.69a19.85,19.85,0,0,0,5.86,14.14l99.32,99.32a20,20,0,0,0,28.28,0l84.69-84.69A20,20,0,0,0,246.15,133.18Zm-98.83,93.17L52,131V52h79l95.32,95.32ZM104,88A16,16,0,1,1,88,72,16,16,0,0,1,104,88Z"/></symbol>
+<symbol id="i-calendario" viewBox="0 0 256 256"><path d="M208,28H188V24a12,12,0,0,0-24,0v4H92V24a12,12,0,0,0-24,0v4H48A20,20,0,0,0,28,48V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V48A20,20,0,0,0,208,28ZM68,52a12,12,0,0,0,24,0h72a12,12,0,0,0,24,0h16V76H52V52ZM52,204V100H204V204Z"/></symbol>
+<symbol id="i-turmas" viewBox="0 0 256 256"><path d="M164.38,181.1a52,52,0,1,0-72.76,0,75.89,75.89,0,0,0-30,28.89,12,12,0,0,0,20.78,12,53,53,0,0,1,91.22,0,12,12,0,1,0,20.78-12A75.89,75.89,0,0,0,164.38,181.1ZM100,144a28,28,0,1,1,28,28A28,28,0,0,1,100,144Zm147.21,9.59a12,12,0,0,1-16.81-2.39c-8.33-11.09-19.85-19.59-29.33-21.64a12,12,0,0,1-1.82-22.91,20,20,0,1,0-24.78-28.3,12,12,0,1,1-21-11.6,44,44,0,1,1,73.28,48.35,92.18,92.18,0,0,1,22.85,21.69A12,12,0,0,1,247.21,153.59Zm-192.28-24c-9.48,2.05-21,10.55-29.33,21.65A12,12,0,0,1,6.41,136.79,92.37,92.37,0,0,1,29.26,115.1a44,44,0,1,1,73.28-48.35,12,12,0,1,1-21,11.6,20,20,0,1,0-24.78,28.3,12,12,0,0,1-1.82,22.91Z"/></symbol>
+<symbol id="i-professor" viewBox="0 0 256 256"><path d="M56,84A12,12,0,0,1,68,72H188a12,12,0,0,1,12,12v88a12,12,0,0,1-24,0V96H68A12,12,0,0,1,56,84ZM236,56V200a20,20,0,0,1-20,20H149.26a12,12,0,0,1-11.4-8.26,36,36,0,0,0-67.74,0A12,12,0,0,1,58.74,220H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56ZM104,164a16,16,0,1,0-16-16A16,16,0,0,0,104,164ZM212,60H44V196h6.92a60.18,60.18,0,0,1,21.76-23.16,40,40,0,1,1,62.64,0A60.18,60.18,0,0,1,157.08,196H212Z"/></symbol>
+<symbol id="i-escola" viewBox="0 0 256 256"><path d="M240,204H228V96a20,20,0,0,0-20-20H172V32a20,20,0,0,0-28.45-18.12l-104,48.54A20.06,20.06,0,0,0,28,80.55V204H16a12,12,0,0,0,0,24H240a12,12,0,0,0,0-24ZM204,100V204H172V100ZM52,83.09,148,38.3V204H52ZM132,112v12a12,12,0,0,1-24,0V112a12,12,0,0,1,24,0Zm-40,0v12a12,12,0,0,1-24,0V112a12,12,0,0,1,24,0Zm0,52v12a12,12,0,0,1-24,0V164a12,12,0,0,1,24,0Zm40,0v12a12,12,0,0,1-24,0V164a12,12,0,0,1,24,0Z"/></symbol>
+<symbol id="i-cursor" viewBox="0 0 256 256"><path d="M224.15,179.17l-46.82-46.82,37.92-13.51c.26-.09.51-.19.76-.3a20,20,0,0,0-1.76-37.27L54.16,29A20,20,0,0,0,29,54.16L81.27,214.24A20,20,0,0,0,118.54,216c.11-.25.21-.5.3-.76l13.51-37.92,46.83,46.82a20,20,0,0,0,28.28,0l16.69-16.68A20,20,0,0,0,224.15,179.17Zm-30.83,25.17-48.48-48.48A20,20,0,0,0,130.7,150a20.47,20.47,0,0,0-3.73.35A20,20,0,0,0,112.35,162c-.11.25-.2.5-.3.76L100.4,195.5,54.29,54.29,195.5,100.4l-32.71,11.65c-.25.09-.51.19-.76.3a20,20,0,0,0-6.16,32.48h0l48.48,48.48ZM84,16V12a12,12,0,0,1,24,0v4a12,12,0,0,1-24,0ZM12,108a12,12,0,0,1,0-24h4a12,12,0,0,1,0,24ZM120.62,24.21l4-12a12,12,0,0,1,22.77,7.58l-4,12a12,12,0,0,1-22.77-7.58Zm-81.23,104a12,12,0,0,1-7.59,15.17l-12,4a12,12,0,1,1-7.59-22.76l12-4A12,12,0,0,1,39.39,128.21Z"/></symbol>
+<symbol id="i-compartilhar" viewBox="0 0 256 256"><path d="M176,156a43.78,43.78,0,0,0-29.09,11L106.1,140.8a44.07,44.07,0,0,0,0-25.6L146.91,89a43.83,43.83,0,1,0-13-20.17L93.09,95a44,44,0,1,0,0,65.94L133.9,187.2A44,44,0,1,0,176,156Zm0-120a20,20,0,1,1-20,20A20,20,0,0,1,176,36ZM64,148a20,20,0,1,1,20-20A20,20,0,0,1,64,148Zm112,72a20,20,0,1,1,20-20A20,20,0,0,1,176,220Z"/></symbol>
+<symbol id="i-filtro" viewBox="0 0 256 256"><path d="M234.29,47.91A20,20,0,0,0,216,36H40A20,20,0,0,0,25.2,69.45l.12.14L92,140.75V216a20,20,0,0,0,31.1,16.64l32-21.33A20,20,0,0,0,164,194.66V140.75l66.67-71.16.12-.14A20,20,0,0,0,234.29,47.91Zm-91,79.89A12,12,0,0,0,140,136v56.52l-24,16V136a12,12,0,0,0-3.25-8.2L49.23,60H206.77Z"/></symbol>
+<symbol id="i-abrir" viewBox="0 0 256 256"><path d="M228,104a12,12,0,0,1-24,0V69l-59.51,59.51a12,12,0,0,1-17-17L187,52H152a12,12,0,0,1,0-24h64a12,12,0,0,1,12,12Zm-44,24a12,12,0,0,0-12,12v64H52V84h64a12,12,0,0,0,0-24H48A20,20,0,0,0,28,80V208a20,20,0,0,0,20,20H176a20,20,0,0,0,20-20V140A12,12,0,0,0,184,128Z"/></symbol>
+<symbol id="i-selo" viewBox="0 0 256 256"><path d="M228.75,100.05c-3.52-3.67-7.15-7.46-8.34-10.33-1.06-2.56-1.14-7.83-1.21-12.47-.15-10-.34-22.44-9.18-31.27s-21.27-9-31.27-9.18c-4.64-.07-9.91-.15-12.47-1.21-2.87-1.19-6.66-4.82-10.33-8.34C148.87,20.46,140.05,12,128,12s-20.87,8.46-27.95,15.25c-3.67,3.52-7.46,7.15-10.33,8.34-2.56,1.06-7.83,1.14-12.47,1.21C67.25,37,54.81,37.14,46,46S37,67.25,36.8,77.25c-.07,4.64-.15,9.91-1.21,12.47-1.19,2.87-4.82,6.66-8.34,10.33C20.46,107.13,12,116,12,128S20.46,148.87,27.25,156c3.52,3.67,7.15,7.46,8.34,10.33,1.06,2.56,1.14,7.83,1.21,12.47.15,10,.34,22.44,9.18,31.27s21.27,9,31.27,9.18c4.64.07,9.91.15,12.47,1.21,2.87,1.19,6.66,4.82,10.33,8.34C107.13,235.54,116,244,128,244s20.87-8.46,27.95-15.25c3.67-3.52,7.46-7.15,10.33-8.34,2.56-1.06,7.83-1.14,12.47-1.21,10-.15,22.44-.34,31.27-9.18s9-21.27,9.18-31.27c.07-4.64.15-9.91,1.21-12.47,1.19-2.87,4.82-6.66,8.34-10.33C235.54,148.87,244,140.05,244,128S235.54,107.13,228.75,100.05Zm-17.32,39.29c-4.82,5-10.28,10.72-13.19,17.76-2.82,6.8-2.93,14.16-3,21.29-.08,5.36-.19,12.71-2.15,14.66s-9.3,2.07-14.66,2.15c-7.13.11-14.49.22-21.29,3-7,2.91-12.73,8.37-17.76,13.19C135.78,214.84,130.4,220,128,220s-7.78-5.16-11.34-8.57c-5-4.82-10.72-10.28-17.76-13.19-6.8-2.82-14.16-2.93-21.29-3-5.36-.08-12.71-.19-14.66-2.15s-2.07-9.3-2.15-14.66c-.11-7.13-.22-14.49-3-21.29-2.91-7-8.37-12.73-13.19-17.76C41.16,135.78,36,130.4,36,128s5.16-7.78,8.57-11.34c4.82-5,10.28-10.72,13.19-17.76,2.82-6.8,2.93-14.16,3-21.29C60.88,72.25,61,64.9,63,63s9.3-2.07,14.66-2.15c7.13-.11,14.49-.22,21.29-3,7-2.91,12.73-8.37,17.76-13.19C120.22,41.16,125.6,36,128,36s7.78,5.16,11.34,8.57c5,4.82,10.72,10.28,17.76,13.19,6.8,2.82,14.16,2.93,21.29,3,5.36.08,12.71.19,14.66,2.15s2.07,9.3,2.15,14.66c.11,7.13.22,14.49,3,21.29,2.91,7,8.37,12.73,13.19,17.76,3.41,3.56,8.57,8.94,8.57,11.34S214.84,135.78,211.43,139.34ZM176.49,95.51a12,12,0,0,1,0,17l-56,56a12,12,0,0,1-17,0l-24-24a12,12,0,1,1,17-17L112,143l47.51-47.52A12,12,0,0,1,176.49,95.51Z"/></symbol>
+<symbol id="i-pausa" viewBox="0 0 256 256"><path d="M200,28H160a20,20,0,0,0-20,20V208a20,20,0,0,0,20,20h40a20,20,0,0,0,20-20V48A20,20,0,0,0,200,28Zm-4,176H164V52h32ZM96,28H56A20,20,0,0,0,36,48V208a20,20,0,0,0,20,20H96a20,20,0,0,0,20-20V48A20,20,0,0,0,96,28ZM92,204H60V52H92Z"/></symbol>
+<symbol id="i-play" viewBox="0 0 256 256"><path d="M234.49,111.07,90.41,22.94A20,20,0,0,0,60,39.87V216.13a20,20,0,0,0,30.41,16.93l144.08-88.13a19.82,19.82,0,0,0,0-33.86ZM84,208.85V47.15L216.16,128Z"/></symbol>
+<symbol id="i-arquivo" viewBox="0 0 256 256"><path d="M224,44H32A20,20,0,0,0,12,64V88a20,20,0,0,0,16,19.6V192a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V107.6A20,20,0,0,0,244,88V64A20,20,0,0,0,224,44ZM36,68H220V84H36ZM52,188V108H204v80Zm112-52a12,12,0,0,1-12,12H104a12,12,0,0,1,0-24h48A12,12,0,0,1,164,136Z"/></symbol>
+<symbol id="i-nota" viewBox="0 0 256 256"><path d="M232.49,55.51l-32-32a12,12,0,0,0-17,0l-96,96A12,12,0,0,0,84,128v32a12,12,0,0,0,12,12h32a12,12,0,0,0,8.49-3.51l96-96A12,12,0,0,0,232.49,55.51ZM192,49l15,15L196,75,181,60Zm-69,99H108V133l56-56,15,15Zm105-7.43V208a20,20,0,0,1-20,20H48a20,20,0,0,1-20-20V48A20,20,0,0,1,48,28h67.43a12,12,0,0,1,0,24H52V204H204V140.57a12,12,0,0,1,24,0Z"/></symbol>
+<symbol id="i-site" viewBox="0 0 256 256"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm83.13,96H179.56a144.3,144.3,0,0,0-21.35-66.36A84.22,84.22,0,0,1,211.13,116ZM128,207c-9.36-10.81-24.46-33.13-27.45-67h54.94a119.74,119.74,0,0,1-17.11,52.77A108.61,108.61,0,0,1,128,207Zm-27.45-91a119.74,119.74,0,0,1,17.11-52.77A108.61,108.61,0,0,1,128,49c9.36,10.81,24.46,33.13,27.45,67ZM97.79,49.64A144.3,144.3,0,0,0,76.44,116H44.87A84.22,84.22,0,0,1,97.79,49.64ZM44.87,140H76.44a144.3,144.3,0,0,0,21.35,66.36A84.22,84.22,0,0,1,44.87,140Zm113.34,66.36A144.3,144.3,0,0,0,179.56,140h31.57A84.22,84.22,0,0,1,158.21,206.36Z"/></symbol>
+<symbol id="i-facebook" viewBox="0 0 256 256"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm12,191.13V156h20a12,12,0,0,0,0-24H140V112a12,12,0,0,1,12-12h16a12,12,0,0,0,0-24H152a36,36,0,0,0-36,36v20H96a12,12,0,0,0,0,24h20v55.13a84,84,0,1,1,24,0Z"/></symbol>
+<symbol id="i-info" viewBox="0 0 256 256"><path d="M108,84a16,16,0,1,1,16,16A16,16,0,0,1,108,84Zm128,44A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-24,0a84,84,0,1,0-84,84A84.09,84.09,0,0,0,212,128Zm-72,36.68V132a20,20,0,0,0-20-20,12,12,0,0,0-4,23.32V168a20,20,0,0,0,20,20,12,12,0,0,0,4-23.32Z"/></symbol>
+<symbol id="i-alerta" viewBox="0 0 256 256"><path d="M240.26,186.1,152.81,34.23h0a28.74,28.74,0,0,0-49.62,0L15.74,186.1a27.45,27.45,0,0,0,0,27.71A28.31,28.31,0,0,0,40.55,228h174.9a28.31,28.31,0,0,0,24.79-14.19A27.45,27.45,0,0,0,240.26,186.1Zm-20.8,15.7a4.46,4.46,0,0,1-4,2.2H40.55a4.46,4.46,0,0,1-4-2.2,3.56,3.56,0,0,1,0-3.73L124,46.2a4.77,4.77,0,0,1,8,0l87.44,151.87A3.56,3.56,0,0,1,219.46,201.8ZM116,136V104a12,12,0,0,1,24,0v32a12,12,0,0,1-24,0Zm28,40a16,16,0,1,1-16-16A16,16,0,0,1,144,176Z"/></symbol>
+<symbol id="i-aluno" viewBox="0 0 256 256"><path d="M227.79,52.62l-96-32a11.85,11.85,0,0,0-7.58,0l-96,32A12,12,0,0,0,20,63.37,6.05,6.05,0,0,0,20,64v80a12,12,0,0,0,24,0V80.65l23.71,7.9a67.92,67.92,0,0,0,18.42,85A100.36,100.36,0,0,0,46,209.44a12,12,0,1,0,20.1,13.11C80.37,200.59,103,188,128,188s47.63,12.59,61.95,34.55a12,12,0,1,0,20.1-13.11,100.36,100.36,0,0,0-40.18-35.92,67.92,67.92,0,0,0,18.42-85l39.5-13.17a12,12,0,0,0,0-22.76Zm-99.79-8L186.05,64,128,83.35,70,64ZM172,120A44,44,0,1,1,90.94,96.29l33.27,11.09a11.89,11.89,0,0,0,7.58,0l33.27-11.09A43.85,43.85,0,0,1,172,120Z"/></symbol>
+<symbol id="i-ficha" viewBox="0 0 256 256"><path d="M148,108a12,12,0,0,1,12-12h28a12,12,0,0,1,0,24H160A12,12,0,0,1,148,108Zm40,28H168a12,12,0,0,0,0,24h20a12,12,0,0,0,0-24Zm48-80V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212ZM58.28,159.37A43.82,43.82,0,0,1,71.53,142a36,36,0,1,1,56.94,0,43.84,43.84,0,0,1,13.26,17.37,12,12,0,0,1-22.15,9.26C116.48,161.19,108.42,156,100,156s-16.47,5.2-19.59,12.63a12,12,0,1,1-22.13-9.26ZM88,120a12,12,0,1,0,12-12A12,12,0,0,0,88,120Z"/></symbol>
+<symbol id="i-brilho" viewBox="0 0 256 256"><path d="M199,125.31l-49.88-18.39L130.69,57a19.92,19.92,0,0,0-37.38,0L74.92,106.92,25,125.31a19.92,19.92,0,0,0,0,37.38l49.88,18.39L93.31,231a19.92,19.92,0,0,0,37.38,0l18.39-49.88L199,162.69a19.92,19.92,0,0,0,0-37.38Zm-63.38,35.16a12,12,0,0,0-7.11,7.11L112,212.28l-16.47-44.7a12,12,0,0,0-7.11-7.11L43.72,144l44.7-16.47a12,12,0,0,0,7.11-7.11L112,75.72l16.47,44.7a12,12,0,0,0,7.11,7.11L180.28,144ZM140,40a12,12,0,0,1,12-12h12V16a12,12,0,0,1,24,0V28h12a12,12,0,0,1,0,24H188V64a12,12,0,0,1-24,0V52H152A12,12,0,0,1,140,40ZM252,88a12,12,0,0,1-12,12h-4v4a12,12,0,0,1-24,0v-4h-4a12,12,0,0,1,0-24h4V72a12,12,0,0,1,24,0v4h4A12,12,0,0,1,252,88Z"/></symbol>
 </svg>
 
 <canvas id="fx-canvas" aria-hidden="true"></canvas>
 
 <div class="app-shell">
   <aside class="sidebar sidebar-hidden" id="sidebar">
-    <div class="brand side">Estude<span class="plus">+</span></div>
-    <span class="sidebar-tagline">estudar junto é mais fácil</span>
+    <div class="brand side"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></div>
+    <span class="sidebar-tagline">seu próximo nível começa aqui</span>
     <nav class="sidebar-nav">
       <button class="nav-item side-item" data-s="home" onclick="verHoje()"><svg class="ico"><use class="ic-l" href="#i-hoje"/><use class="ic-f" href="#i-hoje-f"/></svg><span>Hoje</span></button>
       <button class="nav-item side-item" data-s="materias" onclick="verMaterias()"><svg class="ico"><use class="ic-l" href="#i-materias"/><use class="ic-f" href="#i-materias-f"/></svg><span>Matérias</span></button>
@@ -110,6 +141,9 @@
       <button class="nav-item side-item" data-s="enem" onclick="verEnem()"><svg class="ico"><use href="#i-enem"/></svg><span>ENEM e redação</span></button>
       <button class="nav-item side-item" data-s="liga" onclick="verLiga()"><svg class="ico"><use href="#i-liga"/></svg><span>Liga</span></button>
       <button class="nav-item side-item" data-s="grupos" onclick="verGrupos()"><svg class="ico"><use href="#i-grupos"/></svg><span>Turmas e grupos</span></button>
+      <span class="grupo-nav">escolas</span>
+      <button class="nav-item side-item" data-s="oportunidades" onclick="verOportunidades()"><svg class="ico"><use href="#i-vitrine"/></svg><span>Oportunidades</span></button>
+      <button class="nav-item side-item" data-s="minha-escola" id="side-escola" hidden onclick="verMinhaEscola()"><svg class="ico"><use href="#i-escola"/></svg><span>Minha escola</span></button>
       <button class="nav-item side-item" data-s="perfil" onclick="verPerfil()"><svg class="ico"><use href="#i-perfil"/></svg><span>Perfil</span></button>
       <button class="nav-item side-item" data-s="criador" id="side-criador" hidden onclick="verCriador()"><svg class="ico"><use href="#i-estrela"/></svg><span>Painel do criador</span></button>
     </nav>
@@ -129,9 +163,9 @@
         <img class="adesivo a3" src="adesivos/lampada.webp" alt=""><img class="adesivo a4" src="adesivos/capelo.webp" alt="">
         <img class="adesivo a5" src="adesivos/estrela.webp" alt="">
       </div>
-      <div class="brand xl">Estude<span class="plus">+</span></div>
+      <div class="brand xl"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></div>
       <h1>Entrar na conta</h1>
-      <span class="hand">resumos, tutor e seu plano até a prova</span>
+      <span class="hand">seu próximo nível começa aqui</span>
       <div class="onboard-field"><label for="input-email-login">e-mail</label><input type="email" id="input-email-login" placeholder="voce@email.com" autocomplete="email"></div>
       <div class="onboard-field"><label for="input-senha-login">senha</label><input type="password" id="input-senha-login" placeholder="sua senha" autocomplete="current-password"></div>
       <button class="onboard-btn" id="btn-login" onclick="entrarComEmailSenha()">Entrar</button>
@@ -145,7 +179,7 @@
   <!-- ============ CADASTRO ============ -->
   <section class="screen" id="screen-cadastro">
     <div class="onboard-wrap">
-      <div class="brand lg">Estude<span class="plus">+</span></div>
+      <div class="brand lg"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></div>
       <h1>Vamos criar sua conta</h1>
       <span class="hand">primeiro, me conta quem é você</span>
       <div class="role-toggle">
@@ -170,9 +204,9 @@
   <!-- ============ RECUPERAR SENHA ============ -->
   <section class="screen" id="screen-recuperar">
     <div class="onboard-wrap">
-      <div class="brand lg">Estude<span class="plus">+</span></div>
+      <div class="brand lg"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></div>
       <h1>Esqueceu a senha?</h1>
-      <span class="hand">se a sua conta tem pergunta de segurança, dá pra trocar a senha aqui. Se não tem, a equipe do Estude+ cria uma senha provisória pra você.</span>
+      <span class="hand">se a sua conta tem pergunta de segurança, dá pra trocar a senha aqui. Se não tem, a equipe do EstudeUp cria uma senha provisória pra você.</span>
       <div class="onboard-field"><label for="input-email-recuperar">seu e-mail</label><input type="email" id="input-email-recuperar" placeholder="voce@email.com"></div>
       <button class="onboard-btn" id="btn-buscar-pergunta" onclick="buscarPerguntaSeguranca()">Continuar</button>
       <div id="bloco-pergunta-seguranca" style="display:none; width:100%;">
@@ -188,7 +222,7 @@
   <!-- ============ CÓDIGO DE TURMA ============ -->
   <section class="screen" id="screen-codigo">
     <div class="onboard-wrap">
-      <div class="brand lg">Estude<span class="plus">+</span></div>
+      <div class="brand lg"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></div>
       <h1>Tem um código?</h1>
       <span class="hand">se um professor ou amigo te passou um código de turma, ele entra aqui</span>
       <div class="onboard-field"><label for="input-codigo">código de turma ou grupo <span class="opt">(opcional)</span></label><input type="text" id="input-codigo" class="codigo-input" placeholder="KX9F2A"></div>
@@ -202,7 +236,7 @@
     <div class="sheet">
       <header class="header">
         <div class="greet">
-          <div class="brand md">Estude<span class="plus">+</span></div>
+          <div class="brand md"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></div>
           <h1 id="home-saudacao">Oi!</h1>
           <span class="hand" id="home-sub">bora pro plano de hoje?</span>
         </div>
@@ -255,6 +289,7 @@
           <div><div class="t" id="home-liga-t">Liga da semana</div><div class="s" id="home-liga-s">ganhe XP estudando e suba de divisão</div></div>
         </div>
         <div id="home-provas"></div>
+        <div id="home-oportunidades"></div>
         <div class="upload-cta" onclick="novaMateria()" role="button" tabindex="0">
           <img class="adesivo" src="adesivos/camera.webp" alt="">
           <h3>Tem matéria nova?</h3>
@@ -357,7 +392,15 @@
       </div>
       <div class="source-panel" id="src-youtube">
         <div class="link-box"><svg class="ico"><use href="#i-video"/></svg><input type="text" id="input-youtube" placeholder="cole o link do vídeo do YouTube" aria-label="link do YouTube"></div>
-        <p class="hand muted center small">a gente puxa a transcrição da aula</p>
+        <details class="dica-transcricao" id="yt-dica">
+          <summary>O YouTube não deixou? Cola a transcrição aqui</summary>
+          <ol class="passos-yt">
+            <li>Abre o vídeo no YouTube (no computador é mais fácil).</li>
+            <li>Na descrição, toca em <b>…mais</b> e depois em <b>Mostrar transcrição</b>.</li>
+            <li>Seleciona o texto da transcrição, copia e cola aqui embaixo.</li>
+          </ol>
+          <div class="field"><textarea id="input-youtube-transcricao" aria-label="transcrição do vídeo" placeholder="cola aqui a transcrição do vídeo"></textarea></div>
+        </details>
       </div>
       <div class="source-panel" id="src-link">
         <div class="link-box"><svg class="ico"><use href="#i-link"/></svg><input type="text" id="input-link" placeholder="cole o link do artigo ou site" aria-label="link do site"></div>
@@ -708,6 +751,11 @@
       <div class="inline-form" id="form-criar">
         <label for="input-nome-grupo">nome</label><input type="text" id="input-nome-grupo" placeholder="ex: Química - 3ºB">
         <label for="input-materia-grupo">matéria</label><input type="text" id="input-materia-grupo" placeholder="ex: Química">
+        <div id="criar-escola" hidden>
+          <label for="input-escola-grupo">escola</label>
+          <select id="input-escola-grupo"></select>
+          <p class="small muted" style="margin:6px 2px 12px">Turma da escola aparece no painel da escola só com números da turma, nunca com o desempenho de cada aluno.</p>
+        </div>
         <div id="criar-tipo" hidden>
           <label>tipo</label>
           <div class="chip-toggle">
@@ -736,6 +784,57 @@
     </div>
   </section>
 
+  <!-- ============ ESCOLAS E OPORTUNIDADES (mural das escolas parceiras) ============ -->
+  <section class="screen" id="screen-oportunidades">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="verHoje()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Escolas e oportunidades</h2><span class="hand muted small">bolsas, cursos, matrículas e eventos das escolas parceiras</span></div></div>
+      <p class="aviso-vitrine"><svg class="ico"><use href="#i-info"/></svg><span>Espaço das escolas parceiras. As ofertas são das escolas, conferidas pela equipe do EstudeUp antes de entrar. O tutor e o seu plano de estudo nunca mostram propaganda, e o EstudeUp não passa seus dados pra nenhuma escola.</span></p>
+      <div class="filtros-vitrine">
+        <div class="busca"><svg class="ico"><use href="#i-busca"/></svg><input type="search" id="op-busca" placeholder="buscar bolsa, curso, escola..." oninput="buscarMuralDepois()" aria-label="buscar oportunidades"></div>
+        <div class="linha"><select id="op-cidade" onchange="cidadeMural()" aria-label="cidade"><option value="">todas as cidades</option></select></div>
+        <div class="chips-rolam" id="op-cats" role="group" aria-label="categorias"></div>
+      </div>
+      <div id="op-lista"><div class="loading">carregando...</div></div>
+      <div class="section-title"><h2>Escolas parceiras</h2></div>
+      <div class="escola-lista" id="op-escolas"></div>
+      <div class="convite-escola">
+        <img class="adesivo" src="adesivos/escola.webp" alt="">
+        <div><b>É de uma escola, cursinho ou curso?</b><span>Coloque a página da sua escola no EstudeUp e use o app com as suas turmas.</span></div>
+        <button class="btn" onclick="abrirCadastroEscola()">Quero cadastrar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PÁGINA DA ESCOLA (dentro do app) ============ -->
+  <section class="screen" id="screen-escola">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="voltarDaEscola()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="escola-titulo">Escola</h2>
+        <div class="acoes"><button class="back-btn" onclick="compartilharEscola()" aria-label="compartilhar o link da escola"><svg class="ico"><use href="#i-compartilhar"/></svg></button></div></div>
+      <div id="escola-conteudo"><div class="loading">carregando...</div></div>
+    </div>
+  </section>
+
+  <!-- ============ MINHA ESCOLA (gestor e professores) ============ -->
+  <section class="screen" id="screen-minha-escola">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="voltarDaMinhaEscola()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2 id="me-nome">Minha escola</h2><span class="hand muted small" id="me-meta"></span></div>
+        <div class="acoes"><button class="back-btn" onclick="verPaginaDaMinhaEscola()" aria-label="ver a página da escola"><svg class="ico"><use href="#i-olho"/></svg></button></div></div>
+      <div id="me-escolhe"></div>
+      <div class="chips-rolam abas-escola" id="me-abas" role="tablist" aria-label="partes do painel da escola"></div>
+      <div id="me-conteudo"><div class="loading">carregando...</div></div>
+    </div>
+  </section>
+
+  <!-- ============ ÁREA COMERCIAL (conta do criador) ============ -->
+  <section class="screen" id="screen-comercial">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="verCriador()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Área comercial</h2><span class="hand muted small">escolas, mural, contatos e planos</span></div>
+        <div class="acoes"><button class="back-btn" onclick="verComercial()" aria-label="atualizar"><svg class="ico"><use href="#i-refazer"/></svg></button></div></div>
+      <div class="chips-rolam abas-escola" id="com-abas" role="tablist" aria-label="partes da área comercial"></div>
+      <div id="com-conteudo"><div class="loading">carregando...</div></div>
+    </div>
+  </section>
+
   <!-- ============ PAINEL DO CRIADOR ============ -->
   <section class="screen" id="screen-criador">
     <div class="sheet">
@@ -745,6 +844,7 @@
         <img class="adesivo" src="adesivos/coroa.webp" alt="">
         <div><h3>Conta master</h3><p>Sem limite de IA, tutor, publicação e mensagens. Você cria turma ou grupo e decide o que fica na biblioteca e nas salas.</p></div>
       </div>
+      <div id="criador-comercial"></div>
       <div id="criador-numeros"><div class="loading">carregando...</div></div>
       <div class="card">
         <div class="card-head"><h3>Fila de moderação</h3><span class="hand" id="criador-fila-n"></span></div>
@@ -787,6 +887,22 @@
         <span><b>Painel do criador</b><small>números do app, fila de denúncias e moderação</small></span>
         <svg class="ico"><use href="#i-seta"/></svg>
       </button>
+      <div id="perfil-escola"></div>
+      <div class="inline-form" id="form-cadastrar-escola">
+        <p class="small muted" style="margin:0 0 10px">A equipe do EstudeUp confere os dados antes de a página da escola ir pro ar. Você vira o gestor da página.</p>
+        <label for="ce-nome">nome da escola</label><input type="text" id="ce-nome" maxlength="120" placeholder="ex: Colégio Primavera">
+        <label for="ce-tipo">tipo</label>
+        <select id="ce-tipo"><option value="escola">Escola</option><option value="cursinho">Cursinho e pré-vestibular</option><option value="idiomas">Escola de idiomas</option><option value="profissionalizante">Curso profissionalizante</option><option value="faculdade">Faculdade</option><option value="reforco">Reforço escolar</option><option value="outro">Outra instituição de ensino</option></select>
+        <div class="linha-2"><div><label for="ce-cidade">cidade</label><input type="text" id="ce-cidade" maxlength="80"></div><div class="uf"><label for="ce-uf">UF</label><input type="text" id="ce-uf" maxlength="2" placeholder="PR"></div></div>
+        <label for="ce-whatsapp">WhatsApp da escola <span class="opt">(é pra onde os interessados vão falar)</span></label><input type="tel" id="ce-whatsapp" placeholder="(41) 99999-0000">
+        <label for="ce-email">e-mail da escola</label><input type="email" id="ce-email" maxlength="160">
+        <button class="go-btn" id="btn-ce" onclick="solicitarEscola()">Enviar pedido</button>
+      </div>
+      <div class="inline-form" id="form-codigo-escola">
+        <p class="small muted" style="margin:0 0 10px">O gestor da escola te passa o código de professor. Com ele, as turmas que você criar podem ser da escola.</p>
+        <label for="ce-codigo">código de professor</label><input type="text" id="ce-codigo" class="codigo-input" maxlength="8" placeholder="KX9F2A">
+        <button class="go-btn" id="btn-ce-codigo" onclick="entrarEscolaCodigo()">Entrar na escola</button>
+      </div>
       <div class="new-group-row"><button class="ghost-btn" onclick="abrirAutor(estado.usuarioId)"><svg class="ico"><use href="#i-biblioteca"/></svg>meu perfil público</button></div>
 
       <div class="section-title"><h2>Conquistas</h2><span class="hand" id="perfil-album-n"></span></div>
@@ -854,7 +970,7 @@
     <button class="cb enviar" id="sala-enviar" onclick="enviarSala()" aria-label="enviar"><svg class="ico"><use href="#i-enviar"/></svg></button>
   </div>
 
-  <div class="persistent-credit no-nav" id="persistentCredit">© 2026 Diogo Soares · Estude+</div>
+  <div class="persistent-credit no-nav" id="persistentCredit">© 2026 Diogo Soares · EstudeUp</div>
 
   <nav class="navbar" id="navbar" style="display:none;">
     <span class="nav-gota" id="nav-gota" aria-hidden="true"></span>
@@ -909,12 +1025,15 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="efeitos.js?v=9"></script>
-<script src="app.js?v=9"></script>
-<script src="voz.js?v=9"></script>
-<script src="biblioteca.js?v=9"></script>
-<script src="tutor.js?v=9"></script>
-<script src="comunidade.js?v=9"></script>
-<script src="criador.js?v=9"></script>
+<script src="config.js?v=10"></script>
+<script src="efeitos.js?v=10"></script>
+<script src="app.js?v=10"></script>
+<script src="voz.js?v=10"></script>
+<script src="biblioteca.js?v=10"></script>
+<script src="tutor.js?v=10"></script>
+<script src="comunidade.js?v=10"></script>
+<script src="criador.js?v=10"></script>
+<script src="vitrine.js?v=10"></script>
+<script src="escolas.js?v=10"></script>
 </body>
 </html>

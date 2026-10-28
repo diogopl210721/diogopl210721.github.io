@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Colégio Monte Aurora: escola FICTÍCIA, criada para demonstrar o Estude+ -->
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E2A6E"/><stop offset="1" stop-color="#2F3FA8"/></linearGradient>
+    <linearGradient id="sol" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD34D"/><stop offset="1" stop-color="#FF7A3D"/></linearGradient>
+    <clipPath id="borda"><rect width="512" height="512" rx="120"/></clipPath>
+  </defs>
+  <g clip-path="url(#borda)">
+  <rect width="512" height="512" fill="url(#ceu)"/>
+  <g stroke="#FFD34D" stroke-width="16" stroke-linecap="round" opacity=".9">
+    <line x1="256" y1="70" x2="256" y2="112"/><line x1="140" y1="118" x2="168" y2="148"/><line x1="372" y1="118" x2="344" y2="148"/>
+    <line x1="88" y1="222" x2="128" y2="226"/><line x1="424" y1="222" x2="384" y2="226"/>
+  </g>
+  <circle cx="256" cy="262" r="104" fill="url(#sol)"/>
+  <path d="M40 420 L184 236 L250 318 L318 212 L472 420 Z" fill="#5B6BD6"/>
+  <path d="M318 212 L360 268 L338 262 L318 282 L300 258 L282 266 Z" fill="#F4F6FB"/>
+  <path d="M184 236 L214 274 L196 270 L184 284 L170 268 Z" fill="#F4F6FB" opacity=".9"/>
+  <path d="M0 400 C120 360 220 380 300 404 C380 428 450 410 512 392 L512 440 L0 440 Z" fill="#12B981"/>
+  <rect y="430" width="512" height="82" fill="#0E1A4F"/>
+  <path d="M196 466 h120" stroke="#FFD34D" stroke-width="14" stroke-linecap="round"/>
+  </g>
+</svg>

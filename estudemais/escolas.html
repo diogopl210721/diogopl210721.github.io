@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>EstudeUp para escolas</title>
+<meta name="description" content="Sua instituição mais perto de quem quer aprender: turmas no EstudeUp, página da escola e mural de oportunidades.">
+<meta property="og:title" content="EstudeUp para escolas">
+<meta property="og:description" content="Sua instituição mais perto de quem quer aprender: turmas no EstudeUp, página da escola e mural de oportunidades.">
+<meta name="theme-color" content="#F4F6FB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1230" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fontes/unbounded.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fontes/atkinson-next.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+  try {
+    var t = localStorage.getItem('estude-tema');
+    if (t === 'caderno') t = 'claro'; if (t === 'lousa') t = 'escuro';
+    if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="styles.css?v=10">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="pub" data-pagina="escolas">
+<header class="pub-topo">
+  <a class="brand" href="escolas.html" aria-label="EstudeUp para escolas"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></a>
+  <nav aria-label="páginas">
+    <a href="oportunidades.html" class="">Oportunidades</a>
+    <a href="escolas.html" class="ativo so-largo">Para escolas</a>
+    <a href="./" class="">Entrar no app</a>
+  </nav>
+</header>
+<main class="pub-conteudo">
+
+<section class="pub-hero">
+  <div>
+    <span class="tag-hero"><svg class="ico" style="width:16px;height:16px" aria-hidden="true"><use href="icones.svg#i-escola"/></svg>EstudeUp para escolas</span>
+    <h1>Sua instituição pode estar <mark>mais perto de quem quer aprender</mark>.</h1>
+    <p class="lead">Seus alunos estudando com plano até a prova e sua escola sendo encontrada. O EstudeUp transforma o material do professor em resumo, quiz, flashcards e um plano de estudo dia a dia até a prova. E dá à sua escola uma página e um mural pra divulgar matrículas, bolsas e aulas experimentais.</p>
+    <div class="pub-ctas">
+      <a class="btn coral" href="#contato"><svg class="ico" style="width:18px;height:18px" aria-hidden="true"><use href="icones.svg#i-megafone"/></svg>Quero apresentar minha escola</a>
+      <a class="ghost-btn forte" style="width:auto" href="#" data-demo-link hidden><svg class="ico" style="width:18px;height:18px" aria-hidden="true"><use href="icones.svg#i-olho"/></svg>Ver uma escola de demonstração</a>
+    </div>
+  </div>
+  <div class="pub-vitrine-hero" aria-label="ilustração do app">
+    <img class="adesivo a1" src="adesivos/calendario.webp" alt=""><img class="adesivo a2" src="adesivos/trofeu.webp" alt="">
+    <div class="cartao-flutua c1">
+      <span class="rot">plano do aluno</span>
+      <h4>Biologia · prova em 12 dias</h4>
+      <div class="linha-tarefa"><span class="bolinha feita"></span>Revisar mitose · 20 min</div>
+      <div class="linha-tarefa"><span class="bolinha feita"></span>Quiz de meiose</div>
+      <div class="linha-tarefa"><span class="bolinha"></span>Flashcards de genética</div>
+    </div>
+    <div class="cartao-flutua c2">
+      <span class="rot">painel da turma</span>
+      <h4>3º A · Biologia</h4>
+      <span class="small muted">onde a turma está fraca</span>
+      <div class="small"><b>Meiose</b></div><div class="barra"><i style="width:42%;background:var(--erro)"></i></div>
+      <div class="small"><b>Mitose</b></div><div class="barra"><i style="width:78%;background:var(--certo)"></i></div>
+      <span class="small muted">ilustração do painel</span>
+    </div>
+  </div>
+</section>
+
+<section class="pub-secao">
+  <span class="rotulo">Dentro da sala</span>
+  <h2>O professor manda o material. O aluno recebe o plano.</h2>
+  <p class="sub">A escola usa o EstudeUp com os próprios alunos, turma por turma.</p>
+  <div class="pub-grade">
+    <div class="pub-item"><img class="adesivo " src="adesivos/turma.webp" alt=""><h3>Turma do professor</h3><p>O professor cria a turma e passa o código. Só ele coloca material; cada aluno ganha o seu plano.</p></div>
+    <div class="pub-item"><img class="adesivo " src="adesivos/calendario.webp" alt=""><h3>Plano até a prova</h3><p>Um plano dia a dia até a data da prova, começando pelos tópicos em que o aluno está mais fraco.</p></div>
+    <div class="pub-item"><img class="adesivo " src="adesivos/cerebro.webp" alt=""><h3>Resumo, quiz e flashcards</h3><p>Gerados a partir da foto do caderno, do PDF ou do texto que o professor mandar.</p></div>
+    <div class="pub-item"><img class="adesivo " src="adesivos/alvo.webp" alt=""><h3>Simulado ENEM e redação</h3><p>Questões oficiais do ENEM e correção de redação nas 5 competências.</p></div>
+    <div class="pub-item"><img class="adesivo " src="adesivos/grafico.webp" alt=""><h3>Painel da turma</h3><p>Onde a turma está fraca, quem sumiu e quem está em dia, sem planilha.</p></div>
+    <div class="pub-item"><img class="adesivo " src="adesivos/robo.webp" alt=""><h3>Tutor com foto</h3><p>O aluno manda a foto do exercício e recebe a explicação passo a passo.</p></div>
+  </div>
+</section>
+
+<section class="pub-secao">
+  <span class="rotulo">Fora da sala</span>
+  <h2>Uma vitrine pra quem está decidindo onde estudar.</h2>
+  <p class="sub">Página da escola e mural de oportunidades, abertos na internet e dentro do app.</p>
+  <div class="pub-grade">
+    <div class="pub-item"><img class="adesivo " src="adesivos/escola.webp" alt=""><h3>Página da escola</h3><p>Cursos, modalidades, endereço e contato, com um link pra divulgar onde quiser.</p></div>
+    <div class="pub-item"><img class="adesivo " src="adesivos/megafone.webp" alt=""><h3>Mural de oportunidades</h3><p>Matrículas abertas, bolsas, descontos, aulas experimentais e eventos, sempre com prazo.</p></div>
+    <div class="pub-item"><img class="adesivo " src="adesivos/balao.webp" alt=""><h3>Contato direto</h3><p>O botão abre o WhatsApp ou o site da escola, com uma mensagem pronta.</p></div>
+    <div class="pub-item"><img class="adesivo " src="adesivos/prancheta.webp" alt=""><h3>Números de interesse</h3><p>Visualizações da página e das oportunidades e cliques no contato, por período.</p></div>
+  </div>
+</section>
+
+<section class="pub-secao">
+  <span class="rotulo">Parceria</span>
+  <h2>Como funciona</h2>
+  <ol class="pub-passos">
+    <li><b>Você manda o contato</b><span>Pelo formulário aqui embaixo.</span></li>
+    <li><b>A gente apresenta</b><span>Uma conversa curta mostrando o EstudeUp na realidade da sua escola.</span></li>
+    <li><b>Cadastro e aprovação</b><span>A escola recebe o painel e os professores, um código pra criar as turmas.</span></li>
+    <li><b>No ar</b><span>Turmas estudando e a página da escola publicada, com as oportunidades aprovadas.</span></li>
+  </ol>
+</section>
+
+<section class="pub-secao">
+  <span class="rotulo">Planos</span>
+  <h2>Pra cada tamanho de escola</h2>
+  <p class="sub">Todos incluem as turmas no EstudeUp e a página da escola.</p>
+  <div class="pub-planos" id="planos"><div class="loading">carregando...</div></div>
+</section>
+
+<section class="pub-secao">
+  <span class="rotulo">Cuidado com os alunos</span>
+  <h2>Feito pra quem tem aluno menor de idade</h2>
+  <div class="pub-cuidados">
+    <div><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="icones.svg#i-selo"/></svg><span>A escola não recebe dados de quem vê a página ou as oportunidades. O contato parte do aluno ou da família.</span></div>
+    <div><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="icones.svg#i-selo"/></svg><span>Toda oportunidade passa por aprovação e aparece marcada como de instituição parceira.</span></div>
+    <div><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="icones.svg#i-selo"/></svg><span>Nada de propaganda no tutor de IA e nada de anúncio direcionado pelo comportamento do aluno.</span></div>
+    <div><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="icones.svg#i-selo"/></svg><span>Em público, o aluno aparece só com o primeiro nome e a inicial. Não existe mensagem privada entre alunos.</span></div>
+    <div><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="icones.svg#i-selo"/></svg><span>Bolsa e desconto só entram com as regras e condições informadas pela escola.</span></div>
+  </div>
+</section>
+
+<section class="pub-secao" id="contato">
+  <div class="pub-form-wrap">
+    <div>
+      <span class="rotulo" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--marca)">Contato</span>
+      <h2 style="margin:6px 0 10px;font-size:clamp(24px,5vw,34px)">Quero apresentar minha escola</h2>
+      <p class="muted" style="font-size:16.5px">Conta um pouco da sua instituição. A gente responde pelo WhatsApp ou pelo e-mail que você informar pra marcar a apresentação.</p>
+      <p class="muted small">O cadastro da escola só acontece depois dessa conversa e da aprovação.</p>
+      <a class="ghost-btn forte" style="width:auto;margin-top:6px" href="#" data-demo-link hidden><svg class="ico" style="width:18px;height:18px" aria-hidden="true"><use href="icones.svg#i-olho"/></svg>Ver uma escola de demonstração</a>
+    </div>
+    <div>
+      <form class="pub-form" id="form-interesse" novalidate>
+        <div class="row">
+          <div class="field"><label for="f-inst">nome da instituição</label><input id="f-inst" name="instituicao" maxlength="120" autocomplete="organization" required></div>
+          <div class="field"><label for="f-resp">seu nome</label><input id="f-resp" name="responsavel" maxlength="80" autocomplete="name" required></div>
+          <div class="field"><label for="f-email">e-mail profissional</label><input id="f-email" name="email" type="email" maxlength="160" autocomplete="email" required></div>
+          <div class="field"><label for="f-tel">telefone ou WhatsApp</label><input id="f-tel" name="telefone" type="tel" maxlength="20" autocomplete="tel" placeholder="(41) 99999-9999" required></div>
+          <div class="field"><label for="f-cidade">cidade</label><input id="f-cidade" name="cidade" maxlength="80" autocomplete="address-level2" required></div>
+          <div class="field"><label for="f-tipo">tipo de instituição</label>
+            <select id="f-tipo" name="tipo" required><option value="">escolhe</option><option value="escola">Escola</option><option value="cursinho">Cursinho / pré-vestibular</option>
+            <option value="idiomas">Escola de idiomas</option><option value="profissionalizante">Curso profissionalizante</option><option value="faculdade">Faculdade</option>
+            <option value="reforco">Reforço escolar</option><option value="outro">Outro</option></select></div>
+        </div>
+        <div class="field"><label for="f-msg">mensagem <span class="opt">(opcional)</span></label><textarea id="f-msg" name="mensagem" maxlength="1000" style="min-height:96px" placeholder="quantos alunos, quais séries, o que mais interessa"></textarea></div>
+        <div class="escondido" aria-hidden="true"><label for="f-site">site</label><input id="f-site" name="site_url" tabindex="-1" autocomplete="off"></div>
+        <label class="consent"><input type="checkbox" name="consentimento" id="f-consent"><span id="texto-consentimento">Autorizo o EstudeUp a usar estes dados só para responder a esta solicitação e apresentar a parceria.</span></label>
+        <p class="small" style="margin:-8px 0 14px"><a href="privacidade.html" style="color:var(--marca);font-weight:800">Aviso de privacidade</a></p>
+        <p class="aviso-moderacao" id="form-erro" role="alert" hidden></p>
+        <button class="btn coral" id="btn-interesse" type="submit" style="width:100%"><svg class="ico" style="width:18px;height:18px" aria-hidden="true"><use href="icones.svg#i-enviar"/></svg>Quero ser escola parceira</button>
+      </form>
+      <div class="pub-ok" id="form-ok" hidden role="status">
+        <img class="adesivo " src="adesivos/festa.webp" alt="">
+        <h3>Recebemos seu contato!</h3>
+        <p class="muted">A gente vai falar com você pelo WhatsApp ou pelo e-mail informado pra marcar a apresentação.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<a class="pub-zap" id="pub-zap" href="#" target="_blank" rel="noopener" hidden><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="icones.svg#i-whatsapp"/></svg>Falar no WhatsApp</a>
+
+</main>
+<footer class="pub-rodape">
+  <p><b>EstudeUp</b> · Seu próximo nível começa aqui.</p>
+  <p><a href="oportunidades.html">Oportunidades</a> · <a href="escolas.html">Para escolas</a> · <a href="privacidade.html">Aviso de privacidade</a> · <a href="./">Entrar no app</a></p>
+  <p>© 2026 Diogo Soares · DDS Inovação</p>
+</footer>
+<canvas id="fx-canvas" aria-hidden="true"></canvas>
+<div class="dlg" id="dlg" hidden>
+  <div class="bilhete" role="alertdialog" aria-modal="true" aria-describedby="dlg-texto">
+    <p id="dlg-texto"></p>
+    <div class="field" id="dlg-campo-wrap" hidden><textarea id="dlg-campo" rows="3" style="min-height:90px"></textarea></div>
+    <div class="dlg-botoes"><button class="btn ghost" id="dlg-nao">Cancelar</button><button class="btn coral" id="dlg-ok">OK</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="config.js?v=10"></script>
+<script src="efeitos.js?v=10"></script>
+<script src="vitrine.js?v=10"></script>
+<script src="publico.js?v=10"></script>
+</body>
+</html>

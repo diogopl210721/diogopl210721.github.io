@@ -1,4 +1,4 @@
-/* Estude+ — tutor de IA: foto do exercício vira resolução passo a passo; uma conversa por dúvida, separada por matéria. */
+/* EstudeUp — tutor de IA: foto do exercício vira resolução passo a passo; uma conversa por dúvida, separada por matéria. */
 
 const tut = { conversaId: null, materia: null, foto: null, enviando: false, titulo: null };
 const MATERIAS_TUTOR = ['Matemática', 'Física', 'Química', 'Biologia', 'Português', 'Redação', 'História', 'Geografia', 'Inglês', 'Outra'];

@@ -1,8 +1,7 @@
-/* Estude+
+/* EstudeUp
    Front estático (GitHub Pages) + Supabase. Regras de XP, plano, revisão e simulado ficam no banco (rpc). */
 
-const SUPABASE_URL = 'https://arffptuclrrzuzdrcmuc.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyZmZwdHVjbHJyenV6ZHJjbXVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MTcxMDAsImV4cCI6MjEwMTI5MzEwMH0.n3AqYrMwv2ayVa4la6vesVJOfd_LkdmY-ikp8P8uFAg';
+// SUPABASE_URL e SUPABASE_KEY vêm de config.js (as páginas públicas usam o mesmo arquivo)
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const LIMITE_ENERGIA = 7;
@@ -138,10 +137,12 @@ const NAV_DE = {
   tutor: 'tutor', 'tutor-chat': 'tutor',
   biblioteca: 'biblioteca', resumo: 'biblioteca', publicar: 'biblioteca', autor: 'biblioteca',
   comunidade: 'comunidade', sala: 'comunidade', grupos: 'comunidade', painel: 'comunidade', criador: 'home',
+  oportunidades: 'home', escola: 'home', 'minha-escola': 'home', comercial: 'home',
 };
 const LADO_DE = {
   ...NAV_DE, enem: 'enem', simulado: 'enem', 'simulado-fim': 'enem', redacao: 'enem',
   liga: 'liga', grupos: 'grupos', painel: 'grupos', perfil: 'perfil', criador: 'criador',
+  oportunidades: 'oportunidades', escola: 'oportunidades', 'minha-escola': 'minha-escola', comercial: 'criador',
 };
 const SEM_NAV = ['login', 'cadastro', 'recuperar', 'codigo'];
 const TELAS_CHAT = ['tutor-chat', 'sala'];
@@ -158,6 +159,7 @@ const NIVEL_TELA = {
   enem: 1, liga: 1, grupos: 1, perfil: 1, criador: 2, materia: 1, 'tutor-chat': 1, resumo: 1, sala: 1,
   upload: 2, quiz: 2, cards: 2, publicar: 2, autor: 2, simulado: 2, redacao: 2, painel: 2,
   pronto: 3, 'quiz-fim': 3, 'cards-fim': 3, 'simulado-fim': 3,
+  oportunidades: 1, escola: 2, 'minha-escola': 1, comercial: 3,
 };
 
 function go(nome, opts = {}) {
@@ -353,7 +355,7 @@ async function buscarPerguntaSeguranca() {
     const r = await resp.json();
     if (!resp.ok) {
       throw new Error(/pergunta de segurança/.test(r.error || '')
-        ? 'Essa conta não tem pergunta de segurança. Fala com a equipe do Estude+ (ou com seu professor, que avisa a gente): a gente cria uma senha provisória pra você e depois você troca em Perfil.'
+        ? 'Essa conta não tem pergunta de segurança. Fala com a equipe do EstudeUp (ou com seu professor, que avisa a gente): a gente cria uma senha provisória pra você e depois você troca em Perfil.'
         : (r.error || 'não achei essa conta'));
     }
     $('label-pergunta-mostrada').textContent = r.pergunta;
@@ -433,6 +435,7 @@ async function carregarHoje() {
     renderTarefasHoje(r);
     pintarAvatarHome();
     if (typeof carregarHomeBiblio === 'function') { carregarHomeBiblio(); contarNaoLidas(); }
+    if (typeof carregarHomeOportunidades === 'function') carregarHomeOportunidades();
 
     const pend = r.cards_pendentes || 0;
     const novos = Math.min(r.cards_novos || 0, 20);
@@ -893,7 +896,8 @@ function novaMateria(opts = {}) {
   u.grupoNome = opts.grupoNome || null;
   u.materiaAlvo = opts.materiaId || null;
   u.foto = null; u.pdf = null;
-  ['input-materia', 'input-data-prova', 'input-youtube', 'input-link', 'input-texto'].forEach((id) => { $(id).value = ''; });
+  ['input-materia', 'input-data-prova', 'input-youtube', 'input-youtube-transcricao', 'input-link', 'input-texto'].forEach((id) => { $(id).value = ''; });
+  $('yt-dica').open = false;
   $('input-data-prova').min = hojeISO();
   $('foto-placeholder').style.display = 'flex';
   $('foto-preview').style.display = 'none';
@@ -976,7 +980,12 @@ function payloadDaFonte() {
     if (t.length < 80) throw new Error('cola um texto um pouco maior (pelo menos umas 2 linhas)');
     return { tipo_fonte: 'texto', texto: t };
   }
-  if (u.fonte === 'youtube') { const url = $('input-youtube').value.trim(); if (!url) throw new Error('cola o link do vídeo'); return { tipo_fonte: 'youtube', url }; }
+  if (u.fonte === 'youtube') {
+    const url = $('input-youtube').value.trim();
+    const transcricao = $('input-youtube-transcricao').value.trim();
+    if (!url && transcricao.length < 80) throw new Error('cola o link do vídeo (ou a transcrição dele)');
+    return transcricao.length >= 80 ? { tipo_fonte: 'youtube', url: url || null, texto: transcricao } : { tipo_fonte: 'youtube', url };
+  }
   const url = $('input-link').value.trim();
   if (!url) throw new Error('cola o link do site');
   return { tipo_fonte: 'link', url };
@@ -1030,6 +1039,17 @@ async function criarJornada() {
   } catch (err) {
     await Fx.gerandoFim(false);
     if (criadaAgora && materiaId) await sb.from('be_materias').delete().eq('id', materiaId);
+    // vídeo bloqueado pelo YouTube: abre o campo da transcrição; site que não deixa ler: oferece a aba Texto
+    if (u.fonte === 'youtube' && /transcri/i.test(err.message || '')) {
+      avisar(err.message);
+      $('yt-dica').open = true;
+      setTimeout(() => $('input-youtube-transcricao').focus(), 300);
+      return;
+    }
+    if (u.fonte === 'link' && /aba Texto/.test(err.message || '')) {
+      if (await confirmar(err.message, { sim: 'Abrir a aba Texto', nao: 'Fechar' })) { setSource('texto'); $('input-texto').focus(); }
+      return;
+    }
     falhou(err, 'Não consegui gerar o conteúdo');
   } finally { pronto(); }
 }
@@ -1545,6 +1565,7 @@ function gerarCodigo() {
 async function verGrupos() {
   go('grupos');
   $('criar-tipo').hidden = !estado.criador;
+  if (typeof prepararEscolaDoGrupo === 'function') prepararEscolaDoGrupo();
   const lista = $('lista-grupos');
   let grupos;
   try { grupos = await rpc('be_meus_grupos'); } catch (err) { lista.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
@@ -1579,9 +1600,11 @@ async function criarGrupoReal() {
   if (!nome) return avisar('dá um nome pro grupo');
   const pronto = ocupado($('btn-criar-grupo'), 'Criando...');
   try {
-    const tipo = tipoGrupoNovo();
+    // turma da escola: o banco confere se a pessoa é mesmo professor ou gestor dela
+    const escola = $('criar-escola').hidden ? '' : $('input-escola-grupo').value;
+    const tipo = escola ? 'turma_professor' : tipoGrupoNovo();
     const codigo = gerarCodigo();
-    const { data: g, error } = await sb.from('be_grupos').insert({ nome, materia, tipo, dono_id: estado.usuarioId, codigo }).select('id').single();
+    const { data: g, error } = await sb.from('be_grupos').insert({ nome, materia, tipo, dono_id: estado.usuarioId, codigo, ...(escola ? { instituicao_id: escola } : {}) }).select('id').single();
     if (error) throw error;
     const { error: e2 } = await sb.from('be_grupo_membros').insert({ grupo_id: g.id, usuario_id: estado.usuarioId, papel_no_grupo: 'admin' });
     if (e2) throw e2;
@@ -1676,8 +1699,9 @@ async function verPerfil() {
   const { data: u, error } = await sb.from('be_usuarios').select('*').eq('id', estado.usuarioId).single();
   if (error || !u) return;
   $('perfil-nome').textContent = u.nome;
-  $('perfil-meta').textContent = `nível ${u.nivel} · ${estado.criador ? 'criador do Estude+' : u.papel === 'professor' ? 'professor(a)' : (u.serie || 'aluno(a)')}${u.escola ? ' · ' + u.escola : ''}`;
+  $('perfil-meta').textContent = `nível ${u.nivel} · ${estado.criador ? 'criador do EstudeUp' : u.papel === 'professor' ? 'professor(a)' : (u.serie || 'aluno(a)')}${u.escola ? ' · ' + u.escola : ''}`;
   $('perfil-criador').hidden = !estado.criador;
+  if (typeof carregarEscolasPerfil === 'function') carregarEscolasPerfil();
   pintarAvatar($('perfil-avatar'), u);
   pintarAvatar($('perfil-avatar-preview'), u);
   $('perfil-xp').textContent = u.xp + ' XP, nível ' + u.nivel;
@@ -1800,7 +1824,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   pedidoInstalacao = e;
   $('install-wrap').innerHTML = `<div class="install-banner"><span style="font-size:22px;">📲</span>
-    <span class="t">Instala o Estude+ na tela inicial pra abrir direto e não perder a sequência.</span>
+    <span class="t">Instala o EstudeUp na tela inicial pra abrir direto e não perder a sequência.</span>
     <button onclick="instalarApp()">instalar</button></div>`;
 });
 async function instalarApp() {
@@ -1821,6 +1845,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     try {
       await criarPerfilSeNaoExistir(data.session.user);
       await carregarCriador();
+      if (typeof carregarMinhasEscolas === 'function') carregarMinhasEscolas();
       verHoje();
     } catch (err) {
       falhou(err, 'Não consegui carregar sua conta');

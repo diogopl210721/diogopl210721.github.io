@@ -1,4 +1,4 @@
-/* Estude+ — conta do criador (master): números do app e moderação.
+/* EstudeUp — conta do criador (master): números do app e moderação.
    Quem é criador fica marcado no banco (be_criadores, sem acesso pelo app); cada ação aqui passa por uma função
    que confere isso de novo. Moderar nunca apaga: esconde ou libera. */
 
@@ -11,7 +11,7 @@ function nomeDe(id) { return NOMES[id] || 'essa pessoa'; }
 
 const fmtN = (n) => Number(n || 0).toLocaleString('pt-BR');
 const dataHoraBR = (iso) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-const selo = (a) => (a && a.equipe ? '<em class="selo-equipe">equipe Estude+</em>' : '');
+const selo = (a) => (a && a.equipe ? '<em class="selo-equipe">equipe EstudeUp</em>' : '');
 
 async function carregarCriador() {
   try { estado.criador = (await rpc('be_sou_criador')) === true; } catch (_) { estado.criador = false; }
@@ -26,6 +26,7 @@ async function verCriador() {
   let d;
   try { d = await rpc('be_painel_criador'); } catch (err) { $('criador-numeros').innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
   cri.dados = d;
+  if (typeof pintarAtalhoComercial === 'function') pintarAtalhoComercial(d.comercial);
   pintarNumeros(d.numeros, d.fila_resumos.length + d.fila_mensagens.length);
   pintarFila();
   pintarSilenciados();
@@ -177,7 +178,7 @@ function pintarContas() {
   const lista = cri.contas || [];
   $('criador-contas').innerHTML = lista.length ? lista.map((c) => {
     lembrarNome(c.id, c.nome);
-    const quem = c.equipe ? 'equipe Estude+' : c.papel === 'professor' ? 'professor(a)' : (c.serie || 'aluno(a)');
+    const quem = c.equipe ? 'equipe EstudeUp' : c.papel === 'professor' ? 'professor(a)' : (c.serie || 'aluno(a)');
     const visto = c.ultima_atividade ? `estudou ${rotuloDia(String(c.ultima_atividade).slice(0, 10)).toLowerCase()}` : 'ainda não estudou';
     return `<div class="fila-item">
       <div class="topo"><h4 onclick="abrirAutor('${c.id}')">${esc(c.nome)}</h4>${c.silenciado_ate ? '<span class="tag">silenciado</span>' : ''}</div>

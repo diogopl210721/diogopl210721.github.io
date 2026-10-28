@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Aviso de privacidade · EstudeUp</title>
+<meta name="description" content="Como o EstudeUp usa os dados de alunos, professores e escolas parceiras.">
+<meta property="og:title" content="Aviso de privacidade · EstudeUp">
+<meta property="og:description" content="Como o EstudeUp usa os dados de alunos, professores e escolas parceiras.">
+<meta name="theme-color" content="#F4F6FB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1230" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fontes/unbounded.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fontes/atkinson-next.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+  try {
+    var t = localStorage.getItem('estude-tema');
+    if (t === 'caderno') t = 'claro'; if (t === 'lousa') t = 'escuro';
+    if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="styles.css?v=10">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="pub" data-pagina="privacidade">
+<header class="pub-topo">
+  <a class="brand" href="escolas.html" aria-label="EstudeUp para escolas"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></a>
+  <nav aria-label="páginas">
+    <a href="oportunidades.html" class="">Oportunidades</a>
+    <a href="escolas.html" class="so-largo">Para escolas</a>
+    <a href="./" class="">Entrar no app</a>
+  </nav>
+</header>
+<main class="pub-conteudo">
+
+<article class="texto-legal" style="max-width:760px">
+  <h1 style="font-size:clamp(26px,6vw,36px)">Aviso de privacidade</h1>
+  <p class="muted">Como o EstudeUp usa os dados de quem estuda, de quem ensina e das escolas parceiras. Atualizado em outubro de 2026.</p>
+  <h2>Quem cuida dos dados</h2>
+  <p>O EstudeUp é um app de estudo mantido pela DDS Inovação. Fale com a gente <span id="contato-dados">pelos canais de atendimento</span>.</p>
+  <h2>O que usamos e pra quê</h2>
+  <ul>
+    <li><b>Conta:</b> nome, e-mail e senha (a senha fica com o serviço de login, não com a gente em texto). Escola, cidade e série são opcionais. Servem pra criar a sua conta e montar o seu plano de estudo.</li>
+    <li><b>Estudo:</b> o material que você manda (foto, PDF, texto, link), suas respostas, flashcards, plano e XP. Servem pra o app funcionar. O material é processado por um serviço de inteligência artificial pra gerar resumo, quiz e flashcards.</li>
+    <li><b>Biblioteca e comunidade:</b> o que você publica aparece pra outros alunos só com o seu primeiro nome e a inicial do sobrenome. Passa por filtro (sem link, telefone ou rede social) e por moderação.</li>
+    <li><b>Turmas:</b> o professor vê o progresso dos alunos da turma dele (o aluno entra na turma pelo código que o professor passa). A escola vê só números da turma, sem lista de nomes.</li>
+    <li><b>Vitrine das escolas:</b> contamos visualizações e cliques com um número aleatório guardado no seu navegador, sem nome. A escola vê só quantas vezes a página e as oportunidades foram vistas.</li>
+    <li><b>Formulário "Para escolas":</b> os dados de quem representa a instituição, usados só pra responder a solicitação.</li>
+  </ul>
+  <h2>Crianças e adolescentes</h2>
+  <p>Muitos alunos são menores de idade. Por isso: não existe mensagem privada entre alunos; não fazemos anúncio direcionado pelo comportamento de ninguém; as oportunidades das escolas aparecem marcadas como de instituição parceira e nunca dentro do tutor; e o contato com uma escola só acontece se o aluno ou a família decidir. Recomendamos que menores combinem com os responsáveis antes de falar com uma escola.</p>
+  <h2>Com quem os dados são compartilhados</h2>
+  <p>Só com os serviços necessários pra o app funcionar: o banco de dados e o login (Supabase), a inteligência artificial que gera o conteúdo de estudo (Anthropic) e a hospedagem do site (GitHub Pages). Não vendemos dados.</p>
+  <h2>Seus direitos</h2>
+  <p>Você pode pedir pra ver, corrigir ou apagar seus dados, e tirar uma autorização que deu. É só falar com a gente pelos canais acima.</p>
+</article>
+
+</main>
+<footer class="pub-rodape">
+  <p><b>EstudeUp</b> · Seu próximo nível começa aqui.</p>
+  <p><a href="oportunidades.html">Oportunidades</a> · <a href="escolas.html">Para escolas</a> · <a href="privacidade.html">Aviso de privacidade</a> · <a href="./">Entrar no app</a></p>
+  <p>© 2026 Diogo Soares · DDS Inovação</p>
+</footer>
+<canvas id="fx-canvas" aria-hidden="true"></canvas>
+<div class="dlg" id="dlg" hidden>
+  <div class="bilhete" role="alertdialog" aria-modal="true" aria-describedby="dlg-texto">
+    <p id="dlg-texto"></p>
+    <div class="field" id="dlg-campo-wrap" hidden><textarea id="dlg-campo" rows="3" style="min-height:90px"></textarea></div>
+    <div class="dlg-botoes"><button class="btn ghost" id="dlg-nao">Cancelar</button><button class="btn coral" id="dlg-ok">OK</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="config.js?v=10"></script>
+<script src="efeitos.js?v=10"></script>
+<script src="vitrine.js?v=10"></script>
+<script src="publico.js?v=10"></script>
+</body>
+</html>

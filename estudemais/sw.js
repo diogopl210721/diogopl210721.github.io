@@ -1,8 +1,8 @@
-// Estude+ — cache simples do app (rede primeiro, cache se estiver offline). Nunca guarda chamadas ao Supabase.
-const VERSAO = 'estude-v9';
-const ARQUIVOS = ['./', 'index.html', 'styles.css?v=9', 'efeitos.js?v=9', 'app.js?v=9', 'voz.js?v=9', 'biblioteca.js?v=9', 'tutor.js?v=9', 'comunidade.js?v=9', 'criador.js?v=9',
+// EstudeUp — cache simples do app (rede primeiro, cache se estiver offline). Nunca guarda chamadas ao Supabase.
+const VERSAO = 'estudeup-v10';
+const ARQUIVOS = ['./', 'index.html', 'styles.css?v=10', 'efeitos.js?v=10', 'app.js?v=10', 'voz.js?v=10', 'biblioteca.js?v=10', 'tutor.js?v=10', 'comunidade.js?v=10', 'criador.js?v=10', 'config.js?v=10', 'vitrine.js?v=10', 'escolas.js?v=10',
   'fontes/unbounded.woff2', 'fontes/atkinson-next.woff2', 'fontes/atkinson-next-italic.woff2', 'adesivos/fogo.webp', 'adesivos/caderno.webp', 'adesivos/fichas.webp', 'adesivos/capelo.webp', 'adesivos/lapis.webp', 'adesivos/trofeu.webp', 'adesivos/escola.webp', 'adesivos/camera.webp', 'adesivos/medalha3.webp',
-  'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'];
+  'favicon.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'marca/simbolo-256.webp', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));

@@ -1,4 +1,4 @@
-/* Estude+ — voz: responder flashcard falando, ditar pro tutor e ouvir resumos (tudo do próprio navegador). */
+/* EstudeUp — voz: responder flashcard falando, ditar pro tutor e ouvir resumos (tudo do próprio navegador). */
 
 const Voz = (() => {
   const Reconhecedor = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -27,7 +27,7 @@ const Voz = (() => {
     rec.onerror = (e) => {
       falhou = true;
       const msg = e.error === 'not-allowed' || e.error === 'service-not-allowed'
-        ? 'libera o microfone pro Estude+ nas configurações do navegador'
+        ? 'libera o microfone pro EstudeUp nas configurações do navegador'
         : e.error === 'no-speech' ? 'não ouvi nada, tenta de novo' : 'não deu pra ouvir agora, tenta de novo';
       if (onErro) onErro(new Error(msg));
     };

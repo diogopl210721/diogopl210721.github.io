@@ -1,4 +1,4 @@
-/* Estude+ — biblioteca de resumos feitos por alunos: busca, curtidas, salvos, seguir autor e publicar (com moderação). */
+/* EstudeUp — biblioteca de resumos feitos por alunos: busca, curtidas, salvos, seguir autor e publicar (com moderação). */
 
 const bib = { ordem: 'populares', offset: 0, timer: null, atual: null, materiasCarregadas: false, publicar: { cor: 'azul', cartoes: [], materiaId: null, voltar: null } };
 const CORES_RESUMO = ['azul', 'verde', 'rosa', 'laranja', 'roxo', 'amarelo'];
@@ -285,7 +285,7 @@ async function abrirAutor(id, { voltando = false } = {}) {
   alvo.innerHTML = `<div class="perfil-publico">
       <div class="big-avatar">${esc(p.iniciais)}</div>
       <h1>${esc(p.nome)}</h1>
-      <span class="hand">nível ${p.nivel} · ${div[0]} ${div[1]}${p.equipe ? ' · equipe Estude+' : p.professor ? ' · professor(a)' : p.serie ? ' · ' + esc(p.serie) : ''}</span>
+      <span class="hand">nível ${p.nivel} · ${div[0]} ${div[1]}${p.equipe ? ' · equipe EstudeUp' : p.professor ? ' · professor(a)' : p.serie ? ' · ' + esc(p.serie) : ''}</span>
       <div class="numeros"><div><b>${resumos.length}</b><span>resumos</span></div><div><b>${p.seguidores}</b><span>seguidores</span></div><div><b>${p.curtidas_recebidas}</b><span>curtidas</span></div></div>
       ${p.eh_eu ? '<p class="small muted">É assim que os outros veem seu perfil.</p>' : `<div class="perfil-acoes">
         <button class="seguir-btn ${p.eu_sigo ? 'seguindo' : ''}" onclick="seguirAutor('${p.id}', this)">${p.eu_sigo ? 'Seguindo' : 'Seguir'}</button>
