@@ -15,10 +15,11 @@ import {dosesForm,loadDoses} from './remedios.js';
 import {signaturePadHtml,bindSignaturePad} from './assinatura.js';
 import {diaryForm,bindDiary,loadDiaries} from './diario.js';
 import {mealsForm,bindMeals,submitMealsDay,loadMealsList,MEAL_LABEL} from './refeicoes.js';
+import {passwordProblem,provisionalPassword,credentialsBox,bindMyPassword,showTempNotice,closePasswordDialog} from './senha.js';
 const db=createClient('https://kwadhzmdaakxkztggigm.supabase.co','sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM',{auth:{autoRefreshToken:true,persistSession:true}});
 const el=id=>document.getElementById(id);
 let member=null,user=null,stays=[],view='dashboard',moduleFilter='all',openTrips=[],lastMetrics=null;
-let monitorPreview=false,originalAdminMember=null,admissionPad=null;
+let monitorPreview=false,originalAdminMember=null,admissionPad=null,freshLoginAt=0;
 // Quem vê o quê. Para mudar o acesso de um perfil, altere só estas duas listas
 // (o banco aplica as mesmas regras; a tela apenas esconde o que não está liberado).
 const ADMIN_ONLY=['history','stats','contributions','monitors','documents','evolution','cash','audit','diagnostic','backup'];
@@ -53,8 +54,10 @@ function friendlyError(e){
 function field(label,id,type='text',required=true,value=''){return '<label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+type+'" '+(required?'required':'')+' value="'+esc(value)+'">'}
 function stayOptions(){return stays.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.crl_residents?.full_name||'Acolhido')+'</option>').join('')}
 function authenticated(){return Boolean(member?.active!==false && member?.institution_id && user?.id)}
-async function signOut(){await db.auth.signOut();monitorPreview=false;originalAdminMember=null;member=null;user=null;stays=[];el('appPanel').classList.add('hide');el('loginPanel').classList.remove('hide');el('password').value=''}
+async function signOut(){await db.auth.signOut();closePasswordDialog();showTempNotice(false);freshLoginAt=0;monitorPreview=false;originalAdminMember=null;member=null;user=null;stays=[];el('appPanel').classList.add('hide');el('loginPanel').classList.remove('hide');el('password').value=''}
 el('logout').onclick=signOut;
+// Minha senha: logo após entrar não pede a senha atual (por 15 min); depois pede.
+bindMyPassword({db,getUser:()=>user,isFresh:()=>Date.now()-freshLoginAt<15*60000,isPreview:()=>monitorPreview,onChanged:u=>{if(u)user=u},status});
 
 async function toggleMonitorPreview(){
  if(!authenticated()||(!monitorPreview&&member.role!=='admin'))return;
@@ -85,6 +88,7 @@ async function init(){
  const m=await db.from('crl_members').select('institution_id,display_name,role,active,monitor_vinculo').eq('auth_user_id',current.id).eq('active',true).maybeSingle();
  if(m.error||!m.data){await signOut();el('loginMessage').textContent='Conta não habilitada para a CRL. Procure o ADM.';return}
  user=current;member=m.data;monitorPreview=false;originalAdminMember=null;
+ showTempNotice(current.user_metadata?.temp_password===true);
  el('appPanel').classList.remove('monitor-preview');el('monitorPreviewNotice').classList.add('hide');
  el('monitorPreviewButton').style.display=member.role==='admin'?'':'none';
  el('monitorPreviewButton').textContent='Ver tela do monitor';
@@ -105,7 +109,7 @@ el('loginForm').onsubmit=async e=>{
  try{
  const r=await db.auth.signInWithPassword({email:username+'@crl.ddsinovacao.com.br',password:el('password').value});
  if(r.error){el('loginMessage').textContent='Usuário ou senha inválidos.';return}
- el('loginMessage').textContent='';await init();
+ freshLoginAt=Date.now();el('loginMessage').textContent='';await init();
  }finally{el('loginButton').disabled=false}
 };
 async function refresh(){
@@ -150,7 +154,7 @@ function draw(){
  backup:backupForm(),
  stock:operationsForm('stock',member),
  cash:operationsForm('cash',member),
- monitors:'<div id="monitorQuickCard"><h3>Acesso rápido: Diogo (voluntário)</h3><p>Um toque cria o acesso do monitor e gera uma senha forte para você copiar. O administrador ativa e gerencia os acessos dos monitores.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p><div id="monitorCreatedCredentials" role="status"></div></div><h2>Cadastrar monitor</h2><p class="muted">Escolha Aluno (vinculado ao cadastro do acolhido), Voluntário ou Contratado (com salário mensal). Todos terão perfil de acesso Monitor. A senha curta informada anteriormente não atende à política do sistema.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" placeholder="Ex.: João da Silva" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><div id="monitorStudentBox" style="display:none"><label>Aluno existente</label><select id="monitorResident">'+stays.map(st=>'<option value="'+st.crl_residents?.id+'">'+esc(st.crl_residents?.full_name||'')+'</option>').join('')+'</select></div><div id="monitorSalaryBox" style="display:none"><label>Salário mensal (R$)</label><input id="monitorSalary" type="number" min="0.01" step="0.01"></div><label>Telefone</label><input id="monitorPhone" type="tel" maxlength="40"><label>Usuário para login</label><input id="monitorUsername" type="text" placeholder="Ex.: joao" pattern="[a-z][a-z0-9._-]{2,39}" maxlength="40" autocapitalize="none" required><p class="muted">Só letras minúsculas, sem acento e sem espaço. Cada monitor precisa de um usuário diferente.</p><label>Senha inicial</label><input id="monitorPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input id="monitorConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><p class="muted">Use 12 ou mais caracteres, com maiúscula, minúscula, número e símbolo.</p><button type="button" id="generateMonitorPassword" class="secondary">Gerar senha forte</button><button type="submit">Cadastrar monitor</button><p id="monitorGeneratedHint" class="muted" role="status"></p></form>',
+ monitors:'<div id="monitorCredBox"></div><div id="monitorQuickCard"><h3>Acesso rápido: Diogo (voluntário)</h3><p>Um toque cria o acesso do monitor Diogo com uma senha provisória para você passar a ele.</p><label for="quickMonitorVinculo">Vínculo do monitor</label><select id="quickMonitorVinculo"><option value="voluntario">Voluntário</option></select><button id="activateDiogo" type="button">Ativar monitor Diogo</button><p id="monitorQuickStatus" role="status"></p></div><h2>Cadastrar monitor</h2><p class="muted">Escolha Aluno (vinculado ao cadastro do acolhido), Voluntário ou Contratado (com salário mensal). O sistema já sugere uma <b>senha provisória</b>: passe o usuário e a senha para a pessoa; no primeiro acesso ela pode criar a própria senha. A senha do ADM se troca no botão 🔑 Minha senha, no topo.</p><form id="dataForm"><label>Nome completo</label><input id="monitorName" type="text" maxlength="120" placeholder="Ex.: João da Silva" required><label>Vínculo</label><select id="monitorVinculo" required><option value="voluntario">Voluntário</option><option value="aluno">Aluno</option><option value="contratado">Contratado</option></select><div id="monitorStudentBox" style="display:none"><label>Aluno existente</label><select id="monitorResident">'+stays.map(st=>'<option value="'+st.crl_residents?.id+'">'+esc(st.crl_residents?.full_name||'')+'</option>').join('')+'</select></div><div id="monitorSalaryBox" style="display:none"><label>Salário mensal (R$)</label><input id="monitorSalary" type="number" min="0.01" step="0.01"></div><label>Telefone</label><input id="monitorPhone" type="tel" maxlength="40"><label>Usuário para login</label><input id="monitorUsername" type="text" placeholder="Ex.: joao" pattern="[a-z][a-z0-9._\\-]{2,39}" maxlength="40" autocapitalize="none" required><p class="muted">Só letras minúsculas, sem acento e sem espaço. Cada monitor precisa de um usuário diferente.</p><label for="monitorPassword">Senha provisória</label><div class="pw-row"><input id="monitorPassword" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="72" required><button type="button" id="generateMonitorPassword" class="secondary">🎲 Gerar outra</button></div><p class="muted">Pode trocar por outra, se quiser: mínimo 8 caracteres, com letras e números.</p><button type="submit">Cadastrar e mostrar o acesso</button></form>',
  contributions:'<h2>Nova contribuição (ADM)</h2><form id="dataForm"><label>Acolhido ativo</label><select id="stay" required>'+stayOptions()+'</select>'+field('Valor do mês em reais — 0 para vaga G5','amount','number')+field('Vencimento','dueDate','date',true,localTime().slice(0,10))+'<p class="muted">O valor será dividido por 30 para calcular a diária administrativa.</p><button '+(!stays.length?'disabled':'')+'>Registrar contribuição</button></form>',
  stats:'<h2>Indicadores gerais (ADM)</h2><form id="dataForm"><label>Mês</label><select id="month">'+Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'" '+(i===new Date().getMonth()?'selected':'')+'>'+['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]+'</option>').join('')+'</select>'+field('Ano','year','number',true,new Date().getFullYear())+'<button>Consultar dashboard</button></form>'
  };
@@ -184,16 +188,16 @@ function draw(){
    if(member?.role!=='admin'||monitorPreview)return;
    if(el('quickMonitorVinculo').value!=='voluntario'){status('Para aluno ou contratado, use o cadastro completo abaixo.',true);return}
    if(!confirm('Ativar Diogo como monitor voluntário?'))return;
-   const password=makeSecureMonitorPassword();
+   const password=provisionalPassword();
    activate.disabled=true;
    el('monitorQuickStatus').textContent='Criando usuário monitor no Supabase...';
    try{
     const r=await adminMonitors({action:'create',username:'diogo',display_name:'Diogo',monitor_vinculo:el('quickMonitorVinculo').value,password});
     if(!r.success)throw Error('O servidor não confirmou a criação do usuário.');
-    showMonitorCredentials('diogo',password);
+    showMonitorCredentials('diogo',password,'Monitor Diogo ativado');
     activate.textContent='Monitor Diogo ativado';
-    el('monitorQuickStatus').textContent='Monitor criado. Copie a senha antes de sair desta tela.';
-    status('Usuário diogo ativado! Copie e guarde a senha gerada.');
+    el('monitorQuickStatus').textContent='Monitor criado. Copie o acesso antes de sair desta tela.';
+    status('Usuário diogo ativado! Copie o acesso e passe a ele.');
     await loadMonitors();
    }catch(e){
     el('monitorQuickStatus').textContent=e.message||'Falha na ativação';
@@ -201,13 +205,8 @@ function draw(){
     activate.disabled=false;
    }
   };
-  el('generateMonitorPassword').onclick=()=>{
-   const generated=makeSecureMonitorPassword();
-   el('monitorPassword').value=generated;
-   el('monitorConfirm').value=generated;
-   el('monitorPassword').type='text';
-   el('monitorGeneratedHint').textContent='Senha forte gerada somente neste navegador. Copie e guarde antes de cadastrar; ela não será mostrada novamente.';
-  };
+  el('monitorPassword').value=provisionalPassword();
+  el('generateMonitorPassword').onclick=()=>{el('monitorPassword').value=provisionalPassword()};
  }
 
  el('listTitle').textContent=({backup:'Backups realizados',diagnostic:'Verificação de conexões',audit:'Eventos de auditoria',stock:'Estoque do mês',cash:'Extrato do caixa',evolution:'Relatórios de evolução',medications:'Medicamentos e receitas',doses:'Remédios por horário',diary:'Diários recentes',resocialization:'Ressocialização',profile:'Prontuário do acolhido',documents:'Declarações emitidas',tasks:'Como está a semana',monitors:'Monitores cadastrados',history:'Resultados da busca',files:'Arquivos recentes',students:'Acolhidos ativos',contributions:'Contribuições e pagamentos',notes:'Registros recentes',trips:'Viagens e quilômetros',devotionals:'Devocionais realizadas',meals:'Refeições por dia',stats:'Resumo do período'})[view];
@@ -468,30 +467,11 @@ async function uploadAttachment(){
 }
 
 
-const passwordStrong=s=>s.length>=12&&s.length<=128&&/[a-z]/.test(s)&&/[A-Z]/.test(s)&&/\d/.test(s)&&/[^A-Za-z0-9]/.test(s);
-function makeSecureMonitorPassword(){
- const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*-_';
- const random=new Uint32Array(20);
- crypto.getRandomValues(random);
- return 'Aa7!'+Array.from(random,x=>alphabet[x%alphabet.length]).join('');
-}
-function showMonitorCredentials(username,password){
- const root=el('monitorCreatedCredentials');
- if(!root)return;
- root.replaceChildren();
- const title=document.createElement('strong');title.textContent='Acesso criado com sucesso';
- const login=document.createElement('p');login.textContent='Usuário: '+username;
- const pwd=document.createElement('p');pwd.textContent='Senha inicial: ';
- const span=document.createElement('code');span.textContent=password;pwd.append(span);
- const note=document.createElement('p');note.textContent='Guarde agora: esta senha não fica salva em texto no sistema e será ocultada ao sair da tela.';
- const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar usuário e senha';
- copy.onclick=async()=>{
-  try{
-   await navigator.clipboard.writeText('Usuário: '+username+'\nSenha: '+password);
-   status('Acesso copiado. Guarde em um local seguro.');
-  }catch(_){status('Selecione e copie o texto da senha exibida acima.',true)}
- };
- root.append(title,login,pwd,note,copy);
+// Mostra usuário + senha provisória com botão copiar, no topo da tela de monitores
+function showMonitorCredentials(username,password,title){
+ const root=el('monitorCredBox');if(!root)return;
+ root.replaceChildren(credentialsBox(username,password,title));
+ root.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function adminMonitors(body){
  if(member?.role!=='admin')throw Error('Acesso restrito ao ADM');
@@ -513,6 +493,9 @@ async function loadMonitors(){
    const label={aluno:'Aluno',voluntario:'Voluntário',contratado:'Contratado'}[m.monitor_vinculo]||'Vínculo não informado';
    const item=addItem(m.display_name,(m.active?'Ativo':'Bloqueado')+' · '+label+(m.monitor_vinculo==='contratado'?' · Salário R$ '+Number(m.salary_monthly||0).toLocaleString('pt-BR',{minimumFractionDigits:2}):''));
    const username=document.createElement('div');username.className='code-label';username.textContent='Login: '+m.username;item.append(username);
+   const access=document.createElement('div');access.className='access-line'+(m.temp_password?' temp':'');
+   access.textContent=(m.temp_password?'🔑 Ainda usa a senha provisória · ':'')+(m.last_sign_in_at?'Último acesso: '+fmt(m.last_sign_in_at):'Ainda não entrou no sistema');
+   item.append(access);
    const vinculo=document.createElement('select');vinculo.setAttribute('aria-label','Vínculo de '+m.display_name);
    [['aluno','Aluno'],['voluntario','Voluntário'],['contratado','Contratado']].forEach(([value,label])=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;vinculo.append(opt)});
    vinculo.value=m.monitor_vinculo||'voluntario';
@@ -559,7 +542,7 @@ async function loadMonitors(){
     item.append(activate);continue;
    }
    const controls=document.createElement('div');controls.className='manager-actions';
-   const reset=document.createElement('button');reset.type='button';reset.textContent='Redefinir senha';reset.onclick=()=>showMonitorReset(m,item);
+   const reset=document.createElement('button');reset.type='button';reset.textContent='🔑 Nova senha provisória';reset.onclick=()=>showMonitorReset(m,item);
    const block=document.createElement('button');block.type='button';block.className='warn';block.textContent='Bloquear monitor';
    block.onclick=async()=>{
     if(!confirm('Bloquear o acesso de '+m.display_name+'? O histórico permanecerá arquivado.'))return;
@@ -605,34 +588,40 @@ async function createMonitor(){
  if(member?.role!=='admin')throw Error('Sem autorização');
  const fullName=el('monitorName').value.trim();
  const username=el('monitorUsername').value.trim().toLowerCase();
- const pwd=el('monitorPassword').value;
- const confirmation=el('monitorConfirm').value;
+ const pwd=el('monitorPassword').value.trim();
  if(!/^[a-z][a-z0-9._-]{2,39}$/.test(username)||fullName.length<3){status('Nome ou usuário inválido.',true);return}
- if(!passwordStrong(pwd)||pwd!==confirmation){status('Senhas diferentes ou fora do padrão mínimo de segurança.',true);return}
+ const problem=passwordProblem(pwd,username);if(problem){status(problem,true);return}
+ const button=el('dataForm').querySelector('button[type=submit]');if(button)button.disabled=true;
  try{
-  const r=await adminMonitors({action:'create',username,display_name:fullName,monitor_vinculo:el('monitorVinculo').value,password:pwd,resident_id:el('monitorVinculo').value==='aluno'?el('monitorResident').value:null,salary_monthly:el('monitorVinculo').value==='contratado'?Number(el('monitorSalary').value):null,monitor_phone:el('monitorPhone').value});
-  el('monitorPassword').value='';el('monitorConfirm').value='';
-  el('monitorPassword').type='password';
-  el('monitorGeneratedHint').textContent='A senha foi definida. Guarde-a em local seguro; o sistema não a exibe novamente.';
+  const vinc=el('monitorVinculo').value;
+  const r=await adminMonitors({action:'create',username,display_name:fullName,monitor_vinculo:vinc,password:pwd,resident_id:vinc==='aluno'?el('monitorResident').value:null,salary_monthly:vinc==='contratado'?Number(el('monitorSalary').value):null,monitor_phone:el('monitorPhone').value});
   if(!r.success)throw Error('Cadastro não confirmado');
-  status('Monitor '+username+' cadastrado.');await loadMonitors();
+  showMonitorCredentials(username,pwd,'Monitor cadastrado: '+fullName);
+  if(vinc!=='aluno'){el('monitorName').value='';el('monitorUsername').value='';delete el('monitorUsername').dataset.touched}
+  el('monitorPhone').value='';el('monitorSalary').value='';el('monitorPassword').value=provisionalPassword();
+  status('Monitor '+username+' cadastrado. Copie o acesso e passe para a pessoa.');await loadMonitors();
  }catch(e){status(e.message||'Não foi possível cadastrar.',true)}
+ finally{if(button)button.disabled=false}
 }
 function showMonitorReset(m,item){
- const old=item.querySelector('form');if(old){old.remove();return}
- const form=document.createElement('form');
- form.innerHTML='<label>Nova senha de '+esc(m.display_name)+'</label><input type="password" name="password" autocomplete="new-password" minlength="12" maxlength="128" required><label>Confirmar senha</label><input type="password" name="confirm" autocomplete="new-password" required><p class="muted">Inclua maiúscula, minúscula, número e símbolo.</p><button>Salvar nova senha</button>';
+ item.querySelector('.cred-box')?.remove();
+ const old=item.querySelector('form.reset-form');if(old){old.remove();return}
+ const form=document.createElement('form');form.className='reset-form';
+ form.innerHTML='<label>Nova senha provisória de '+esc(m.display_name)+'</label><div class="pw-row"><input name="password" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="72" required><button type="button" class="secondary" data-gen>🎲 Gerar outra</button></div><p class="muted">A senha antiga para de funcionar na hora. No próximo acesso, a pessoa pode criar a própria senha.</p><button type="submit">Salvar senha provisória</button>';
+ form.elements.password.value=provisionalPassword();
+ form.querySelector('[data-gen]').onclick=()=>{form.elements.password.value=provisionalPassword()};
  item.append(form);
  form.onsubmit=async e=>{
   e.preventDefault();
-  const password=form.elements.password.value;
-  if(password!==form.elements.confirm.value||!passwordStrong(password)){status('Confira a confirmação e o padrão da senha.',true);return}
-  const button=form.querySelector('button');button.disabled=true;
+  const password=form.elements.password.value.trim();
+  const problem=passwordProblem(password,m.username);if(problem){status(problem,true);return}
+  if(!confirm('Trocar a senha de '+m.display_name+' por esta senha provisória?'))return;
+  const button=form.querySelector('button[type=submit]');button.disabled=true;
   try{
    await adminMonitors({action:'reset_password',member_id:m.id,password});
-   form.remove();status('Senha redefinida com sucesso.');
-  }catch(e){status(e.message||'Redefinição não concluída.',true)}
-  finally{button.disabled=false}
+   form.replaceWith(credentialsBox(m.username,password,'Nova senha provisória de '+m.display_name));
+   status('Senha provisória criada. Copie e passe para a pessoa.');
+  }catch(e){status(e.message||'Não foi possível trocar a senha.',true);button.disabled=false}
  };
 }
 
