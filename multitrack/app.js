@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610311347";
+const APP_VER="202610311351";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -1125,7 +1125,7 @@ const Live={salas:[],cur:null,papel:null,chan:null,presence:[],membros:[],offset
     let si=-1;m.secoes.forEach((x,i)=>{if(p>=x.t-0.02)si=i});
     if(si!==this.lastIdx){this.lastIdx=si;$("#fwSecNow").textContent=si>=0?m.secoes[si].n:"Início";
       document.querySelectorAll("#fwSecs span").forEach(x=>x.classList.toggle("on",+x.dataset.i===si))}
-    const nx=st.fila&&n<st.fila.at?`Indo para ${m.secoes[st.fila.i]?m.secoes[st.fila.i].n:"—"} no próximo compasso`:st.vamp!=null?`Repetindo ${m.secoes[st.vamp]?m.secoes[st.vamp].n:""}`:(m.secoes[si+1]?"Depois: "+m.secoes[si+1].n:"Última parte");
+    const nx=st.fila&&n<st.fila.at?`Indo para ${m.secoes[st.fila.i]?m.secoes[st.fila.i].n:"—"} em seguida (em ${Math.max(1,Math.ceil((st.fila.at-n)/1000))} s)`:st.vamp!=null?`Repetindo ${m.secoes[st.vamp]?m.secoes[st.vamp].n:""}`:(m.secoes[si+1]?"Depois: "+m.secoes[si+1].n:"Última parte");
     const nxEl=$("#fwSecNext");if(nxEl.textContent!==nx){nxEl.textContent=nx;nxEl.classList.toggle("hot",!!(st.fila&&n<st.fila.at)||st.vamp!=null)}
     if(m.cifra.length){let ci=-1;for(let i=0;i<m.cifra.length;i++){if(m.cifra[i][0]<=p+0.05)ci=i;else break}
       if(ci!==this.lastChordIdx){this.lastChordIdx=ci;$("#fwChord").textContent=ci>=0?m.cifra[ci][1]:m.cifra[0][1];$("#fwChordNext").textContent=m.cifra[ci+1]?"→ "+m.cifra[ci+1][1]:""}}
