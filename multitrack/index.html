@@ -454,6 +454,11 @@ body.stage-on{overflow:hidden}body.stage-on .minibar{display:none}
 .pctl span{min-width:70px}.pctl input[type=range]{flex:1;accent-color:var(--k-pad)}.pctl em{font-style:normal;color:var(--muted);font-family:var(--f-mono);font-size:12px;min-width:34px}
 .pctl input[type=number]{width:80px}
 .pres{display:flex;gap:6px;flex-wrap:wrap}
+.mine{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.ms1{display:flex;align-items:stretch;border-radius:12px;background:var(--surface-2);border:1px solid transparent}.ms1.on{border-color:var(--k-pad);background:color-mix(in srgb,var(--k-pad) 16%,var(--surface-2))}
+.ms1 button{all:unset;cursor:pointer;flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 12px;min-width:0}.ms1 b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ms1 small{font-size:11px;color:var(--muted)}
+.ms1 .x{flex:none;padding:0 12px;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
+.mineadd{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;border:1px dashed var(--line-2);cursor:pointer}.mineadd b{font-size:14px;color:var(--accent)}.mineadd small{font-size:11px;color:var(--muted)}
 .degs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .dg{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;border-radius:12px;background:var(--surface-2)}
 .dg b{font-family:var(--f-display);font-size:18px}.dg small{font-size:11px;color:var(--muted);font-family:var(--f-mono)}
@@ -624,7 +629,7 @@ body.stage-on{overflow:hidden}body.stage-on .minibar{display:none}
 
 <script src="vendor/jszip.min.js"></script>
 <script src="vendor/supabase.js"></script>
-<script src="app.js?v=202610311735"></script>
+<script src="app.js?v=202610311803"></script>
 
 </body>
 </html>

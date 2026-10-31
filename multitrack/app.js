@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610311735";
+const APP_VER="202610311803";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -1260,12 +1260,13 @@ function buildLayer(id,ch,out){const c=E.ctx,srcs=[],add=(...a)=>osc(c,...a,srcs
   else if(id==="air"){const g=c.createGain();g.connect(out);[ch.r+36,ch.f+36,ch.r+24].forEach((m,i)=>{const n=c.createBufferSource();n.buffer=padNoise(c);n.loop=true;n.loopStart=Math.random();const bp=c.createBiquadFilter();bp.type="bandpass";bp.frequency.value=midiHz(m);bp.Q.value=28;
       const gg=c.createGain();gg.gain.value=0.5;const lf=c.createOscillator(),lg=c.createGain();lf.frequency.value=0.05+i*0.03;lg.gain.value=0.35;lf.connect(lg).connect(gg.gain);lf.start();srcs.push(lf);
       n.connect(bp).connect(gg).connect(g);n.start();srcs.push(n)})}
+  else if(id==="mine"){mineLayer(ch,out,srcs)}
   return{srcs}}
-const PAD_MK={warm:25,strings:6,shimmer:9,choir:9,organ:11,sub:1.6,air:8,kick:3,toms:3.5,cymbal:4,piano:2.8,angels:3.6,ride:7};  /* equaliza o volume entre as camadas */
-const PAD_AIR=new Set(["shimmer","air","angels","ride"]);  /* camadas agudas: passam fora do filtro de brilho, direto para o ambiente */
+const PAD_MK={warm:25,strings:6,shimmer:9,choir:9,organ:11,sub:1.6,air:8,kick:3,toms:3.5,cymbal:4,piano:2.8,angels:3.6,ride:7,mine:1};  /* equaliza o volume entre as camadas */
+const PAD_AIR=new Set(["shimmer","air","angels","ride","mine"]);  /* camadas agudas: passam fora do filtro de brilho, direto para o ambiente */
 function makePadVoice(p,xf){const c=E.ctx,t=c.currentTime,cfg=padCfg(),fade=Math.max(0.3,xf||cfg.fade),g=c.createGain(),ga=c.createGain();
   [g,ga].forEach(x=>{x.gain.setValueAtTime(0,t);x.gain.linearRampToValueAtTime(1,t+fade)});g.connect(E.padIn);ga.connect(E.padAir);
-  const ch=padChord(p),v={g,ga,ch,layers:{},oscs:[]};for(const L of PAD_LAYERS){const lv=cfg.layers[L.id];if(lv>0)padAddLayer(v,L.id,lv,0.01)}
+  const ch=padChord(p),v={g,ga,ch,layers:{},oscs:[]};for(const L of padLayersList()){const lv=cfg.layers[L.id];if(lv>0)padAddLayer(v,L.id,lv,0.01)}
   if(!Object.keys(v.layers).length)padAddLayer(v,"warm",0.8,0.01);return v}
 function padAddLayer(v,id,lv,fade){const c=E.ctx,t=c.currentTime,lg=c.createGain();lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(lv*PAD_MK[id],t+fade);lg.connect(PAD_AIR.has(id)?v.ga:v.g);
   const r=buildLayer(id,v.ch,lg);v.layers[id]={lg,srcs:r.srcs};v.oscs.push(...r.srcs)}
@@ -1330,6 +1331,47 @@ function hitPiano(t,m,lv){const c=E.ctx,f=midiHz(m),g=c.createGain(),lp=c.create
   [[1,"triangle",1],[2,"sine",.35],[3,"sine",.12]].forEach(([h,ty,l])=>{const o=c.createOscillator();o.type=ty;o.frequency.value=f*h;o.detune.value=(h-1)*3;const og=c.createGain();og.gain.value=l;o.connect(og).connect(g);o.start(t);o.stop(t+2.3)})}
 function padPreset(name){const p=PAD_PRESETS[name];if(!p)return;const cfg=padCfg();cfg.layers={};for(const k in p)cfg.layers[k]=p[k];cfg.preset=name;saveMeta();if(E.ctx&&S.settings.padOn)padFollow(true);else padRhythm()}
 
+/* ================= Meus pads: arquivos de áudio do usuário (um por tom, ou um só que o app transpõe) ================= */
+const MINE_LAYER={id:"mine",l:"Meus pads",d:"Seus arquivos de pad"};
+function mineCfg(){const c=padCfg();if(!c.mine||!Array.isArray(c.mine.sets))c.mine={sets:[],active:null};return c.mine}
+function mineSet(){const m=mineCfg();return m.sets.find(x=>x.id===m.active)||m.sets[0]||null}
+function padLayersList(){return mineSet()?[MINE_LAYER,...PAD_LAYERS]:PAD_LAYERS}
+const NOTE_PT={do:0,re:2,mi:4,fa:5,sol:7,la:9,si:11};
+function keyFromName(n){n=String(n).replace(/\.[a-z0-9]{2,4}$/i,"").replace(/[_]+/g," ");
+  let m=/(?:^|[^A-Za-z#♯♭])([A-G])(#|♯|b|♭|sharp|flat|s(?=[^a-z]|$))?(?=$|[^a-zà-ú]|m(?:aj|in|aior|enor)?\b|maior|menor|major|minor)/.exec(n);
+  if(m){let i=KEYS.indexOf(m[1]);const a=m[2]||"";if(/^(#|♯|sharp|s)$/.test(a))i++;else if(/^(b|♭|flat)$/.test(a))i--;return((i%12)+12)%12}
+  m=/(?:^|[^a-zà-ú])(do|ré|re|mi|fá|fa|sol|lá|la|si)(#|♯|b|♭| sustenido| bemol)?(?=$|[^a-zà-ú])/i.exec(n.toLowerCase());
+  if(m){let i=NOTE_PT[m[1].normalize("NFD").replace(/[\u0300-\u036f]/g,"")];const a=(m[2]||"").trim();if(/^(#|♯|sustenido)$/.test(a))i++;else if(/^(b|♭|bemol)$/.test(a))i--;return((i%12)+12)%12}
+  return null}
+async function importMinePads(list){list=[...list].filter(f=>/\.(wav|mp3|m4a|aac|ogg|flac|aif|aiff)$/i.test(f.name)||/^audio\//.test(f.type));if(!list.length){toast("Escolha arquivos de áudio (mp3, wav, m4a…).");return}
+  ensureCtx();const id=uid(),keys={};let root=null;busy("Guardando seus pads",0);
+  try{for(let i=0;i<list.length;i++){const f=list[i];let k=keyFromName(f.name);
+      if(k==null){/* sem tom no nome: descobre pelo som */const b=await decodeBlob(f,E.SR);const ch=[b.getChannelData(0)];if(b.numberOfChannels>1)ch.push(b.getChannelData(1));const down=Math.max(1,Math.round(E.SR/11025)),mono=toMonoDown(ch,down);
+        k=detectKey([chromaOf(mono,E.SR/down,0,Math.min(b.duration,60))]).best.i}
+      const blob=new Blob([await f.arrayBuffer()],{type:f.type||"audio/mpeg"}),bk="pad_"+id+"_"+k;
+      const ok=await idb("stems","readwrite",s=>s.put(blob,bk));if(!ok)throw new Error("Sem espaço neste aparelho para os pads.");keys[k]=bk;if(root==null)root=k;busy("Guardando seus pads",(i+1)/list.length)}
+    busy(null);const m=mineCfg(),n=Object.keys(keys).length;const nm=(list.length===1?list[0].name.replace(/\.[^.]+$/,""):"Meus pads "+(m.sets.length+1)).slice(0,40);
+    m.sets.push({id,name:nm,keys,root});m.active=id;const c=padCfg();c.layers.mine=c.layers.mine||0.85;c.preset=null;saveMeta();mineCache.clear();
+    toast(n>=12?"Pads importados nos 12 tons.":`Pads importados (${n} ${n>1?"tons":"tom"}). Nos outros tons o app transpõe automaticamente.`,5000);
+    if(!S.settings.padOn){S.settings.padOn=true;renderTransport()}padFollow(true);if(typeof Stage!=="undefined")Stage.render()}
+  catch(e){busy(null);toast(e.message||"Não consegui ler esses arquivos.",6000)}}
+function deleteMineSet(id){const m=mineCfg(),x=m.sets.find(s=>s.id===id);if(!x)return;Object.values(x.keys).forEach(k=>idb("stems","readwrite",s=>s.delete(k)));
+  m.sets=m.sets.filter(s=>s.id!==id);if(m.active===id)m.active=m.sets[0]?m.sets[0].id:null;if(!m.sets.length)delete padCfg().layers.mine;mineCache.clear();saveMeta();padFollow(true)}
+const mineCache=new Map();
+async function mineBuffer(bk){if(mineCache.has(bk))return mineCache.get(bk);const blob=await idb("stems","readonly",s=>s.get(bk));if(!blob||blob===true)return null;
+  const b=await decodeBlob(blob,E.SR);mineCache.set(bk,b);while(mineCache.size>2)mineCache.delete(mineCache.keys().next().value);return b}
+/* toca o arquivo do tom mais próximo, transpondo pela velocidade, em loop com cruzamento suave para não "pular" */
+function mineLayer(ch,out,srcs){const set=mineSet();if(!set)return;const c=E.ctx,want=((ch.r%12)+12)%12,keys=Object.keys(set.keys).map(Number);
+  let best=keys[0],bd=99;for(const k of keys){let d=want-k;d=((d+6)%12+12)%12-6;if(Math.abs(d)<Math.abs(bd)){bd=d;best=k}}
+  const oct=padCfg().oct||0,rate=Math.pow(2,(bd+12*oct)/12);const live={on:true,nodes:[],timer:null};
+  srcs.push({stop(t){live.on=false;clearTimeout(live.timer);live.nodes.forEach(n=>{try{n.stop(t)}catch(e){}})}});
+  mineBuffer(set.keys[best]).then(buf=>{if(!buf||!live.on)return;const len=buf.duration/rate,xf=Math.min(4,len*0.25);
+    const play=at=>{if(!live.on)return;const s=c.createBufferSource();s.buffer=buf;s.playbackRate.value=rate;const g=c.createGain();
+      g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(1,at+xf);g.gain.setValueAtTime(1,at+len-xf);g.gain.linearRampToValueAtTime(0,at+len);
+      s.connect(g).connect(out);s.start(at);s.stop(at+len+0.05);live.nodes.push(s);if(live.nodes.length>4)live.nodes.shift();
+      live.timer=setTimeout(()=>play(at+len-xf),Math.max(0,(at+len-xf-c.currentTime-1.5)*1000))};
+    play(c.currentTime+0.02)}).catch(e=>console.warn(e))}
+
 /* ================= Modo palco: tela de operação (transporte, mapa da música, mixer, repertório, pad) ================= */
 const SEC_COLORS=[[/^intro/i,"#4fc3dc"],[/^verso/i,"#e3d34a"],[/^pr[eé]/i,"#f0a35e"],[/^refr/i,"#ff5f7e"],[/^ponte/i,"#b48cff"],[/^(instrumental|interl|solo)/i,"#5aa9ff"],[/^tag/i,"#9aa3b5"],[/^final/i,"#3fd0a8"]];
 const secColor=n=>{for(const [r,c] of SEC_COLORS)if(r.test(n))return c;return"#8fa0b8"};
@@ -1383,7 +1425,8 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
       <div class="pad-keys">${PAD_KEYS.map((k,i)=>{const bb=padBase();return`<button class="${bb&&bb.i===i?(st.padOn?"on":"sel"):""}" data-padkey="${i}">${k}</button>`}).join("")}</div>
       <div class="pad-row">${seg("mode",[["auto","Auto"],["maj","Maior"],["min","Menor"],["5","Só 5ª"]])}${seg("oct",[[-1,"Oitava −"],[0,"Normal"],[1,"Oitava +"]])}</div>
       ${this.harmHTML()}
-      <h4>Camadas <span>junte várias para dar corpo</span></h4><div class="pls">${PAD_LAYERS.map(card).join("")}</div>
+      ${this.mineHTML()}
+      <h4>Camadas <span>junte várias para dar corpo</span></h4><div class="pls">${padLayersList().map(card).join("")}</div>
       <h4>Ritmo no tempo <span>${live?"seguindo a música tocando":bpmTxt}</span></h4><div class="pls">${PAD_RHYTHM.map(card).join("")}</div>
       ${!(s&&!s.demo)?`<label class="pctl"><span>BPM livre</span><input type="number" min="40" max="200" value="${c.bpm}" data-pcn="bpm" inputmode="numeric"></label>`:""}
       <div class="pctls"><label class="pctl"><span>Brilho</span><input type="range" min="0" max="1" step="0.01" value="${c.bright}" data-pcr="bright"></label>
@@ -1398,6 +1441,10 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
       <div class="pad-row">${seg("harm",[["one","Uma nota"],["seq","Sequência"],["man","Manual"]])}${c.harm==="seq"?seg("bars",[[1,"1 compasso"],[2,"2"],[4,"4"]]):""}</div>
       ${c.harm==="seq"?`<div class="pres">${padProgs(b).map((pr,i)=>`<button class="${(c.prog||0)===i?"on":""}" data-prog="${i}">${pr.map(d=>chordLabel(b,d)).join(" – ")}</button>`).join("")}</div>`:""}
       ${c.harm!=="one"?`<div class="degs" id="padDegs">${degs}</div>`:""}`},
+  mineHTML(){const m=mineCfg(),cur=mineSet();
+    return`<h4>Meus pads <span>use pads gravados que você tem direito de usar</span></h4>
+      <div class="mine">${m.sets.map(x=>{const n=Object.keys(x.keys).length;return`<div class="ms1${cur&&cur.id===x.id?" on":""}"><button data-mine="${x.id}"><b>${esc(x.name)}</b><small>${n>=12?"12 tons":n+(n>1?" tons":" tom")+" · transpõe o resto"}</small></button><button class="x" data-minedel="${x.id}" aria-label="Apagar ${esc(x.name)}">✕</button></div>`}).join("")}
+        <label class="mineadd"><input type="file" id="padFiles" accept="audio/*,.wav,.mp3,.m4a,.aif,.aiff,.flac,.ogg" multiple hidden><b>+ Importar pads</b><small>um arquivo por tom (ex.: "Pad C.mp3", "Pad D#.wav") ou um só</small></label></div>`},
   padMark(){document.querySelectorAll("#padDegs .dg").forEach((x,i)=>x.classList.toggle("on",E.padDeg===i))},
   time(){const d=E.cur;const cur=d&&d.song?Math.max(0,d.pos()-d.startPos):0,tot=d&&d.song?Math.max(0,d.endPos-d.startPos):0;$("#sgTime").innerHTML=`${fmt(cur)}<small>/ ${fmt(tot)}</small>`},
   frame(){if(!this.isOpen)return;if(this.state()!==this.sig)this.render();else{this.draw();this.time()}},
@@ -1442,6 +1489,8 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
       if(k==="harm"){E.padDeg=c.harm==="one"?null:(E.padDeg??0);if(c.harm!=="one"&&!S.settings.padOn){S.settings.padOn=true;renderTransport()}}
       saveMeta();if(k==="bars"){seqStep=-1;padSeq();return this.render()}padFollow(k!=="harm");return this.render()}
     if(b.dataset.prog!=null){ensureCtx();const c=padCfg();c.prog=+b.dataset.prog;seqStep=-1;saveMeta();if(!S.settings.padOn){S.settings.padOn=true;renderTransport()}padFollow();seqTick();return this.render()}
+    if(b.dataset.mine){const m=mineCfg();m.active=b.dataset.mine;mineCache.clear();const c=padCfg();if(!(c.layers.mine>0))c.layers.mine=0.85;saveMeta();ensureCtx();if(!S.settings.padOn){S.settings.padOn=true;renderTransport()}padFollow(true);return this.render()}
+    if(b.dataset.minedel){const m=mineCfg(),x=m.sets.find(z=>z.id===b.dataset.minedel);if(x&&confirmTwice(b,"Apagar?")){deleteMineSet(x.id);return this.render()}return}
     if(b.dataset.deg!=null){ensureCtx();const c=padCfg();if(c.harm==="seq"){c.harm="man";if(seqTimer){clearInterval(seqTimer);seqTimer=null}}E.padDeg=+b.dataset.deg;saveMeta();
       if(!S.settings.padOn){S.settings.padOn=true;renderTransport()}padFollow(false,Math.min(1.2,c.fade));return this.render()}
     if(b.dataset.pp){ensureCtx();padPreset(b.dataset.pp);if(!S.settings.padOn){S.settings.padOn=true;padFollow(true);renderTransport()}return this.render()}
@@ -1464,6 +1513,8 @@ $("#sgCv").addEventListener("click",e=>Stage.tapOverview(e));
 $("#sgCv").addEventListener("dblclick",e=>{const r=$("#sgCv").getBoundingClientRect(),b=(Stage.blocks||[]).find(b=>e.clientX-r.left>=b.x0&&e.clientX-r.left<b.x1);if(b)toggleVamp(b.i)});
 $("#sgPane").addEventListener("pointerdown",e=>{const f=e.target.closest(".fd");if(f){e.preventDefault();Stage.fader(f,e)}});
 $("#sgPane").addEventListener("keydown",e=>{const f=e.target.closest(".fd");if(!f||!/Arrow(Up|Down)/.test(e.key))return;e.preventDefault();e.stopPropagation();Stage.setFader(f,Stage.getFader(f)+(e.key==="ArrowUp"?0.05:-0.05))});
+function confirmTwice(b,label){if(b.dataset.armed){return true}b.dataset.armed=1;const old=b.textContent;b.textContent=label;setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent=old}},3000);return false}
+$("#sgPane").addEventListener("change",e=>{if(e.target.id==="padFiles"&&e.target.files.length){const fl=[...e.target.files];e.target.value="";importMinePads(fl)}});
 $("#sgPane").addEventListener("input",e=>{const t=e.target,c=padCfg();
   if(t.dataset.plv){padLayer(t.dataset.plv,+t.value);c.preset=null}
   else if(t.dataset.pcr){c[t.dataset.pcr]=+t.value;padTone();const em=t.parentElement.querySelector("em");if(em)em.textContent=t.value+"s";saveMeta()}
