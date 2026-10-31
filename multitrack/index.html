@@ -453,7 +453,12 @@ body.stage-on{overflow:hidden}body.stage-on .minibar{display:none}
 .pctl{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:13px;font-weight:600}
 .pctl span{min-width:70px}.pctl input[type=range]{flex:1;accent-color:var(--k-pad)}.pctl em{font-style:normal;color:var(--muted);font-family:var(--f-mono);font-size:12px;min-width:34px}
 .pctl input[type=number]{width:80px}
-.pres{display:flex;gap:6px;flex-wrap:wrap}.pres button{border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px}
+.pres{display:flex;gap:6px;flex-wrap:wrap}
+.degs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.dg{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;border-radius:12px;background:var(--surface-2)}
+.dg b{font-family:var(--f-display);font-size:18px}.dg small{font-size:11px;color:var(--muted);font-family:var(--f-mono)}
+.dg.on{background:color-mix(in srgb,var(--k-pad) 30%,var(--surface-2));border-color:var(--k-pad)}
+@media (max-width:700px){.degs{grid-template-columns:repeat(3,1fr)}}.pres button{border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px}
 .pad-vol{display:flex;position:sticky;top:0;max-height:calc(100vh - 220px)}.pad-vol .fd{flex:1}
 .vampbtn.min.on{background:#3a1f4f;border-color:#b48cff}
 @media (max-width:900px){.st-tools button span{display:none}.st-tr button{width:52px}.st-tr .play{width:64px}.st-box{min-width:52px}.st-time{min-width:96px}}
@@ -619,7 +624,7 @@ body.stage-on{overflow:hidden}body.stage-on .minibar{display:none}
 
 <script src="vendor/jszip.min.js"></script>
 <script src="vendor/supabase.js"></script>
-<script src="app.js?v=202610311351"></script>
+<script src="app.js?v=202610311732"></script>
 
 </body>
 </html>

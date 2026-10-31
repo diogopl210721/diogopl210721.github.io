@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610311351";
+const APP_VER="202610311732";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -1192,6 +1192,7 @@ const PAD_LAYERS=[
   {id:"warm",l:"Warm",d:"Pad quente e encorpado"},
   {id:"strings",l:"Cordas",d:"Orquestra suave"},
   {id:"shimmer",l:"Shimmer",d:"Brilho agudo, etéreo"},
+  {id:"angels",l:"Vozes angelicais",d:"Coral etéreo e agudo"},
   {id:"choir",l:"Coral",d:"Vozes em \"aah\""},
   {id:"organ",l:"Órgão",d:"Órgão de igreja"},
   {id:"sub",l:"Grave",d:"Sustenta o fundo"},
@@ -1199,15 +1200,17 @@ const PAD_LAYERS=[
 const PAD_RHYTHM=[
   {id:"kick",l:"Bumbo",d:"Pulso nos tempos 1 e 3"},
   {id:"toms",l:"Tons",d:"Viradas a cada 2 compassos"},
-  {id:"cymbal",l:"Pratos",d:"Swell a cada 4 compassos"},
+  {id:"cymbal",l:"Pratos",d:"Crescendo e prato no início da frase"},
+  {id:"ride",l:"Prato contínuo",d:"Brilho de prato o tempo todo"},
   {id:"piano",l:"Piano",d:"Arpejo no tempo"}];
 const PAD_PRESETS={
+  "Celestial":{angels:.8,shimmer:.45,warm:.5,sub:.35,cymbal:.55},
   "Worship":{warm:.8,shimmer:.55,sub:.4},
   "Catedral":{organ:.7,choir:.6,sub:.45},
   "Cinemático":{strings:.75,warm:.5,sub:.55,cymbal:.5},
   "Íntimo":{warm:.6,piano:.55,air:.35},
   "Pulsante":{warm:.7,shimmer:.4,kick:.55,cymbal:.4,piano:.4}};
-const PAD_DEF={layers:{warm:.8},mode:"auto",oct:0,bright:.45,amb:.45,fade:3,bpm:72};
+const PAD_DEF={layers:{warm:.8},mode:"auto",oct:0,bright:.45,amb:.45,fade:3,bpm:72,harm:"one",prog:0,bars:2};
 function padCfg(){const st=S.settings;if(!st.pad||typeof st.pad!=="object")st.pad=JSON.parse(JSON.stringify(PAD_DEF));const c=st.pad;for(const k in PAD_DEF)if(c[k]==null)c[k]=JSON.parse(JSON.stringify(PAD_DEF[k]));return c}
 function padIR(c){const sr=c.sampleRate,len=Math.floor(sr*3.4),b=c.createBuffer(2,len,sr);
   for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let lp=0;for(let i=0;i<len;i++){const t=i/sr,n=Math.random()*2-1;lp+=(n-lp)*(0.35+0.4*Math.exp(-t*2));d[i]=lp*Math.pow(1-i/len,2.2)*(t<0.012?t/0.012:1)}}return b}
@@ -1225,7 +1228,8 @@ function padTone(){if(!E.ctx||!E.padTone)return;const c=padCfg(),t=E.ctx.current
 let padNoiseBuf=null;
 function padNoise(c){if(padNoiseBuf&&padNoiseBuf.sampleRate===c.sampleRate)return padNoiseBuf;const n=c.sampleRate*2,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;return padNoiseBuf=b}
 /* notas do acorde: tônica, quinta, terça (maior/menor) ou nenhuma (só 5ª) */
-function padChord(p){const c=padCfg();let third=p.minor?3:4;if(c.mode==="maj")third=4;else if(c.mode==="min")third=3;else if(c.mode==="5"||(c.mode==="auto"&&p.neutral))third=null;
+function padChord(p){const c=padCfg();let third=p.minor?3:4;
+  if(c.mode==="5")third=null;else if(!p.deg){if(c.mode==="maj")third=4;else if(c.mode==="min")third=3;else if(c.mode==="auto"&&p.neutral)third=null}
   const r=48+p.i+12*c.oct;return{r,f:r+7,t:third==null?null:r+third}}
 function osc(c,type,m,det,dest,lv,srcs){const o=c.createOscillator();o.type=type;o.frequency.value=midiHz(m);o.detune.value=det||0;const g=c.createGain();g.gain.value=lv;o.connect(g).connect(dest);o.start();srcs.push(o);return o}
 function buildLayer(id,ch,out){const c=E.ctx,srcs=[],add=(...a)=>osc(c,...a,srcs);const T=ch.t;
@@ -1238,15 +1242,28 @@ function buildLayer(id,ch,out){const c=E.ctx,srcs=[],add=(...a)=>osc(c,...a,srcs
   else if(id==="choir"){const src=c.createGain();[[700,8,1],[1150,9,.6],[2800,10,.35]].forEach(([f,q,l])=>{const bp=c.createBiquadFilter();bp.type="bandpass";bp.frequency.value=f;bp.Q.value=q;const gg=c.createGain();gg.gain.value=l*2.2;src.connect(bp).connect(gg).connect(out)});
     const vib=c.createOscillator(),vg=c.createGain();vib.frequency.value=4.6;vg.gain.value=9;vib.connect(vg);vib.start();srcs.push(vib);
     [ch.r,ch.f,ch.r+12,T!=null?T+12:null].filter(x=>x!=null).forEach((m,i)=>[-10,10].forEach(dt=>{const o=add("sawtooth",m,dt+i*2,src,0.06);vg.connect(o.detune)}))}
+  else if(id==="angels"){/* vozes "ooh" agudas: serras desafinadas em filtros de formante, vibrato lento, sopro e respiração de volume */
+    const src=c.createGain(),swell=c.createGain();swell.gain.value=0.8;swell.connect(out);
+    const sw=c.createOscillator(),sg=c.createGain();sw.frequency.value=0.09;sg.gain.value=0.2;sw.connect(sg).connect(swell.gain);sw.start();srcs.push(sw);
+    [[380,7,1],[960,9,.55],[2500,12,.22],[3400,14,.12]].forEach(([f,q,l])=>{const bp=c.createBiquadFilter();bp.type="bandpass";bp.frequency.value=f;bp.Q.value=q;const gg=c.createGain();gg.gain.value=l*3;src.connect(bp).connect(gg).connect(swell)});
+    const vib=c.createOscillator(),vg=c.createGain();vib.frequency.value=4.4;vg.gain.value=11;vib.connect(vg);vib.start();srcs.push(vib);
+    const vib2=c.createOscillator(),vg2=c.createGain();vib2.frequency.value=0.23;vg2.gain.value=6;vib2.connect(vg2);vib2.start();srcs.push(vib2);
+    [ch.r+12,ch.f+12,ch.r+24,T!=null?T+24:ch.f+24].forEach((m,i)=>[-13,-4,5,14].forEach((dt,j)=>{const o=add(j%2?"sawtooth":"triangle",m,dt+i*1.5,src,0.035);vg.connect(o.detune);if(j%2)vg2.connect(o.detune)}));
+    const n=c.createBufferSource();n.buffer=padNoise(c);n.loop=true;const nb=c.createBiquadFilter();nb.type="bandpass";nb.frequency.value=midiHz(ch.r+36);nb.Q.value=3;const ng=c.createGain();ng.gain.value=0.05;n.connect(nb).connect(ng).connect(swell);n.start();srcs.push(n)}
+  else if(id==="ride"){/* brilho metálico contínuo: parciais inarmônicas + ruído agudo, com respiração lenta */
+    const g=c.createGain();g.gain.value=0.6;g.connect(out);const hp=c.createBiquadFilter();hp.type="highpass";hp.frequency.value=6500;hp.connect(g);
+    [205.3,304.4,369.6,522.7,540,800].forEach(f=>{const o=c.createOscillator();o.type="square";o.frequency.value=f*7.1;const og=c.createGain();og.gain.value=0.012;o.connect(og).connect(hp);o.start();srcs.push(o)});
+    const n=c.createBufferSource();n.buffer=padNoise(c);n.loop=true;const ng=c.createGain();ng.gain.value=0.08;n.connect(ng).connect(hp);n.start();srcs.push(n);
+    const lf=c.createOscillator(),lg=c.createGain();lf.frequency.value=0.11;lg.gain.value=0.3;lf.connect(lg).connect(g.gain);lf.start();srcs.push(lf)}
   else if(id==="organ"){const g=c.createGain();g.connect(out);[[ch.r,1],[ch.f,.7],[T!=null?T:ch.r+12,.55]].forEach(([m,l])=>[[0,.5],[12,.4],[19,.22],[24,.18],[-12,.3]].forEach(([h,hl])=>add("sine",m+h,0,g,0.04*l*hl)))}
   else if(id==="sub"){const g=c.createGain();g.connect(out);add("sine",ch.r-24,0,g,0.22);add("sine",ch.r-12,0,g,0.12);add("triangle",ch.f-12,0,g,0.04)}
   else if(id==="air"){const g=c.createGain();g.connect(out);[ch.r+36,ch.f+36,ch.r+24].forEach((m,i)=>{const n=c.createBufferSource();n.buffer=padNoise(c);n.loop=true;n.loopStart=Math.random();const bp=c.createBiquadFilter();bp.type="bandpass";bp.frequency.value=midiHz(m);bp.Q.value=28;
       const gg=c.createGain();gg.gain.value=0.5;const lf=c.createOscillator(),lg=c.createGain();lf.frequency.value=0.05+i*0.03;lg.gain.value=0.35;lf.connect(lg).connect(gg.gain);lf.start();srcs.push(lf);
       n.connect(bp).connect(gg).connect(g);n.start();srcs.push(n)})}
   return{srcs}}
-const PAD_MK={warm:25,strings:6,shimmer:9,choir:9,organ:11,sub:1.6,air:8,kick:3,toms:3.5,cymbal:22,piano:2.8};  /* equaliza o volume entre as camadas */
-const PAD_AIR=new Set(["shimmer","air"]);  /* camadas agudas: passam fora do filtro de brilho, direto para o ambiente */
-function makePadVoice(p){const c=E.ctx,t=c.currentTime,cfg=padCfg(),fade=Math.max(0.3,cfg.fade),g=c.createGain(),ga=c.createGain();
+const PAD_MK={warm:25,strings:6,shimmer:9,choir:9,organ:11,sub:1.6,air:8,kick:3,toms:3.5,cymbal:4,piano:2.8,angels:3.6,ride:7};  /* equaliza o volume entre as camadas */
+const PAD_AIR=new Set(["shimmer","air","angels","ride"]);  /* camadas agudas: passam fora do filtro de brilho, direto para o ambiente */
+function makePadVoice(p,xf){const c=E.ctx,t=c.currentTime,cfg=padCfg(),fade=Math.max(0.3,xf||cfg.fade),g=c.createGain(),ga=c.createGain();
   [g,ga].forEach(x=>{x.gain.setValueAtTime(0,t);x.gain.linearRampToValueAtTime(1,t+fade)});g.connect(E.padIn);ga.connect(E.padAir);
   const ch=padChord(p),v={g,ga,ch,layers:{},oscs:[]};for(const L of PAD_LAYERS){const lv=cfg.layers[L.id];if(lv>0)padAddLayer(v,L.id,lv,0.01)}
   if(!Object.keys(v.layers).length)padAddLayer(v,"warm",0.8,0.01);return v}
@@ -1256,11 +1273,26 @@ function padDropLayer(v,id,sec){const L=v.layers[id];if(!L)return;const t=E.ctx.
 function fadeOutVoice(v,sec){const t=E.ctx.currentTime;[v.g,v.ga].forEach(x=>{x.gain.cancelScheduledValues(t);x.gain.setValueAtTime(x.gain.value,t);x.gain.linearRampToValueAtTime(0,t+sec)});
   for(const id in v.layers){const L=v.layers[id];L.lg.gain.cancelScheduledValues(t);L.lg.gain.setValueAtTime(L.lg.gain.value,t);L.lg.gain.linearRampToValueAtTime(0,t+sec)}
   v.oscs.forEach(o=>{try{o.stop(t+sec+0.1)}catch(e){}})}
-function padKeyNow(){const s=curSong();if(S.settings.padKey!=null)return{i:S.settings.padKey,minor:padCfg().mode==="min",neutral:true};return s&&parseKey(transposeKey(s.key,s.applied.semi))}
-function padFollow(force){if(!E.ctx)return;const p=padKeyNow(),cfg=padCfg();
+/* ---- harmonia: uma nota, sequência sugerida no tom, ou acordes tocados à mão ---- */
+const DEG_MAJ=[{n:"I",s:0,m:false},{n:"ii",s:2,m:true},{n:"iii",s:4,m:true},{n:"IV",s:5,m:false},{n:"V",s:7,m:false},{n:"vi",s:9,m:true}];
+const DEG_MIN=[{n:"i",s:0,m:true},{n:"III",s:3,m:false},{n:"iv",s:5,m:true},{n:"v",s:7,m:true},{n:"VI",s:8,m:false},{n:"VII",s:10,m:false}];
+const PROGS_MAJ=[[0,4,5,3],[0,3],[5,3,0,4],[0,5,3,4],[3,0,4,5],[0,3,5,4]],PROGS_MIN=[[0,4,1,5],[0,2],[0,5,4,5],[0,4,2,3],[4,5,0,0]];
+function padBase(){const s=curSong(),c=padCfg();if(S.settings.padKey!=null)return{i:S.settings.padKey,minor:c.mode==="min",neutral:c.mode==="auto"};
+  const k=s&&parseKey(transposeKey(s.key,s.applied.semi));if(!k)return null;if(c.mode==="maj")k.minor=false;else if(c.mode==="min")k.minor=true;return k}
+const padDegs=b=>b&&b.minor?DEG_MIN:DEG_MAJ,padProgs=b=>b&&b.minor?PROGS_MIN:PROGS_MAJ;
+function degChord(b,di){const d=padDegs(b)[di];return{i:(b.i+d.s)%12,minor:d.m,deg:true}}
+const chordLabel=(b,di)=>{const x=degChord(b,di);return keyName(x.i,x.minor)};
+function padKeyNow(){const b=padBase();if(!b)return null;if(E.padDeg!=null&&padCfg().harm!=="one")return degChord(b,E.padDeg);return b}
+let seqTimer=null,seqStep=-1;
+function padSeq(){const c=padCfg(),want=E.ctx&&S.settings.padOn&&c.harm==="seq";
+  if(want&&!seqTimer){seqStep=-1;if(!rhyTimer)rhyT0=E.ctx.currentTime+0.05;seqTimer=setInterval(seqTick,40);seqTick()}else if(!want&&seqTimer){clearInterval(seqTimer);seqTimer=null}}
+function seqTick(){const c=padCfg(),b=padBase();if(!b||!E.padVoice&&!S.settings.padOn)return;const k=rhyClock(),bars=Math.max(1,c.bars||2),prog=padProgs(b)[c.prog||0]||padProgs(b)[0];
+  const bar=Math.floor((E.ctx.currentTime+0.03-k.t0)/(k.beat*k.sig)),st=((Math.floor(bar/bars)%prog.length)+prog.length)%prog.length;
+  if(st!==seqStep){seqStep=st;E.padDeg=prog[st];padFollow(false,Math.min(c.fade,k.beat*k.sig*0.5));if(typeof Stage!=="undefined")Stage.padMark()}}
+function padFollow(force,xf){if(!E.ctx)return;const p=padKeyNow(),cfg=padCfg();padSeq();
   if(!S.settings.padOn||!p){if(E.padVoice){fadeOutVoice(E.padVoice,Math.max(1,cfg.fade));E.padVoice=null;E.padKey=null}padRhythm();return}
   const ch=padChord(p),kn=ch.r+"|"+ch.t;if(!force&&E.padVoice&&E.padKey===kn){padRhythm();return}
-  const old=E.padVoice;E.padVoice=makePadVoice(p);E.padKey=kn;if(old)fadeOutVoice(old,Math.max(1,cfg.fade));padRhythm()}
+  const old=E.padVoice;E.padVoice=makePadVoice(p,old?xf:null);E.padKey=kn;if(old)fadeOutVoice(old,Math.max(0.6,xf||cfg.fade));padRhythm()}
 /* liga/desliga ou muda o volume de uma camada sem reiniciar o pad */
 function padLayer(id,lv){const cfg=padCfg();cfg.layers[id]=lv;saveMeta();if(PAD_RHYTHM.some(r=>r.id===id)){padRhythm();return}
   const v=E.padVoice;if(!v||!E.ctx)return;const L=v.layers[id],t=E.ctx.currentTime;
@@ -1286,9 +1318,13 @@ function hitKick(t,lv){const c=E.ctx,o=c.createOscillator(),g=c.createGain();o.f
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.9,t+0.006);g.gain.exponentialRampToValueAtTime(0.001,t+0.55);o.connect(g).connect(rhyOut(lv));o.start(t);o.stop(t+0.6)}
 function hitTom(t,f,lv){const c=E.ctx,o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*0.6,t+0.3);
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.55,t+0.005);g.gain.exponentialRampToValueAtTime(0.001,t+0.45);o.connect(g).connect(rhyOut(lv));o.start(t);o.stop(t+0.5)}
-function hitSwell(t,dur,lv){const c=E.ctx,n=c.createBufferSource();n.buffer=padNoise(c);n.loop=true;const hp=c.createBiquadFilter();hp.type="highpass";hp.frequency.value=5200;const bp=c.createBiquadFilter();bp.type="peaking";bp.frequency.value=9000;bp.gain.value=6;
-  const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.22,t+dur);g.gain.exponentialRampToValueAtTime(0.0008,t+dur+3.2);
-  n.connect(hp).connect(bp).connect(g).connect(rhyOut(lv));n.start(t);n.stop(t+dur+3.4)}
+function cymbalSrc(c,t,stop,out){/* ruído + parciais metálicas (estilo prato), em filtro agudo */
+  const hp=c.createBiquadFilter();hp.type="highpass";hp.frequency.value=4200;const pk=c.createBiquadFilter();pk.type="peaking";pk.frequency.value=8500;pk.gain.value=7;pk.Q.value=0.8;hp.connect(pk).connect(out);
+  const n=c.createBufferSource();n.buffer=padNoise(c);n.loop=true;n.loopStart=Math.random();const ng=c.createGain();ng.gain.value=0.75;n.connect(ng).connect(hp);n.start(t);n.stop(stop);
+  [205.3,304.4,369.6,522.7,540,800].forEach((f,i)=>{const o=c.createOscillator();o.type="square";o.frequency.value=f*(5.3+i*0.07);const og=c.createGain();og.gain.value=0.05;o.connect(og).connect(hp);o.start(t);o.stop(stop)})}
+function hitSwell(t,dur,lv){const c=E.ctx,out=rhyOut(lv);
+  const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.2,t+dur);g.gain.linearRampToValueAtTime(0.0001,t+dur+0.04);g.connect(out);cymbalSrc(c,t,t+dur+0.1,g);
+  const h=t+dur,g2=c.createGain();g2.gain.setValueAtTime(0.0001,h);g2.gain.linearRampToValueAtTime(0.34,h+0.01);g2.gain.exponentialRampToValueAtTime(0.0006,h+5.5);g2.connect(out);cymbalSrc(c,h,h+5.6,g2)}
 function hitPiano(t,m,lv){const c=E.ctx,f=midiHz(m),g=c.createGain(),lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.setValueAtTime(Math.min(9000,f*9),t);lp.frequency.exponentialRampToValueAtTime(Math.max(400,f*2),t+1.4);
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.16,t+0.004);g.gain.exponentialRampToValueAtTime(0.001,t+2.2);g.connect(lp).connect(rhyOut(lv));
   [[1,"triangle",1],[2,"sine",.35],[3,"sine",.12]].forEach(([h,ty,l])=>{const o=c.createOscillator();o.type=ty;o.frequency.value=f*h;o.detune.value=(h-1)*3;const og=c.createGain();og.gain.value=l;o.connect(og).connect(g);o.start(t);o.stop(t+2.3)})}
@@ -1341,8 +1377,9 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
       <div class="pad-top"><button class="pw${st.padOn?" on":""}" data-act="padpow" aria-label="Ligar ou desligar o pad">⏻</button>
         <div class="pad-info"><small>Pad${c.preset?" · "+esc(c.preset):""}</small><b>${p?(auto&&s?transposeKey(s.key,s.applied.semi):PAD_KEYS[p.i])+qual:"escolha o tom"}</b><small>${st.padOn?"tocando":"desligado"} · ${auto?"segue o tom da música":"tom fixo"}</small></div>
         <button class="pa${auto?" on":""}" data-act="padauto">Tom da música</button></div>
-      <div class="pad-keys">${PAD_KEYS.map((k,i)=>`<button class="${p&&p.i===i?(st.padOn?"on":"sel"):""}" data-padkey="${i}">${k}</button>`).join("")}</div>
+      <div class="pad-keys">${PAD_KEYS.map((k,i)=>{const bb=padBase();return`<button class="${bb&&bb.i===i?(st.padOn?"on":"sel"):""}" data-padkey="${i}">${k}</button>`}).join("")}</div>
       <div class="pad-row">${seg("mode",[["auto","Auto"],["maj","Maior"],["min","Menor"],["5","Só 5ª"]])}${seg("oct",[[-1,"Oitava −"],[0,"Normal"],[1,"Oitava +"]])}</div>
+      ${this.harmHTML()}
       <h4>Camadas <span>junte várias para dar corpo</span></h4><div class="pls">${PAD_LAYERS.map(card).join("")}</div>
       <h4>Ritmo no tempo <span>${live?"seguindo a música tocando":bpmTxt}</span></h4><div class="pls">${PAD_RHYTHM.map(card).join("")}</div>
       ${!(s&&!s.demo)?`<label class="pctl"><span>BPM livre</span><input type="number" min="40" max="200" value="${c.bpm}" data-pcn="bpm" inputmode="numeric"></label>`:""}
@@ -1352,6 +1389,13 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
       <h4>Prontos</h4><div class="pres">${Object.keys(PAD_PRESETS).map(n=>`<button class="${c.preset===n?"on":""}" data-pp="${esc(n)}">${esc(n)}</button>`).join("")}</div>
     </div>
     <div class="pad-vol"><div class="fd" data-fd="pad" style="--fc:var(--k-pad)" role="slider" aria-label="Volume do pad" tabindex="0"><i style="height:${Math.min(100,st.padVol/1.25*100)}%"></i></div></div></div>`},
+  harmHTML(){const c=padCfg(),b=padBase();if(!b)return"";const seg=(k,opts)=>`<div class="pseg">${opts.map(([v,l])=>`<button class="${String(c[k])===String(v)?"on":""}" data-pc="${k}" data-v="${v}">${l}</button>`).join("")}</div>`;
+    const degs=padDegs(b).map((d,i)=>`<button class="dg${c.harm!=="one"&&E.padDeg===i?" on":""}" data-deg="${i}"><b>${chordLabel(b,i)}</b><small>${d.n}</small></button>`).join("");
+    return`<h4>Harmonia <span>${c.harm==="one"?"o pad fica no acorde do tom":c.harm==="seq"?"troca de acorde sozinho, no tempo":"toque no acorde e o pad segue"}</span></h4>
+      <div class="pad-row">${seg("harm",[["one","Uma nota"],["seq","Sequência"],["man","Manual"]])}${c.harm==="seq"?seg("bars",[[1,"1 compasso"],[2,"2"],[4,"4"]]):""}</div>
+      ${c.harm==="seq"?`<div class="pres">${padProgs(b).map((pr,i)=>`<button class="${(c.prog||0)===i?"on":""}" data-prog="${i}">${pr.map(d=>chordLabel(b,d)).join(" – ")}</button>`).join("")}</div>`:""}
+      ${c.harm!=="one"?`<div class="degs" id="padDegs">${degs}</div>`:""}`},
+  padMark(){document.querySelectorAll("#padDegs .dg").forEach((x,i)=>x.classList.toggle("on",E.padDeg===i))},
   time(){const d=E.cur;const cur=d&&d.song?Math.max(0,d.pos()-d.startPos):0,tot=d&&d.song?Math.max(0,d.endPos-d.startPos):0;$("#sgTime").innerHTML=`${fmt(cur)}<small>/ ${fmt(tot)}</small>`},
   frame(){if(!this.isOpen)return;if(this.state()!==this.sig)this.render();else{this.draw();this.time()}},
   draw(){const cv0=$("#sgCv"),s=curSong(),d=E.cur;if(!cv0)return;const wrap=cv0.parentElement,W=wrap.clientWidth,H=wrap.clientHeight,dpr=devicePixelRatio||1;
@@ -1391,7 +1435,12 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
     if(b.dataset.sec!=null)return sectionTap(+b.dataset.sec);
     if(b.dataset.song!=null){const set=curSet(),i=+b.dataset.song;if(i===S.idx)return;const was=E.cur&&E.cur.playing;if(was&&!E.min){crossfadeTo(i,2)}else{pause();loadSong(set.songIds[i],{idx:i,play:false})}return}
     if(b.dataset.pl){ensureCtx();const c=padCfg(),id=b.dataset.pl,v=c.layers[id]||0;c.mem=c.mem||{};if(v>0){c.mem[id]=v;padLayer(id,0)}else{padLayer(id,c.mem[id]||0.6);if(!S.settings.padOn){S.settings.padOn=true;padFollow();renderTransport()}}c.preset=null;saveMeta();return this.render()}
-    if(b.dataset.pc){ensureCtx();const c=padCfg();c[b.dataset.pc]=b.dataset.pc==="oct"?+b.dataset.v:b.dataset.v;saveMeta();padFollow(true);return this.render()}
+    if(b.dataset.pc){ensureCtx();const c=padCfg(),k=b.dataset.pc;c[k]=(k==="oct"||k==="bars")?+b.dataset.v:b.dataset.v;
+      if(k==="harm"){E.padDeg=c.harm==="one"?null:(E.padDeg??0);if(c.harm!=="one"&&!S.settings.padOn){S.settings.padOn=true;renderTransport()}}
+      saveMeta();if(k==="bars"){seqStep=-1;padSeq();return this.render()}padFollow(k!=="harm");return this.render()}
+    if(b.dataset.prog!=null){ensureCtx();const c=padCfg();c.prog=+b.dataset.prog;seqStep=-1;saveMeta();if(!S.settings.padOn){S.settings.padOn=true;renderTransport()}padFollow();seqTick();return this.render()}
+    if(b.dataset.deg!=null){ensureCtx();const c=padCfg();if(c.harm==="seq"){c.harm="man";if(seqTimer){clearInterval(seqTimer);seqTimer=null}}E.padDeg=+b.dataset.deg;saveMeta();
+      if(!S.settings.padOn){S.settings.padOn=true;renderTransport()}padFollow(false,Math.min(1.2,c.fade));return this.render()}
     if(b.dataset.pp){ensureCtx();padPreset(b.dataset.pp);if(!S.settings.padOn){S.settings.padOn=true;padFollow(true);renderTransport()}return this.render()}
     if(b.dataset.padkey!=null){const k=+b.dataset.padkey;ensureCtx();if(S.settings.padOn&&S.settings.padKey===k){S.settings.padOn=false}else{S.settings.padKey=k;S.settings.padOn=true}padFollow(true);saveMeta();renderTransport();return this.render()}
     const a=b.dataset.act;
