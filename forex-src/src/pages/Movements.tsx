@@ -71,7 +71,10 @@ function MovementList({ rows, days, tz }: { rows: TransactionRow[]; days?: Trans
           <section key={g.date} aria-label={fmtDayLong(g.date)} className="flex flex-col gap-2">
             <div className="flex justify-between px-0.5 text-[13px] font-bold text-mute">
               <span className="capitalize">{fmtDayLong(g.date)}{tot ? ` · ${tot.count} mov.` : ""}</span>
-              {tot && <span className={signClass(tot.op_result)}>{fmtUSD(tot.op_result, true)}</span>}
+              {tot && (tot.op_result !== 0 || !tot.capital_flow
+                // lucro das operações do dia; num dia (ou filtro) só com dinheiro entrando/saindo, mostra esse fluxo
+                ? <span className={signClass(tot.op_result)}>{fmtUSD(tot.op_result, true)}</span>
+                : <span className="text-mute-strong">{fmtUSD(tot.capital_flow, true)}</span>)}
             </div>
             <ul className="overflow-hidden rounded-[18px] border border-ink-700 bg-ink-800">
               {g.rows.map((r, i) => (

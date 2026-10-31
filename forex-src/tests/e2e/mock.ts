@@ -113,7 +113,12 @@ export function buildMock() {
       const list = !cls ? tx : tx.filter((t) => (cls === "capital" ? ["deposit", "withdrawal"].includes(t.classification) : t.classification === cls));
       const page = list.slice(off, off + lim);
       const dayMap: Record<string, unknown> = {};
-      for (const r of page) { const d = days.get(r.local_date)!; dayMap[r.local_date] = { op_result: d.op_result, capital_flow: d.capital_flow, count: d.tx_count }; }
+      // como no banco: totais do dia calculados só com as movimentações do filtro
+      for (const r of page) {
+        if (dayMap[r.local_date]) continue;
+        const same = list.filter((t) => t.local_date === r.local_date);
+        dayMap[r.local_date] = { op_result: same.reduce((x, t) => x + t.op_result, 0), capital_flow: same.reduce((x, t) => x + t.capital_flow, 0), count: same.length };
+      }
       return { total: list.length, limit: lim, offset: off, rows: page, days: dayMap };
     },
     dds_finance_get_transaction: (b) => ({ ...tx.find((t) => t.id === b.p_id)!, fingerprint: "f".repeat(64), rule_version: 2, source: "trading_csv",

@@ -12,16 +12,25 @@ O arquivo gerado contém dados reais e por isso fica fora do Git (.local/).
 """
 import csv
 import json
+import os
 import sys
 
 
 def main(path: str) -> None:
     rows = list(csv.reader(open(path, encoding="utf-8-sig")))
     cols, data = rows[0], rows[1:]
+    if os.environ.get("DDS_TEST_COMPACT") == "1":
+        # só as colunas usadas nas regras e na impressão digital (sem nome do investidor/gestor)
+        keep = ["Id", "Reason", "InvestmentId", "ManagerId", "Currency", "Amount", "AmountProfit", "RolloverId",
+                "RequestId", "PlatformPositionId", "PlatformOperationId", "Time"]
+        pos = [cols.index(c) for c in keep]
+        cols, data = keep, [[r[i] for i in pos] for r in data]
     ix = {c: i for i, c in enumerate(cols)}
     special = [r for r in data if r[ix["Reason"]] != "TradeResults"]
     trades = [r for r in data if r[ix["Reason"]] == "TradeResults"]
-    sample = trades[:20] + special + trades[-10:]
+    # DDS_TEST_COMPACT=1: amostra menor e JSON sem espaços (mesmas regras, script menor)
+    compact = os.environ.get("DDS_TEST_COMPACT") == "1"
+    sample = (trades[:7] + special + trades[-3:]) if compact else (trades[:20] + special + trades[-10:])
     sample.sort(key=lambda r: (r[ix["Time"]], int(r[ix["Id"]])))
 
     def num(x: str) -> float:
@@ -67,7 +76,8 @@ def main(path: str) -> None:
     dup_conflict = [trades[6], bad(trades[6], "Amount", "5.55")]
 
     payload = {"columns": cols, "rows": sample}
-    q = lambda o: json.dumps(o, ensure_ascii=False).replace("'", "''")
+    seps = (",", ":") if compact else (", ", ": ")
+    q = lambda o: json.dumps(o, ensure_ascii=False, separators=seps).replace("'", "''")
 
     sql = f"""
 do $test$
@@ -217,20 +227,20 @@ begin
 
   -- Cadastro aberto: conta nova entra na hora, sem ver dados de ninguém; telefone repetido e PIN fácil recusados
   perform set_config('request.headers', '{{"x-forwarded-for":"198.51.100.23"}}', true);
-  x := public.dds_finance_register('  Cadastro Teste  ', '(41) 90000-0099', '7391', true, 'teste');
+  x := public.dds_finance_register('  Cadastro Teste  ', '(41) 90000-0199', '7391', true, 'teste');
   r := r || jsonb_build_object('REG_ok', jsonb_build_object('ok', x->'ok', 'must_change_pin', x->'must_change_pin',
           'is_admin', x#>'{{profile,is_admin}}', 'name', x#>'{{profile,display_name}}',
           'sees_tx', public.dds_finance_list_transactions(x->>'token', '{{}}'::jsonb, 1, 0)->'total',
-          'login', public.dds_finance_login('41900000099', '7391', true, 'teste')->'ok'));
-  r := r || jsonb_build_object('REG_dup', public.dds_finance_register('Outro', '+55 41 90000-0099', '7392', true, 't')->>'code',
+          'login', public.dds_finance_login('41900000199', '7391', true, 'teste')->'ok'));
+  r := r || jsonb_build_object('REG_dup', public.dds_finance_register('Outro', '+55 41 90000-0199', '7392', true, 't')->>'code',
           'REG_dup_existing', public.dds_finance_register('Outro', '41900000002', '7392', true, 't')->>'code',
-          'REG_weak', public.dds_finance_register('X', '41900000098', '1111', true, 't')->>'code',
-          'REG_name', public.dds_finance_register('  ', '41900000097', '7391', true, 't')->>'code');
+          'REG_weak', public.dds_finance_register('X', '41900000198', '1111', true, 't')->>'code',
+          'REG_name', public.dds_finance_register('  ', '41900000197', '7391', true, 't')->>'code');
   for n in 1..4 loop
-    x := public.dds_finance_register('Conta ' || n, '4190000009' || n, '7391', true, 't');
+    x := public.dds_finance_register('Conta ' || n, '419000019' || n, '7391', true, 't');
   end loop;
   r := r || jsonb_build_object('REG_fifth_ok', x->'ok',
-          'REG_sixth_same_ip', public.dds_finance_register('Sexta', '41900000096', '7391', true, 't')->>'code');
+          'REG_sixth_same_ip', public.dds_finance_register('Sexta', '41900000196', '7391', true, 't')->>'code');
   perform set_config('request.headers', '', true);
 
   -- Bloqueio progressivo: 5 erros seguidos
