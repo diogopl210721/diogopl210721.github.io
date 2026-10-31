@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610302234";
+const APP_VER="202610310131";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -211,11 +211,23 @@ const memStems=new Map();
 
 /* ================= Motor de áudio ================= */
 const E={ctx:null,node:null,ready:null,SR:44100,decks:[],cur:null,vamp:null,queued:null,clickNodes:[],padVoice:null,padKey:null,wake:null};
-function ensureCtx(){
+/* iPhone: a chave de silencioso (e o modo "ambiente") cala o Web Audio. Pedimos a sessão de "reprodução"
+   e tocamos um <audio> mudo em loop, que faz o iOS tratar o app como player de música. */
+let iosKeep=null;
+function silentWav(){const sr=8000,n=sr/2,b=new ArrayBuffer(44+n),v=new DataView(b),w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+  w(0,"RIFF");v.setUint32(4,36+n,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,"data");v.setUint32(40,n,true);
+  for(let i=0;i<n;i++)v.setUint8(44+i,128);return URL.createObjectURL(new Blob([b],{type:"audio/wav"}))}
+function unlockAudio(){try{if(navigator.audioSession&&navigator.audioSession.type!=="playback")navigator.audioSession.type="playback"}catch(e){}
+  try{if(!iosKeep){iosKeep=document.createElement("audio");iosKeep.src=silentWav();iosKeep.loop=true;iosKeep.setAttribute("playsinline","");iosKeep.setAttribute("x-webkit-airplay","deny");iosKeep.preload="auto"}
+    if(iosKeep.paused){const pr=iosKeep.play();if(pr&&pr.catch)pr.catch(()=>{})}}catch(e){}
+  if(E.ctx&&E.ctx.state!=="running"){const r=E.ctx.resume();if(r&&r.catch)r.catch(()=>{})}}
+["pointerdown","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{capture:true,passive:true}));
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&E.ctx&&E.ctx.state!=="running"){const r=E.ctx.resume();if(r&&r.catch)r.catch(()=>{})}});
+function ensureCtx(){unlockAudio();
   if(E.ctx){if(E.ctx.state!=="running")E.ctx.resume();return E.ctx}
   const AC=window.AudioContext||window.webkitAudioContext;let c;
   try{c=new AC({sampleRate:44100,latencyHint:"interactive"})}catch(e){c=new AC({latencyHint:"interactive"})}
-  E.ctx=c;E.SR=c.sampleRate;
+  E.ctx=c;E.SR=c.sampleRate;c.onstatechange=()=>{if(c.state==="interrupted"||c.state==="suspended"){if(E.cur&&E.cur.playing&&!document.hidden)c.resume().catch(()=>{})}};
   E.master=c.createGain();const lim=c.createDynamicsCompressor();lim.threshold.value=-1.5;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=0.002;lim.release.value=0.08;E.master.connect(lim).connect(c.destination);
   E.clickGain=c.createGain();E.clickPan=c.createStereoPanner();E.clickGain.connect(E.clickPan).connect(E.master);
   E.padFilter=c.createBiquadFilter();E.padFilter.type="lowpass";E.padFilter.frequency.value=900;E.padFilter.Q.value=0.4;
