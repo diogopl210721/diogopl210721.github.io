@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610311732";
+const APP_VER="202610311735";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -1354,7 +1354,10 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
     $("#sgHint").textContent=E.min?(E.min.entering?"A banda entra no próximo compasso":nx?`"${nx.name}" em espera · desligue Ministrar para entrar`:"Escolha a parte em que a banda vai entrar"):E.queued&&E.cur&&sectionsOf(E.cur)[E.queued.idx]?`Próxima: ${sectionsOf(E.cur)[E.queued.idx].name} (toque de novo para cancelar)`:"";
     document.querySelectorAll("#stage .st-nav button").forEach(b=>b.classList.toggle("on",b.dataset.pane===this.pane));
     const pn=$("#sgPane");pn.className="st-pane p-"+this.pane;
+    /* mantém a rolagem (ex.: mixer arrastado até as vozes) ao redesenhar */
+    const same=this.lastPane===this.pane,mx=pn.querySelector(".st-mix"),sx=same&&mx?mx.scrollLeft:0,sy=same?pn.scrollTop:0;this.lastPane=this.pane;
     pn.innerHTML=this.pane==="mix"?this.mixHTML():this.pane==="set"?this.setHTML():this.pane==="pad"?this.padHTML():this.partsHTML();
+    if(same){pn.scrollTop=sy;const m2=pn.querySelector(".st-mix");if(m2)m2.scrollLeft=sx}
     this.draw();this.time()},
   partsHTML(){const d=E.cur,s=curSong();if(!s)return'<p class="st-empty">Abra uma música.</p>';
     const dd=d&&d.song===s?d:null;const secs=dd?sectionsOf(dd):[...s.markers].sort((a,b)=>a.t-b.t).map(m=>({name:m.name}));const ci=dd?curSectionIdx(dd):-1;
