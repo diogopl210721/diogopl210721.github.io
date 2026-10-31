@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610302126";
+const APP_VER="202610302221";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -69,6 +69,97 @@ function detectSections(mono,sr,bpm,offset,sig){const hopS=0.02,h=Math.floor(sr*
     if(starts.length&&st-starts[starts.length-1]<=2.01*bar)starts[starts.length-1]=st;else starts.push(st)}
   const out=[{name:"Intro",t:0}];starts.forEach((t,i)=>{if(t>bar*0.5)out.push({name:"Parte "+(i+1),t:Math.round(t*1000)/1000})});
   return out}
+
+/* ===== Análise de uma música inteira (um MP3): batida, acordes e seções ===== */
+const NOTE_SHARP=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"],NOTE_FLAT=["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+const FLAT_KEYS=new Set(["F","Bb","Eb","Ab","Db","Gb","Dm","Gm","Cm","Fm","Bbm","Ebm"]);
+function chordName(root,minor,keyLabel){const names=FLAT_KEYS.has(keyLabel)||/b/.test(keyLabel||"")?NOTE_FLAT:NOTE_SHARP;return names[((root%12)+12)%12]+(minor?"m":"")}
+function parseChord(c){const m=/^([A-G])([#b]?)(.*)$/.exec(c||"");if(!m)return null;const idx={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]+(m[2]==="#"?1:m[2]==="b"?-1:0);return{root:(idx+12)%12,rest:m[3],flat:m[2]==="b"}}
+function transposeChord(c,semi){if(!semi)return c;return String(c).split("/").map(part=>{const p=parseChord(part);if(!p)return part;const names=p.flat||semi<0?NOTE_FLAT:NOTE_SHARP;return names[(p.root+semi+120)%12]+p.rest}).join("/")}
+
+const clampNum=(v,a,b)=>Math.min(b,Math.max(a,v));
+/* Envelope de ataques (fluxo espectral) */
+function onsetEnvelope(mono,sr){const N=1024,hop=256,n=Math.floor((mono.length-N)/hop);if(n<10)return{env:new Float32Array(0),hopS:hop/sr};
+  const win=new Float64Array(N);for(let i=0;i<N;i++)win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
+  let prev=new Float64Array(N/2);const env=new Float32Array(n);
+  for(let f=0;f<n;f++){const re=new Float64Array(N);const o=f*hop;for(let i=0;i<N;i++)re[i]=mono[o+i]*win[i];const m=fftMag(re);let s=0;
+    for(let k=1;k<N/2;k++){const v=Math.log1p(100*Math.sqrt(m[k]));const d=v-prev[k];if(d>0)s+=d;prev[k]=v}env[f]=s}
+  let mean=0;for(const v of env)mean+=v;mean/=n;for(let i=0;i<n;i++)env[i]=Math.max(0,env[i]-mean);return{env,hopS:hop/sr}}
+
+/* Andamento: autocorrelação + ajuste fino pelo alinhamento da grade na música inteira */
+function detectTempoMix(env,hopS){const n=env.length;if(n<200)return null;
+  const score=(lag)=>{let s=0;for(let i=0;i+lag<n;i++)s+=env[i]*env[i+lag];return s/(n-lag)};
+  let best=null;for(let bpm=60;bpm<=190;bpm+=0.5){const lag=60/bpm/hopS,l0=Math.floor(lag),fr=lag-l0;const v=score(l0)*(1-fr)+score(l0+1)*fr;
+    const w=Math.exp(-0.5*Math.pow(Math.log2(bpm/120)/0.9,2));const sc=v*w;if(!best||sc>best.sc)best={bpm,sc}}
+  const grid=(bpm)=>{const P=60/bpm/hopS;let bestPh=0,bestS=-1;const steps=64;for(let k=0;k<steps;k++){const ph=k*P/steps;let s=0,c=0;for(let t=ph;t<n-1;t+=P){const i=Math.floor(t),fr=t-i;s+=env[i]*(1-fr)+env[i+1]*fr;c++}s/=c||1;if(s>bestS){bestS=s;bestPh=ph}}return{s:bestS,ph:bestPh}};
+  // período preciso: pico da autocorrelação em 8, 16, 32 e 64 batidas (interpolação parabólica)
+  const P0=60/best.bpm/hopS;let period=P0;
+  for(const mlt of [8,16,32,64]){const c=mlt*period,lo=Math.floor(c-period*0.2),hi=Math.ceil(c+period*0.2);if(hi+2>=n*0.7)break;let bi=lo,bv=-1;const sc=[];
+    for(let l=lo;l<=hi;l++){const v=score(l);sc[l]=v;if(v>bv){bv=v;bi=l}}
+    const y0=sc[bi-1]??bv,y2=sc[bi+1]??bv,den=y0-2*bv+y2,dx=den?0.5*(y0-y2)/den:0;period=(bi+clampNum(dx,-0.5,0.5))/mlt}
+  let fine={bpm:60/(period*hopS)};
+  let bpm=fine.bpm;if(Math.abs(bpm-Math.round(bpm))<0.12)bpm=Math.round(bpm);else bpm=Math.round(bpm*10)/10;
+  const g=grid(bpm);return{bpm,phase:g.ph*hopS+512*hopS/256}}
+
+/* Croma por quadro: harmônico (65 Hz–2 kHz) e grave (40–200 Hz) */
+function chromaFrames(mono,sr){const N=4096,hop=1024,n=Math.max(0,Math.floor((mono.length-N)/hop));const win=new Float64Array(N);for(let i=0;i<N;i++)win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
+  const map=[];for(let k=1;k<N/2;k++){const f=k*sr/N;if(f<40||f>2000)continue;const p=((Math.round(12*Math.log2(f/440))+69)%12+12)%12;map.push([k,p,f<200,f>=65])}
+  const ch=[],bass=[],rms=[];for(let fr=0;fr<n;fr++){const re=new Float64Array(N);const o=fr*hop;let e=0;for(let i=0;i<N;i++){const v=mono[o+i];re[i]=v*win[i];e+=v*v}const m=fftMag(re);
+    const c=new Float64Array(12),b=new Float64Array(12);for(const [k,p,lo,hi] of map){const v=Math.sqrt(m[k]);if(hi)c[p]+=v;if(lo)b[p]+=v}ch.push(c);bass.push(b);rms.push(Math.sqrt(e/N))}
+  return{ch,bass,rms,hopS:hop/sr}}
+const norm12=v=>{let s=0;for(const x of v)s+=x*x;s=Math.sqrt(s)||1;return v.map(x=>x/s)};
+
+/* Acordes por tempo, com suavização (Viterbi) e preferência pelos acordes do tom */
+function detectChordsMix(frames,beats,keyRoot,keyMinor,keyLabel){const B=beats.length-1;if(B<4)return[];
+  const T=[];for(let r=0;r<12;r++)for(const mi of [0,1]){const t=new Float64Array(12);t[r]=1;t[(r+(mi?3:4))%12]=0.85;t[(r+7)%12]=0.8;T.push({r,mi,t:norm12(t)})}
+  const tonic=keyMinor?(keyRoot+3)%12:keyRoot;const dia=new Set([[0,0],[2,1],[4,1],[5,0],[7,0],[9,1]].map(([o,mi])=>((tonic+o)%12)+":"+mi));
+  const bc=[],bb=[];for(let i=0;i<B;i++){const a=Math.floor(beats[i]/frames.hopS),z=Math.max(a+1,Math.floor(beats[i+1]/frames.hopS));const c=new Float64Array(12),b=new Float64Array(12);let cnt=0;
+    for(let f=a;f<z&&f<frames.ch.length;f++){for(let p=0;p<12;p++){c[p]+=frames.ch[f][p];b[p]+=frames.bass[f][p]}cnt++}bc.push(cnt?norm12(c):null);bb.push(cnt?norm12(b):null)}
+  const K=T.length,em=bc.map((c,i)=>T.map(x=>{if(!c)return 0;let s=0;for(let p=0;p<12;p++)s+=c[p]*x.t[p];s+=0.45*(bb[i]?bb[i][x.r]:0);if(dia.has(x.r+":"+x.mi))s+=0.12;return s}));
+  const change=0.14;let prev=em[0].slice(),back=[];for(let i=1;i<B;i++){let bestPrev=0;for(let k=1;k<K;k++)if(prev[k]>prev[bestPrev])bestPrev=k;const cur=new Array(K),bk=new Array(K);
+    for(let k=0;k<K;k++){const stay=prev[k],sw=prev[bestPrev]-change;if(stay>=sw){cur[k]=stay+em[i][k];bk[k]=k}else{cur[k]=sw+em[i][k];bk[k]=bestPrev}}back.push(bk);prev=cur}
+  let k=0;for(let j=1;j<K;j++)if(prev[j]>prev[k])k=j;const path=new Array(B);path[B-1]=k;for(let i=B-2;i>=0;i--){k=back[i][k];path[i]=k}
+  const out=[];for(let i=0;i<B;i++){const x=T[path[i]],name=chordName(x.r,x.mi,keyLabel);if(!out.length||out[out.length-1].c!==name)out.push({t:Math.round(beats[i]*1000)/1000,c:name,b:i})}
+  // acordes de menos de 2 tempos entram no anterior
+  for(let pass=0;pass<3;pass++){for(let i=1;i<out.length;i++){const len=(out[i+1]?out[i+1].b:B)-out[i].b;if(len<2){out.splice(i,1);i--}}
+    for(let i=1;i<out.length;i++)if(out[i].c===out[i-1].c){out.splice(i,1);i--}}
+  return out}
+
+/* Seções: novidade na matriz de auto-similaridade por compasso + rótulos por repetição e energia */
+function detectSectionsMix(frames,beats,sig,chords){const bars=[];for(let i=0;i+sig<beats.length;i+=sig)bars.push([beats[i],beats[i+sig]]);const nb=bars.length;if(nb<12)return[{name:"Intro",t:0}];
+  const feat=bars.map(([a,z])=>{const fa=Math.floor(a/frames.hopS),fz=Math.max(fa+1,Math.floor(z/frames.hopS));const c=new Float64Array(12);let e=0,cnt=0;
+    for(let f=fa;f<fz&&f<frames.ch.length;f++){for(let p=0;p<12;p++)c[p]+=frames.ch[f][p];e+=frames.rms[f];cnt++}return{c:norm12(c),e:cnt?e/cnt:0}});
+  const emax=Math.max(...feat.map(f=>f.e))||1;feat.forEach(f=>f.e/=emax);
+  const sim=(i,j)=>{let s=0;for(let p=0;p<12;p++)s+=feat[i].c[p]*feat[j].c[p];return 0.75*s+0.25*(1-Math.abs(feat[i].e-feat[j].e))};
+  const W=4,nov=new Float64Array(nb);for(let i=W;i<nb-W;i++){let s=0;for(let a=-W;a<W;a++)for(let b=-W;b<W;b++){const sg=(a<0)===(b<0)?1:-1;s+=sg*sim(i+a,i+b)}nov[i]=Math.max(0,s)}
+  const nmax=Math.max(...nov)||1;const bounds=[0];const minLen=4;
+  const cand=[...nov].map((v,i)=>({i,v:v/nmax})).filter(x=>x.v>0.22&&x.i>=minLen&&x.i<=nb-2).sort((a,b)=>b.v-a.v);
+  for(const c of cand){if(bounds.every(b=>Math.abs(b-c.i)>=minLen))bounds.push(c.i)}bounds.sort((a,b)=>a-b);
+  const segs=[...new Set(bounds)].sort((a,b)=>a-b).map((b,k,arr)=>({a:b,z:k+1<arr.length?arr[k+1]:nb}));
+  segs.forEach(s=>{s.e=0;const c=new Float64Array(12);for(let i=s.a;i<s.z;i++){s.e+=feat[i].e;for(let p=0;p<12;p++)c[p]+=feat[i].c[p]}s.e/=(s.z-s.a);s.c=norm12(c)});
+  const ssim=(x,y)=>{let s=0;for(let p=0;p<12;p++)s+=x.c[p]*y.c[p];return s-1.2*Math.abs(x.e-y.e)-0.02*Math.abs((x.z-x.a)-(y.z-y.a))};
+  let cl=0;segs.forEach((s,i)=>{if(s.cl!=null)return;s.cl=cl;for(let j=i+1;j<segs.length;j++)if(segs[j].cl==null&&ssim(s,segs[j])>0.93)segs[j].cl=cl;cl++});
+  const info={};segs.forEach(s=>{const x=info[s.cl]||(info[s.cl]={n:0,e:0});x.n++;x.e+=s.e});Object.values(info).forEach(x=>x.e/=x.n);
+  const rep=Object.entries(info).filter(([k,x])=>x.n>1).sort((a,b)=>b[1].e-a[1].e);
+  const chorus=rep.length?+rep[0][0]:null,verse=rep.length>1?+rep[1][0]:null;
+  const names=segs.map((s,i)=>{if(i===0&&s.e<0.6&&s.cl!==chorus)return"Intro";if(i===segs.length-1&&s.z-s.a<=8&&s.cl!==chorus)return"Final";
+    if(s.cl===chorus)return"Refrão";if(s.cl===verse)return"Verso";if(segs[i+1]&&segs[i+1].cl===chorus&&s.z-s.a<=8)return"Pré-refrão";
+    if(info[s.cl].n===1&&i>segs.length/2)return"Ponte";return info[s.cl].n>1?"Parte "+String.fromCharCode(65+s.cl):"Instrumental"});
+  const count={},tot={};names.forEach(n=>tot[n]=(tot[n]||0)+1);
+  return segs.map((s,i)=>{const n=names[i];count[n]=(count[n]||0)+1;const label=tot[n]>1&&!/Intro|Final/.test(n)?n+" "+count[n]:n;return{name:label,t:Math.round((i===0?0:bars[s.a][0])*1000)/1000}})}
+
+/* Junta tudo para um MP3 único */
+function analyzeMix(mono,sr,known){let tp;if(known&&known.bpm){tp={bpm:known.bpm,phase:known.offset||0}}else{const on=onsetEnvelope(mono,sr);tp=detectTempoMix(on.env,on.hopS)}if(!tp)return null;
+  const beatLen=60/tp.bpm,dur=mono.length/sr,beats=[];for(let t=tp.phase;t<dur;t+=beatLen)beats.push(t);
+  const fr=chromaFrames(mono,sr);const totalC=new Float64Array(12);fr.ch.forEach(c=>{for(let p=0;p<12;p++)totalC[p]+=c[p]});const sum=totalC.reduce((a,b)=>a+b,0)||1;
+  const key=detectKey([Array.from(totalC,v=>v/sum)]);const keyLabel=keyName(key.best.i,key.best.minor);
+  let chords=detectChordsMix(fr,beats,key.best.i,key.best.minor,keyLabel);
+  // tempo 1 do compasso: fase em que as trocas de acorde mais caem
+  const sig=(known&&known.sig)||4,hits=new Array(sig).fill(0);chords.forEach(c=>hits[c.b%sig]++);const down=known&&known.bpm?0:hits.indexOf(Math.max(...hits));
+  const barLen=sig*beatLen;let firstDown=beats[down]%barLen;if(firstDown>barLen-0.08)firstDown-=barLen;firstDown=Math.max(0,firstDown);const barBeats=[];for(let t=firstDown;t<dur;t+=beatLen)barBeats.push(t);const offset=Math.round(firstDown*1000)/1000;
+  const sections=detectSectionsMix(fr,barBeats,sig,chords);
+  chords=chords.map(({t,c})=>({t,c}));
+  return{bpm:tp.bpm,offset,key:keyLabel,keyAlt:keyName(key.alt.i,key.alt.minor),keyConf:key.confidence,chords,sections,sig}}
 
 /* ================= Utilidades ================= */
 const $=s=>document.querySelector(s);
@@ -258,7 +349,8 @@ function engineTick(){const c=E.ctx;if(!c||!E.node)return;const now=c.currentTim
           if(hasNext&&tr.mode==="auto"){await sleep(Math.max(0,tr.gap)*1000);if(E.cur===d&&!d.playing)await loadSong(set.songIds[S.idx+1],{idx:S.idx+1,play:true})}
           else if(hasNext){await loadSong(set.songIds[S.idx+1],{idx:S.idx+1});toast("Pronta para tocar: "+curSong().name)}
           else{keepAwake(false);renderTransport()}},Math.max(0,endT-now)*1000+40)}}}
-  if(!(timers.pl>0)){timers.pl=40;maybePreload()}else timers.pl--}
+  if(!(timers.pl>0)){timers.pl=40;maybePreload()}else timers.pl--;
+  if(typeof Live!=="undefined")Live.tick()}
 async function keepAwake(on){try{if(on&&!E.wake&&navigator.wakeLock){E.wake=await navigator.wakeLock.request("screen");E.wake.addEventListener("release",()=>E.wake=null)}else if(!on&&E.wake){await E.wake.release();E.wake=null}}catch(e){}}
 function gotoSection(i){ensureCtx();const d=E.cur;if(!d||!d.song)return;const s=sectionsOf(d)[i];if(!s)return;
   if(!d.playing){d.anchorPos=s.start;d.endHandled=false;renderSections();drawArr();renderTime();return}
@@ -317,13 +409,14 @@ function renderImport(){const el=$("#impDlg");
     :`<label class="drop" id="drop" for="impIn"><svg viewBox="0 0 48 48"><path d="M24 31V9m0 0l-8 8m8-8l8 8"/><path d="M8 29v8a4 4 0 004 4h24a4 4 0 004-4v-8"/></svg><b>Solte o pacote desta música</b><span class="muted">ou toque para escolher</span></label>`}
     <input type="file" id="impIn" multiple accept=".zip,audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac,.ogg" hidden>`;return}
   if(IMP.stage==="pick"){el.innerHTML=`<button class="btn-ghost x" id="impX" aria-label="Fechar">✕</button><h2 id="impTitle">Importar pacote</h2>
-    <p class="muted" style="margin:0">Envie o .zip da música como você recebeu (MultiTracks, LoopCommunity, pacote do ministério) ou selecione todos os stems. O app alinha as faixas, lê o BPM no metrônomo, estima o tom e marca as seções pela guia.</p>
+    <p class="muted" style="margin:0">Envie o .zip do multitrack, os stems, ou só o MP3 da música. O app alinha as faixas, encontra o BPM, o tom, as seções e a cifra que vai aparecendo enquanto toca.</p>
     <label class="drop" id="drop" for="impIn"><svg viewBox="0 0 48 48"><path d="M24 31V9m0 0l-8 8m8-8l8 8"/><path d="M8 29v8a4 4 0 004 4h24a4 4 0 004-4v-8"/></svg><b>Solte o .zip ou os arquivos aqui</b><span class="muted">ou toque para escolher · MP3, WAV, M4A, AIFF, FLAC</span></label>
     <input type="file" id="impIn" multiple accept=".zip,audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac,.ogg" hidden>`;return}
   if(IMP.stage==="analyzing"){el.innerHTML=`<h2 id="impTitle">Analisando ${esc(IMP.pkg)}</h2><ul class="steps">${IMP.steps.map(s=>`<li class="${s.st}"><span class="st"></span><span>${esc(s.label)}</span><span class="rs">${esc(s.res||"")}</span></li>`).join("")}</ul>`;return}
   const r=IMP.res;el.innerHTML=`<button class="btn-ghost x" id="impX" aria-label="Fechar">✕</button><h2 id="impTitle">Tudo pronto</h2>
     <ul class="steps">${IMP.steps.map(s=>`<li class="${s.st}"><span class="st"></span><span>${esc(s.label)}</span><span class="rs">${esc(s.res||"")}</span></li>`).join("")}</ul>
     <div class="found"><div><span>Faixas</span><b>${r.tracks.length}</b></div><div><span>BPM</span><b class="mono">${r.bpm}</b></div><div><span>Tom</span><b>${esc(r.key)}</b></div><div><span>Seções</span><b>${r.markers.length}</b></div></div>
+    ${r.chords&&r.chords.length?`<p class="help" style="margin:0">Cifra detectada: <b class="mono" style="color:var(--fg)">${esc([...new Set(r.chords.map(c=>c.c))].slice(0,8).join(" · "))}</b>. Você pode corrigir em Ajustes depois.</p>`:""}
     <div class="group"><div class="field"><span>Música</span><input type="text" id="iName" value="${esc(r.name)}"></div>
     <div class="field"><span>Artista</span><input type="text" id="iArtist" value="${esc(r.artist)}"></div>
     <div class="field"><span>Tom</span><input type="text" id="iKey" value="${esc(r.key)}"></div>
@@ -349,18 +442,21 @@ async function readAudioFiles(list){let files=[],pkg="";const zip=list.find(f=>/
 const normFile=n=>String(n||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\.[a-z0-9]{2,4}$/,"").replace(/[_\s.\-]+/g," ").trim();
 function missingTracks(song){if(!song||song.demo)return[];return song.tracks.filter(t=>!S.have.has(t.id))}
 async function gatherFiles(list){if(!list.length)return;ensureCtx();
+  // copia os arquivos para a memória antes de redesenhar a janela: alguns navegadores perdem o acesso quando o campo some
+  try{busy("Lendo arquivos",0.1);list=await Promise.all(list.map(async f=>new File([await f.arrayBuffer()],f.name,{type:f.type||""})));busy(null)}
+  catch(e){busy(null);toast("Não consegui ler o arquivo escolhido. Tente escolher de novo.",6000);return}
   if(IMP.stage==="link")return linkFiles(list);
   let files=[],pkg="";const zip=list.find(f=>/\.zip$/i.test(f.name));
-  IMP.steps=[{label:"Abrindo o pacote",st:"run"},{label:"Lendo as faixas",st:""},{label:"Sincronizando pelo ponto zero",st:""},{label:"BPM pelo metrônomo",st:""},{label:"Tom da música",st:""},{label:"Seções pela guia",st:""}];
+  IMP.steps=[{label:"Abrindo o pacote",st:"run"},{label:"Lendo as faixas",st:""},{label:"Sincronizando pelo ponto zero",st:""},{label:"BPM e compasso",st:""},{label:"Tom da música",st:""},{label:"Seções",st:""},{label:"Cifra (acordes)",st:""}];
   IMP.stage="analyzing";IMP.pkg=zip?zip.name.replace(/\.zip$/i,"").replace(/^\d{6,}_/,""):"faixas";renderImport();
   try{({files,pkg}=await readAudioFiles(list));
     step(0,"ok",files.length+" arquivos");await analyzePackage(files,pkg)}
   catch(err){IMP.stage="pick";renderImport();toast(err.message||"Não foi possível ler o pacote.",6000)}}
 async function analyzePackage(files,pkg){const sr=E.SR,down=Math.max(1,Math.round(sr/11025)),asr=sr/down;
-  const tracks=[];let clickMono=null,guides=[],chromas=[],dur=0,lastSound=0;
+  const tracks=[];let clickMono=null,guides=[],chromas=[],dur=0,lastSound=0,mix=null;
   step(1,"run","0 de "+files.length);
   for(let i=0;i<files.length;i++){const f=files[i];let b;try{b=await decodeBlob(f.blob,sr)}catch(e){continue}
-    const name=f.name.replace(/\.[^.]+$/,"").replace(/[_]+/g," ").trim(),kind=detectKind(name);
+    const name=files.length===1?"Música completa":f.name.replace(/\.[^.]+$/,"").replace(/[_]+/g," ").trim(),kind=files.length===1?"other":detectKind(name);
     const chans=[b.getChannelData(0)];if(b.numberOfChannels>1)chans.push(b.getChannelData(1));
     const p=peaksOf(chans,900),first=p.peaks.findIndex(v=>v>0.01);
     const t={id:uid(),name,file:normFile(f.name),kind,vol:kind==="click"||kind==="guide"?0.8:0.85,pan:0,mute:false,solo:false,dur:b.duration,ch:isMonoBuf(b)?1:2,
@@ -368,28 +464,34 @@ async function analyzePackage(files,pkg){const sr=E.SR,down=Math.max(1,Math.roun
     dur=Math.max(dur,b.duration);lastSound=Math.max(lastSound,p.lastSample/sr);
     if(kind==="click"&&!clickMono)clickMono=toMonoDown(chans,down);
     if(kind==="guide")guides.push({t,mono:toMonoDown(chans,down)});
+    if(kind!=="click"&&kind!=="guide"){const m=toMonoDown(chans,down);if(!mix||mix.length<m.length){const nm=new Float32Array(m.length);if(mix)nm.set(mix);mix=nm}for(let j=0;j<m.length;j++)mix[j]+=m[j]}
     if(["bass","keys","gtr"].includes(kind)&&chromas.length<5){const m=toMonoDown(chans,down);chromas.push(chromaOf(m,asr,Math.min(15,b.duration*0.1),Math.min(b.duration,140)))}
     tracks.push(t);b=null;step(1,"run",(i+1)+" de "+files.length);await sleep(0)}
   if(!tracks.length)throw new Error("Nenhum arquivo de áudio pôde ser lido.");
   tracks.sort((a,b)=>KIND_ORDER[a.kind]-KIND_ORDER[b.kind]||a.name.localeCompare(b.name,"pt"));
   step(1,"ok",tracks.length+" faixas");
   step(2,"ok",`${tracks.length} faixas no mesmo ponto zero · ${fmt(dur)}`);
-  step(3,"run");let bpm=120,offset=0,bpmOk=false;
-  if(clickMono){const c=detectClick(clickMono,asr);if(c){bpm=c.bpm;offset=c.offset;bpmOk=true;step(3,"ok",bpm+" BPM")}}
-  if(!bpmOk){const m=/(\d{2,3}(?:[.,]\d)?)\s?bpm/i.exec(files.map(f=>f.name).join(" ")+" "+pkg);if(m){bpm=parseFloat(m[1].replace(",","."));bpmOk=true;step(3,"ok",bpm+" BPM (pelo nome)")}else step(3,"warn","sem metrônomo · ajuste depois")}
+  step(3,"run");let bpm=120,offset=0,bpmOk=false,fromClick=false;
+  if(clickMono){const c=detectClick(clickMono,asr);if(c){bpm=c.bpm;offset=c.offset;bpmOk=true;fromClick=true;step(3,"ok",bpm+" BPM pelo metrônomo")}}
+  await sleep(0);let ana=null;if(mix){try{ana=analyzeMix(mix,asr,fromClick?{bpm,offset,sig:4}:null)}catch(e){console.warn(e)}}
+  if(!bpmOk&&ana){bpm=ana.bpm;offset=ana.offset;bpmOk=true;step(3,"ok",bpm+" BPM pela batida")}
+  if(!bpmOk){const m=/(\d{2,3}(?:[.,]\d)?)\s?bpm/i.exec(files.map(f=>f.name).join(" ")+" "+pkg);if(m){bpm=parseFloat(m[1].replace(",","."));bpmOk=true;step(3,"ok",bpm+" BPM (pelo nome)")}else step(3,"warn","não detectado · ajuste depois")}
   await sleep(0);step(4,"run");let key="—",keyAlt="";
-  if(chromas.length){const k=detectKey(chromas);key=keyName(k.best.i,k.best.minor);keyAlt=keyName(k.alt.i,k.alt.minor);step(4,"ok",k.confidence>0.05?key:key+" ou "+keyAlt)}else step(4,"warn","sem faixas harmônicas");
+  if(chromas.length){const k=detectKey(chromas);key=keyName(k.best.i,k.best.minor);keyAlt=keyName(k.alt.i,k.alt.minor);step(4,"ok",k.confidence>0.05?key:key+" ou "+keyAlt)}
+  else if(ana){key=ana.key;keyAlt=ana.keyAlt;step(4,"ok",ana.keyConf>0.05?key:key+" ou "+keyAlt)}else step(4,"warn","não detectado");
   await sleep(0);step(5,"run");let markers=[{name:"Intro",t:0}];
-  if(guides.length&&bpmOk){guides.sort((a,b)=>(a.t.first??1e9)-(b.t.first??1e9));const ms=detectSections(guides[0].mono,asr,bpm,offset,4);if(ms.length>1){markers=ms;step(5,"ok",ms.length+" seções")}else step(5,"warn","não encontrei contagens")}
-  else step(5,"warn",guides.length?"precisa do BPM":"sem faixa de guia");
+  if(guides.length&&bpmOk){guides.sort((a,b)=>(a.t.first??1e9)-(b.t.first??1e9));const ms=detectSections(guides[0].mono,asr,bpm,offset,4);if(ms.length>1){markers=ms;step(5,"ok",ms.length+" seções pela guia")}}
+  if(markers.length<2&&ana&&ana.sections.length>1){markers=ana.sections;step(5,"ok",markers.length+" seções pela música")}
+  if(markers.length<2)step(5,"warn","marque depois em Ajustes");
+  const chords=ana?ana.chords:[];step(6,chords.length?"ok":"warn",chords.length?chords.length+" trocas de acorde":"não detectada");
   const nm=parsePackageName(pkg);
-  IMP.res={name:nm.title||"Nova música",artist:nm.artist,key,keyAlt:key!==keyAlt?keyAlt:"",bpm,offset,sig:4,markers,tracks,dur,lastSound,hasClick:!!clickMono};
+  IMP.res={name:nm.title||"Nova música",artist:nm.artist,key,keyAlt:key!==keyAlt?keyAlt:"",bpm,offset,sig:4,markers,tracks,dur,lastSound,hasClick:!!clickMono,chords};
   IMP.stage="review";renderImport()}
 async function saveImport(){const r=IMP.res;if(!r)return;
   r.tracks.forEach((t,i)=>{t.name=($("#iT"+i).value||t.name).trim();t.kind=$("#iK"+i).value});
   const song=newSong({name:$("#iName").value.trim()||r.name,artist:$("#iArtist").value.trim(),key:$("#iKey").value.trim()||r.key,bpm:parseFloat($("#iBpm").value)||r.bpm,sig:parseInt($("#iSig").value)||4,
     beatOffset:r.offset,duration:r.dur,trimEnd:r.lastSound>0&&r.lastSound+1.5<r.dur?Math.round((r.lastSound+1.5)*100)/100:null,markers:r.markers,
-    click:{on:!r.hasClick,sub:1,countIn:r.hasClick?0:1},tracks:r.tracks.map(({blob,first,...t})=>t)});
+    click:{on:!r.hasClick,sub:1,countIn:r.hasClick?0:1},chords:r.chords||[],tracks:r.tracks.map(({blob,first,...t})=>t)});
   const add=$("#iAdd").checked;$("#imp").hidden=true;busy("Salvando no aparelho",0);
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   for(let i=0;i<r.tracks.length;i++){const ok=await idb("stems","readwrite",s=>s.put(r.tracks[i].blob,r.tracks[i].id));if(!ok){busy(null);toast("Sem espaço para salvar as faixas neste aparelho. Libere espaço e importe de novo.",7000);return}S.have.add(r.tracks[i].id);busy("Salvando no aparelho",(i+1)/r.tracks.length)}
@@ -406,7 +508,7 @@ function renderHero(){const s=curSong(),set=curSet();
   $("#hTitle").textContent=s?s.name:"DDS MultiTrack";$("#hArtist").textContent=s?(s.artist||""):"Importe o pacote de uma música para começar.";
   if(!s){$("#hChips").innerHTML="";return}
   const k=transposeKey(s.key,s.applied.semi),bpm=+(s.bpm*s.applied.tempo/100).toFixed(2);
-  $("#hChips").innerHTML=`<span class="chip">Tom <b>${esc(k)}</b>${s.applied.semi?`<span class="mono">${s.applied.semi>0?"+":""}${s.applied.semi}</span>`:""}</span><span class="chip"><b>${bpm}</b> BPM</span><span class="chip"><b>${s.sig===6?"6/8":s.sig+"/4"}</b></span><span class="chip"><b>${s.tracks.length}</b> faixas</span>${s.demo?'<span class="chip warn">Exemplo</span>':""}${missingTracks(s).length?`<button class="chip warn" data-act="link">Áudios faltando neste aparelho · vincular</button>`:""}`;
+  $("#hChips").innerHTML=`<span class="chip">Tom <b>${esc(k)}</b>${s.applied.semi?`<span class="mono">${s.applied.semi>0?"+":""}${s.applied.semi}</span>`:""}</span><span class="chip"><b>${bpm}</b> BPM</span><span class="chip"><b>${s.sig===6?"6/8":s.sig+"/4"}</b></span><span class="chip"><b>${s.tracks.length}</b> ${s.tracks.length>1?"faixas":"faixa"}</span>${s.demo?'<span class="chip warn">Exemplo</span>':""}${missingTracks(s).length?`<button class="chip warn" data-act="link">Áudios faltando neste aparelho · vincular</button>`:""}`;
   $("#mbTitle").textContent=s.name}
 function renderTransport(){const d=E.cur,on=!!(d&&d.playing);document.querySelectorAll(".pi").forEach(x=>x.innerHTML=on?PAUSE:PLAY);
   $("#bPlay").setAttribute("aria-label",on?"Pausar":"Tocar");$("#mPlay").setAttribute("aria-label",on?"Pausar":"Tocar");
@@ -418,7 +520,11 @@ function renderTime(){const d=E.cur,s=curSong();let cur=0,tot=0;
   if(d&&d.song&&d.song===s&&d.loaded){cur=Math.max(0,d.pos()-d.startPos);tot=d.endPos-d.startPos}else if(s){const r=s.applied.tempo/100;tot=((s.trimEnd??s.duration)-(s.trimStart||0))/r}
   $("#tc").innerHTML=`${fmt(cur)}<small>/ ${fmt(tot)}</small>`;$("#mbTime").textContent=fmt(cur)+" / "+fmt(tot);$("#mbProg").style.width=(tot?clamp(cur/tot,0,1)*100:0)+"%";
   const sig=s?s.sig||4:4,beatsEl=$("#beats");if(beatsEl.children.length!==sig)beatsEl.innerHTML=Array.from({length:sig},(_,i)=>`<i class="${i===0?"one":""}"></i>`).join("");
-  if(!s){$("#bb").textContent="Compasso —";return}
+  if(!s){$("#bb").textContent="Compasso —";$("#chordBox").hidden=true;return}
+  const ch=s.chords||[];const cb=$("#chordBox");cb.hidden=!ch.length;
+  if(ch.length){const po=d&&d.song===s?songPosOrig():(s.trimStart||0);let ci=-1;for(let i=0;i<ch.length;i++){if(ch[i].t<=po+0.05)ci=i;else break}
+    const cur=transposeChord((ch[Math.max(0,ci)]||{}).c||"",s.applied.semi),nx=ch[ci+1]?transposeChord(ch[ci+1].c,s.applied.semi):"";
+    if(cb.dataset.k!==cur+"|"+nx){cb.dataset.k=cur+"|"+nx;$("#chordNow").textContent=cur;$("#chordNext").textContent=nx?"→ "+nx:""}}
   const o=d&&d.song===s?songPosOrig():(s.trimStart||0),rel=o-(s.beatOffset||0),bi=Math.floor(rel/(60/s.bpm)+1e-6);
   const bar=rel<0?0:Math.floor(bi/sig)+1,beat=rel<0?0:(bi%sig)+1;$("#bb").textContent="Compasso "+bar+" · tempo "+(beat||"—");
   if(bi!==lastBeat){lastBeat=bi;[...beatsEl.children].forEach((x,i)=>x.classList.toggle("on",d&&d.playing&&i===beat-1))}}
@@ -436,9 +542,9 @@ $("#secrail").addEventListener("dblclick",e=>{const b=e.target.closest("[data-se
 const arrCanvas=document.createElement("canvas");arrCanvas.id="arr";arrCanvas.setAttribute("aria-label","Faixas sincronizadas; toque para ir ao ponto");
 function renderArr(){const s=curSong(),body=$("#arrBody");
   if(!s){$("#arrInfo").textContent="";body.innerHTML=`<div class="empty-arr"><h3>Nenhuma música aberta</h3><span>Importe o .zip de uma música. As faixas aparecem aqui alinhadas, com mixer por faixa.</span><button class="btn-primary" data-act="import">+ Importar pacote</button></div>`;return}
-  const miss=missingTracks(s).length;$("#arrInfo").innerHTML=miss?`<button class="chip warn" data-act="link">${miss} de ${s.tracks.length} faixas sem áudio aqui · vincular</button>`:esc(s.tracks.length+" faixas sincronizadas");
+  const miss=missingTracks(s).length;$("#arrInfo").innerHTML=miss?`<button class="chip warn" data-act="link">${miss} de ${s.tracks.length} faixas sem áudio aqui · vincular</button>`:esc(s.tracks.length>1?s.tracks.length+" faixas sincronizadas":"Música completa · cifra e seções automáticas");
   const anySolo=s.tracks.some(t=>t.solo);
-  body.innerHTML=`<div class="arr-body"><div class="heads"><div class="rs"><span class="eyebrow">Faixa</span></div>${s.tracks.map(t=>`<div class="lh${t.mute||(anySolo&&!t.solo)?" dim":""}" style="--kc:var(${KIND[t.kind||"other"].v})">
+  body.innerHTML=`<div class="arr-body"><div class="heads"><div class="rs"><span class="eyebrow">Faixa</span></div>${(s.chords||[]).length?'<div class="chh"><span class="eyebrow">Cifra</span></div>':""}${s.tracks.map(t=>`<div class="lh${t.mute||(anySolo&&!t.solo)?" dim":""}" style="--kc:var(${KIND[t.kind||"other"].v})">
       <div class="meta"><span class="nm" title="${esc(t.name)}">${esc(t.name)}</span><span class="kd">${KIND[t.kind||"other"].l}</span></div>
       <input type="range" min="0" max="1.25" step="0.01" value="${t.vol}" data-tid="${t.id}" aria-label="Volume ${esc(t.name)}" title="Volume (toque duplo volta ao padrão)">
       <div class="ms"><button class="m${t.mute?" on":""}" data-tid="${t.id}" data-f="mute" aria-label="Mudo ${esc(t.name)}">M</button><button class="s${t.solo?" on":""}" data-tid="${t.id}" data-f="solo" aria-label="Solo ${esc(t.name)}">S</button></div></div>`).join("")}</div><div class="canvas-wrap" id="cvWrap"></div></div>`;
@@ -448,7 +554,7 @@ $("#arrBody").addEventListener("dblclick",e=>{const t=e.target;if(t.type==="rang
 $("#arrBody").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.act==="import")return openImport();if(b.dataset.act==="link")return;
   const s=curSong(),tr=s&&s.tracks.find(x=>x.id===b.dataset.tid);if(!tr)return;tr[b.dataset.f]=!tr[b.dataset.f];saveSong(s,{local:true});applyTrackMix(E.cur);renderArr()});
 function drawArr(){const s=curSong();if(!s||!arrCanvas.isConnected)return;const wrap=arrCanvas.parentElement,dpr=window.devicePixelRatio||1,W=wrap.clientWidth;
-  const LH=parseFloat(cv("--lane"))||50,RH=parseFloat(cv("--ruler"))||30,H=RH+s.tracks.length*LH;if(!W)return;
+  const LH=parseFloat(cv("--lane"))||50,RH0=parseFloat(cv("--ruler"))||30,CH=(s.chords||[]).length?(parseFloat(cv("--chordrow"))||26):0,RH=RH0+CH,H=RH+s.tracks.length*LH;if(!W)return;
   if(arrCanvas.width!==Math.round(W*dpr)||arrCanvas.height!==Math.round(H*dpr)){arrCanvas.width=Math.round(W*dpr);arrCanvas.height=Math.round(H*dpr);arrCanvas.style.height=H+"px"}
   const g=arrCanvas.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
   const total=s.duration||1,X=t=>t/total*W,d=E.cur,pos=d&&d.song===s&&d.loaded?songPosOrig():(d&&d.song===s?songPosOrig():(s.trimStart||0));
@@ -467,9 +573,13 @@ function drawArr(){const s=curSong();if(!s||!arrCanvas.isConnected)return;const 
   g.fillStyle="rgba(10,12,17,0.66)";if(s.trimStart>0)g.fillRect(0,RH,X(s.trimStart),H-RH);if(s.trimEnd!=null&&s.trimEnd<total)g.fillRect(X(s.trimEnd),RH,W-X(s.trimEnd),H-RH);
   // régua com compassos
   g.fillStyle=cv("--surface-2");g.fillRect(0,0,W,RH);g.fillStyle=cv("--line");g.fillRect(0,RH-1,W,1);
+  if(CH){g.fillStyle=cv("--bg");g.fillRect(0,RH0,W,CH);g.fillStyle=cv("--line");g.fillRect(0,RH0-1,W,1);const chs=s.chords,semi=s.applied.semi;g.font="700 12px "+cv("--f-mono");g.textBaseline="middle";
+    chs.forEach((c,i)=>{const x0=X(c.t),x1=X(chs[i+1]?chs[i+1].t:total),w=x1-x0;g.fillStyle=cv("--line-2");g.fillRect(Math.round(x0),RH0+3,1,CH-6);
+      const name=transposeChord(c.c,semi),tw=g.measureText(name).width;if(w>tw+6){g.fillStyle=c.t<=pos&&(!chs[i+1]||chs[i+1].t>pos)?cv("--accent"):cv("--muted");g.fillText(name,x0+4,RH0+CH/2)}})}
+  const RH_SAVE=RH;{const RH=RH0;
   const bar=(s.sig||4)*60/s.bpm,off=s.beatOffset||0,nb=Math.floor((total-off)/bar);let every=1;while(every*bar/total*W<34)every*=2;
   g.font="500 10px "+cv("--f-mono");g.textBaseline="middle";
-  for(let b=0;b<=nb;b+=every){const x=Math.round(X(off+b*bar))+0.5;g.fillStyle=cv("--line-2");g.fillRect(x,RH-9,1,8);g.fillStyle=cv("--faint");g.fillText(String(b+1),x+3,RH-7)}
+  for(let b=0;b<=nb;b+=every){const x=Math.round(X(off+b*bar))+0.5;g.fillStyle=cv("--line-2");g.fillRect(x,RH-9,1,8);g.fillStyle=cv("--faint");g.fillText(String(b+1),x+3,RH-7)}}
   g.font="700 11px "+cv("--f-display");
   ms.forEach((m,i)=>{const x=Math.round(X(m.t))+0.5,x1=X(i+1<ms.length?ms[i+1].t:total);g.fillStyle=cv("--fg");g.globalAlpha=0.35;g.fillRect(x,RH,1,H-RH);g.globalAlpha=1;
     g.fillStyle=E.vamp===i?cv("--accent"):cv("--surface-3");const tw=Math.min(x1-x-3,g.measureText(m.name.toUpperCase()).width+12);if(tw>14){g.beginPath();g.roundRect?g.roundRect(x+1,3,tw,15,4):g.rect(x+1,3,tw,15);g.fill();
@@ -503,7 +613,7 @@ function setHTML(){const set=curSet();if(!set)return"";const tr=set.trans||{mode
   <div class="group"><h3>Biblioteca<span class="grow"></span><span class="mono" style="letter-spacing:0">${S.songs.length}</span></h3>
     <ol class="queue">${S.songs.map(s=>`<li class="qi${s.id===S.curSongId?" cur":""}" data-song="${s.id}"><span class="n">♪</span><span style="min-width:0"><div class="t">${esc(s.name)}</div><div class="s"><span>${esc(s.artist||"")}</span><span class="mono">${s.tracks.length} faixas · ${fmt(s.duration)}</span></div></span>
       <span class="acts"><button data-a="del" class="${S.confirm==="song:"+s.id?"btn-danger armed":""}" style="${S.confirm==="song:"+s.id?"width:auto;padding:0 8px;font-size:12px":""}" aria-label="Excluir música">${S.confirm==="song:"+s.id?"Excluir?":"🗑"}</button></span></li>`).join("")}</ol>
-    <button class="btn-primary" data-a="import">+ Importar pacote</button></div>
+    <button class="btn-primary" data-a="import">+ Importar música</button></div>
   <div class="group"><div class="blesscard"><b>Abençoe o DDS MultiTrack</b><p>Gratuito para todas as igrejas. Oferte o valor que sentir no coração para manter o app no ar.</p>
     <div class="row"><button class="btn-primary" data-bless>Ofertar via Pix</button><button class="btn-ghost" data-bless>Tenho músicas autorais</button></div></div>
     ${S.sets.length>1?`<button class="btn-danger${S.confirm==="set:"+set.id?" armed":""}" data-a="delset">${S.confirm==="set:"+set.id?"Confirmar: excluir este repertório":"Excluir repertório"}</button>`:""}</div>`}
@@ -515,7 +625,11 @@ function cfgHTML(){const s=curSong();if(!s)return'<p class="help">Abra uma músi
     ${pend?`<div class="callout"><span style="flex:1">O áudio será processado no novo tom e andamento.</span><button class="btn-primary" data-a="apply">Aplicar</button><button class="btn-ghost" data-a="undo">Desfazer</button></div>`:""}</div>
   <div class="group"><h3>Seções<span class="grow"></span><button class="btn-ghost" data-a="mkadd" style="padding:4px 8px">+ Marcar no c ${barAt(o)}</button></h3>
     ${[...s.markers].map((m,i)=>({m,i})).sort((a,b)=>a.m.t-b.m.t).map(({m,i})=>`<div class="mk"><input type="text" list="secNames" value="${esc(m.name)}" data-mk="${i}" aria-label="Nome da seção"><span class="mono">c ${barAt(m.t)} · ${fmt(m.t)}</span><button class="btn-ghost" data-a="mkdel" data-i="${i}" aria-label="Remover seção">✕</button></div>`).join("")||'<p class="help" style="margin:0">Toque a música e marque onde começa cada parte.</p>'}
-    <p class="help" style="margin:0">Seções detectadas pela guia vêm numeradas. Renomeie como Verso, Refrão, Ponte.</p></div>
+    <p class="help" style="margin:0">Seções detectadas automaticamente podem vir com nomes genéricos. Renomeie como Verso, Refrão, Ponte.</p></div>
+  <div class="group"><h3>Cifra<span class="grow"></span><span class="mono" style="letter-spacing:0">${(s.chords||[]).length}</span></h3>
+    ${(s.chords||[]).length?`<div class="chordedit">${s.chords.map((c,i)=>`<label title="Em ${fmt(c.t)}"><span class="mono">${fmt(c.t)}</span><input type="text" value="${esc(c.c)}" data-ch="${i}" maxlength="10" aria-label="Acorde em ${fmt(c.t)}" autocapitalize="characters"></label>`).join("")}</div>`:'<p class="help" style="margin:0">Sem cifra. Toque a música e acrescente os acordes nos pontos certos.</p>'}
+    <button class="btn-ghost" data-a="chadd" style="align-self:flex-start">+ Acorde no ponto atual</button>
+    <p class="help" style="margin:0">Escreva no tom original. Ao mudar o tom, a cifra é transposta sozinha. Apague o texto para remover um acorde.</p></div>
   <div class="group"><h3>Click extra (gerado)</h3>
     <div class="field"><span>Ligado</span><div class="row"><button class="tog${s.click.on?" on":""}" data-a="clk"><i></i>${s.click.on?"Ligado":"Desligado"}</button></div></div>
     <div class="field"><span>Subdivisão</span><select id="cSub">${[[1,"Semínima"],[2,"Colcheia"],[3,"Tercina"],[4,"Semicolcheia"]].map(([v,l])=>`<option value="${v}"${s.click.sub===v?" selected":""}>${l}</option>`).join("")}</select></div>
@@ -559,6 +673,8 @@ sb.addEventListener("click",async e=>{const b=e.target.closest("button"),li=e.ta
     catch(err){busy(null);s.applied={semi:0,tempo:100};s.semi=0;s.tempo=100;saveSong(s);toast(err.message||"Não foi possível processar.");renderAll()}}
   if(a==="clk"){s.click.on=!s.click.on;if(!s.click.on)cancelClicks();saveSong(s);renderSide();renderTransport()}
   if(a==="mkadd"){const bar=(s.sig||4)*60/s.bpm,off=s.beatOffset||0,o=songPosOrig(),t=Math.max(0,off+Math.round((o-off)/bar)*bar);s.markers.push({name:"Nova seção",t:Math.round(t*1000)/1000});saveSong(s);renderSide();renderSections();drawArr()}
+  if(a==="chadd"){const beat=60/s.bpm,off=s.beatOffset||0,o=songPosOrig(),t=Math.max(0,off+Math.round((o-off)/beat)*beat);s.chords=s.chords||[];
+    const prevC=[...s.chords].reverse().find(c=>c.t<=t);s.chords.push({t:Math.round(t*1000)/1000,c:prevC?prevC.c:(s.key&&s.key!=="—"?s.key:"C")});s.chords.sort((a,b)=>a.t-b.t);saveSong(s);renderSide();renderArr();renderTime()}
   if(a==="mkdel"){s.markers.splice(+b.dataset.i,1);E.vamp=null;saveSong(s);renderSide();renderSections();drawArr()}
   const loaded=d&&d.song===s&&d.loaded;
   if(a==="tstart"||a==="tend"||a==="tclr"){if(!loaded){toast("Abra e toque a música antes de marcar início ou fim.");return}const o=songPosOrig();
@@ -579,6 +695,7 @@ sb.addEventListener("change",e=>{const t=e.target,set=curSet(),s=curSong();
   if(t.id==="cName")s.name=t.value.trim()||s.name;else if(t.id==="cArtist")s.artist=t.value.trim();else if(t.id==="cKey"){s.key=t.value.trim()||s.key;padFollow()}
   else if(t.id==="cBpm")s.bpm=clamp(+t.value||s.bpm,30,260);else if(t.id==="cSig")s.sig=+t.value;else if(t.id==="cSub")s.click.sub=+t.value;else if(t.id==="cCount")s.click.countIn=+t.value;
   else if(t.dataset.mk!=null){s.markers[+t.dataset.mk].name=t.value.trim()||"Seção"}
+  else if(t.dataset.ch!=null){const v=t.value.trim().replace(/^([a-g])/,m=>m.toUpperCase());if(!v)s.chords.splice(+t.dataset.ch,1);else s.chords[+t.dataset.ch].c=v;saveSong(s);renderSide();renderArr();renderTime();return}
   else if(t.dataset.tn){s.tracks.find(x=>x.id===t.dataset.tn).name=t.value.trim()||"Faixa";renderArr()}
   else if(t.dataset.tk){s.tracks.find(x=>x.id===t.dataset.tk).kind=t.value;applyTrackMix(E.cur);renderArr()}
   if(["cBpm","cSig","cSub"].includes(t.id)&&E.cur&&E.cur.playing){cancelClicks();E.cur.clickFrom=E.ctx.currentTime}
@@ -604,7 +721,7 @@ $("#bPlay").onclick=togglePlay;$("#mPlay").onclick=togglePlay;
 $("#bStop").onclick=()=>{ensureCtx();stopToStart()};
 const prev=()=>{ensureCtx();const d=E.cur;if(d&&d.playing&&d.pos()-d.startPos>3){d.seek(d.startPos);return}goNext(-1)};
 $("#bPrev").onclick=prev;$("#mPrev").onclick=prev;$("#bNext").onclick=()=>goNext(1);$("#mNext").onclick=()=>goNext(1);
-$("#bImport").onclick=openImport;
+$("#bImport").onclick=openImport;try{$("#ano").textContent=new Date().getFullYear()}catch(e){}
 /* Oferta (Pix) e convite para artistas */
 const PIX_KEY="+5541991542931",PIX_CODE="00020101021126360014br.gov.bcb.pix0114+55419915429315204000053039865802BR5922Diogo Domingues Soares6009SAO PAULO622905251HGER0Y8YV0TYBV9ZT8FNSVJT630446F1";
 function openBless(){$("#bless").hidden=false;$("#cpFallback").hidden=true}
@@ -649,46 +766,43 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&E.cur&&E.
   if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").then(reg=>{reg.addEventListener("updatefound",()=>{const w=reg.installing;w&&w.addEventListener("statechange",()=>{if(w.state==="installed"&&navigator.serviceWorker.controller)toast("Nova versão do app baixada. Ela entra na próxima vez que você abrir o app.",6000)})})}).catch(()=>{})}
 })();
 
-/* ================= Nuvem: conta, equipe e sincronização =================
-   Os áudios ficam em cada aparelho. Músicas (tom, BPM, seções, faixas, volumes) e repertórios
-   vão para o Supabase. Funciona offline e envia quando a internet volta. */
+/* ================= Nuvem: conta (e-mail e senha) e sincronização da biblioteca =================
+   Os áudios ficam em cada aparelho. Músicas e repertórios de cada pessoa vão para o Supabase
+   e aparecem em todos os aparelhos dela. Funciona offline e envia quando a internet volta. */
 const SUPA_URL="https://arffptuclrrzuzdrcmuc.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyZmZwdHVjbHJyenV6ZHJjbXVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MTcxMDAsImV4cCI6MjEwMTI5MzEwMH0.n3AqYrMwv2ayVa4la6vesVJOfd_LkdmY-ikp8P8uFAg";
 const LOCAL_ONLY=["applied","dirty","syncedAt","updatedAt","auto"];
-const Sync={sb:null,user:null,member:false,admin:false,checked:false,status:"off",lastPull:null,lastOk:0,tombs:{mt_musicas:[],mt_repertorios:[]},
-  busy:false,again:false,timer:null,team:[],stage:"email",email:"",msg:"",channel:null,
+const Sync={sb:null,user:null,uid:null,nome:"",checked:false,member:false,status:"off",lastPull:null,lastOk:0,lastUid:null,tombs:{mt_musicas:[],mt_repertorios:[]},
+  busy:false,again:false,timer:null,tab:"entrar",msg:"",channel:null,
   async init(){
-    try{const m=await idb("meta","readonly",s=>s.get("sync"));if(m&&m!==true){this.lastPull=m.lastPull||null;this.tombs=Object.assign(this.tombs,m.tombs||{})}}catch(e){}
+    try{const m=await idb("meta","readonly",s=>s.get("sync"));if(m&&m!==true){this.lastPull=m.lastPull||null;this.lastUid=m.lastUid||null;this.tombs=Object.assign(this.tombs,m.tombs||{})}}catch(e){}
     if(!window.supabase||!window.supabase.createClient){this.set("off");return}
-    this.sb=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:"ddsmt-auth"}});
+    this.sb=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"ddsmt-auth"}});
     this.sb.auth.onAuthStateChange((ev,session)=>{setTimeout(()=>this.onSession(session),0)});
     try{const {data}=await this.sb.auth.getSession();await this.onSession(data&&data.session)}catch(e){this.set(navigator.onLine?"erro":"offline")}
-    window.addEventListener("online",()=>this.syncNow());window.addEventListener("offline",()=>this.set(this.user?"offline":"off"));
+    window.addEventListener("online",()=>{this.syncNow();Live.reconnect()});window.addEventListener("offline",()=>this.set(this.user?"offline":"off"));
     document.addEventListener("visibilitychange",()=>{if(!document.hidden)this.syncNow()});
     setInterval(()=>this.syncNow(),60000)},
-  saveMeta(){idb("meta","readwrite",s=>s.put({lastPull:this.lastPull,tombs:this.tombs},"sync"))},
+  saveMeta(){idb("meta","readwrite",s=>s.put({lastPull:this.lastPull,lastUid:this.lastUid,tombs:this.tombs},"sync"))},
   set(st){this.status=st;renderAccount()},
-  async onSession(session){const email=session&&session.user&&session.user.email?session.user.email.toLowerCase():null;
-    if(email&&email===this.user&&this.checked)return;
-    this.user=email;this.member=false;this.admin=false;this.checked=false;
-    if(!email){this.set("off");this.unsubscribe();return}
-    if(!navigator.onLine){this.set("offline");return}
-    try{const [m,a]=await Promise.all([this.sb.rpc("mt_e_membro"),this.sb.rpc("mt_e_admin")]);if(m.error)throw m.error;this.member=!!m.data;this.admin=!!a.data;this.checked=true}
-    catch(e){this.set(navigator.onLine?"erro":"offline");return}
-    if(!this.member){this.set("blocked");return}
-    if(this.stage!=="done"){this.stage="done";if(!$("#acc").hidden)setTimeout(()=>{if(this.status==="ok")closeAccount()},1600)}
-    const first=await idb("meta","readonly",s=>s.get("enviadoNuvem"));
-    if(first!==true){S.songs.forEach(x=>{if(!x.demo){x.dirty=true;x.updatedAt=Date.now();saveSong(x,{local:true})}});S.sets.forEach(x=>{if(!x.auto){x.dirty=true;x.updatedAt=Date.now();saveSet(x,{local:true})}});await idb("meta","readwrite",s=>s.put(true,"enviadoNuvem"))}
-    this.subscribe();if(this.admin)this.loadTeam();await this.syncNow()},
-  subscribe(){if(this.channel||!this.sb)return;try{this.channel=this.sb.channel("ddsmt-sync")
-      .on("postgres_changes",{event:"*",schema:"public",table:"mt_musicas"},()=>this.soon(700))
-      .on("postgres_changes",{event:"*",schema:"public",table:"mt_repertorios"},()=>this.soon(700)).subscribe()}catch(e){}},
+  async onSession(session){const u=session&&session.user;const uid=u?u.id:null;
+    if(uid&&uid===this.uid&&this.checked)return;
+    this.uid=uid;this.user=u&&u.email?u.email.toLowerCase():null;this.nome=(u&&u.user_metadata&&u.user_metadata.nome)||(this.user?this.user.split("@")[0]:"");
+    this.checked=!!uid;this.member=!!uid;
+    if(!uid){this.set("off");this.unsubscribe();Live.onLogout();return}
+    if(this.lastUid!==uid){this.lastPull=null;this.lastUid=uid;this.saveMeta();
+      S.songs.forEach(x=>{if(!x.demo){x.dirty=true;x.updatedAt=Date.now();saveSong(x,{local:true})}});S.sets.forEach(x=>{if(!x.auto){x.dirty=true;x.updatedAt=Date.now();saveSet(x,{local:true})}})}
+    if(!$("#acc").hidden&&this.tab!=="perfil")setTimeout(closeAccount,700);
+    this.subscribe();Live.onLogin();
+    if(!navigator.onLine){this.set("offline");return}await this.syncNow()},
+  subscribe(){if(this.channel||!this.sb)return;try{this.channel=this.sb.channel("ddsmt-lib-"+this.uid)
+      .on("postgres_changes",{event:"*",schema:"public",table:"mt_musicas",filter:"dono=eq."+this.uid},()=>this.soon(700))
+      .on("postgres_changes",{event:"*",schema:"public",table:"mt_repertorios",filter:"dono=eq."+this.uid},()=>this.soon(700)).subscribe()}catch(e){}},
   unsubscribe(){if(this.channel){try{this.sb.removeChannel(this.channel)}catch(e){}this.channel=null}},
   soon(ms){clearTimeout(this.timer);this.timer=setTimeout(()=>this.syncNow(),ms||1500)},
   tomb(tbl,id){if(!this.tombs[tbl].includes(id))this.tombs[tbl].push(id);this.saveMeta();this.soon()},
-  async syncNow(){if(!this.sb||!this.user)return;if(!navigator.onLine){this.set("offline");return}
-    if(!this.checked){const {data}=await this.sb.auth.getSession();this.user=null;return this.onSession(data&&data.session)}
-    if(!this.member)return;if(this.busy){this.again=true;return}this.busy=true;this.set("syncing");
+  async syncNow(){if(!this.sb||!this.uid)return;if(!navigator.onLine){this.set("offline");return}
+    if(this.busy){this.again=true;return}this.busy=true;this.set("syncing");
     try{await this.push();await this.pull();this.lastOk=Date.now();this.set("ok")}
     catch(e){console.warn("sync",e);this.set(navigator.onLine?"erro":"offline")}
     this.busy=false;if(this.again){this.again=false;this.soon(300)}},
@@ -696,13 +810,13 @@ const Sync={sb:null,user:null,member:false,admin:false,checked:false,status:"off
   async push(){const t0=Date.now();
     const plan=[["mt_musicas",S.songs.filter(x=>x.dirty&&!x.demo),saveSong],["mt_repertorios",S.sets.filter(x=>x.dirty&&!x.auto),saveSet]];
     for(const [tbl,list,save] of plan){if(!list.length)continue;
-      const {data,error}=await this.sb.from(tbl).upsert(list.map(x=>({id:x.id,dados:this.clean(x),excluida:false}))).select("id,atualizado_em");if(error)throw error;
+      const {data,error}=await this.sb.from(tbl).upsert(list.map(x=>({id:x.id,dados:this.clean(x),excluida:false,dono:this.uid}))).select("id,atualizado_em");if(error)throw error;
       const at=new Map((data||[]).map(r=>[r.id,r.atualizado_em]));list.forEach(x=>{if(!at.has(x.id))return;x.syncedAt=at.get(x.id);if(!(x.updatedAt>t0))x.dirty=false;save(x,{local:true})})}
     for(const tbl of ["mt_musicas","mt_repertorios"]){const ids=this.tombs[tbl];if(!ids.length)continue;
       const {error}=await this.sb.from(tbl).update({excluida:true}).in("id",ids);if(error)throw error;this.tombs[tbl]=[];this.saveMeta()}},
   async pull(){const since=this.lastPull?new Date(new Date(this.lastPull).getTime()-15000).toISOString():"1970-01-01T00:00:00Z";let max=this.lastPull,changed=false;
     for(const tbl of ["mt_musicas","mt_repertorios"]){for(let from=0;;from+=500){
-      const {data,error}=await this.sb.from(tbl).select("id,dados,atualizado_em,atualizado_por,excluida").gt("atualizado_em",since).order("atualizado_em").range(from,from+499);if(error)throw error;
+      const {data,error}=await this.sb.from(tbl).select("id,dados,atualizado_em,excluida").gt("atualizado_em",since).order("atualizado_em").range(from,from+499);if(error)throw error;
       for(const r of data){if(!max||new Date(r.atualizado_em)>new Date(max))max=r.atualizado_em;if(this.apply(tbl,r))changed=true}
       if(data.length<500)break}}
     if(changed){if(S.sets.some(x=>!x.auto)){const drop=S.sets.filter(x=>x.auto);if(drop.length&&S.sets.length>drop.length){drop.forEach(x=>idb("setlists","readwrite",st=>st.delete(x.id)));S.sets=S.sets.filter(x=>!x.auto);if(!S.sets.some(x=>x.id===S.currentSet)){S.currentSet=S.sets[0].id;saveMeta()}}}
@@ -726,59 +840,222 @@ const Sync={sb:null,user:null,member:false,admin:false,checked:false,status:"off
     const d=Object.assign(r.dados||{},{id:r.id,dirty:false,syncedAt:r.atualizado_em,auto:false});d.songIds=d.songIds||[];
     if(loc){Object.keys(loc).forEach(k=>delete loc[k]);Object.assign(loc,d);saveSet(loc,{local:true})}else{S.sets.push(d);saveSet(d,{local:true})}
     return true},
-  /* Conta */
-  async sendLink(email){email=(email||"").trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){this.msg="Digite um e-mail válido.";return renderAccount()}
-    if(!navigator.onLine){this.msg="Sem internet. Conecte para entrar.";return renderAccount()}
-    this.email=email;this.msg="Enviando…";renderAccount();
-    const {error}=await this.sb.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.origin+location.pathname}});
-    if(error){this.msg=/rate|limit|seconds/i.test(error.message)?"O servidor de e-mail atingiu o limite de envios. Tente de novo em alguns minutos.":"Não foi possível enviar: "+error.message;return renderAccount()}
-    this.stage="code";this.msg="";renderAccount()},
-  async verify(code){code=(code||"").replace(/\D/g,"");if(code.length<6){this.msg="Digite o código de 6 dígitos do e-mail.";return renderAccount()}
-    this.msg="Conferindo…";renderAccount();const {error}=await this.sb.auth.verifyOtp({email:this.email,token:code,type:"email"});
-    if(error){this.msg="Código inválido ou vencido. Peça um novo.";return renderAccount()}this.msg=""},
-  async signOut(){await this.sb.auth.signOut();this.stage="email";this.team=[];this.set("off")},
-  async loadTeam(){const {data,error}=await this.sb.from("mt_membros").select("email,nome,papel").order("criado_em");if(!error){this.team=data||[];renderAccount()}},
-  async addMember(email,nome){email=(email||"").trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast("Digite um e-mail válido.");return}
-    const {error}=await this.sb.from("mt_membros").insert({email,nome:(nome||"").trim()||null,papel:"membro"});if(error){toast(/duplicate/i.test(error.message)?"Esse e-mail já está na equipe.":"Não foi possível incluir: "+error.message);return}
-    toast(email+" incluído na equipe. A pessoa entra com esse e-mail.");this.loadTeam()},
-  async removeMember(email){const {error}=await this.sb.from("mt_membros").delete().eq("email",email);if(error){toast("Não foi possível remover: "+error.message);return}S.confirm=null;this.loadTeam()},
-  async toggleAdmin(email,papel){const {error}=await this.sb.from("mt_membros").update({papel}).eq("email",email);if(error){toast("Não foi possível alterar: "+error.message);return}this.loadTeam()}
+  /* Conta: e-mail e senha */
+  errMsg(e){const m=(e&&e.message)||"";
+    if(/invalid login|invalid credentials/i.test(m))return"E-mail ou senha incorretos.";
+    if(/already registered|already exists/i.test(m))return"Esse e-mail já tem conta. Use a aba Entrar.";
+    if(/password.*(6|short|least)/i.test(m))return"A senha precisa ter pelo menos 6 caracteres.";
+    if(/rate|too many/i.test(m))return"Muitas tentativas seguidas. Espere um minuto e tente de novo.";
+    if(/network|fetch/i.test(m))return"Sem conexão com o servidor. Verifique a internet.";
+    return"Não foi possível: "+m},
+  async signIn(email,senha){email=(email||"").trim().toLowerCase();if(!email||!senha){this.msg="Preencha e-mail e senha.";return accHTML()}
+    if(!navigator.onLine){this.msg="Sem internet. Conecte para entrar.";return accHTML()}
+    this.msg="Entrando…";accHTML();const {error}=await this.sb.auth.signInWithPassword({email,password:senha});
+    this.msg=error?this.errMsg(error):"";if(error)accHTML()},
+  async signUp(f){const email=(f.email||"").trim().toLowerCase(),email2=(f.email2||"").trim().toLowerCase();
+    if(!f.nome.trim()){this.msg="Digite seu nome.";return accHTML()}
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){this.msg="Digite um e-mail válido.";return accHTML()}
+    if(email!==email2){this.msg="Os dois e-mails não são iguais.";return accHTML()}
+    if((f.senha||"").length<6){this.msg="A senha precisa ter pelo menos 6 caracteres.";return accHTML()}
+    if(f.senha!==f.senha2){this.msg="As duas senhas não são iguais.";return accHTML()}
+    if(!navigator.onLine){this.msg="Sem internet. Conecte para criar a conta.";return accHTML()}
+    this.msg="Criando sua conta…";accHTML();
+    const {data,error}=await this.sb.auth.signUp({email,password:f.senha,options:{data:{nome:f.nome.trim().slice(0,60)}}});
+    if(error){this.msg=this.errMsg(error);return accHTML()}
+    if(!data.session){const r=await this.sb.auth.signInWithPassword({email,password:f.senha});if(r.error){this.msg="Conta criada. Entre com seu e-mail e senha.";this.tab="entrar";return accHTML()}}
+    this.msg="";toast("Conta criada. Bem-vindo, "+f.nome.trim().split(" ")[0]+"!")},
+  async signOut(){Live.stopAll();await this.sb.auth.signOut();this.tab="entrar";this.set("off")}
 };
 function refreshAfterSync(){const f=document.activeElement;renderSetPick();renderHero();renderTransport();renderSections();renderArr();renderTime();
   if(!(f&&f.closest&&f.closest("#sideBody")))renderSide()}
-const STATUS={off:["Entrar","",""],ok:["Sincronizado","ok","Tudo salvo na nuvem"],syncing:["Sincronizando","run","Enviando e recebendo mudanças"],offline:["Sem internet","off","Mudanças ficam no aparelho e sobem quando a internet voltar"],erro:["Erro ao sincronizar","bad","Tentaremos de novo automaticamente"],blocked:["Sem acesso","bad","Este e-mail não está na equipe"]};
+const STATUS={off:["Entrar","",""],ok:["Sincronizado","ok","Biblioteca salva na nuvem"],syncing:["Sincronizando","run","Enviando e recebendo mudanças"],offline:["Sem internet","off","Mudanças ficam no aparelho e sobem quando a internet voltar"],erro:["Erro ao sincronizar","bad","Tentaremos de novo automaticamente"]};
 function renderAccount(){const b=$("#bAcc");if(!b)return;const st=STATUS[Sync.status]||STATUS.off;
-  b.innerHTML=Sync.user?`<i class="sdot ${st[1]}"></i><span class="acc-l">${esc(st[0])}</span><span class="avatar">${esc(Sync.user[0].toUpperCase())}</span>`:`<svg class="icon" viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></svg><span class="acc-l">Entrar</span>`;
-  b.title=Sync.user?(Sync.user+" · "+st[2]):"Entrar para sincronizar com a equipe";
-  if(!$("#acc").hidden)accHTML()}
-function openAccount(){$("#acc").hidden=false;if(Sync.admin)Sync.loadTeam();accHTML();setTimeout(()=>{const i=$("#accEmail")||$("#accCode");i&&i.focus()},40)}
+  b.innerHTML=Sync.user?`<i class="sdot ${st[1]}"></i><span class="acc-l">${esc(Sync.nome||st[0])}</span><span class="avatar">${esc((Sync.nome||Sync.user)[0].toUpperCase())}</span>`:`<svg class="icon" viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></svg><span class="acc-l">Entrar</span>`;
+  b.title=Sync.user?(Sync.user+" · "+st[2]):"Entrar ou criar conta";
+  if(!$("#acc").hidden)accHTML();renderLiveChip()}
+function openAccount(tab){Sync.tab=tab||(Sync.user?"perfil":"entrar");Sync.msg="";$("#acc").hidden=false;accHTML();setTimeout(()=>{const i=$("#acc input");i&&i.focus()},40)}
 function closeAccount(){$("#acc").hidden=true}
-function accHTML(){const el=$("#accDlg"),st=STATUS[Sync.status]||STATUS.off,msg=Sync.msg?`<p class="help" style="margin:0;color:var(--accent)">${esc(Sync.msg)}</p>`:"";
-  if(!Sync.sb){el.innerHTML=`<button class="btn-ghost x" data-acc="close" aria-label="Fechar">✕</button><h2>Sincronização</h2><p class="muted">Não consegui carregar o módulo da nuvem. Recarregue o app com internet.</p>`;return}
-  if(!Sync.user){el.innerHTML=`<button class="btn-ghost x" data-acc="close" aria-label="Fechar">✕</button><h2>Entrar na equipe</h2>
-    <p class="muted" style="margin:0">Entre com o e-mail cadastrado pelo administrador do ministério. Repertórios, seções, tons e mixagens ficam iguais em todos os aparelhos.</p>
-    ${Sync.stage==="code"?`<p style="margin:0">Enviamos um e-mail para <b>${esc(Sync.email)}</b>. Abra o link <b>neste aparelho</b> ou digite o código que veio no e-mail.</p>
-      <form class="row" data-acc="verify"><input type="text" id="accCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Código do e-mail" style="flex:1;font-family:var(--f-mono);letter-spacing:.2em;font-size:18px"><button class="btn-primary">Entrar</button></form>
-      ${msg}<div class="row"><button class="btn-ghost" data-acc="resend">Reenviar e-mail</button><button class="btn-ghost" data-acc="other">Usar outro e-mail</button></div>`
-    :`<form class="row" data-acc="send"><input type="email" id="accEmail" autocomplete="email" placeholder="seu@email.com" value="${esc(Sync.email)}" style="flex:1"><button class="btn-primary">Receber acesso</button></form>${msg}
-      <p class="help" style="margin:0">Sem senha: você recebe um link e um código. Só e-mails cadastrados pelo administrador veem a biblioteca.</p>`}`;return}
-  const team=Sync.admin?`<div class="group"><h3>Equipe do ministério<span class="grow"></span><span class="mono" style="letter-spacing:0">${Sync.team.length}</span></h3>
-      <div class="stack">${Sync.team.map(m=>`<div class="mem"><span class="avatar">${esc((m.nome||m.email)[0].toUpperCase())}</span><span style="min-width:0"><b>${esc(m.nome||m.email.split("@")[0])}</b><span class="muted">${esc(m.email)}</span></span>
-        <span class="tag${m.papel==="admin"?" next":""}">${m.papel==="admin"?"admin":"membro"}</span>
-        ${m.email===Sync.user?"":`<span class="row" style="gap:4px"><button class="btn-ghost" data-acc="role" data-email="${esc(m.email)}" data-papel="${m.papel==="admin"?"membro":"admin"}" title="${m.papel==="admin"?"Tirar admin":"Tornar admin"}">${m.papel==="admin"?"↓":"↑"}</button><button class="btn-danger${S.confirm==="mem:"+m.email?" armed":""}" data-acc="rm" data-email="${esc(m.email)}">${S.confirm==="mem:"+m.email?"Remover?":"✕"}</button></span>`}</div>`).join("")}</div>
-      <form class="row" data-acc="add"><input type="text" id="memNome" placeholder="Nome" style="flex:1 1 120px"><input type="email" id="memEmail" placeholder="email@da.pessoa" style="flex:2 1 180px"><button class="btn-primary">Incluir</button></form>
-      <p class="help" style="margin:0">Depois de incluir, a pessoa abre o app, toca em Entrar e usa esse e-mail.</p></div>`:"";
+function accHTML(){const el=$("#accDlg"),st=STATUS[Sync.status]||STATUS.off,msg=Sync.msg?`<p class="help" style="margin:0;color:var(--accent)" role="status">${esc(Sync.msg)}</p>`:"";
+  if(!Sync.sb){el.innerHTML=`<button class="btn-ghost x" data-acc="close" aria-label="Fechar">✕</button><h2>Conta</h2><p class="muted">Não consegui carregar o módulo da nuvem. Recarregue o app com internet.</p>`;return}
+  if(!Sync.user){const up=Sync.tab==="criar";
+    el.innerHTML=`<button class="btn-ghost x" data-acc="close" aria-label="Fechar">✕</button><h2>${up?"Criar conta":"Entrar"}</h2>
+    <div class="seg2"><button data-acc="tab-entrar" class="${up?"":"on"}">Entrar</button><button data-acc="tab-criar" class="${up?"on":""}">Criar conta</button></div>
+    ${up?`<form class="stack" data-acc="criar" autocomplete="on">
+        <input type="text" id="suNome" placeholder="Seu nome" autocomplete="name" maxlength="60">
+        <input type="email" id="suEmail" placeholder="E-mail" autocomplete="email">
+        <input type="email" id="suEmail2" placeholder="Repita o e-mail" autocomplete="off">
+        <input type="password" id="suSenha" placeholder="Senha (mínimo 6 caracteres)" autocomplete="new-password">
+        <input type="password" id="suSenha2" placeholder="Repita a senha" autocomplete="new-password">
+        <button class="btn-primary">Criar conta</button></form>${msg}
+        <p class="help" style="margin:0">Com a conta, sua biblioteca aparece em todos os seus aparelhos e você pode criar ou entrar na sala do ministério.</p>`
+    :`<form class="stack" data-acc="entrar" autocomplete="on">
+        <input type="email" id="liEmail" placeholder="E-mail" autocomplete="username">
+        <input type="password" id="liSenha" placeholder="Senha" autocomplete="current-password">
+        <button class="btn-primary">Entrar</button></form>${msg}
+        <p class="help" style="margin:0">Esqueceu a senha? Fale com o suporte no <a href="https://wa.me/5541991542931?text=Ol%C3%A1!%20Esqueci%20minha%20senha%20do%20DDS%20MultiTrack." target="_blank" rel="noopener" style="color:var(--accent)">WhatsApp</a>.</p>`}
+    <p class="help" style="margin:0">Não precisa de conta para tocar: o app funciona sem cadastro neste aparelho.</p>`;return}
   el.innerHTML=`<button class="btn-ghost x" data-acc="close" aria-label="Fechar">✕</button><h2>Sua conta</h2>
-    <div class="mem"><span class="avatar big">${esc(Sync.user[0].toUpperCase())}</span><span style="min-width:0"><b>${esc(Sync.user)}</b><span class="muted">${Sync.admin?"Administrador":Sync.member?"Membro da equipe":"Aguardando liberação"}</span></span></div>
-    <div class="callout" style="border-color:${Sync.status==="ok"?"var(--ok)":Sync.status==="bad"||Sync.status==="erro"||Sync.status==="blocked"?"var(--danger)":"var(--line-2)"};background:transparent"><i class="sdot ${st[1]}"></i><span style="flex:1"><b>${esc(st[0])}</b><br><span class="muted">${Sync.status==="blocked"?`Peça ao administrador para incluir <b>${esc(Sync.user)}</b> na equipe.`:esc(st[2])}${Sync.lastOk?" · última vez às "+new Date(Sync.lastOk).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):""}</span></span>${Sync.member?`<button data-acc="sync">Sincronizar agora</button>`:""}</div>
-    <p class="help" style="margin:0">Os áudios (stems) ficam guardados em cada aparelho. Quando uma música da equipe aparecer sem áudio, toque em "vincular" e envie o mesmo pacote.</p>
-    ${team}<div class="row" style="justify-content:flex-end"><button class="btn-ghost" data-acc="out">Sair desta conta</button></div>`}
+    <div class="mem"><span class="avatar big">${esc((Sync.nome||Sync.user)[0].toUpperCase())}</span><span style="min-width:0"><b>${esc(Sync.nome)}</b><span class="muted">${esc(Sync.user)}</span></span></div>
+    <div class="callout" style="border-color:${Sync.status==="ok"?"var(--ok)":Sync.status==="erro"?"var(--danger)":"var(--line-2)"};background:transparent"><i class="sdot ${st[1]}"></i><span style="flex:1"><b>${esc(st[0])}</b><br><span class="muted">${esc(st[2])}${Sync.lastOk?" · última vez às "+new Date(Sync.lastOk).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):""}</span></span><button data-acc="sync">Sincronizar agora</button></div>
+    <p class="help" style="margin:0">Músicas e repertórios ficam iguais em todos os seus aparelhos. Os áudios (stems) ficam guardados em cada aparelho.</p>
+    <div class="row" style="justify-content:space-between"><button data-acc="sala">Sala do ministério</button><button class="btn-ghost" data-acc="out">Sair desta conta</button></div>`}
 $("#acc").addEventListener("click",e=>{if(e.target.id==="acc")return closeAccount();const b=e.target.closest("[data-acc]");if(!b||b.tagName==="FORM")return;const a=b.dataset.acc;
-  if(a==="close")closeAccount();if(a==="resend")Sync.sendLink(Sync.email);if(a==="other"){Sync.stage="email";Sync.msg="";accHTML()}
-  if(a==="sync")Sync.syncNow();if(a==="out")Sync.signOut();
-  if(a==="rm"){const em=b.dataset.email;if(S.confirm!=="mem:"+em){S.confirm="mem:"+em;accHTML();return}Sync.removeMember(em)}
-  if(a==="role")Sync.toggleAdmin(b.dataset.email,b.dataset.papel)});
+  if(a==="close")closeAccount();if(a==="tab-entrar"||a==="tab-criar"){Sync.tab=a.slice(4);Sync.msg="";accHTML()}
+  if(a==="sync")Sync.syncNow();if(a==="out")Sync.signOut();if(a==="sala"){closeAccount();openSala()}});
 $("#acc").addEventListener("submit",e=>{e.preventDefault();const a=e.target.dataset.acc;
-  if(a==="send")Sync.sendLink($("#accEmail").value);if(a==="verify")Sync.verify($("#accCode").value);
-  if(a==="add"){Sync.addMember($("#memEmail").value,$("#memNome").value)}});
+  if(a==="entrar")Sync.signIn($("#liEmail").value,$("#liSenha").value);
+  if(a==="criar")Sync.signUp({nome:$("#suNome").value,email:$("#suEmail").value,email2:$("#suEmail2").value,senha:$("#suSenha").value,senha2:$("#suSenha2").value})});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#acc").hidden)closeAccount()});
+
+/* ================= Sala do ministério e modo Acompanhar =================
+   O líder cria a sala e passa o código. Quando ele toca, o app publica o estado (música, posição,
+   seção, fila de salto, repetição, repertório) na linha da sala. A equipe acompanha ao vivo,
+   calculando a posição pelo relógio do servidor. */
+const Live={salas:[],cur:null,papel:null,chan:null,presence:[],membros:[],offset:0,following:false,lastSent:null,lastPush:0,hbAt:0,
+  transmit:true,pollT:null,raf:0,msg:"",confirm:null,pendingCode:null,lastIdx:-9,lastChordIdx:-9,lastBeat:-9,
+  async onLogin(){try{await this.clock()}catch(e){}await this.load();if(this.pendingCode){const c=this.pendingCode;this.pendingCode=null;this.entrar(c)}},
+  onLogout(){this.stopAll();this.salas=[];this.cur=null;this.papel=null;renderLive()},
+  stopAll(){this.closeFollow();this.leaveChannel()},
+  reconnect(){if(this.cur&&Sync.sb){this.leaveChannel();this.joinChannel();this.clock().catch(()=>{})}},
+  async clock(){if(!Sync.sb)return;let best=1e9;for(let i=0;i<3;i++){const t0=Date.now();const {data,error}=await Sync.sb.rpc("mt_agora");const t1=Date.now();if(error)return;if(t1-t0<best){best=t1-t0;this.offset=Number(data)-(t0+t1)/2}}},
+  now(){return Date.now()+this.offset},
+  async load(){if(!Sync.sb||!Sync.uid)return;const {data,error}=await Sync.sb.from("mt_salas").select("id,codigo,nome,lider,lider_nome,estado,estado_em").order("criado_em");if(error)return;
+    this.salas=data||[];let keep=null;try{keep=localStorage.getItem("ddsmt-sala")}catch(e){}
+    this.select(this.salas.find(x=>x.id===keep)||this.salas.find(x=>x.lider===Sync.uid)||this.salas[0]||null)},
+  select(s){if(this.cur&&s&&this.cur.id===s.id){Object.assign(this.cur,s);return renderLive()}
+    this.closeFollow();this.leaveChannel();this.cur=s;this.papel=s?(s.lider===Sync.uid?"lider":"membro"):null;this.lastSent=null;this.membros=[];
+    try{localStorage.setItem("ddsmt-sala",s?s.id:"")}catch(e){}if(s){this.joinChannel();if(this.papel==="lider")this.loadMembros()}renderLive()},
+  joinChannel(){const s=this.cur;if(!s||!Sync.sb)return;try{
+    this.chan=Sync.sb.channel("mt-sala-"+s.id,{config:{presence:{key:Sync.uid}}})
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"mt_salas",filter:"id=eq."+s.id},p=>this.onRow(p.new))
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"mt_salas",filter:"id=eq."+s.id},()=>this.gone())
+      .on("postgres_changes",{event:"*",schema:"public",table:"mt_sala_membros",filter:"sala_id=eq."+s.id},()=>{if(this.papel==="lider")this.loadMembros()})
+      .on("presence",{event:"sync"},()=>{const st=this.chan?this.chan.presenceState():{};this.presence=Object.values(st).map(a=>a[0]).filter(Boolean);renderLive()})
+      .subscribe(st=>{if(st==="SUBSCRIBED")this.track()})}catch(e){}},
+  track(){try{return this.chan&&this.chan.track({nome:Sync.nome,papel:this.papel,seguindo:this.following})}catch(e){}},
+  leaveChannel(){if(this.chan){try{Sync.sb.removeChannel(this.chan)}catch(e){}this.chan=null;this.presence=[]}},
+  gone(){if(!this.cur)return;toast("A sala \""+this.cur.nome+"\" foi encerrada pelo líder.");const id=this.cur.id;this.salas=this.salas.filter(x=>x.id!==id);this.cur=null;this.select(this.salas[0]||null)},
+  onRow(r){if(!this.cur||!r||r.id!==this.cur.id)return;Object.assign(this.cur,r);if(this.following)this.renderFollow(true);renderLiveChip()},
+  err(e){const m=(e&&e.message)||"";if(/codigo_invalido/.test(m))return"Código não encontrado. Confira com o líder.";if(/precisa_entrar/.test(m))return"Entre na sua conta primeiro.";
+    if(/limite_de_salas/.test(m))return"Você já tem muitas salas. Exclua uma para criar outra.";if(/so_o_lider/.test(m))return"Só o líder pode fazer isso.";return"Não foi possível: "+m},
+  async criar(nome){if(!Sync.uid)return openAccount("criar");this.msg="Criando…";renderLive();
+    const {data,error}=await Sync.sb.rpc("mt_criar_sala",{p_nome:(nome||"").trim()||"Ministério de Louvor",p_lider_nome:Sync.nome});
+    if(error){this.msg=this.err(error);return renderLive()}this.msg="";this.salas.push(data);this.select(data);toast("Sala criada. Passe o código "+fmtCode(data.codigo)+" para a equipe.")},
+  async entrar(cod){if(!Sync.uid){this.pendingCode=cod;return openAccount("criar")}cod=(cod||"").replace(/[^a-z0-9]/gi,"").toUpperCase();if(cod.length<6){this.msg="O código tem 6 letras e números.";return renderLive()}
+    this.msg="Entrando…";renderLive();const {data,error}=await Sync.sb.rpc("mt_entrar_sala",{p_codigo:cod,p_nome:Sync.nome});
+    if(error){this.msg=this.err(error);return renderLive()}this.msg="";if(!this.salas.some(x=>x.id===data.id))this.salas.push(data);this.select(this.salas.find(x=>x.id===data.id));
+    toast("Você entrou na sala \""+data.nome+"\".");if(data.lider!==Sync.uid){closeSala();this.openFollow()}},
+  async sair(){const s=this.cur;if(!s)return;const {error}=await Sync.sb.from("mt_sala_membros").delete().eq("sala_id",s.id).eq("usuario",Sync.uid);if(error){toast(this.err(error));return}
+    this.salas=this.salas.filter(x=>x.id!==s.id);this.cur=null;this.select(this.salas[0]||null);toast("Você saiu da sala.")},
+  async excluir(){const s=this.cur;if(!s)return;const {error}=await Sync.sb.from("mt_salas").delete().eq("id",s.id);if(error){toast(this.err(error));return}
+    this.salas=this.salas.filter(x=>x.id!==s.id);this.cur=null;this.select(this.salas[0]||null);toast("Sala excluída.")},
+  async novoCodigo(){const {data,error}=await Sync.sb.rpc("mt_novo_codigo",{p_sala:this.cur.id});if(error){toast(this.err(error));return}this.cur.codigo=data;renderLive();toast("Novo código: "+fmtCode(data)+". O antigo deixou de funcionar.")},
+  async loadMembros(){if(!this.cur)return;const {data}=await Sync.sb.from("mt_sala_membros").select("usuario,nome,entrou_em").eq("sala_id",this.cur.id).order("entrou_em");this.membros=data||[];renderLive()},
+  async remover(uid){const {error}=await Sync.sb.from("mt_sala_membros").delete().eq("sala_id",this.cur.id).eq("usuario",uid);if(error){toast(this.err(error));return}this.confirm=null;this.loadMembros()},
+  /* Líder: publica o estado quando algo muda e um sinal de vida periódico */
+  snapshot(){const d=E.cur,s=curSong(),set=curSet();const playing=!!(d&&d.playing&&!d.handoff&&d.song===s);
+    const pos=s&&d&&d.song===s?songPosOrig():(s?(s.trimStart||0):0),rate=(d&&d.song===s&&d.ratio)||1;
+    const mus=s?{id:s.id,nome:s.name,artista:s.artist||"",tom:transposeKey(s.key,s.applied.semi),bpm:+(s.bpm*(s.applied.tempo/100)).toFixed(2),bpmOrig:s.bpm,sig:s.sig||4,off:s.beatOffset||0,
+      dur:s.duration,ini:s.trimStart||0,fim:s.trimEnd??s.duration,secoes:[...s.markers].sort((a,b)=>a.t-b.t).map(m=>({n:m.name,t:m.t})),
+      cifra:(s.chords||[]).map(c=>[Math.round(c.t*100)/100,transposeChord(c.c,s.applied.semi)])}:null;
+    const fila=E.queued&&E.ctx?{i:E.queued.idx,at:Math.round(this.now()+(E.queued.time-E.ctx.currentTime)*1000)}:null;
+    const rep=set?{nome:set.name,i:S.idx,itens:set.songIds.map(id=>songById(id)).filter(Boolean).map(x=>({n:x.name,tom:transposeKey(x.key,x.applied.semi)}))}:null;
+    const st={v:1,at:Math.round(this.now()),tocando:playing,pos:+pos.toFixed(3),rate,musica:mus,vamp:E.vamp,fila,rep,lider:Sync.nome};
+    const sig=JSON.stringify([playing,mus&&[mus.id,mus.tom,mus.bpm,mus.ini,mus.fim,mus.secoes,mus.cifra.length],E.vamp,fila&&fila.i,rep&&[rep.nome,rep.i,rep.itens]]);
+    return{st,sig}},
+  tick(){if(!this.cur||this.papel!=="lider"||!this.transmit||!Sync.sb||!navigator.onLine)return;const t=Date.now();if(t-this.lastPush<250)return;
+    const {st,sig}=this.snapshot(),lp=this.lastSent;let need=!lp||lp.sig!==sig;
+    if(!need&&st.tocando){const pred=lp.pos+(st.at-lp.at)/1000*lp.rate;if(Math.abs(pred-st.pos)>0.12)need=true}
+    if(!need&&t-this.hbAt>(st.tocando?10000:30000))need=true;if(!need)return;
+    this.lastPush=t;this.hbAt=t;this.lastSent={pos:st.pos,at:st.at,rate:st.rate,sig};this.cur.estado=st;
+    Sync.sb.from("mt_salas").update({estado:st}).eq("id",this.cur.id).then(({error})=>{if(error){console.warn("sala",error);this.lastSent=null}});renderLiveChip()},
+  /* Equipe: tela de acompanhar */
+  openFollow(){if(!this.cur)return openSala();this.following=true;$("#follow").hidden=false;document.body.classList.add("following");keepAwake(true);this.track();
+    this.lastIdx=this.lastChordIdx=this.lastBeat=-9;this.renderFollow(true);cancelAnimationFrame(this.raf);const f=()=>{if(!this.following)return;this.renderFollow(false);this.raf=requestAnimationFrame(f)};this.raf=requestAnimationFrame(f);
+    clearInterval(this.pollT);this.pollT=setInterval(()=>this.poll(),4000);this.clock().catch(()=>{})},
+  closeFollow(){if(!this.following)return;this.following=false;$("#follow").hidden=true;document.body.classList.remove("following");clearInterval(this.pollT);cancelAnimationFrame(this.raf);this.track();if(!(E.cur&&E.cur.playing))keepAwake(false)},
+  async poll(){if(!this.cur||!Sync.sb||!navigator.onLine)return;const {data}=await Sync.sb.from("mt_salas").select("id,estado,estado_em,nome,codigo").eq("id",this.cur.id).maybeSingle();
+    if(!data){if(this.following)this.gone();return}const changed=JSON.stringify(data.estado)!==JSON.stringify(this.cur.estado);Object.assign(this.cur,data);if(changed)this.renderFollow(true)},
+  posNow(st){const m=st.musica;let p=st.pos||0;const n=this.now();if(st.tocando)p+=(n-st.at)/1000*(st.rate||1);if(!m)return p;
+    if(st.fila&&n>=st.fila.at){const sec=m.secoes[st.fila.i];if(sec)p=sec.t+(st.tocando?(n-st.fila.at)/1000*(st.rate||1):0)}
+    if(st.vamp!=null){const a=m.secoes[st.vamp],b=m.secoes[st.vamp+1],end=b?b.t:m.fim;if(a&&p>=end){const L=end-a.t;if(L>0)p=a.t+((p-a.t)%L)}}
+    return Math.max(0,Math.min(p,m.fim))},
+  renderFollow(full){const el=$("#fwBody"),s=this.cur;if(!el||!s)return;const st=s.estado||{},m=st.musica;
+    if(full){$("#fwSala").textContent=s.nome;$("#fwLider").textContent="Líder: "+(st.lider||s.lider_nome||"—");this.lastIdx=this.lastChordIdx=this.lastBeat=-9;
+      if(!m){el.innerHTML=`<div class="fw-wait"><b>Aguardando o líder</b><span class="muted">Assim que o líder abrir uma música, ela aparece aqui.</span></div>${repHTML(st.rep)}`;return}
+      const segs=m.secoes.map((x,i)=>{const end=i+1<m.secoes.length?m.secoes[i+1].t:m.fim;return`<i style="left:${(x.t-m.ini)/(m.fim-m.ini)*100}%;width:${Math.max(0,(end-x.t)/(m.fim-m.ini)*100)}%"></i>`}).join("");
+      el.innerHTML=`<header class="fw-head"><div style="min-width:0"><h2>${esc(m.nome)}</h2><span class="muted">${esc(m.artista)}</span></div>
+          <div class="chips"><span class="chip">Tom <b>${esc(m.tom)}</b></span><span class="chip"><b>${m.bpm}</b> BPM</span><span class="chip"><b>${m.sig===6?"6/8":m.sig+"/4"}</b></span></div></header>
+        <div class="fw-status" id="fwStatus"></div>
+        <div class="fw-grid">
+          <div class="fw-card fw-sec"><span class="eyebrow">Agora</span><b id="fwSecNow">—</b><span id="fwSecNext" class="muted"></span></div>
+          <div class="fw-card fw-chord"><span class="eyebrow">Acorde</span><b id="fwChord">${m.cifra.length?"—":"sem cifra"}</b><span id="fwChordNext" class="muted"></span></div>
+          <div class="fw-card fw-bar"><span class="eyebrow">Compasso</span><b id="fwBar">—</b><span class="fw-beats" id="fwBeats">${Array.from({length:m.sig},(_,i)=>`<i class="${i?"":"one"}"></i>`).join("")}</span></div>
+        </div>
+        <div class="fw-prog"><div class="segs">${segs}</div><span id="fwHead"></span></div>
+        <div class="row" style="justify-content:space-between"><span class="mono" id="fwTime">0:00</span><span class="mono muted">${fmt(m.fim-m.ini)}</span></div>
+        <div class="fw-secs" id="fwSecs">${m.secoes.map((x,i)=>`<span data-i="${i}">${esc(x.n)}</span>`).join("")}</div>${repHTML(st.rep)}`;}
+    if(!m)return;const p=this.posNow(st),n=this.now();
+    let si=-1;m.secoes.forEach((x,i)=>{if(p>=x.t-0.02)si=i});
+    if(si!==this.lastIdx){this.lastIdx=si;$("#fwSecNow").textContent=si>=0?m.secoes[si].n:"Início";
+      document.querySelectorAll("#fwSecs span").forEach(x=>x.classList.toggle("on",+x.dataset.i===si))}
+    const nx=st.fila&&n<st.fila.at?`Indo para ${m.secoes[st.fila.i]?m.secoes[st.fila.i].n:"—"} no próximo compasso`:st.vamp!=null?`Repetindo ${m.secoes[st.vamp]?m.secoes[st.vamp].n:""}`:(m.secoes[si+1]?"Depois: "+m.secoes[si+1].n:"Última parte");
+    const nxEl=$("#fwSecNext");if(nxEl.textContent!==nx){nxEl.textContent=nx;nxEl.classList.toggle("hot",!!(st.fila&&n<st.fila.at)||st.vamp!=null)}
+    if(m.cifra.length){let ci=-1;for(let i=0;i<m.cifra.length;i++){if(m.cifra[i][0]<=p+0.05)ci=i;else break}
+      if(ci!==this.lastChordIdx){this.lastChordIdx=ci;$("#fwChord").textContent=ci>=0?m.cifra[ci][1]:m.cifra[0][1];$("#fwChordNext").textContent=m.cifra[ci+1]?"→ "+m.cifra[ci+1][1]:""}}
+    const beat=60/m.bpmOrig,rel=p-m.off,bi=Math.floor(rel/beat+1e-6),bar=rel<0?0:Math.floor(bi/m.sig)+1,bt=rel<0?0:(bi%m.sig)+1;
+    if(bi!==this.lastBeat){this.lastBeat=bi;$("#fwBar").textContent=bar?bar+" · "+bt:"—";[...$("#fwBeats").children].forEach((x,i)=>x.classList.toggle("on",!!st.tocando&&i===bt-1))}
+    $("#fwHead").style.left=clamp((p-m.ini)/(m.fim-m.ini),0,1)*100+"%";$("#fwTime").textContent=fmt(p-m.ini);
+    const age=(n-st.at)/1000,stEl=$("#fwStatus"),txt=!st.tocando?"Pausado pelo líder":age>25?"Sem sinal do líder há "+Math.round(age)+" s":"Tocando ao vivo";
+    if(stEl.textContent!==txt){stEl.textContent=txt;stEl.className="fw-status "+(!st.tocando?"":age>25?"bad":"ok")}}
+};
+function repHTML(rep){if(!rep||!rep.itens||!rep.itens.length)return"";return`<div class="fw-rep"><span class="eyebrow">Repertório · ${esc(rep.nome)}</span><ol>${rep.itens.map((x,i)=>`<li class="${i===rep.i?"on":""}"><span>${esc(x.n)}</span><span class="mono muted">${esc(x.tom)}</span></li>`).join("")}</ol></div>`}
+const fmtCode=c=>(c||"").replace(/^(.{3})(.{3})$/,"$1-$2");
+function renderLiveChip(){const b=$("#bSala");if(!b)return;const s=Live.cur;let lbl="Sala",cls="";
+  if(s&&Live.papel==="lider"){const seg=Live.presence.filter(x=>x.papel!=="lider").length;lbl=fmtCode(s.codigo)+(seg?" · "+seg+" na sala":"");cls=E.cur&&E.cur.playing?"live":""}
+  else if(s){lbl="Acompanhar";cls=s.estado&&s.estado.tocando&&(Live.now()-s.estado.at)<25000?"live":""}
+  b.className="sala-btn "+cls;b.querySelector("span").textContent=lbl}
+function renderLive(){renderLiveChip();if(!$("#sala").hidden)salaHTML()}
+function openSala(){$("#sala").hidden=false;Live.msg="";if(Live.papel==="lider")Live.loadMembros();salaHTML()}
+function closeSala(){$("#sala").hidden=true}
+function salaHTML(){const el=$("#salaDlg"),s=Live.cur,msg=Live.msg?`<p class="help" style="margin:0;color:var(--accent)" role="status">${esc(Live.msg)}</p>`:"";
+  const head=`<button class="btn-ghost x" data-sl="close" aria-label="Fechar">✕</button><span class="eyebrow">Sala do ministério</span>`;
+  if(!Sync.user){el.innerHTML=`${head}<h2>Toque junto com a equipe</h2><p class="muted" style="margin:0">O líder cria a sala e passa um código. Quem entra acompanha ao vivo, no próprio celular, a música, a seção, o compasso e o acorde que o líder está tocando.</p>
+    <div class="row"><button class="btn-primary" data-sl="conta-criar">Criar conta</button><button data-sl="conta-entrar">Já tenho conta</button></div><p class="help" style="margin:0">É grátis. Só precisa de e-mail e senha.</p>`;return}
+  const others=Live.salas.length>1?`<select id="salaSel" aria-label="Escolher sala">${Live.salas.map(x=>`<option value="${x.id}"${s&&x.id===s.id?" selected":""}>${esc(x.nome)}${x.lider===Sync.uid?" (líder)":""}</option>`).join("")}</select>`:"";
+  const joinForm=`<form class="row" data-sl="entrar"><input type="text" id="salaCod" placeholder="Código da sala (ex.: K7M-42P)" maxlength="8" autocapitalize="characters" style="flex:1;font-family:var(--f-mono);letter-spacing:.12em;text-transform:uppercase"><button class="btn-primary">Entrar</button></form>`;
+  const createForm=`<form class="row" data-sl="criar"><input type="text" id="salaNome" placeholder="Nome do ministério (ex.: Louvor IEQ Vila Real)" maxlength="80" style="flex:1"><button>Criar sala</button></form>`;
+  if(!s){el.innerHTML=`${head}<h2>Sala do ministério</h2>
+    <div class="sl-opt"><b>Sou da equipe</b><span class="muted">Digite o código que o líder passou.</span>${joinForm}</div>
+    <div class="sl-opt"><b>Sou o líder</b><span class="muted">Crie a sala e passe o código para a equipe. Ela vale para todos os cultos.</span>${createForm}</div>${msg}`;return}
+  if(Live.papel==="lider"){const online=Live.presence.filter(x=>x.papel!=="lider");const share=`Entre na sala "${s.nome}" no DDS MultiTrack para acompanhar o louvor ao vivo.\nCódigo: ${fmtCode(s.codigo)}\nhttps://www.ddsinovacao.com.br/multitrack/#sala-${s.codigo}`;
+    el.innerHTML=`${head}<h2>${esc(s.nome)}</h2>${others}
+      <div class="sl-code"><span class="eyebrow">Código da sala</span><b class="mono">${esc(fmtCode(s.codigo))}</b>
+        <div class="row" style="justify-content:center"><button class="btn-primary" data-sl="copiar">Copiar código</button><a class="wa" href="https://wa.me/?text=${encodeURIComponent(share)}" target="_blank" rel="noopener">Enviar no WhatsApp</a></div></div>
+      <label class="row help"><input type="checkbox" id="slTx"${Live.transmit?" checked":""}> Transmitir ao vivo o que eu tocar</label>
+      <div class="group"><h3>Na sala agora<span class="grow"></span><span class="mono" style="letter-spacing:0">${online.length}</span></h3>
+        ${online.length?online.map(x=>`<div class="mem"><span class="avatar">${esc((x.nome||"?")[0].toUpperCase())}</span><span><b>${esc(x.nome||"Sem nome")}</b><span class="muted">${x.seguindo?"acompanhando ao vivo":"com o app aberto"}</span></span><i class="sdot ok"></i></div>`).join(""):'<p class="help" style="margin:0">Ninguém conectado agora.</p>'}</div>
+      <div class="group"><h3>Equipe<span class="grow"></span><span class="mono" style="letter-spacing:0">${Live.membros.length}</span></h3>
+        ${Live.membros.map(x=>`<div class="mem"><span class="avatar">${esc((x.nome||"?")[0].toUpperCase())}</span><span><b>${esc(x.nome||"Sem nome")}</b><span class="muted">entrou em ${new Date(x.entrou_em).toLocaleDateString("pt-BR")}</span></span>
+          <button class="btn-danger${Live.confirm===x.usuario?" armed":""}" data-sl="rm" data-u="${x.usuario}">${Live.confirm===x.usuario?"Remover?":"✕"}</button></div>`).join("")||'<p class="help" style="margin:0">Ninguém entrou ainda. Passe o código.</p>'}</div>
+      <div class="row" style="justify-content:space-between"><button class="btn-ghost" data-sl="novo">Gerar novo código</button><button class="btn-danger${Live.confirm==="sala"?" armed":""}" data-sl="excluir">${Live.confirm==="sala"?"Confirmar: excluir a sala":"Excluir sala"}</button></div>
+      <details class="sl-more"><summary>Entrar em outra sala</summary>${joinForm}</details>${msg}`;return}
+  const st=s.estado||{},liderOn=Live.presence.some(x=>x.papel==="lider")||(st.at&&Live.now()-st.at<35000);
+  el.innerHTML=`${head}<h2>${esc(s.nome)}</h2>${others}
+    <div class="callout" style="background:transparent"><i class="sdot ${liderOn?"ok":""}"></i><span style="flex:1"><b>Líder: ${esc(st.lider||s.lider_nome||"—")}</b><br><span class="muted">${liderOn?(st.tocando&&st.musica?"Tocando "+esc(st.musica.nome):"Conectado"):"Desconectado no momento"}</span></span></div>
+    <button class="btn-primary big" data-sl="seguir">Acompanhar ao vivo</button>
+    <p class="help" style="margin:0">Você vê a música, a seção, o compasso e o acorde que o líder está tocando, em tempo real. Deixe a tela ligada durante o culto.</p>
+    <div class="row" style="justify-content:space-between"><details class="sl-more"><summary>Entrar em outra sala</summary>${joinForm}</details><button class="btn-ghost" data-sl="sair">Sair desta sala</button></div>${msg}`}
+$("#sala").addEventListener("click",e=>{if(e.target.id==="sala")return closeSala();const b=e.target.closest("[data-sl]");if(!b||b.tagName==="FORM")return;const a=b.dataset.sl;
+  if(a==="close")closeSala();if(a==="conta-criar"){closeSala();openAccount("criar")}if(a==="conta-entrar"){closeSala();openAccount("entrar")}
+  if(a==="seguir"){closeSala();Live.openFollow()}if(a==="sair")Live.sair();if(a==="novo")Live.novoCodigo();
+  if(a==="copiar"){const c=fmtCode(Live.cur.codigo);try{navigator.clipboard.writeText(c).then(()=>toast("Código "+c+" copiado."),()=>toast("Código: "+c))}catch(err){toast("Código: "+c)}}
+  if(a==="excluir"){if(Live.confirm!=="sala"){Live.confirm="sala";return salaHTML()}Live.confirm=null;Live.excluir()}
+  if(a==="rm"){const u=b.dataset.u;if(Live.confirm!==u){Live.confirm=u;return salaHTML()}Live.remover(u)}});
+$("#sala").addEventListener("submit",e=>{e.preventDefault();const a=e.target.dataset.sl;if(a==="entrar")Live.entrar($("#salaCod").value);if(a==="criar")Live.criar($("#salaNome").value)});
+$("#sala").addEventListener("change",e=>{if(e.target.id==="salaSel"){Live.select(Live.salas.find(x=>x.id===e.target.value))}if(e.target.id==="slTx"){Live.transmit=e.target.checked;Live.lastSent=null;if(!Live.transmit&&Live.cur){const st=Object.assign({},Live.cur.estado||{},{tocando:false,at:Math.round(Live.now())});Sync.sb.from("mt_salas").update({estado:st}).eq("id",Live.cur.id)}renderLiveChip()}});
+$("#fwExit").onclick=()=>Live.closeFollow();
+$("#bSala").onclick=()=>{if(Live.cur&&Live.papel==="membro")return Live.openFollow();openSala()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#sala").hidden)closeSala();else if(Live.following)Live.closeFollow()}});
+(function deepLink(){const m=/^#sala-([A-Za-z0-9]{6})$/.exec(location.hash||"");if(!m)return;Live.pendingCode=m[1].toUpperCase();try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}
+  setTimeout(()=>{if(Sync.uid&&Live.pendingCode){const c=Live.pendingCode;Live.pendingCode=null;Live.entrar(c)}else if(!Sync.uid){openAccount("criar");toast("Crie sua conta ou entre para acompanhar a sala.",6000)}},1800)})();
