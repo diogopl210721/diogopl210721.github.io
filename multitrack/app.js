@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610302103";
+const APP_VER="202610302126";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -338,7 +338,7 @@ $("#imp").addEventListener("change",e=>{if(e.target.id==="impIn")gatherFiles([..
 $("#imp").addEventListener("dragover",e=>{e.preventDefault();const d=$("#drop");d&&d.classList.add("over")});
 $("#imp").addEventListener("dragleave",()=>{const d=$("#drop");d&&d.classList.remove("over")});
 $("#imp").addEventListener("drop",e=>{e.preventDefault();if(IMP.stage==="pick"||IMP.stage==="link")gatherFiles([...e.dataTransfer.files])});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#imp").hidden)closeImport()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#imp").hidden)closeImport();if(e.key==="Escape")$("#bless").hidden=true});
 function step(i,st,res){Object.assign(IMP.steps[i],{st,res});renderImport()}
 async function readAudioFiles(list){let files=[],pkg="";const zip=list.find(f=>/\.zip$/i.test(f.name));
   if(zip){if(!window.JSZip)throw new Error("Não consegui abrir o .zip neste navegador. Descompacte e selecione os arquivos.");const z=await JSZip.loadAsync(zip);
@@ -503,7 +503,9 @@ function setHTML(){const set=curSet();if(!set)return"";const tr=set.trans||{mode
   <div class="group"><h3>Biblioteca<span class="grow"></span><span class="mono" style="letter-spacing:0">${S.songs.length}</span></h3>
     <ol class="queue">${S.songs.map(s=>`<li class="qi${s.id===S.curSongId?" cur":""}" data-song="${s.id}"><span class="n">♪</span><span style="min-width:0"><div class="t">${esc(s.name)}</div><div class="s"><span>${esc(s.artist||"")}</span><span class="mono">${s.tracks.length} faixas · ${fmt(s.duration)}</span></div></span>
       <span class="acts"><button data-a="del" class="${S.confirm==="song:"+s.id?"btn-danger armed":""}" style="${S.confirm==="song:"+s.id?"width:auto;padding:0 8px;font-size:12px":""}" aria-label="Excluir música">${S.confirm==="song:"+s.id?"Excluir?":"🗑"}</button></span></li>`).join("")}</ol>
-    <button class="btn-primary" data-a="import">+ Importar pacote</button>
+    <button class="btn-primary" data-a="import">+ Importar pacote</button></div>
+  <div class="group"><div class="blesscard"><b>Abençoe o DDS MultiTrack</b><p>Gratuito para todas as igrejas. Oferte o valor que sentir no coração para manter o app no ar.</p>
+    <div class="row"><button class="btn-primary" data-bless>Ofertar via Pix</button><button class="btn-ghost" data-bless>Tenho músicas autorais</button></div></div>
     ${S.sets.length>1?`<button class="btn-danger${S.confirm==="set:"+set.id?" armed":""}" data-a="delset">${S.confirm==="set:"+set.id?"Confirmar: excluir este repertório":"Excluir repertório"}</button>`:""}</div>`}
 function cfgHTML(){const s=curSong();if(!s)return'<p class="help">Abra uma música para ajustar tom, andamento, click e seções.</p>';
   const pend=s.semi!==s.applied.semi||s.tempo!==s.applied.tempo,o=songPosOrig(),bar=(s.sig||4)*60/s.bpm,barAt=t=>Math.max(1,Math.floor((t-(s.beatOffset||0))/bar+1e-6)+1);
@@ -602,7 +604,17 @@ $("#bPlay").onclick=togglePlay;$("#mPlay").onclick=togglePlay;
 $("#bStop").onclick=()=>{ensureCtx();stopToStart()};
 const prev=()=>{ensureCtx();const d=E.cur;if(d&&d.playing&&d.pos()-d.startPos>3){d.seek(d.startPos);return}goNext(-1)};
 $("#bPrev").onclick=prev;$("#mPrev").onclick=prev;$("#bNext").onclick=()=>goNext(1);$("#mNext").onclick=()=>goNext(1);
-$("#bImport").onclick=openImport;$("#bAcc").onclick=()=>openAccount();
+$("#bImport").onclick=openImport;
+/* Oferta (Pix) e convite para artistas */
+const PIX_KEY="+5541991542931",PIX_CODE="00020101021126360014br.gov.bcb.pix0114+55419915429315204000053039865802BR5922Diogo Domingues Soares6009SAO PAULO622905251HGER0Y8YV0TYBV9ZT8FNSVJT630446F1";
+function openBless(){$("#bless").hidden=false;$("#cpFallback").hidden=true}
+function copyText(txt,label){const done=()=>toast(label+" copiado. Cole no app do seu banco.");
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(()=>fallback());else fallback();
+  function fallback(){const i=$("#cpFallback");i.hidden=false;i.value=txt;i.focus();i.select();toast("Selecione e copie o código destacado.")}}
+document.addEventListener("click",e=>{if(e.target.closest("[data-bless]"))openBless();if(e.target.id==="bless"||e.target.closest("[data-blclose]"))$("#bless").hidden=true});
+$("#bBless").onclick=openBless;$("#cpKey").onclick=()=>copyText(PIX_KEY,"Chave Pix");$("#cpCode").onclick=()=>copyText(PIX_CODE,"Pix copia e cola");
+$("#wClose").onclick=()=>{$("#welcome").hidden=true;try{localStorage.setItem("ddsmt-welcome","fechado")}catch(e){}};
+try{if(localStorage.getItem("ddsmt-welcome")!=="fechado")$("#welcome").hidden=false}catch(e){$("#welcome").hidden=false}$("#bAcc").onclick=()=>openAccount();
 document.addEventListener("click",e=>{const b=e.target.closest('[data-act="link"]');if(b&&curSong())openLink(curSong())});
 $("#tIem").onclick=()=>{ensureCtx();S.settings.iem=!S.settings.iem;applyGlobalMix();saveMeta();renderTransport();toast(S.settings.iem?"Fones L/R: click e guia na esquerda; banda e pad na direita.":"Fones L/R desligado.")};
 $("#tPad").onclick=()=>{ensureCtx();S.settings.padOn=!S.settings.padOn;padFollow(true);saveMeta();renderTransport()};
@@ -611,7 +623,7 @@ $("#mstVol").oninput=e=>{S.settings.master=+e.target.value;applyGlobalMix();save
 $("#setSel").onchange=e=>{S.currentSet=e.target.value;S.idx=curSet().songIds.indexOf(S.curSongId);saveMeta();renderAll()};
 document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{S.side=b.dataset.side;renderSide()});
 document.querySelectorAll(".mtabs button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;if(S.tab!=="tracks")S.side=S.tab;renderSide();if(S.tab==="tracks")requestAnimationFrame(drawArr)});
-document.addEventListener("keydown",e=>{if(e.target.closest("input,select,textarea")||!$("#imp").hidden||!$("#acc").hidden)return;
+document.addEventListener("keydown",e=>{if(e.target.closest("input,select,textarea")||!$("#imp").hidden||!$("#acc").hidden||!$("#bless").hidden)return;
   if(e.code==="Space"){e.preventDefault();togglePlay()}else if(e.key==="ArrowRight")goNext(1);else if(e.key==="ArrowLeft")prev();
   else if(/^[1-9]$/.test(e.key))gotoSection(+e.key-1);else if(e.key==="v"||e.key==="V")toggleVamp(E.vamp)});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&E.cur&&E.cur.playing)keepAwake(true)});
