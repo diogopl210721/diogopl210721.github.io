@@ -379,6 +379,86 @@ body.following{overflow:hidden}
 @media (max-width:760px){.busy{bottom:calc(120px + env(safe-area-inset-bottom,0px))}}
 .busy .bar{height:4px;border-radius:2px;background:var(--surface-3);overflow:hidden}.busy .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
 .toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(80px + env(safe-area-inset-top,0px));z-index:61;max-width:min(380px,calc(100% - 32px));background:var(--surface-3);border:1px solid var(--line-2);border-radius:12px;padding:12px 14px;font-size:14px;box-shadow:0 20px 50px -20px rgb(0 0 0 / .8)}
+
+/* Modo palco */
+.stage{position:fixed;inset:0;z-index:60;background:#07090d;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(110px,30vh) minmax(0,1fr);gap:10px;
+  padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+body.stage-on{overflow:hidden}body.stage-on .minibar{display:none}
+.st-top{display:flex;align-items:stretch;gap:10px;min-width:0}
+.st-top button{border-radius:12px;background:var(--surface-2);border:1px solid transparent;display:grid;place-items:center;padding:0 14px;min-height:54px;color:var(--fg,#fff)}
+.st-top .icon{width:24px;height:24px}
+.st-tr{display:flex;gap:8px}.st-tr button{width:64px}
+.st-tr .play{background:#f2f4f8;color:#0a0c11;width:84px}
+.st-name{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 4px}
+.st-name b{font-family:var(--f-display);font-weight:800;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-name small{color:var(--accent);font-size:12px;font-weight:600;min-height:1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-tools{display:flex;gap:8px;align-items:stretch}
+.st-tools button{display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px}
+.st-tools button.on{background:var(--accent-soft);border-color:var(--accent)}
+.st-tools button.min.on{background:#3a1f4f;border-color:#b48cff;animation:minpulse 1.6s infinite}
+@keyframes minpulse{50%{box-shadow:0 0 0 4px rgb(180 140 255 / .18)}}
+.st-box{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:62px;padding:0 10px;border-radius:12px;background:var(--surface-2)}
+.st-box b{font-family:var(--f-mono);font-size:20px;line-height:1.05}.st-box small{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.st-time{font-family:var(--f-mono);font-size:20px;min-width:118px;flex-direction:row;gap:6px;align-items:baseline}.st-time small{font-size:12px;letter-spacing:0;text-transform:none}
+.st-ov{position:relative;border-radius:14px;background:#0d1118;overflow:hidden;cursor:pointer;touch-action:manipulation}
+.st-ov canvas{position:absolute;inset:0;display:block}
+.st-main{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:10px;min-height:0}
+.st-pane{min-height:0;overflow:auto;border-radius:14px;background:#0d1118;padding:12px}
+.st-nav{display:flex;flex-direction:column;gap:8px}
+.st-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:14px}
+.st-nav button .icon{width:24px;height:24px}.st-nav button.on{border-color:#f2f4f8;background:var(--surface-2)}
+.st-empty{color:var(--muted);padding:16px}
+.st-parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.sp{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--sc) 12%,#121722);border:1px solid color-mix(in srgb,var(--sc) 35%,transparent);text-align:left;min-width:0}
+.sp b{font-family:var(--f-display);font-size:24px;line-height:1;color:var(--sc)}.sp span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sp.cur{background:color-mix(in srgb,var(--sc) 30%,#121722);border-color:var(--sc);box-shadow:inset 0 -3px 0 var(--sc)}
+.sp.queued{border-style:dashed;border-color:#fff}.sp.vamp{outline:2px solid var(--accent);outline-offset:-2px}
+.st-mix{display:flex;gap:10px;height:100%;min-height:220px;overflow-x:auto}
+.st-mix .ch{flex:none;width:84px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px}
+.st-mix .ch.mst{width:76px}
+.cn{font-family:var(--f-display);font-weight:700;font-size:13px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.fd{position:relative;border-radius:10px;background:#141a25;overflow:hidden;touch-action:none;cursor:ns-resize;min-height:90px}
+.fd i{position:absolute;left:0;right:0;bottom:0;background:var(--fc);border-radius:10px 10px 0 0;opacity:.9}
+.fd.dim i{opacity:.25}.fd:focus-visible{outline:2px solid var(--accent)}
+.st-mix .ms{display:flex;gap:4px}.st-mix .ms button{flex:1;height:38px;padding:0;border-radius:8px;font-weight:800;background:var(--surface-2)}
+.st-mix .ms button.m.on{background:#16c7f0;color:#05222b;border-color:#16c7f0}.st-mix .ms button.s.on{background:var(--k-guide);color:#1d1a02}
+.st-mix .ms button.on{background:var(--accent-soft);border-color:var(--accent)}
+.st-set{display:flex;flex-direction:column;gap:4px}
+.st-sethd{font-family:var(--f-display);font-weight:800;font-size:18px;padding:4px 6px 8px}
+.ss{display:flex;gap:14px;align-items:center;padding:12px;border-radius:12px;background:transparent;text-align:left}
+.ss .n{width:26px;text-align:center;font-family:var(--f-mono);color:var(--muted)}.ss .t{display:flex;flex-direction:column;min-width:0}
+.ss b{font-size:17px}.ss small{color:var(--muted);font-size:13px}.ss.cur{background:var(--surface-2)}.ss.cur b,.ss.cur .n{color:#16c7f0}
+.st-pad{display:grid;grid-template-columns:minmax(0,1fr) 84px;grid-template-rows:auto minmax(0,1fr);gap:10px;height:100%;min-height:240px}
+.pad-top{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:10px}
+.pad-top button{border-radius:12px;font-weight:700}.pw{font-size:26px}.pw.on{background:var(--k-pad);color:#0a0c11}
+.pa.on{border-color:var(--accent);background:var(--accent-soft)}
+.pad-info{display:flex;flex-direction:column;justify-content:center;padding:6px 14px;border-radius:12px;background:var(--surface-2)}
+.pad-info b{font-family:var(--f-display);font-size:20px}.pad-info small{color:var(--muted);font-size:11px}
+.pad-keys{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.pad-keys button{font-family:var(--f-display);font-size:24px;font-weight:700;border-radius:12px;background:var(--surface-2);min-height:54px}
+.pad-keys button.on{background:#16c7f0;color:#05222b;border-color:#16c7f0}
+.pad-vol{grid-column:2;grid-row:1 / 3;display:flex}.pad-vol .fd{flex:1}
+.vampbtn.min.on{background:#3a1f4f;border-color:#b48cff}
+@media (max-width:900px){.st-tools button span{display:none}.st-tr button{width:52px}.st-tr .play{width:64px}.st-box{min-width:52px}.st-time{min-width:96px}}
+@media (max-width:700px){
+  .stage{grid-template-rows:auto auto 92px minmax(0,1fr);gap:8px}
+  .st-top{display:contents}
+  .st-tr{grid-row:1}.st-tr button{flex:1;width:auto;min-height:50px}.st-tr .play{flex:1.4}
+  .st-tr,.st-tools{min-width:0}.st-tools{grid-row:2;flex-wrap:nowrap;gap:6px}.st-tools button{min-height:44px;padding:0 10px;flex:none}.st-tools .st-box{flex:1;min-width:0;padding:0 4px}.st-tools .st-time{flex:2;font-size:16px}.st-box b{font-size:17px}
+  .st-name{display:none}
+  .st-ov{grid-row:3}
+  .st-main{grid-row:4;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
+  .st-nav{flex-direction:row}.st-nav button{flex-direction:row;padding:10px 4px;font-size:12px;gap:4px}.st-nav button .icon{width:18px;height:18px}
+  .st-parts{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.sp{padding:10px}.sp b{font-size:20px}
+  .st-pad{grid-template-columns:minmax(0,1fr) 56px}.pad-top{grid-template-columns:56px minmax(0,1fr)}.pa{grid-column:1 / -1;min-height:40px}
+  .pad-keys{grid-template-columns:repeat(4,1fr);gap:6px}.pad-keys button{font-size:20px;min-height:48px}
+  .st-mix .ch{width:70px}
+}
+@media (max-height:500px) and (orientation:landscape){.stage{grid-template-rows:auto 76px minmax(0,1fr);gap:6px}.st-top button{min-height:42px}.st-name b{font-size:16px}
+  .st-main{grid-template-columns:minmax(0,1fr) 96px}.st-nav{gap:5px}.st-nav button{min-height:0;gap:2px;font-size:11px;border-radius:10px}.st-nav button .icon{width:18px;height:18px}
+  .st-pane{padding:8px}.st-mix{min-height:0}.st-mix .ch{width:68px;gap:5px}.fd{min-height:40px}.st-mix .ms button{height:30px}
+  .st-pad{min-height:0;gap:6px}.pad-keys{gap:5px}.pad-keys button{min-height:36px;font-size:18px}.pad-top button,.pad-info{min-height:40px;padding:2px 10px}.pad-info b{font-size:16px}
+  .sp{padding:8px 10px}.sp b{font-size:18px}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 
@@ -487,13 +567,42 @@ body.following{overflow:hidden}
   <div class="fw-body" id="fwBody"></div>
 </div>
 <div class="overlay" id="acc" hidden><div class="dialog" id="accDlg" role="dialog" aria-modal="true" aria-label="Conta e equipe"></div></div>
+<section class="stage" id="stage" hidden aria-label="Modo palco">
+  <div class="st-top">
+    <div class="st-tr">
+      <button id="sgPrev" aria-label="Voltar ao início ou música anterior"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.2v14H6zM19 5v14L9.5 12z"/></svg></button>
+      <button id="sgPlay" class="play" aria-label="Tocar ou pausar"><svg class="icon pi" viewBox="0 0 24 24"><path d="M8 5l12 7-12 7z"/></svg></button>
+      <button id="sgStop" aria-label="Parar"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5h11v11h-11z"/></svg></button>
+      <button id="sgNext" aria-label="Próxima música"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.8 5H18v14h-2.2zM5 5l9.5 7L5 19z"/></svg></button>
+    </div>
+    <div class="st-name"><b id="sgName"></b><small id="sgHint"></small></div>
+    <div class="st-tools">
+      <button id="sgVamp" title="Repetir a parte atual (V)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg><span>Repetir</span></button>
+      <button id="sgMin" class="min" title="A banda vira fundo até você tocar a parte em que quer entrar (M)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg><span>Ministrar</span></button>
+      <div class="st-box st-time" id="sgTime">0:00<small>/ 0:00</small></div>
+      <div class="st-box"><b id="sgBpm">—</b><small>BPM</small></div>
+      <div class="st-box"><b id="sgKey">—</b><small>Tom</small></div>
+      <button id="sgExit" aria-label="Sair do modo palco" title="Sair (Esc)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7l-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z"/></svg></button>
+    </div>
+  </div>
+  <div class="st-ov"><canvas id="sgCv" aria-label="Mapa da música: toque numa parte para ir até ela"></canvas></div>
+  <div class="st-main">
+    <div class="st-pane" id="sgPane"></div>
+    <nav class="st-nav" aria-label="Painéis">
+      <button data-pane="parts"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg><span>Partes</span></button>
+      <button data-pane="mix"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h2v6h2v2H8v10H6V11H4V9h2zm6 0h2v12h2v2h-2v4h-2v-4h-2v-2h2zm6 0h2v4h2v2h-2v12h-2V9h-2V7h2z"/></svg><span>Mixer</span></button>
+      <button data-pane="set"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h14v2H3zm0 5h14v2H3zm0 5h9v2H3zm13 0 5 3-5 3z"/></svg><span>Repertório</span></button>
+      <button data-pane="pad"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/></svg><span>Pad</span></button>
+    </nav>
+  </div>
+</section>
 <div class="busy" id="busy" hidden><span id="busyLabel"></span><div class="bar"><i id="busyBar"></i></div></div>
 <div class="toast" id="toast" hidden></div>
 <datalist id="secNames"><option>Intro</option><option>Verso</option><option>Verso 1</option><option>Verso 2</option><option>Pré-refrão</option><option>Refrão</option><option>Ponte</option><option>Instrumental</option><option>Interlúdio</option><option>Tag</option><option>Final</option></datalist>
 
 <script src="vendor/jszip.min.js"></script>
 <script src="vendor/supabase.js"></script>
-<script src="app.js?v=202610310140"></script>
+<script src="app.js?v=202610310157"></script>
 
 </body>
 </html>

@@ -12,6 +12,7 @@ class DDSMixer extends AudioWorkletProcessor{
   apply(d,ev){
     if(ev.type==="start"||ev.type==="jump"){d.playing=true;d.pos=ev.pos}
     else if(ev.type==="stop"){d.playing=false}
+    else if(ev.type==="gainsAt"){for(const s of d.stems){const g=ev.g[s.id];if(g)s.t=g.slice()}}
     else if(ev.type==="fade"){if(ev.from!=null)d.dg=ev.from;d.dgTarget=ev.target;d.dgLeft=Math.max(1,ev.frames|0);d.dgStep=(ev.target-d.dg)/d.dgLeft}}
   render(d,L,R,a,b){const cnt=b-a;if(cnt<=0||!d.playing)return;const dg=this.dgBuf;
     for(let i=0;i<cnt;i++){if(d.dgLeft>0){d.dg+=d.dgStep;d.dgLeft--;if(d.dgLeft===0)d.dg=d.dgTarget}dg[i]=d.dg}
