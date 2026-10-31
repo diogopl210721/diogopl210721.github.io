@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>DDS MultiTrack</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="DDS MultiTrack: playback de multitracks para o louvor. Importe o pacote da música, toque com click, guia, pad e repertório sincronizado com a equipe.">
@@ -41,7 +41,7 @@
   --r:14px; --r-sm:9px; --lane:50px; --ruler:36px; --head:270px; --chordrow:26px;
   color-scheme:dark;
 }
-@media (max-width:760px){:root{--lane:58px;--head:150px}}
+@media (max-width:760px){:root{--lane:60px;--head:min(46vw,190px)}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{min-height:100%}
@@ -241,7 +241,7 @@ body.following{overflow:hidden}
   .secrail{margin-top:10px;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
   .sec{padding:6px 9px;border-radius:10px}.sec .nm{font-size:13px}.sec .sub{font-size:10px}.sec.cur::after{left:9px;right:9px;bottom:3px}
   .secrail .vampbtn{padding:6px 8px;font-size:12px;border-radius:10px}.secrail .vampbtn .icon{width:14px;height:14px}
-  .sec.edit{padding:5px}.sec.edit select{font-size:13px;padding:5px 4px;letter-spacing:-.02em}.sec.edit .sub{padding-left:4px}
+  .sec.edit{padding:5px}.sec.edit select{font-size:13px!important;padding:5px 4px;letter-spacing:-.02em}.sec.edit .sub{padding-left:4px}
 }
 
 /* Abas (celular) */
@@ -276,6 +276,15 @@ body.following{overflow:hidden}
 .lh input[type=range]{grid-column:2;width:100%;height:16px;accent-color:var(--kc)}
 .lh .meta{grid-column:2;display:flex;flex-direction:column;gap:2px;min-width:0;padding-top:6px}
 .lh.dim .nm,.lh.dim .kd{opacity:.4}
+@media (max-width:760px){
+  .lh{grid-template-columns:4px minmax(0,1fr) auto;grid-template-rows:auto auto;row-gap:5px;column-gap:8px;padding:0 6px 0 0;align-content:center}
+  .lh .meta{grid-column:2 / 4;grid-row:1;padding-top:0}
+  .lh .nm{font-size:13px;text-transform:none;letter-spacing:0;white-space:normal;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  .lh .kd{display:none}
+  .lh input[type=range]{grid-column:2;grid-row:2;height:14px}
+  .lh .ms{grid-column:3;grid-row:2;gap:3px}.lh .ms button{width:26px;height:24px;font-size:11px;border-radius:6px}
+  input,select,textarea{font-size:16px!important}
+}
 @media (min-width:761px){.lh{grid-template-columns:4px minmax(0,1fr) 72px auto;grid-template-rows:1fr}.lh::before{grid-row:1}.lh .meta{grid-column:2;grid-row:1;padding-top:0}.lh input[type=range]{grid-column:3;grid-row:1;width:72px}.lh .ms{grid-column:4;grid-row:1}}
 .canvas-wrap{position:relative;min-width:0}
 #arr{display:block;width:100%;touch-action:none;cursor:pointer}
@@ -484,7 +493,7 @@ body.following{overflow:hidden}
 
 <script src="vendor/jszip.min.js"></script>
 <script src="vendor/supabase.js"></script>
-<script src="app.js?v=202610310136"></script>
+<script src="app.js?v=202610310140"></script>
 
 </body>
 </html>

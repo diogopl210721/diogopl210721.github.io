@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610310136";
+const APP_VER="202610310140";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -631,7 +631,11 @@ function drawArr(){const s=curSong();if(!s||!arrCanvas.isConnected)return;const 
     g.fillStyle=cv("--line");g.fillRect(0,y0+LH-1,W,1);if(!P)return;
     for(let x=0;x<W;x+=2){const tt=x/W*total;if(tt>t.dur)break;const v=pk[Math.min(P-1,Math.floor(tt/t.dur*P))];if(v<0.01)continue;const a=Math.max(0.8,v*amp);
       g.globalAlpha=off?0.18:(tt<pos?0.95:0.42);g.fillStyle=off?cv("--muted"):col;g.fillRect(x,mid-a,1.5,a*2)}
-    g.globalAlpha=1});
+    g.globalAlpha=1;
+    if(innerWidth<=760){/* no celular: nome da faixa dentro da própria onda */
+      g.save();g.font="700 11px "+cv("--f-display");g.textBaseline="middle";const lb=t.name,tw=g.measureText(lb).width;
+      g.globalAlpha=0.82;g.fillStyle=cv("--bg")||"#0b0d12";g.beginPath();(g.roundRect?g.roundRect(4,y0+4,tw+12,17,5):g.rect(4,y0+4,tw+12,17));g.fill();
+      g.globalAlpha=off?0.5:1;g.fillStyle=col;g.fillText(lb,10,y0+12.5);g.restore()}});
   // corte de início/fim
   g.fillStyle="rgba(10,12,17,0.66)";if(s.trimStart>0)g.fillRect(0,RH,X(s.trimStart),H-RH);if(s.trimEnd!=null&&s.trimEnd<total)g.fillRect(X(s.trimEnd),RH,W-X(s.trimEnd),H-RH);
   // régua com compassos
