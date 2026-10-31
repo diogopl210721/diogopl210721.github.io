@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610302221";
+const APP_VER="202610302234";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -126,15 +126,16 @@ function detectChordsMix(frames,beats,keyRoot,keyMinor,keyLabel){const B=beats.l
   return out}
 
 /* Seções: novidade na matriz de auto-similaridade por compasso + rótulos por repetição e energia */
-function detectSectionsMix(frames,beats,sig,chords){const bars=[];for(let i=0;i+sig<beats.length;i+=sig)bars.push([beats[i],beats[i+sig]]);const nb=bars.length;if(nb<12)return[{name:"Intro",t:0}];
+function detectSectionsMix(frames,beats,sig,chords,given){const bars=[];for(let i=0;i+sig<beats.length;i+=sig)bars.push([beats[i],beats[i+sig]]);const nb=bars.length;if(nb<12)return[{name:"Intro",t:0}];
   const feat=bars.map(([a,z])=>{const fa=Math.floor(a/frames.hopS),fz=Math.max(fa+1,Math.floor(z/frames.hopS));const c=new Float64Array(12);let e=0,cnt=0;
     for(let f=fa;f<fz&&f<frames.ch.length;f++){for(let p=0;p<12;p++)c[p]+=frames.ch[f][p];e+=frames.rms[f];cnt++}return{c:norm12(c),e:cnt?e/cnt:0}});
   const emax=Math.max(...feat.map(f=>f.e))||1;feat.forEach(f=>f.e/=emax);
   const sim=(i,j)=>{let s=0;for(let p=0;p<12;p++)s+=feat[i].c[p]*feat[j].c[p];return 0.75*s+0.25*(1-Math.abs(feat[i].e-feat[j].e))};
   const W=4,nov=new Float64Array(nb);for(let i=W;i<nb-W;i++){let s=0;for(let a=-W;a<W;a++)for(let b=-W;b<W;b++){const sg=(a<0)===(b<0)?1:-1;s+=sg*sim(i+a,i+b)}nov[i]=Math.max(0,s)}
-  const nmax=Math.max(...nov)||1;const bounds=[0];const minLen=4;
-  const cand=[...nov].map((v,i)=>({i,v:v/nmax})).filter(x=>x.v>0.22&&x.i>=minLen&&x.i<=nb-2).sort((a,b)=>b.v-a.v);
-  for(const c of cand){if(bounds.every(b=>Math.abs(b-c.i)>=minLen))bounds.push(c.i)}bounds.sort((a,b)=>a-b);
+  const nmax=Math.max(...nov)||1;let bounds=[0];const minLen=4,barLen=bars[0][1]-bars[0][0];
+  if(given&&given.length>1){bounds=[...new Set(given.map(t=>Math.max(0,Math.min(nb-1,Math.round((t-beats[0])/barLen)))))].sort((a,b)=>a-b);if(bounds[0]!==0)bounds.unshift(0)}
+  else{const cand=[...nov].map((v,i)=>({i,v:v/nmax})).filter(x=>x.v>0.22&&x.i>=minLen&&x.i<=nb-2).sort((a,b)=>b.v-a.v);
+    for(const c of cand){if(bounds.every(b=>Math.abs(b-c.i)>=minLen))bounds.push(c.i)}bounds.sort((a,b)=>a-b)}
   const segs=[...new Set(bounds)].sort((a,b)=>a-b).map((b,k,arr)=>({a:b,z:k+1<arr.length?arr[k+1]:nb}));
   segs.forEach(s=>{s.e=0;const c=new Float64Array(12);for(let i=s.a;i<s.z;i++){s.e+=feat[i].e;for(let p=0;p<12;p++)c[p]+=feat[i].c[p]}s.e/=(s.z-s.a);s.c=norm12(c)});
   const ssim=(x,y)=>{let s=0;for(let p=0;p<12;p++)s+=x.c[p]*y.c[p];return s-1.2*Math.abs(x.e-y.e)-0.02*Math.abs((x.z-x.a)-(y.z-y.a))};
@@ -144,9 +145,12 @@ function detectSectionsMix(frames,beats,sig,chords){const bars=[];for(let i=0;i+
   const chorus=rep.length?+rep[0][0]:null,verse=rep.length>1?+rep[1][0]:null;
   const names=segs.map((s,i)=>{if(i===0&&s.e<0.6&&s.cl!==chorus)return"Intro";if(i===segs.length-1&&s.z-s.a<=8&&s.cl!==chorus)return"Final";
     if(s.cl===chorus)return"Refrão";if(s.cl===verse)return"Verso";if(segs[i+1]&&segs[i+1].cl===chorus&&s.z-s.a<=8)return"Pré-refrão";
-    if(info[s.cl].n===1&&i>segs.length/2)return"Ponte";return info[s.cl].n>1?"Parte "+String.fromCharCode(65+s.cl):"Instrumental"});
+    if(info[s.cl].n===1&&i>segs.length/2)return"Ponte";return info[s.cl].n>1?"Interlúdio":"Instrumental"});
   const count={},tot={};names.forEach(n=>tot[n]=(tot[n]||0)+1);
-  return segs.map((s,i)=>{const n=names[i];count[n]=(count[n]||0)+1;const label=tot[n]>1&&!/Intro|Final/.test(n)?n+" "+count[n]:n;return{name:label,t:Math.round((i===0?0:bars[s.a][0])*1000)/1000}})}
+  const keepT=given&&given.length>1?[...given].sort((a,b)=>a-b):null;
+  return segs.map((s,i)=>{const n=names[i];count[n]=(count[n]||0)+1;const label=tot[n]>1&&!/Intro|Final/.test(n)?n+" "+count[n]:n;
+    let t=i===0?0:bars[s.a][0];if(keepT){const near=keepT.reduce((b,x)=>Math.abs(x-t)<Math.abs(b-t)?x:b,keepT[0]);if(Math.abs(near-t)<barLen*0.75)t=near}
+    return{name:label,t:Math.round(t*1000)/1000}})}
 
 /* Junta tudo para um MP3 único */
 function analyzeMix(mono,sr,known){let tp;if(known&&known.bpm){tp={bpm:known.bpm,phase:known.offset||0}}else{const on=onsetEnvelope(mono,sr);tp=detectTempoMix(on.env,on.hopS)}if(!tp)return null;
@@ -157,9 +161,14 @@ function analyzeMix(mono,sr,known){let tp;if(known&&known.bpm){tp={bpm:known.bpm
   // tempo 1 do compasso: fase em que as trocas de acorde mais caem
   const sig=(known&&known.sig)||4,hits=new Array(sig).fill(0);chords.forEach(c=>hits[c.b%sig]++);const down=known&&known.bpm?0:hits.indexOf(Math.max(...hits));
   const barLen=sig*beatLen;let firstDown=beats[down]%barLen;if(firstDown>barLen-0.08)firstDown-=barLen;firstDown=Math.max(0,firstDown);const barBeats=[];for(let t=firstDown;t<dur;t+=beatLen)barBeats.push(t);const offset=Math.round(firstDown*1000)/1000;
-  const sections=detectSectionsMix(fr,barBeats,sig,chords);
+  const sections=detectSectionsMix(fr,barBeats,sig,chords,known&&known.bounds);
   chords=chords.map(({t,c})=>({t,c}));
   return{bpm:tp.bpm,offset,key:keyLabel,keyAlt:keyName(key.alt.i,key.alt.minor),keyConf:key.confidence,chords,sections,sig}}
+
+/* Numera nomes repetidos: Verso 1, Verso 2… (Intro e Final ficam sem número) */
+const GENERIC_SEC=/^(parte|se[cç][aã]o|nova se[cç][aã]o)\b/i;
+function renumberSections(ms){const base=m=>m.name.replace(/\s+\d+$/,"").trim(),tot={},cnt={};const sorted=[...ms].sort((a,b)=>a.t-b.t);
+  sorted.forEach(m=>{const b=base(m);tot[b]=(tot[b]||0)+1});sorted.forEach(m=>{const b=base(m);cnt[b]=(cnt[b]||0)+1;m.name=tot[b]>1&&!/^(Intro|Final|Tag)$/i.test(b)&&!GENERIC_SEC.test(b)?b+" "+cnt[b]:b});return ms}
 
 /* ================= Utilidades ================= */
 const $=s=>document.querySelector(s);
@@ -305,7 +314,7 @@ async function loadSong(id,{play=false,idx=null}={}){
   const key=prepKey(song);let d=E.decks.find(x=>x.key===key&&(x.loaded||x.loading));
   if(d&&E.cur!==d&&E.cur.playing&&!E.cur.handoff)E.cur.stopNow();
   if(!d){if(E.cur.playing)pause();if(S.settings.preload==="end")E.decks.forEach(x=>{if(!x.playing)x.unload()});d=E.decks.find(x=>x!==E.cur&&!x.playing)||E.cur;if(d.playing)d.stopNow()}
-  if(idx!=null)S.idx=idx;S.curSongId=id;saveMeta();E.vamp=null;E.queued=null;E.cur=d;renderAll();
+  if(idx!=null)S.idx=idx;S.curSongId=id;saveMeta();E.vamp=null;E.queued=null;E.secEdit=false;E.cur=d;renderAll();
   const miss=missingTracks(song);if(miss.length===song.tracks.length&&song.tracks.length){d.unload();d.song=song;renderAll();toast("Os áudios desta música ainda não estão neste aparelho. Vincule o pacote para tocar.",6000);openLink(song);return}
   if(miss.length)toast(miss.length+" faixa(s) sem áudio neste aparelho: "+miss.map(t=>t.name).join(", "),6000);
   if(!d.loaded){const label="Carregando "+song.name;busy(label,0);let ok;try{ok=await(d.key===key&&d.loading?d.loading:loadIntoDeck(d,song,p=>busy(label,p)))}catch(e){busy(null);toast(e.message||"Não foi possível carregar os arquivos.");return}
@@ -473,15 +482,18 @@ async function analyzePackage(files,pkg){const sr=E.SR,down=Math.max(1,Math.roun
   step(2,"ok",`${tracks.length} faixas no mesmo ponto zero · ${fmt(dur)}`);
   step(3,"run");let bpm=120,offset=0,bpmOk=false,fromClick=false;
   if(clickMono){const c=detectClick(clickMono,asr);if(c){bpm=c.bpm;offset=c.offset;bpmOk=true;fromClick=true;step(3,"ok",bpm+" BPM pelo metrônomo")}}
-  await sleep(0);let ana=null;if(mix){try{ana=analyzeMix(mix,asr,fromClick?{bpm,offset,sig:4}:null)}catch(e){console.warn(e)}}
+  await sleep(0);let ana=null,gm=null;const guideMarks=(b,o)=>{if(!guides.length)return null;guides.sort((a,c)=>(a.t.first??1e9)-(c.t.first??1e9));const ms=detectSections(guides[0].mono,asr,b,o,4);return ms.length>1?ms:null};
+  if(mix){try{if(fromClick){gm=guideMarks(bpm,offset);ana=analyzeMix(mix,asr,{bpm,offset,sig:4,bounds:gm&&gm.map(x=>x.t)})}
+    else{ana=analyzeMix(mix,asr,null);if(ana){gm=guideMarks(ana.bpm,ana.offset);if(gm)ana=analyzeMix(mix,asr,{bpm:ana.bpm,offset:ana.offset,sig:4,bounds:gm.map(x=>x.t)})}}}catch(e){console.warn(e)}}
+  else if(fromClick)gm=guideMarks(bpm,offset);
   if(!bpmOk&&ana){bpm=ana.bpm;offset=ana.offset;bpmOk=true;step(3,"ok",bpm+" BPM pela batida")}
   if(!bpmOk){const m=/(\d{2,3}(?:[.,]\d)?)\s?bpm/i.exec(files.map(f=>f.name).join(" ")+" "+pkg);if(m){bpm=parseFloat(m[1].replace(",","."));bpmOk=true;step(3,"ok",bpm+" BPM (pelo nome)")}else step(3,"warn","não detectado · ajuste depois")}
   await sleep(0);step(4,"run");let key="—",keyAlt="";
   if(chromas.length){const k=detectKey(chromas);key=keyName(k.best.i,k.best.minor);keyAlt=keyName(k.alt.i,k.alt.minor);step(4,"ok",k.confidence>0.05?key:key+" ou "+keyAlt)}
   else if(ana){key=ana.key;keyAlt=ana.keyAlt;step(4,"ok",ana.keyConf>0.05?key:key+" ou "+keyAlt)}else step(4,"warn","não detectado");
   await sleep(0);step(5,"run");let markers=[{name:"Intro",t:0}];
-  if(guides.length&&bpmOk){guides.sort((a,b)=>(a.t.first??1e9)-(b.t.first??1e9));const ms=detectSections(guides[0].mono,asr,bpm,offset,4);if(ms.length>1){markers=ms;step(5,"ok",ms.length+" seções pela guia")}}
-  if(markers.length<2&&ana&&ana.sections.length>1){markers=ana.sections;step(5,"ok",markers.length+" seções pela música")}
+  if(ana&&ana.sections.length>1){markers=renumberSections(ana.sections);step(5,"ok",markers.length+" partes com nome"+(gm?" (pela guia)":""))}
+  else if(gm){markers=gm;step(5,"ok",gm.length+" partes pela guia")}
   if(markers.length<2)step(5,"warn","marque depois em Ajustes");
   const chords=ana?ana.chords:[];step(6,chords.length?"ok":"warn",chords.length?chords.length+" trocas de acorde":"não detectada");
   const nm=parsePackageName(pkg);
@@ -529,13 +541,46 @@ function renderTime(){const d=E.cur,s=curSong();let cur=0,tot=0;
   const bar=rel<0?0:Math.floor(bi/sig)+1,beat=rel<0?0:(bi%sig)+1;$("#bb").textContent="Compasso "+bar+" · tempo "+(beat||"—");
   if(bi!==lastBeat){lastBeat=bi;[...beatsEl.children].forEach((x,i)=>x.classList.toggle("on",d&&d.playing&&i===beat-1))}}
 
+/* Organizar partes de uma música já importada: detecta as que faltam e dá nome às genéricas */
+const SEC_OPTS=["Intro","Verso","Pré-refrão","Refrão","Ponte","Instrumental","Interlúdio","Solo","Tag","Final"];
+let organizing=false;
+async function organizeSections(song){if(!song||organizing)return;organizing=true;ensureCtx();const sr=E.SR,down=Math.max(1,Math.round(sr/11025)),asr=sr/down;
+  let mix=null,guide=null;busy("Organizando as partes",0.02);
+  try{for(let i=0;i<song.tracks.length;i++){const t=song.tracks[i];let b=await stemBuffer(song,t);if(!b)continue;
+      const chans=[b.getChannelData(0)];if(b.numberOfChannels>1)chans.push(b.getChannelData(1));const m=toMonoDown(chans,down);b=null;
+      if(t.kind==="click"){}else if(t.kind==="guide"){if(!guide)guide=m}
+      else{if(!mix||mix.length<m.length){const nm=new Float32Array(m.length);if(mix)nm.set(mix);mix=nm}for(let j=0;j<m.length;j++)mix[j]+=m[j]}
+      busy("Organizando as partes",0.05+0.8*(i+1)/song.tracks.length);await sleep(0)}
+    if(!mix){busy(null);toast("Os áudios desta música não estão neste aparelho. Vincule o pacote e tente de novo.",6000);return}
+    const existing=[...song.markers].sort((a,b)=>a.t-b.t),hasReal=existing.length>2;let bounds=hasReal?existing.map(m=>m.t):null;
+    if(!bounds&&guide){const g=detectSections(guide,asr,song.bpm,song.beatOffset||0,song.sig||4);if(g.length>1)bounds=g.map(x=>x.t)}
+    busy("Organizando as partes",0.9);await sleep(0);
+    const ana=analyzeMix(mix,asr,{bpm:song.bpm,offset:song.beatOffset||0,sig:song.sig||4,bounds});busy(null);
+    if(!ana||ana.sections.length<2){toast("Não consegui identificar as partes desta música. Marque em Ajustes.",6000);return}
+    const base=n=>n.replace(/\s+\d+$/,"").trim();let ms;
+    if(hasReal)ms=existing.map(m=>{const auto=ana.sections.reduce((b,x)=>Math.abs(x.t-m.t)<Math.abs(b.t-m.t)?x:b,ana.sections[0]);return{name:GENERIC_SEC.test(m.name)?base(auto.name):base(m.name),t:m.t}});
+    else ms=ana.sections.map(x=>({name:base(x.name),t:x.t}));
+    song.markers=renumberSections(ms);let extra="";if(!(song.chords&&song.chords.length)&&ana.chords&&ana.chords.length){song.chords=ana.chords;extra=" e a cifra foi detectada"}
+    E.vamp=null;E.queued=null;saveSong(song);renderAll();toast(`${song.markers.length} partes organizadas${extra}. Toque numa parte para ir até ela.`,5000)}
+  catch(e){busy(null);console.warn(e);toast("Não foi possível organizar as partes: "+(e.message||e),6000)}
+  finally{organizing=false}}
 function renderSections(){const el=$("#secrail"),d=E.cur,s=curSong();if(!s){el.innerHTML="";return}
   const dd=d&&d.song===s?d:{song:s,ratio:s.applied.tempo/100,endPos:(s.trimEnd??s.duration)/(s.applied.tempo/100),pos:()=>(s.trimStart||0)/(s.applied.tempo/100)};
-  const secs=sectionsOf(dd);if(!secs.length){el.innerHTML='<span class="hint">Sem seções ainda. Em Ajustes, marque onde começa cada parte.</span>';return}
+  const secs=sectionsOf(dd);const orgBtn=`<button class="vampbtn org" data-act="org" title="Detecta as partes e dá nome (Verso, Refrão, Ponte…)">✨ Organizar partes</button>`;
+  if(secs.length<2&&!E.secEdit){el.innerHTML='<span class="hint">Esta música ainda não tem partes.</span>'+orgBtn;return}
+  if(E.secEdit){const sorted=[...s.markers].sort((a,b)=>a.t-b.t),bar=(s.sig||4)*60/s.bpm;
+    el.innerHTML=sorted.map((m,i)=>{const b=m.name.replace(/\s+\d+$/,"");const opts=SEC_OPTS.includes(b)?SEC_OPTS:[b,...SEC_OPTS];
+      return`<div class="sec edit"><select data-secname="${i}" aria-label="Nome da parte ${i+1}">${opts.map(o=>`<option${o===b?" selected":""}>${esc(o)}</option>`).join("")}</select><span class="sub">c ${Math.round((m.t-(s.beatOffset||0))/bar)+1}</span></div>`}).join("")+
+      `<button class="vampbtn on" data-act="secdone">✓ Concluir</button>`;return}
+  const generic=s.markers.some(m=>GENERIC_SEC.test(m.name));
   const ci=curSectionIdx(dd),bar=(s.sig||4)*60/s.bpm,r=dd.ratio;
   el.innerHTML=secs.map((x,i)=>`<button class="sec${i===ci?" cur":""}${E.queued&&E.queued.idx===i?" queued":""}${E.vamp===i?" vamp":""}" data-sec="${i}" title="Tecla ${i+1} · toque duplo repete"><span class="nm">${esc(x.name)}</span><span class="sub">${E.vamp===i?"repetindo":"c "+(Math.round((x.start*r-(s.beatOffset||0))/bar)+1)}</span></button>`).join("")+
-    `<button class="vampbtn${E.vamp!=null?" on":""}" id="bVamp" title="Repete a seção atual até soltar (V)"><svg class="icon" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg>${E.vamp!=null?"Soltar":"Repetir seção"}</button>`}
-$("#secrail").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.id==="bVamp")return toggleVamp(E.vamp);gotoSection(+b.dataset.sec)});
+    `<button class="vampbtn${E.vamp!=null?" on":""}" id="bVamp" title="Repete a seção atual até soltar (V)"><svg class="icon" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg>${E.vamp!=null?"Soltar":"Repetir seção"}</button>`+(generic?orgBtn:"")+`<button class="vampbtn ghost" data-act="secedit" title="Renomear as partes">✎ Editar partes</button>`}
+$("#secrail").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.id==="bVamp")return toggleVamp(E.vamp);
+  if(b.dataset.act==="org")return organizeSections(curSong());if(b.dataset.act==="secedit"){E.secEdit=true;return renderSections()}if(b.dataset.act==="secdone"){E.secEdit=false;return renderSections()}
+  if(b.dataset.sec!=null)gotoSection(+b.dataset.sec)});
+$("#secrail").addEventListener("change",e=>{const t=e.target;if(t.dataset.secname==null)return;const s=curSong();if(!s)return;const sorted=[...s.markers].sort((a,b)=>a.t-b.t);
+  sorted[+t.dataset.secname].name=t.value;renumberSections(s.markers);saveSong(s);renderSections();renderArr();renderSide()});
 $("#secrail").addEventListener("dblclick",e=>{const b=e.target.closest("[data-sec]");if(b)toggleVamp(+b.dataset.sec)});
 
 /* Faixas: cabeçalhos + onda alinhada */
@@ -624,6 +669,7 @@ function cfgHTML(){const s=curSong();if(!s)return'<p class="help">Abra uma músi
     <div class="field"><span>Andamento</span><div class="row"><input type="range" id="cTempo" min="80" max="120" step="1" value="${s.tempo}" style="flex:1"><span class="mono" id="cTempoOut">${s.tempo}% · ${+(s.bpm*s.tempo/100).toFixed(1)}</span></div></div>
     ${pend?`<div class="callout"><span style="flex:1">O áudio será processado no novo tom e andamento.</span><button class="btn-primary" data-a="apply">Aplicar</button><button class="btn-ghost" data-a="undo">Desfazer</button></div>`:""}</div>
   <div class="group"><h3>Seções<span class="grow"></span><button class="btn-ghost" data-a="mkadd" style="padding:4px 8px">+ Marcar no c ${barAt(o)}</button></h3>
+    <button data-a="org" style="align-self:flex-start">✨ Organizar partes automaticamente</button>
     ${[...s.markers].map((m,i)=>({m,i})).sort((a,b)=>a.m.t-b.m.t).map(({m,i})=>`<div class="mk"><input type="text" list="secNames" value="${esc(m.name)}" data-mk="${i}" aria-label="Nome da seção"><span class="mono">c ${barAt(m.t)} · ${fmt(m.t)}</span><button class="btn-ghost" data-a="mkdel" data-i="${i}" aria-label="Remover seção">✕</button></div>`).join("")||'<p class="help" style="margin:0">Toque a música e marque onde começa cada parte.</p>'}
     <p class="help" style="margin:0">Seções detectadas automaticamente podem vir com nomes genéricos. Renomeie como Verso, Refrão, Ponte.</p></div>
   <div class="group"><h3>Cifra<span class="grow"></span><span class="mono" style="letter-spacing:0">${(s.chords||[]).length}</span></h3>
@@ -673,6 +719,7 @@ sb.addEventListener("click",async e=>{const b=e.target.closest("button"),li=e.ta
     catch(err){busy(null);s.applied={semi:0,tempo:100};s.semi=0;s.tempo=100;saveSong(s);toast(err.message||"Não foi possível processar.");renderAll()}}
   if(a==="clk"){s.click.on=!s.click.on;if(!s.click.on)cancelClicks();saveSong(s);renderSide();renderTransport()}
   if(a==="mkadd"){const bar=(s.sig||4)*60/s.bpm,off=s.beatOffset||0,o=songPosOrig(),t=Math.max(0,off+Math.round((o-off)/bar)*bar);s.markers.push({name:"Nova seção",t:Math.round(t*1000)/1000});saveSong(s);renderSide();renderSections();drawArr()}
+  if(a==="org")return organizeSections(s);
   if(a==="chadd"){const beat=60/s.bpm,off=s.beatOffset||0,o=songPosOrig(),t=Math.max(0,off+Math.round((o-off)/beat)*beat);s.chords=s.chords||[];
     const prevC=[...s.chords].reverse().find(c=>c.t<=t);s.chords.push({t:Math.round(t*1000)/1000,c:prevC?prevC.c:(s.key&&s.key!=="—"?s.key:"C")});s.chords.sort((a,b)=>a.t-b.t);saveSong(s);renderSide();renderArr();renderTime()}
   if(a==="mkdel"){s.markers.splice(+b.dataset.i,1);E.vamp=null;saveSong(s);renderSide();renderSections();drawArr()}
@@ -694,7 +741,7 @@ sb.addEventListener("change",e=>{const t=e.target,set=curSet(),s=curSong();
   if(t.id==="cTempo"){s.tempo=+t.value;saveSong(s);renderSide();return}
   if(t.id==="cName")s.name=t.value.trim()||s.name;else if(t.id==="cArtist")s.artist=t.value.trim();else if(t.id==="cKey"){s.key=t.value.trim()||s.key;padFollow()}
   else if(t.id==="cBpm")s.bpm=clamp(+t.value||s.bpm,30,260);else if(t.id==="cSig")s.sig=+t.value;else if(t.id==="cSub")s.click.sub=+t.value;else if(t.id==="cCount")s.click.countIn=+t.value;
-  else if(t.dataset.mk!=null){s.markers[+t.dataset.mk].name=t.value.trim()||"Seção"}
+  else if(t.dataset.mk!=null){s.markers[+t.dataset.mk].name=(t.value.trim()||"Seção").replace(/\s+\d+$/,"");renumberSections(s.markers);setTimeout(renderSide,0)}
   else if(t.dataset.ch!=null){const v=t.value.trim().replace(/^([a-g])/,m=>m.toUpperCase());if(!v)s.chords.splice(+t.dataset.ch,1);else s.chords[+t.dataset.ch].c=v;saveSong(s);renderSide();renderArr();renderTime();return}
   else if(t.dataset.tn){s.tracks.find(x=>x.id===t.dataset.tn).name=t.value.trim()||"Faixa";renderArr()}
   else if(t.dataset.tk){s.tracks.find(x=>x.id===t.dataset.tk).kind=t.value;applyTrackMix(E.cur);renderArr()}
