@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610310131";
+const APP_VER="202610310136";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -16,6 +16,10 @@ const KIND_ORDER={click:0,guide:1,drums:2,bass:3,gtr:4,keys:5,vox:6,pad:7,other:
 /* Nome e artista a partir do nome do pacote: "FERNANDINHO - MOISES" */
 function titleCase(s){return s.toLowerCase().replace(/(^|[\s(\-/])([\p{L}])/gu,(m,a,b)=>a+b.toUpperCase())}
 function parsePackageName(n){n=(n||"").replace(/\.[^.]+$/,"").replace(/^\d{6,}_/,"").replace(/_/g," ").replace(/\s+/g," ").trim();
+  /* tira do nome o que é técnico: tom, BPM, afinação (ex.: "F# Minor-70bpm-441hz") */
+  const n0=n;n=n.replace(/[\s-]*\(?\b\d{2,3}(?:[.,]\d)?\s?bpm\b\)?/gi,"").replace(/[\s-]*\b4[34]\d\s?hz\b/gi,"")
+     .replace(/[\s-]*\b[A-G](?:#|b|♯|♭)?\s?(?:[Mm]aior|[Mm]enor|[Mm]ajor|[Mm]inor|maj|min|m)\b/g,"").replace(/[\s-]*\(\s*\)/g,"").replace(/[\s-]+$/,"").replace(/\s+/g," ").trim();
+  if(n!==n0&&!/\s[-–]\s/.test(n))n=n.replace(/(\S)-(\S)/g,(m,x,y)=>/[A-Za-zÀ-ú]/.test(x)&&/[A-Za-zÀ-ú]/.test(y)&&/[A-ZÀ-Ú]/.test(y)?x+" - "+y:m);
   const p=n.split(/\s+-\s+|\s+–\s+/);if(p.length>=2)return{artist:titleCase(p[0]),title:titleCase(p.slice(1).join(" - "))};return{artist:"",title:titleCase(n)}}
 
 /* Mono em taxa reduzida para análise */
@@ -493,10 +497,12 @@ async function analyzePackage(files,pkg){const sr=E.SR,down=Math.max(1,Math.roun
   step(1,"ok",tracks.length+" faixas");
   step(2,"ok",`${tracks.length} faixas no mesmo ponto zero · ${fmt(dur)}`);
   step(3,"run");let bpm=120,offset=0,bpmOk=false,fromClick=false;
-  if(clickMono){const c=detectClick(clickMono,asr);if(c){bpm=c.bpm;offset=c.offset;bpmOk=true;fromClick=true;step(3,"ok",bpm+" BPM pelo metrônomo")}}
+  const nmB=/(\d{2,3}(?:[.,]\d)?)\s?bpm/i.exec(pkg+" "+files.map(f=>f.name).join(" ")),nameBpm=nmB?parseFloat(nmB[1].replace(",",".")):0;
+  const fixHalf=b=>{if(!nameBpm)return b;const r=b/nameBpm;return Math.abs(r-2)<0.06||Math.abs(r-0.5)<0.03||Math.abs(r-1)<0.03?nameBpm:b};
+  if(clickMono){const c=detectClick(clickMono,asr);if(c){bpm=fixHalf(c.bpm);offset=c.offset;bpmOk=true;fromClick=true;step(3,"ok",bpm+" BPM pelo metrônomo"+(bpm!==c.bpm?" (confirmado pelo nome)":""))}}
   await sleep(0);let ana=null,gm=null;const guideMarks=(b,o)=>{if(!guides.length)return null;guides.sort((a,c)=>(a.t.first??1e9)-(c.t.first??1e9));const ms=detectSections(guides[0].mono,asr,b,o,4);return ms.length>1?ms:null};
   if(mix){try{if(fromClick){gm=guideMarks(bpm,offset);ana=analyzeMix(mix,asr,{bpm,offset,sig:4,bounds:gm&&gm.map(x=>x.t)})}
-    else{ana=analyzeMix(mix,asr,null);if(ana){gm=guideMarks(ana.bpm,ana.offset);if(gm)ana=analyzeMix(mix,asr,{bpm:ana.bpm,offset:ana.offset,sig:4,bounds:gm.map(x=>x.t)})}}}catch(e){console.warn(e)}}
+    else{ana=analyzeMix(mix,asr,null);if(ana&&fixHalf(ana.bpm)!==ana.bpm)ana=analyzeMix(mix,asr,{bpm:nameBpm,offset:ana.offset,sig:4})||ana;if(ana){gm=guideMarks(ana.bpm,ana.offset);if(gm)ana=analyzeMix(mix,asr,{bpm:ana.bpm,offset:ana.offset,sig:4,bounds:gm.map(x=>x.t)})}}}catch(e){console.warn(e)}}
   else if(fromClick)gm=guideMarks(bpm,offset);
   if(!bpmOk&&ana){bpm=ana.bpm;offset=ana.offset;bpmOk=true;step(3,"ok",bpm+" BPM pela batida")}
   if(!bpmOk){const m=/(\d{2,3}(?:[.,]\d)?)\s?bpm/i.exec(files.map(f=>f.name).join(" ")+" "+pkg);if(m){bpm=parseFloat(m[1].replace(",","."));bpmOk=true;step(3,"ok",bpm+" BPM (pelo nome)")}else step(3,"warn","não detectado · ajuste depois")}

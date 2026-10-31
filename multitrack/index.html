@@ -203,11 +203,27 @@ body.following{overflow:hidden}
 .tog.on{border-color:var(--accent);background:var(--accent-soft)}
 .tog.on i{background:var(--accent)}
 @media (max-width:760px){.hero{grid-template-columns:1fr;padding:20px}.hero-side{align-items:flex-start}.hero-side .transport{display:none}.quick{justify-content:flex-start}}
+@media (max-width:560px){
+  .hero{margin-top:10px;padding:14px 16px;gap:10px}
+  .hero-main{gap:4px}.hero .eyebrow{font-size:10px}
+  .hero h1{font-size:clamp(22px,6.6vw,28px);line-height:1.05;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .hero .artist{font-size:14px}
+  .chips{margin-top:4px;gap:5px;flex-wrap:nowrap;overflow:hidden}
+  .chip{padding:3px 9px;font-size:11px;gap:4px;flex:none}.chip b{font-size:12px}
+  .hero-side{width:100%;gap:8px}
+  .toprow{display:flex;align-items:center;gap:12px;width:100%}
+  .chordbox{flex-direction:row;align-items:baseline;gap:8px;padding:6px 12px;min-width:0;border-radius:12px}
+  .chordbox .eyebrow{display:none}.chordbox b{font-size:24px}.chordbox span:last-child{font-size:11px}
+  .timecode{font-size:26px;margin-left:auto}
+  .barbeat .bb{font-size:11px}.beats i{width:8px;height:8px}
+  .quick{gap:5px;flex-wrap:nowrap;width:100%}.tog{padding:5px 10px;font-size:12px;flex:1;justify-content:center}
+}
 
 /* Seções */
-.secrail{margin-top:14px;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;align-items:stretch}
-.sec{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:104px;padding:10px 14px;border-radius:12px;background:var(--surface);text-align:left;position:relative}
-.sec .nm{font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.secrail{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px;align-items:stretch}
+.secrail .hint{grid-column:1 / -1}
+.sec{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 12px;border-radius:12px;background:var(--surface);text-align:left;position:relative}
+.sec .nm{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .sec .sub{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
 .sec.cur{border-color:var(--fg);background:var(--surface-2)}
 .sec.cur::after{content:"";position:absolute;left:14px;right:14px;bottom:5px;height:2px;border-radius:2px;background:var(--fg)}
@@ -219,7 +235,14 @@ body.following{overflow:hidden}
 .secrail .hint{color:var(--muted);font-size:14px;padding:10px 4px}
 .vampbtn.org{background:var(--accent-soft);border-color:var(--accent);color:var(--fg,#fff)}
 .vampbtn.ghost{background:transparent;opacity:.8}
-.sec.edit{gap:4px;cursor:default}.sec.edit select{font-family:var(--f-display);font-weight:700;font-size:15px;padding:6px 8px;width:auto;min-width:118px}
+.sec.edit{gap:4px;cursor:default}.sec.edit select{font-family:var(--f-display);font-weight:700;font-size:15px;padding:6px 8px;width:100%;min-width:0}
+.secrail .vampbtn{justify-content:center;min-width:0}.secrail .vampbtn{white-space:nowrap;padding:8px 12px;font-size:13px}
+@media (max-width:560px){
+  .secrail{margin-top:10px;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .sec{padding:6px 9px;border-radius:10px}.sec .nm{font-size:13px}.sec .sub{font-size:10px}.sec.cur::after{left:9px;right:9px;bottom:3px}
+  .secrail .vampbtn{padding:6px 8px;font-size:12px;border-radius:10px}.secrail .vampbtn .icon{width:14px;height:14px}
+  .sec.edit{padding:5px}.sec.edit select{font-size:13px;padding:5px 4px;letter-spacing:-.02em}.sec.edit .sub{padding-left:4px}
+}
 
 /* Abas (celular) */
 .mtabs{display:none}
@@ -461,7 +484,7 @@ body.following{overflow:hidden}
 
 <script src="vendor/jszip.min.js"></script>
 <script src="vendor/supabase.js"></script>
-<script src="app.js?v=202610310131"></script>
+<script src="app.js?v=202610310136"></script>
 
 </body>
 </html>
