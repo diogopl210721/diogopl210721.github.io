@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610310157";
+const APP_VER="202610310953";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -304,7 +304,9 @@ async function stRender(buf,semi,ratio){const {SoundTouch,SimpleFilter,WebAudioB
 const decoders={};
 async function decodeBlob(blob,sr){const d=decoders[sr]||(decoders[sr]=new OfflineAudioContext(2,1,sr));return d.decodeAudioData(await blob.arrayBuffer())}
 function isMonoBuf(b){if(b.numberOfChannels<2)return true;const l=b.getChannelData(0),r=b.getChannelData(1),step=Math.max(1,Math.floor(b.length/6000));for(let i=0;i<b.length;i+=step)if(Math.abs(l[i]-r[i])>2e-3)return false;return true}
-function toInt16(b){const mono=isMonoBuf(b),n=b.length,l=b.getChannelData(0);
+function toInt16(b){const n=b.length,l=b.getChannelData(0);
+  if(isMobile&&b.numberOfChannels>1&&!isMonoBuf(b)){const r=b.getChannelData(1),o=new Int16Array(n);for(let i=0;i<n;i++){const v=(l[i]+r[i])*0.5;o[i]=v>=1?32767:v<=-1?-32768:v*32767}return{ch:1,len:n,buf:o.buffer}}
+  const mono=isMonoBuf(b);
   if(mono){const o=new Int16Array(n);for(let i=0;i<n;i++){const v=l[i];o[i]=v>=1?32767:v<=-1?-32768:v*32767}return{ch:1,len:n,buf:o.buffer}}
   const r=b.getChannelData(1),o=new Int16Array(n*2);for(let i=0;i<n;i++){let v=l[i];o[2*i]=v>=1?32767:v<=-1?-32768:v*32767;v=r[i];o[2*i+1]=v>=1?32767:v<=-1?-32768:v*32767}return{ch:2,len:n,buf:o.buffer}}
 async function stemBuffer(song,t){if(song.demo){const bufs=await demoBuffers(E.SR);return bufs[t.id]||null}
@@ -441,14 +443,14 @@ async function demoPeaks(song){const b=await demoBuffers(44100);song.tracks.forE
 /* ================= Importação de pacote ================= */
 const IMP={stage:"pick",files:[],pkg:"",steps:[],res:null};
 function openImport(){Object.assign(IMP,{stage:"pick",files:[],pkg:"",steps:[],res:null});$("#imp").hidden=false;renderImport()}
-function closeImport(){if(IMP.stage==="analyzing")return;$("#imp").hidden=true;if(IMP.stage==="link")IMP.stage="pick"}
+function closeImport(){if(IMP.stage==="analyzing")return;$("#imp").hidden=true;if(IMP.stage!=="review")dropTmp();if(IMP.stage==="link")IMP.stage="pick"}
 function openLink(song){Object.assign(IMP,{stage:"link",song,files:[],matches:null,steps:[]});$("#imp").hidden=false;renderImport()}
 async function linkFiles(list){const song=IMP.song;try{busy("Lendo arquivos",0.3);const {files}=await readAudioFiles(list);busy(null);
     const byName=new Map(files.map(f=>[normFile(f.name),f]));IMP.matches=song.tracks.map(t=>({t,f:byName.get(t.file||normFile(t.name))||byName.get(normFile(t.name))||null}));renderImport()}
   catch(e){busy(null);toast(e.message||"Não foi possível ler os arquivos.",6000)}}
 async function saveLink(){const song=IMP.song,m=(IMP.matches||[]).filter(x=>x.f);if(!m.length)return;$("#imp").hidden=true;
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
-  for(let i=0;i<m.length;i++){busy("Guardando áudios neste aparelho",i/m.length);const ok=await idb("stems","readwrite",st=>st.put(m[i].f.blob,m[i].t.id));if(!ok){busy(null);toast("Sem espaço neste aparelho para os áudios.",7000);return}S.have.add(m[i].t.id)}
+  for(let i=0;i<m.length;i++){busy("Guardando áudios neste aparelho",i/m.length);const ok=await idb("stems","readwrite",st=>st.put(m[i].f.blob,m[i].t.id));if(!ok){busy(null);toast("Sem espaço neste aparelho para os áudios.",7000);return}S.have.add(m[i].t.id)}dropTmp();
   busy(null);IMP.stage="pick";toast(`Áudios de "${song.name}" vinculados: ${m.length} de ${song.tracks.length} faixas.`);await loadSong(song.id,{idx:curSet()?curSet().songIds.indexOf(song.id):-1})}
 function renderImport(){const el=$("#impDlg");
   if(IMP.stage==="link"){const song=IMP.song,m=IMP.matches;
@@ -483,25 +485,54 @@ $("#imp").addEventListener("dragleave",()=>{const d=$("#drop");d&&d.classList.re
 $("#imp").addEventListener("drop",e=>{e.preventDefault();if(IMP.stage==="pick"||IMP.stage==="link")gatherFiles([...e.dataTransfer.files])});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#imp").hidden)closeImport();if(e.key==="Escape")$("#bless").hidden=true});
 function step(i,st,res){Object.assign(IMP.steps[i],{st,res});renderImport()}
-async function readAudioFiles(list){let files=[],pkg="";const zip=list.find(f=>/\.zip$/i.test(f.name));
-  if(zip){if(!window.JSZip)throw new Error("Não consegui abrir o .zip neste navegador. Descompacte e selecione os arquivos.");const z=await JSZip.loadAsync(zip);
-    const ents=[];z.forEach((p,f)=>{if(!f.dir&&AUDIO_EXT.test(p)&&!/(^|\/)(__MACOSX|\.)/.test(p))ents.push(f)});
-    for(const f of ents)files.push({name:f.name.split("/").pop(),blob:await f.async("blob")});pkg=zip.name}
+/* Leitor de .zip leve: lê só o índice e depois uma faixa por vez (Blob.slice), sem carregar o pacote inteiro na memória.
+   Cada faixa extraída vai direto para o armazenamento do aparelho e volta como arquivo em disco. Essencial no iPhone. */
+function zipName(b,utf){if(utf)return new TextDecoder().decode(b);try{return new TextDecoder("utf-8",{fatal:true}).decode(b)}catch(e){return Array.from(b,c=>String.fromCharCode(c)).join("")}}
+async function zipEntries(file){const sz=file.size,tl=Math.min(sz,65557),tail=new DataView(await file.slice(sz-tl).arrayBuffer());
+  let e=-1;for(let i=tl-22;i>=0;i--)if(tail.getUint32(i,true)===0x06054b50){e=i;break}
+  if(e<0)throw new Error("Este .zip parece incompleto ou corrompido. Baixe de novo e tente outra vez.");
+  let n=tail.getUint16(e+10,true),cdSize=tail.getUint32(e+12,true),cdOff=tail.getUint32(e+16,true);
+  if((cdOff===0xffffffff||n===0xffff||cdSize===0xffffffff)&&e>=20&&tail.getUint32(e-20,true)===0x07064b50){const o=Number(tail.getBigUint64(e-12,true)),z=new DataView(await file.slice(o,o+56).arrayBuffer());n=Number(z.getBigUint64(32,true));cdSize=Number(z.getBigUint64(40,true));cdOff=Number(z.getBigUint64(48,true))}
+  const cd=new DataView(await file.slice(cdOff,cdOff+cdSize).arrayBuffer()),u8=new Uint8Array(cd.buffer),out=[];let q=0;
+  for(let k=0;k<n&&q+46<=cd.byteLength&&cd.getUint32(q,true)===0x02014b50;k++){
+    const flag=cd.getUint16(q+8,true),method=cd.getUint16(q+10,true),nl=cd.getUint16(q+28,true),xl=cd.getUint16(q+30,true),cl=cd.getUint16(q+32,true);
+    let csize=cd.getUint32(q+20,true),usize=cd.getUint32(q+24,true),lho=cd.getUint32(q+42,true);const name=zipName(u8.subarray(q+46,q+46+nl),flag&0x800);
+    let x=q+46+nl;const xe=x+xl;while(x+4<=xe){const id=cd.getUint16(x,true),ln=cd.getUint16(x+2,true);if(id===1){let r=x+4;if(usize===0xffffffff){usize=Number(cd.getBigUint64(r,true));r+=8}if(csize===0xffffffff){csize=Number(cd.getBigUint64(r,true));r+=8}if(lho===0xffffffff)lho=Number(cd.getBigUint64(r,true))}x+=4+ln}
+    out.push({name,method,csize,usize,lho,enc:!!(flag&1),dir:name.endsWith("/")});q=xe+cl}
+  return out}
+async function zipEntryBlob(file,en){const h=new DataView(await file.slice(en.lho,en.lho+30).arrayBuffer());if(h.getUint32(0,true)!==0x04034b50)throw new Error("Este .zip parece corrompido.");
+  const st=en.lho+30+h.getUint16(26,true)+h.getUint16(28,true),raw=file.slice(st,st+en.csize);
+  if(en.enc)throw new Error("Este .zip tem senha. Descompacte e selecione os arquivos de áudio.");
+  if(en.method===0)return new Blob([await raw.arrayBuffer()]);
+  if(en.method===8){if(typeof DecompressionStream==="undefined")throw new Error("Este navegador não abre .zip grandes. Atualize o aparelho ou descompacte e selecione os arquivos.");
+    return new Response(raw.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob()}
+  throw new Error("Este .zip usa uma compressão diferente. Descompacte e selecione os arquivos de áudio.")}
+/* guarda a faixa no aparelho e devolve a versão em disco (libera a memória) */
+async function spillBlob(blob){if(!db)return{blob};const id="tmp_"+uid();const ok=await idb("stems","readwrite",s=>s.put(blob,id));if(!ok)throw new Error("Sem espaço neste aparelho para as faixas. Libere espaço e tente de novo.");
+  const back=await idb("stems","readonly",s=>s.get(id));return{blob:back&&back!==true?back:blob,tmp:id}}
+function dropTmp(){const ids=IMP.tmp||[];IMP.tmp=[];ids.forEach(id=>idb("stems","readwrite",s=>s.delete(id)))}
+async function readAudioFiles(list,onProg){let files=[],pkg="";const zip=list.find(f=>/\.zip$/i.test(f.name));
+  if(zip){const ents=(await zipEntries(zip)).filter(f=>!f.dir&&AUDIO_EXT.test(f.name)&&!/(^|\/)(__MACOSX|\.)/.test(f.name));
+    IMP.tmp=IMP.tmp||[];
+    for(let i=0;i<ents.length;i++){onProg&&onProg(i,ents.length);let b=await zipEntryBlob(zip,ents[i]);const s=await spillBlob(b);b=null;if(s.tmp)IMP.tmp.push(s.tmp);
+      files.push({name:ents[i].name.split("/").pop(),blob:s.blob});await sleep(0)}
+    pkg=zip.name}
   else{files=list.filter(f=>AUDIO_EXT.test(f.name)).map(f=>({name:f.name,blob:f}));pkg=(list[0].webkitRelativePath||"").split("/")[0]||list[0].name}
   if(!files.length)throw new Error("Não encontrei arquivos de áudio no que foi enviado.");return{files,pkg}}
 const normFile=n=>String(n||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\.[a-z0-9]{2,4}$/,"").replace(/[_\s.\-]+/g," ").trim();
 function missingTracks(song){if(!song||song.demo)return[];return song.tracks.filter(t=>!S.have.has(t.id))}
 async function gatherFiles(list){if(!list.length)return;ensureCtx();
   // copia os arquivos para a memória antes de redesenhar a janela: alguns navegadores perdem o acesso quando o campo some
-  try{busy("Lendo arquivos",0.1);list=await Promise.all(list.map(async f=>new File([await f.arrayBuffer()],f.name,{type:f.type||""})));busy(null)}
+  const total=list.reduce((a,f)=>a+(f.size||0),0);
+  try{if(total<40e6){busy("Lendo arquivos",0.1);list=await Promise.all(list.map(async f=>new File([await f.arrayBuffer()],f.name,{type:f.type||""})));busy(null)}}
   catch(e){busy(null);toast("Não consegui ler o arquivo escolhido. Tente escolher de novo.",6000);return}
   if(IMP.stage==="link")return linkFiles(list);
   let files=[],pkg="";const zip=list.find(f=>/\.zip$/i.test(f.name));
   IMP.steps=[{label:"Abrindo o pacote",st:"run"},{label:"Lendo as faixas",st:""},{label:"Sincronizando pelo ponto zero",st:""},{label:"BPM e compasso",st:""},{label:"Tom da música",st:""},{label:"Seções",st:""},{label:"Cifra (acordes)",st:""}];
   IMP.stage="analyzing";IMP.pkg=zip?zip.name.replace(/\.zip$/i,"").replace(/^\d{6,}_/,""):"faixas";renderImport();
-  try{({files,pkg}=await readAudioFiles(list));
+  dropTmp();try{({files,pkg}=await readAudioFiles(list,(i,n)=>step(0,"run",`faixa ${i+1} de ${n}`)));
     step(0,"ok",files.length+" arquivos");await analyzePackage(files,pkg)}
-  catch(err){IMP.stage="pick";renderImport();toast(err.message||"Não foi possível ler o pacote.",6000)}}
+  catch(err){dropTmp();IMP.stage="pick";renderImport();toast(err.message||"Não foi possível ler o pacote.",6000)}}
 async function analyzePackage(files,pkg){const sr=E.SR,down=Math.max(1,Math.round(sr/11025)),asr=sr/down;
   const tracks=[];let clickMono=null,guides=[],chromas=[],dur=0,lastSound=0,mix=null;
   step(1,"run","0 de "+files.length);
@@ -550,7 +581,7 @@ async function saveImport(){const r=IMP.res;if(!r)return;
   const add=$("#iAdd").checked;$("#imp").hidden=true;busy("Salvando no aparelho",0);
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   for(let i=0;i<r.tracks.length;i++){const ok=await idb("stems","readwrite",s=>s.put(r.tracks[i].blob,r.tracks[i].id));if(!ok){busy(null);toast("Sem espaço para salvar as faixas neste aparelho. Libere espaço e importe de novo.",7000);return}S.have.add(r.tracks[i].id);busy("Salvando no aparelho",(i+1)/r.tracks.length)}
-  busy(null);IMP.res=null;S.songs.push(song);saveSong(song);
+  busy(null);IMP.res=null;dropTmp();S.songs.push(song);saveSong(song);
   const set=curSet();if(add&&set){set.songIds.push(song.id);saveSet(set)}
   toast(`"${song.name}" importada: ${song.tracks.length} faixas sincronizadas.`);
   const i=set?set.songIds.lastIndexOf(song.id):-1;if(!(E.cur&&E.cur.playing))await loadSong(song.id,{idx:i});else renderAll()}
@@ -855,7 +886,8 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&E.cur&&E.
   if(demo&&!(demo.tracks[0].peaks||[]).length){try{await demoPeaks(demo);saveSong(demo)}catch(e){}}
   S.sets=Array.isArray(sets)&&sets.length?sets:[{id:uid(),name:"Culto de domingo",auto:true,songIds:demo?["demo"]:[],trans:{mode:"stop",xfade:6,gap:2}}];
   if(!(Array.isArray(sets)&&sets.length))S.sets.forEach(x=>saveSet(x,{local:true}));
-  const keys=(await idb("stems","readonly",s=>s.getAllKeys()))||[];S.have=new Set(Array.isArray(keys)?keys:[]);
+  let keys=(await idb("stems","readonly",s=>s.getAllKeys()))||[];if(!Array.isArray(keys))keys=[];
+  keys.filter(k=>String(k).startsWith("tmp_")).forEach(k=>idb("stems","readwrite",s=>s.delete(k)));S.have=new Set(keys.filter(k=>!String(k).startsWith("tmp_")));
   S.currentSet=meta&&S.sets.some(x=>x.id===meta.currentSet)?meta.currentSet:S.sets[0].id;
   const set=curSet(),first=(meta&&meta.lastSong&&songById(meta.lastSong)&&meta.lastSong)||set.songIds.find(id=>songById(id))||(S.songs[0]&&S.songs[0].id);
   if(first){S.curSongId=first;S.idx=set.songIds.indexOf(first)}
