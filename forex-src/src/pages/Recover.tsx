@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, MessageCircle, ShieldCheck } from "lucide-react";
-import { Logo } from "../components/Layout";
+import { Copyright, Logo } from "../components/Layout";
 import { Notice } from "../components/ui";
 import { ADMIN_WHATSAPP } from "../config";
 
@@ -40,6 +40,7 @@ export default function Recover() {
         <div className="flex items-center justify-center gap-2 text-xs text-mute">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />O administrador não vê seus dados financeiros.
         </div>
+        <Copyright />
       </main>
     </div>
   );

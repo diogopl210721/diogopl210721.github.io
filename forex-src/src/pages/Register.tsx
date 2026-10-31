@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Lock, UserPlus } from "lucide-react";
-import { Logo } from "../components/Layout";
+import { Copyright, Logo } from "../components/Layout";
 import { Button, Field, inputCls, Notice, PinInput } from "../components/ui";
 import { friendlyError } from "../lib/api";
 import { fmtTime } from "../lib/format";
@@ -151,6 +151,7 @@ export default function Register() {
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
           Cada conta enxerga somente os próprios dados
         </div>
+        <Copyright />
       </main>
     </div>
   );

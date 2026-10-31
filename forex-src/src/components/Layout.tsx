@@ -22,6 +22,23 @@ export function Logo({ size = 36 }: { size?: number }) {
   );
 }
 
+export const SITE_URL = "https://www.ddsinovacao.com.br";
+
+/** Rodapé de direitos autorais (todas as telas). */
+export function Copyright({ className }: { className?: string }) {
+  return (
+    <footer className={cx("text-center text-xs leading-relaxed text-mute", className)}>
+      <p>
+        © {new Date().getFullYear()} DDS Finance · Direitos autorais de{" "}
+        <strong className="font-semibold text-mute-strong">Diogo Soares</strong>. Todos os direitos reservados.
+      </p>
+      <a href={SITE_URL} target="_blank" rel="noopener" className="inline-flex min-h-[44px] items-center font-semibold text-sky hover:text-white">
+        ddsinovacao.com.br
+      </a>
+    </footer>
+  );
+}
+
 const NAV = [
   { to: "/", label: "Visão geral", Icon: LayoutGrid, end: true },
   { to: "/movimentacoes", label: "Movimentações", Icon: List },
@@ -245,6 +262,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
         <main id="conteudo" className="mx-auto w-full max-w-[1400px] flex-1 px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-12 lg:pt-6">
           {children}
+          <Copyright className="mt-10 border-t border-ink-700 pt-5" />
         </main>
       </div>
 

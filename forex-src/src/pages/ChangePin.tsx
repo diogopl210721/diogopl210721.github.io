@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { KeyRound } from "lucide-react";
-import { Logo } from "../components/Layout";
+import { Copyright, Logo } from "../components/Layout";
 import { Button, Notice, PinInput } from "../components/ui";
 import { api, friendlyError } from "../lib/api";
 import { fmtTime } from "../lib/format";
@@ -79,6 +79,7 @@ export default function ChangePin() {
         <section className="rounded-[22px] border border-ink-700 bg-ink-800 p-6">
           <ChangePinForm initialCurrent={loc.state?.currentPin} onDone={() => navigate("/", { replace: true })} />
         </section>
+        <Copyright />
       </main>
     </div>
   );
