@@ -29,8 +29,8 @@ def main(path: str) -> None:
 
     ref = {
         "rows": len(sample),
-        "op": round(sum(num(r[ix["AmountProfit"]]) for r in sample if r[ix["Reason"]] == "TradeResults")
-                    + sum(num(r[ix["Amount"]]) for r in sample if r[ix["Reason"]] == "PerformanceFee"), 2),
+        # regra 2: lucro das operações só de TradeResults; a comissão PAMM (Amount da PerformanceFee) é saída
+        "op": round(sum(num(r[ix["AmountProfit"]]) for r in sample if r[ix["Reason"]] == "TradeResults"), 2),
         "deposits": round(sum(num(r[ix["Amount"]]) for r in sample if r[ix["Reason"]] == "Deposit"), 2),
         "withdrawals": round(-sum(num(r[ix["Amount"]]) for r in sample if r[ix["Reason"]] == "Withdrawal"), 2),
         "fees": round(sum(num(r[ix["Amount"]]) for r in sample if r[ix["Reason"]] == "PerformanceFee"), 2),
@@ -214,6 +214,24 @@ begin
   x := public.dds_finance_commit_import(tok_b, jsonb_build_object('columns', v_cols, 'rows', v_unknown), 'bonus.csv', repeat('f', 64));
   select jsonb_build_object('op_after_bonus', round(sum(d.op_result), 2)) into s from public.dds_finance_daily_series(tok_b) d;
   r := r || jsonb_build_object('unclassified_import', jsonb_build_object('status', x->'status', 'inserted', x->'inserted_rows')) || s;
+
+  -- Cadastro aberto: conta nova entra na hora, sem ver dados de ninguém; telefone repetido e PIN fácil recusados
+  perform set_config('request.headers', '{{"x-forwarded-for":"198.51.100.23"}}', true);
+  x := public.dds_finance_register('  Cadastro Teste  ', '(41) 90000-0099', '7391', true, 'teste');
+  r := r || jsonb_build_object('REG_ok', jsonb_build_object('ok', x->'ok', 'must_change_pin', x->'must_change_pin',
+          'is_admin', x#>'{{profile,is_admin}}', 'name', x#>'{{profile,display_name}}',
+          'sees_tx', public.dds_finance_list_transactions(x->>'token', '{{}}'::jsonb, 1, 0)->'total',
+          'login', public.dds_finance_login('41900000099', '7391', true, 'teste')->'ok'));
+  r := r || jsonb_build_object('REG_dup', public.dds_finance_register('Outro', '+55 41 90000-0099', '7392', true, 't')->>'code',
+          'REG_dup_existing', public.dds_finance_register('Outro', '41900000002', '7392', true, 't')->>'code',
+          'REG_weak', public.dds_finance_register('X', '41900000098', '1111', true, 't')->>'code',
+          'REG_name', public.dds_finance_register('  ', '41900000097', '7391', true, 't')->>'code');
+  for n in 1..4 loop
+    x := public.dds_finance_register('Conta ' || n, '4190000009' || n, '7391', true, 't');
+  end loop;
+  r := r || jsonb_build_object('REG_fifth_ok', x->'ok',
+          'REG_sixth_same_ip', public.dds_finance_register('Sexta', '41900000096', '7391', true, 't')->>'code');
+  perform set_config('request.headers', '', true);
 
   -- Bloqueio progressivo: 5 erros seguidos
   for n in 1..5 loop

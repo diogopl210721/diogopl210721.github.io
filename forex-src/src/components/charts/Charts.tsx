@@ -60,6 +60,7 @@ export function DailyProfitChart({ points, height = 220, selectedDay, onSelect }
     hasData: p.hasData,
     txCount: p.txCount,
     op: p.op,
+    fees: p.fees,
   }));
   const best = points.reduce<TimelinePoint | null>((b, p) => (p.hasData && (!b || p.op > b.op) ? p : b), null);
   const label = points.length
@@ -71,7 +72,11 @@ export function DailyProfitChart({ points, height = 220, selectedDay, onSelect }
     const d = payload[0].payload as (typeof data)[number];
     return (
       <TipBox title={fmtDayLong(d.day)} rows={d.hasData
-        ? [{ k: "Resultado", v: fmtUSD(d.op, true), cls: sgn(d.op) }, { k: "Movimentações", v: String(d.txCount) }]
+        ? [
+            { k: "Lucro das operações", v: fmtUSD(d.op, true), cls: sgn(d.op) },
+            ...(d.fees ? [{ k: "Comissão PAMM (saída)", v: fmtUSD(d.fees), cls: "text-mute-strong" }] : []),
+            { k: "Movimentações", v: String(d.txCount) },
+          ]
         : [{ k: "Sem movimentação", v: "—" }]} />
     );
   };
@@ -110,10 +115,10 @@ export function CumulativeChart({ points, height = 200 }: { points: TimelinePoin
   const Tip = ({ active, payload }: TooltipProps<number, string>) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload as (typeof data)[number];
-    return <TipBox title={fmtDayLong(d.day)} rows={[{ k: "Acumulado no período", v: fmtUSD(d.value, true), cls: sgn(d.value) }]} />;
+    return <TipBox title={fmtDayLong(d.day)} rows={[{ k: "Lucro das operações acumulado", v: fmtUSD(d.value, true), cls: sgn(d.value) }]} />;
   };
   return (
-    <Box label={`Lucro acumulado no período, terminando em ${fmtUSD(last, true)}`} height={height}>
+    <Box label={`Lucro das operações acumulado no período, terminando em ${fmtUSD(last, true)}`} height={height}>
       <AreaChart data={data} margin={{ top: 8, right: 4, left: 0, bottom: 0 }} accessibilityLayer>
         <defs>
           <linearGradient id="cumFill" x1="0" y1="0" x2="0" y2="1">
@@ -147,7 +152,7 @@ export function ReturnChart({ points, mode, capitalBase, beforeIndex, height = 2
   const Tip = ({ active, payload }: TooltipProps<number, string>) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload as (typeof data)[number];
-    return <TipBox title={fmtDayLong(d.day)} rows={[{ k: mode === "twr" ? "TWR no período" : "Simples no período", v: fmtPct(d.value), cls: sgn(d.value ?? 0) }]} />;
+    return <TipBox title={fmtDayLong(d.day)} rows={[{ k: mode === "twr" ? "TWR das operações no período" : "Simples no período", v: fmtPct(d.value), cls: sgn(d.value ?? 0) }]} />;
   };
   return (
     <Box label={`Rentabilidade ${mode === "twr" ? "ponderada pelo tempo" : "simples"} no período: ${fmtPct(last)}`} height={height}>
@@ -168,7 +173,7 @@ export function ReturnChart({ points, mode, capitalBase, beforeIndex, height = 2
 export function CapitalChart({ points, height = 220 }: { points: TimelinePoint[]; height?: number }) {
   const data = points.map((p) => ({
     day: p.day, capital: round2(p.capital), contrib: round2(p.netContrib), result: round2(p.cumOp),
-    deposits: p.deposits, withdrawals: p.withdrawals,
+    cumFees: round2(p.cumFees), deposits: p.deposits, withdrawals: p.withdrawals, fees: p.fees,
   }));
   const last = data[data.length - 1];
   const Tip = ({ active, payload }: TooltipProps<number, string>) => {
@@ -177,10 +182,12 @@ export function CapitalChart({ points, height = 220 }: { points: TimelinePoint[]
     const rows = [
       { k: "Capital estimado", v: fmtUSD(d.capital) },
       { k: "Aportes − retiradas", v: fmtUSD(d.contrib), cls: "text-sky" },
-      { k: "Resultado acumulado", v: fmtUSD(d.result, true), cls: sgn(d.result) },
+      { k: "Lucro das operações acumulado", v: fmtUSD(d.result, true), cls: sgn(d.result) },
     ];
+    if (d.cumFees) rows.push({ k: "Comissões PAMM acumuladas", v: fmtUSD(d.cumFees), cls: "text-mute-strong" });
     if (d.deposits) rows.push({ k: "Depósito no dia", v: fmtUSD(d.deposits, true), cls: "text-sky" });
     if (d.withdrawals) rows.push({ k: "Retirada no dia", v: fmtUSD(-d.withdrawals), cls: "text-mute-strong" });
+    if (d.fees) rows.push({ k: "Comissão PAMM no dia", v: fmtUSD(d.fees), cls: "text-mute-strong" });
     return <TipBox title={fmtDayLong(d.day)} rows={rows} />;
   };
   return (

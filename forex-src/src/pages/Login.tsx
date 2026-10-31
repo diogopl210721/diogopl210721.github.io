@@ -108,7 +108,7 @@ export default function Login() {
 
           <div className="flex justify-between text-sm font-semibold">
             <Link to="/recuperar" className="flex min-h-[44px] items-center text-sky hover:text-white">Esqueci meu PIN</Link>
-            <Link to="/recuperar?novo=1" className="flex min-h-[44px] items-center text-sky hover:text-white">Pedir acesso</Link>
+            <Link to="/cadastro" className="flex min-h-[44px] items-center text-sky hover:text-white">Criar conta</Link>
           </div>
         </form>
 

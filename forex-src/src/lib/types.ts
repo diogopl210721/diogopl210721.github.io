@@ -28,7 +28,7 @@ export type Me = {
 
 export type LoginResult = {
   ok: boolean;
-  code?: "invalid_credentials" | "locked" | "too_many_attempts";
+  code?: "invalid_credentials" | "locked" | "too_many_attempts" | "phone_in_use" | "weak_pin" | "invalid_phone" | "invalid_name";
   token?: string;
   expires_at?: string;
   must_change_pin?: boolean;

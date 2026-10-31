@@ -121,3 +121,64 @@ test("importação: prévia do arquivo real", async ({ page }) => {
   await noHorizontalScroll(page);
   await snap(page, "05-previa");
 });
+
+test("cadastro: telefone e PIN confirmados criam a conta e já entram", async ({ page }) => {
+  await page.goto("./#/login");
+  await page.getByRole("link", { name: "Criar conta" }).click();
+  await expect(page.getByRole("heading", { name: "Criar conta" })).toBeVisible();
+  await page.getByLabel("Seu nome").fill("Maria Teste");
+  await page.getByLabel("Telefone", { exact: true }).fill("41988880001");
+  await page.getByLabel("Confirme o telefone").fill("41988880002");
+  await expect(page.getByText("Os telefones não são iguais.")).toBeVisible();
+  await page.getByLabel("Confirme o telefone").fill("41988880001");
+  await expect(page.getByText("Os telefones não são iguais.")).toHaveCount(0);
+  const pin = page.getByRole("group", { name: "Crie um PIN de 4 dígitos" });
+  const pin2 = page.getByRole("group", { name: "Confirme o PIN" });
+  for (const [i, d] of ["7", "3", "9", "1"].entries()) await pin.getByLabel(`Dígito ${i + 1} do PIN`).fill(d);
+  for (const [i, d] of ["7", "3", "9", "2"].entries()) await pin2.getByLabel(`Dígito ${i + 1} do PIN`).fill(d);
+  await expect(page.getByText("Os PINs não são iguais.")).toBeVisible();
+  await noHorizontalScroll(page);
+  await snap(page, "06-cadastro");
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page.getByText("Os dois PINs não são iguais. Digite de novo.")).toBeVisible();
+  await pin2.getByLabel("Dígito 4 do PIN").fill("1");
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page).toHaveURL(/#\/$/);
+  await expect(page.getByText("Nenhuma movimentação ainda")).toBeVisible();
+});
+
+test("cadastro: telefone que já tem conta e PIN fácil são recusados", async ({ page }) => {
+  await page.goto("./#/cadastro");
+  await page.getByLabel("Seu nome").fill("Outro");
+  await page.getByLabel("Telefone", { exact: true }).fill("41991542931");
+  await page.getByLabel("Confirme o telefone").fill("41991542931");
+  const pin = page.getByRole("group", { name: "Crie um PIN de 4 dígitos" });
+  const pin2 = page.getByRole("group", { name: "Confirme o PIN" });
+  for (const [i, d] of ["1", "2", "3", "4"].entries()) await pin.getByLabel(`Dígito ${i + 1} do PIN`).fill(d);
+  for (const [i, d] of ["1", "2", "3", "4"].entries()) await pin2.getByLabel(`Dígito ${i + 1} do PIN`).fill(d);
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page.getByText("Evite sequências (ex.: 1234).")).toBeVisible();
+  for (const [i, d] of ["5", "8", "2", "0"].entries()) await pin.getByLabel(`Dígito ${i + 1} do PIN`).fill(d);
+  for (const [i, d] of ["5", "8", "2", "0"].entries()) await pin2.getByLabel(`Dígito ${i + 1} do PIN`).fill(d);
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page.getByText("Já existe uma conta com esse telefone.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Entre com seu PIN" })).toBeVisible();
+});
+
+test("link antigo de pedir acesso leva ao cadastro", async ({ page }) => {
+  await page.goto("./#/recuperar?novo=1");
+  await expect(page.getByRole("heading", { name: "Criar conta" })).toBeVisible();
+});
+
+test("comissão PAMM aparece separada do lucro", async ({ page }) => {
+  await login(page);
+  await expect(page.getByText("Comissões PAMM").first()).toBeVisible();
+  await page.goto("./#/movimentacoes");
+  await page.getByRole("button", { name: "Comissões" }).click();
+  if (process.env.DDS_CSV) {
+    await expect(page.locator("main >> text=/^Comissão PAMM$/ >> visible=true").first()).toBeVisible();
+    await expect(page.locator("main >> text=/^Trade$/ >> visible=true")).toHaveCount(0);
+  }
+  await noHorizontalScroll(page);
+  await snap(page, "07-comissoes");
+});

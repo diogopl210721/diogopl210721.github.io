@@ -7,7 +7,7 @@ import { parseCsvText } from "../../src/lib/csv";
 import { buildTimeline, dayStats, monthly, periodStats, rateOn, simpleReturn, totals } from "../../src/lib/metrics";
 import type { DailyRow } from "../../src/lib/types";
 
-/** Mesmas regras do banco (dds_finance__analyze + dds_finance_daily_series). */
+/** Mesmas regras do banco (regra 2: dds_finance__analyze + dds_finance_daily_series). */
 function dailyFromCsv(text: string): DailyRow[] {
   const { payload } = parseCsvText(text);
   const ix = Object.fromEntries(payload.columns.map((c, i) => [c, i]));
@@ -27,7 +27,7 @@ function dailyFromCsv(text: string): DailyRow[] {
       if (profit > 0) d.positive_trades++;
       if (profit < 0) d.negative_trades++;
     } else if (reason === "PerformanceFee") {
-      d.op_result += amount; d.fee_result += amount;
+      d.fee_result += amount; // comissão PAMM: saída, fora do lucro
     } else if (reason === "Deposit") d.deposits += amount;
     else if (reason === "Withdrawal") d.withdrawals += Math.abs(amount);
     map.set(day, d);
@@ -40,32 +40,50 @@ const row = (day: string, p: Partial<DailyRow>): DailyRow => ({
   tx_count: 1, trade_count: 0, positive_trades: 0, negative_trades: 0, ...p,
 });
 
-describe("regras de capital (sintético)", () => {
+describe("regras de capital e comissão PAMM (sintético)", () => {
   const rows = [
     row("2026-01-01", { deposits: 1000 }),
-    row("2026-01-02", { op_result: 100, trade_result: 100 }),
+    row("2026-01-02", { op_result: 100, trade_result: 100, trade_count: 1 }),
     row("2026-01-04", { withdrawals: 500 }),
-    row("2026-01-05", { op_result: -60, trade_result: -40, fee_result: -20 }),
+    row("2026-01-05", { op_result: -40, trade_result: -40, fee_result: -20, trade_count: 1 }),
   ];
   const tl = buildTimeline(rows, 0, "2026-01-06");
   const t = totals(tl, 0);
 
   it("F: depósito aumenta o capital mas não o lucro", () => {
     expect(t.deposits).toBe(1000);
-    expect(t.op).toBe(40);
+    expect(t.op).toBe(60);
   });
   it("G: retirada reduz o capital e não é prejuízo", () => {
     expect(t.withdrawals).toBe(500);
-    expect(t.capital).toBe(1000 - 500 + 40);
     expect(tl.find((p) => p.day === "2026-01-04")!.op).toBe(0);
+  });
+  it("comissão PAMM reduz o capital, mas não é prejuízo das operações", () => {
+    expect(t.fees).toBe(-20);
+    expect(t.op).toBe(60);
+    expect(t.net).toBe(40);
+    expect(t.capital).toBe(1000 - 500 + 60 - 20);
+    const s = periodStats(tl, "2026-01-01", "2026-01-06");
+    expect(s.worst).toEqual({ day: "2026-01-05", op: -40 });
+    expect(s.best).toEqual({ day: "2026-01-02", op: 100 }); // dia só com depósito/retirada não entra
+    expect(s.tradeDays).toBe(2);
+    expect(s.fees).toBe(-20);
+    expect(s.net).toBe(40);
+  });
+  it("mesmo resultado com o banco antes da migração (op_result com a comissão dentro)", () => {
+    const old = rows.map((r) => ({ ...r, op_result: r.trade_result + r.fee_result }));
+    const t2 = totals(buildTimeline(old, 0, "2026-01-06"), 0);
+    expect(t2).toEqual(t);
   });
   it("dias sem movimentação entram como sem dados", () => {
     expect(tl.map((p) => p.day)).toEqual(["2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04", "2026-01-05", "2026-01-06"]);
     expect(tl.find((p) => p.day === "2026-01-03")!.hasData).toBe(false);
   });
-  it("TWR encadeia o retorno diário sobre o capital do início do dia", () => {
-    // +100/1000 = +10%; depois -60/(1100-500) = -10%  →  1,1 × 0,9 − 1 = −1%
-    expect(t.twrPct!).toBeCloseTo(-1, 10);
+  it("TWR das operações trata a comissão como saída; a líquida desconta a comissão", () => {
+    // operações: +100/1000; depois −40/(1100 − 500 − 20)  →  1,1 × (1 − 40/580) − 1
+    expect(t.twrPct!).toBeCloseTo((1.1 * (1 - 40 / 580) - 1) * 100, 10);
+    // líquida: +100/1000; depois (−40 − 20)/(1100 − 500) = −10%  →  1,1 × 0,9 − 1 = −1%
+    expect(t.twrNetPct!).toBeCloseTo(-1, 10);
   });
   it("rentabilidade simples só existe com capital-base > 0", () => {
     expect(simpleReturn(40, null)).toBeNull();
@@ -74,14 +92,19 @@ describe("regras de capital (sintético)", () => {
   });
   it("capital inicial configurado entra no capital estimado", () => {
     const t2 = totals(buildTimeline(rows, 250, "2026-01-06"), 250);
-    expect(t2.capital).toBe(250 + 1000 - 500 + 40);
-    expect(t2.op).toBe(40);
+    expect(t2.capital).toBe(250 + 1000 - 500 + 60 - 20);
+    expect(t2.op).toBe(60);
   });
-  it("lucro do dia compara com o dia anterior com movimentação", () => {
+  it("lucro do dia compara com o dia anterior com movimentação e mostra a comissão à parte", () => {
     const s = dayStats(tl, "2026-01-05");
-    expect(s.op).toBe(-60);
+    expect(s.op).toBe(-40);
+    expect(s.fees).toBe(-20);
     expect(s.prev).toEqual({ day: "2026-01-04", op: 0 });
     expect(dayStats(tl, "2026-01-03").hasData).toBe(false);
+  });
+  it("resultado por mês separa lucro, comissão e o que ficou", () => {
+    const [m] = monthly(tl);
+    expect(m).toMatchObject({ month: "2026-01", op: 60, fees: -20, net: 40, capitalEnd: 540 });
   });
   it("I: conversão cambial muda com a cotação sem mudar o lucro em USD", () => {
     const h = [{ date: "2026-01-02", rate: 5 }, { date: "2026-01-05", rate: 5.5 }];
@@ -89,7 +112,7 @@ describe("regras de capital (sintético)", () => {
     expect(rateOn(h, "2026-01-04")).toBe(5);
     expect(rateOn(h, "2026-01-06")).toBe(5.5);
     expect(t.capital * 5.5).not.toBe(t.capital * 5);
-    expect(t.op).toBe(40);
+    expect(t.op).toBe(60);
   });
 });
 
@@ -109,18 +132,20 @@ describe.skipIf(!hasReal)("N: totais do transactions.csv real conferem com a ref
     expect(payload.rows.length).toBe(E.rows);
     expect(payload.columns.length).toBe(E.cols);
   });
-  it("resultado operacional = trades + taxas (Amount)", () => {
+  it("lucro das operações = trades; comissão PAMM (Amount) separada", () => {
     expect(t.op).toBeCloseTo(E.op, 2);
     expect(t.trades).toBeCloseTo(E.trades, 2);
     expect(t.fees).toBeCloseTo(E.fees, 2);
+    expect(t.net).toBeCloseTo(E.net, 2);
   });
   it("depósitos, retiradas e capital estimado (= saldo confirmado na plataforma)", () => {
     expect(t.deposits).toBeCloseTo(E.deposits, 2);
     expect(t.withdrawals).toBeCloseTo(E.withdrawals, 2);
     expect(t.capital).toBeCloseTo(E.capital, 2);
   });
-  it("TWR e rentabilidade simples sobre depósitos líquidos", () => {
+  it("TWR (das operações e líquida) e rentabilidade simples sobre depósitos líquidos", () => {
     expect(t.twrPct!).toBeCloseTo(E.twr, 1);
+    expect(t.twrNetPct!).toBeCloseTo(E.twr_net, 1);
     expect(simpleReturn(t.op, E.simple_base)!).toBeCloseTo(E.simple, 2);
   });
   it("melhor e pior dia", () => {
@@ -140,7 +165,7 @@ describe.skipIf(!hasReal)("N: totais do transactions.csv real conferem com a ref
     const ix = Object.fromEntries(payload.columns.map((c, i) => [c, i]));
     const wrong = payload.rows.reduce((s, r) => s + (["TradeResults", "PerformanceFee"].includes(r[ix.Reason]) ? Number(r[ix.AmountProfit]) : 0), 0);
     expect(wrong).toBeCloseTo(E.wrong_fee_op, 2);
-    expect(wrong).not.toBeCloseTo(t.op, 0);
+    expect(wrong).not.toBeCloseTo(t.net, 0);
   });
   it("resultado mensal soma o total", () => {
     const m = monthly(tl);

@@ -71,15 +71,15 @@ export default function Capital() {
           <KeyValue k="Capital inicial configurado" v={fmtUSD(s.opening_balance)} />
           <KeyValue k="Total de depósitos" v={fmtUSD(d.totals.deposits, true)} vClass="text-sky" />
           <KeyValue k="Total de retiradas" v={fmtUSD(-d.totals.withdrawals)} vClass="text-mute-strong" />
-          <KeyValue k="Resultado operacional acumulado" v={fmtUSD(d.totals.op, true)} vClass={signClass(d.totals.op)}
-            sub={`Trades ${fmtUSD(d.totals.trades, true)} · Taxas de performance ${fmtUSD(d.totals.fees, true)}`} />
+          <KeyValue k="Comissões PAMM pagas" v={fmtUSD(d.totals.fees)} vClass="text-mute-strong" sub="Taxa de performance do gestor: saída de dinheiro, não prejuízo" />
+          <KeyValue k="Lucro das operações acumulado" v={fmtUSD(d.totals.op, true)} vClass={signClass(d.totals.op)} />
           <Divider />
           <div className="flex items-baseline justify-between">
             <span className="font-bold">Capital estimado atual</span>
             <span className="text-2xl font-extrabold tabular-nums">{fmtUSD(d.totals.capital)}</span>
           </div>
           <p className="text-xs leading-relaxed text-mute">
-            Capital estimado = capital inicial + depósitos − retiradas + resultado operacional. Não é o saldo confirmado pela plataforma;
+            Capital estimado = capital inicial + depósitos − retiradas − comissões PAMM + lucro das operações. Não é o saldo confirmado pela plataforma;
             se houver diferença, confira o capital inicial e se o arquivo está completo.
           </p>
         </Card>
@@ -90,17 +90,20 @@ export default function Capital() {
             <div className={cx("rounded-2xl border p-3.5", s.return_method === "twr" ? "border-pos/40 bg-pos/5" : "border-ink-700")}>
               <div className="text-xs font-semibold text-mute">Ponderada pelo tempo (TWR)</div>
               <div className={cx("mt-1 text-2xl font-extrabold tabular-nums", signClass(d.totals.twrPct))}>{fmtPct(d.totals.twrPct)}</div>
-              <div className="text-xs text-mute">todo o histórico</div>
+              <div className="text-xs text-mute">das operações · líquida de comissões: <span className={signClass(d.totals.twrNetPct)}>{fmtPct(d.totals.twrNetPct)}</span></div>
             </div>
             <div className={cx("rounded-2xl border p-3.5", s.return_method === "simple" ? "border-pos/40 bg-pos/5" : "border-ink-700")}>
               <div className="text-xs font-semibold text-mute">Simples sobre capital-base</div>
               <div className={cx("mt-1 text-2xl font-extrabold tabular-nums", signClass(simpleAll))}>{simpleAll != null ? fmtPct(simpleAll) : "—"}</div>
-              <div className="text-xs text-mute">{s.capital_base ? `base ${fmtUSD(s.capital_base)}` : "defina o capital-base"}</div>
+              <div className="text-xs text-mute">{s.capital_base
+                ? <>base {fmtUSD(s.capital_base)} · líquida de comissões: {fmtPct(simpleReturn(d.totals.net, s.capital_base))}</>
+                : "defina o capital-base"}</div>
             </div>
           </div>
           <div className="text-sm leading-relaxed text-mute-strong">
-            <p><strong className="text-white">TWR</strong>: encadeia o resultado de cada dia sobre o capital do início do dia, então aportes e retiradas não distorcem o percentual. Aportes e retiradas são considerados no início do dia em que ocorreram.</p>
-            <p className="mt-2"><strong className="text-white">Simples</strong>: resultado acumulado ÷ capital-base × 100. Fácil de ler, mas não se ajusta a aportes e retiradas ao longo do tempo.</p>
+            <p><strong className="text-white">TWR</strong>: encadeia o lucro das operações de cada dia sobre o capital do início do dia, então aportes, retiradas e comissões não distorcem o percentual. Eles são considerados no início do dia em que ocorreram.</p>
+            <p className="mt-2"><strong className="text-white">Líquida de comissões</strong>: o mesmo cálculo descontando a comissão PAMM do resultado. Mostra quanto rendeu para você depois de pagar o gestor.</p>
+            <p className="mt-2"><strong className="text-white">Simples</strong>: lucro das operações ÷ capital-base × 100. Fácil de ler, mas não se ajusta a aportes e retiradas ao longo do tempo.</p>
           </div>
         </Card>
       </div>
@@ -146,7 +149,7 @@ export default function Capital() {
           <table className="w-full min-w-[640px] text-[13px]">
             <thead>
               <tr className="text-left text-xs text-mute">
-                {["Mês", "Trades", "Taxas", "Resultado", "Depósitos", "Retiradas", "TWR do mês", "Capital no fim"].map((h, i) => (
+                {["Mês", "Lucro", "Comissões", "Ficou na conta", "Depósitos", "Retiradas", "TWR do mês", "Capital no fim"].map((h, i) => (
                   <th key={h} scope="col" className={cx("border-b border-ink-600 px-2 py-2 font-semibold", i > 0 && "text-right")}>{h}</th>
                 ))}
               </tr>
@@ -155,9 +158,9 @@ export default function Capital() {
               {months.map((m) => (
                 <tr key={m.month}>
                   <td className="border-b border-ink-700 px-2 py-2.5 font-semibold capitalize">{fmtMonth(m.month)}</td>
-                  <td className={cx("border-b border-ink-700 px-2 py-2.5 text-right tabular-nums", signClass(m.trades))}>{fmtUSD(m.trades, true)}</td>
-                  <td className="border-b border-ink-700 px-2 py-2.5 text-right tabular-nums text-mute-strong">{fmtUSD(m.fees, true)}</td>
                   <td className={cx("border-b border-ink-700 px-2 py-2.5 text-right font-bold tabular-nums", signClass(m.op))}>{fmtUSD(m.op, true)}</td>
+                  <td className="border-b border-ink-700 px-2 py-2.5 text-right tabular-nums text-mute-strong">{m.fees ? fmtUSD(m.fees) : "—"}</td>
+                  <td className={cx("border-b border-ink-700 px-2 py-2.5 text-right tabular-nums", signClass(m.net))}>{fmtUSD(m.net, true)}</td>
                   <td className="border-b border-ink-700 px-2 py-2.5 text-right tabular-nums text-sky">{m.deposits ? fmtUSD(m.deposits) : "—"}</td>
                   <td className="border-b border-ink-700 px-2 py-2.5 text-right tabular-nums">{m.withdrawals ? fmtUSD(m.withdrawals) : "—"}</td>
                   <td className={cx("border-b border-ink-700 px-2 py-2.5 text-right tabular-nums", signClass(m.twrPct))}>{fmtPct(m.twrPct)}</td>
@@ -172,8 +175,8 @@ export default function Capital() {
       <Card className="p-5 text-sm leading-relaxed text-mute-strong" aria-labelledby="h-rules">
         <CardHeader id="h-rules" title="Regras de classificação do arquivo" />
         <ul className="mt-3 flex flex-col gap-1.5">
-          <li><strong className="text-white">TradeResults</strong>: resultado operacional = AmountProfit.</li>
-          <li><strong className="text-white">PerformanceFee</strong>: resultado operacional = Amount (a taxa efetivamente debitada). Nessas linhas o AmountProfit é o lucro da semana que foi liquidado no fechamento, não dinheiro saindo da conta; fica guardado só para auditoria. Regra confirmada com o saldo da plataforma.</li>
+          <li><strong className="text-white">TradeResults</strong>: lucro das operações = AmountProfit.</li>
+          <li><strong className="text-white">PerformanceFee</strong>: comissão da conta PAMM paga ao gestor = Amount (o valor efetivamente debitado). É uma saída de dinheiro, não prejuízo: reduz o capital, mas não entra no lucro, no lucro diário nem no melhor/pior dia. Nessas linhas o AmountProfit é o lucro da semana sobre o qual a comissão foi calculada; fica guardado só para auditoria.</li>
           <li><strong className="text-white">Deposit</strong>: entrada de capital (Amount). Não é lucro.</li>
           <li><strong className="text-white">Withdrawal</strong>: saída de capital (|Amount|). Não é prejuízo.</li>
           <li><strong className="text-white">Outros tipos</strong>: gravados e sinalizados, fora dos cálculos até existir uma regra documentada.</li>

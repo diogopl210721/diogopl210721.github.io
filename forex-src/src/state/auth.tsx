@@ -9,6 +9,7 @@ type AuthState = {
   me: Me | null;
   notice: string | null;
   login: (phone: string, pin: string, remember: boolean) => Promise<LoginResult>;
+  register: (name: string, phone: string, pin: string, remember: boolean) => Promise<LoginResult>;
   logout: (all?: boolean) => Promise<void>;
   refreshMe: () => Promise<void>;
   setProfile: (p: Profile) => void;
@@ -57,8 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => onAuthExpired(() => reset("Sua sessão expirou. Entre novamente.")), [reset]);
 
-  const login = useCallback(async (phone: string, pin: string, remember: boolean) => {
-    const r = await api.login(phone, pin, remember);
+  const startSession = useCallback(async (r: LoginResult, remember: boolean) => {
     if (r.ok && r.token) {
       saveSession({ token: r.token, expiresAt: r.expires_at ?? "", remember });
       setToken(r.token);
@@ -69,6 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return r;
   }, []);
+
+  const login = useCallback(async (phone: string, pin: string, remember: boolean) =>
+    startSession(await api.login(phone, pin, remember), remember), [startSession]);
+
+  // Cadastro aberto: a própria pessoa cria a conta e já entra.
+  const register = useCallback(async (name: string, phone: string, pin: string, remember: boolean) =>
+    startSession(await api.register(name, phone, pin, remember), remember), [startSession]);
 
   const logout = useCallback(async (all = false) => {
     const t = token;
@@ -84,11 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const value = useMemo<AuthState>(() => ({
-    status, token, me, notice, login, logout, refreshMe,
+    status, token, me, notice, login, register, logout, refreshMe,
     setProfile: (p) => setMe((m) => (m ? { ...m, profile: p } : m)),
     setSettings: (s) => setMe((m) => (m ? { ...m, settings: s } : m)),
     clearNotice: () => setNotice(null),
-  }), [status, token, me, notice, login, logout, refreshMe]);
+  }), [status, token, me, notice, login, register, logout, refreshMe]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

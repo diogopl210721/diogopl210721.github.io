@@ -136,7 +136,7 @@ export function ImportDetail() {
               <KeyValue k="Divergências" v={fmtInt(job.conflict_rows)} vClass={job.conflict_rows ? "text-amber-300" : undefined} />
               <KeyValue k="Sem classificação" v={fmtInt(job.unclassified_rows)} />
               <KeyValue k="Período do arquivo" v={job.period_start ? `${fmtDate(job.period_start.slice(0, 10))} → ${fmtDate(job.period_end?.slice(0, 10))}` : "—"} />
-              {job.inserted_op_result != null && <KeyValue k="Resultado adicionado" v={fmtUSD(job.inserted_op_result, true)} vClass={signClass(job.inserted_op_result)} />}
+              {job.inserted_op_result != null && <KeyValue k="Lucro das operações adicionado" v={fmtUSD(job.inserted_op_result, true)} vClass={signClass(job.inserted_op_result)} />}
               {job.inserted_deposits != null && <KeyValue k="Depósitos adicionados" v={fmtUSD(job.inserted_deposits, true)} vClass="text-sky" />}
               <KeyValue k="Moedas" v={job.currencies?.join(", ") || "—"} />
               <KeyValue k="Hash SHA-256" v={<span className="text-xs">{job.file_hash.slice(0, 16)}…</span>} />

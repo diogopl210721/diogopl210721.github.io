@@ -4,6 +4,7 @@ import { Layout } from "./components/Layout";
 import { Spinner } from "./components/ui";
 import Login from "./pages/Login";
 import Recover from "./pages/Recover";
+import Register from "./pages/Register";
 import ChangePin from "./pages/ChangePin";
 import { AuthProvider, useAuth } from "./state/auth";
 import { DataProvider } from "./state/data";
@@ -48,6 +49,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
+      <Route path="/cadastro" element={<PublicOnly><Register /></PublicOnly>} />
       <Route path="/recuperar" element={<Recover />} />
       <Route path="/trocar-pin" element={<Protected><ChangePin /></Protected>} />
       <Route

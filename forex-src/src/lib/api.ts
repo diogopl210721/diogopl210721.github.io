@@ -64,6 +64,10 @@ export const api = {
     rpc<LoginResult>("dds_finance_login", {
       p_phone: phone, p_pin: pin, p_remember: remember, p_user_agent: navigator.userAgent.slice(0, 300),
     }),
+  register: (name: string, phone: string, pin: string, remember: boolean) =>
+    rpc<LoginResult>("dds_finance_register", {
+      p_display_name: name, p_phone: phone, p_pin: pin, p_remember: remember, p_user_agent: navigator.userAgent.slice(0, 300),
+    }),
   logout: (token: string, all = false) => rpc<{ ok: boolean; revoked: number }>("dds_finance_logout", { p_token: token, p_all: all }),
   me: (token: string) => rpc<Me>("dds_finance_me", { p_token: token }),
   changePin: (token: string, current: string, next: string) =>
@@ -147,7 +151,8 @@ const MESSAGES: Record<string, string> = {
   invalid_file_hash: "Não foi possível identificar o arquivo.",
   invalid_phone: "Telefone inválido.",
   invalid_name: "Informe um nome com até 80 caracteres.",
-  phone_in_use: "Já existe um acesso com esse telefone.",
+  phone_in_use: "Já existe uma conta com esse telefone.",
+  weak_pin: "PIN muito fácil. Evite sequências (1234) e números repetidos (1111).",
   invalid_opening_balance: "Capital inicial inválido.",
   invalid_capital_base: "Capital-base inválido (deve ser maior que zero).",
   invalid_timezone: "Fuso horário inválido.",

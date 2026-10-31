@@ -187,7 +187,7 @@ export default function SettingsPage() {
       <Card className="flex flex-col gap-4 p-5" aria-labelledby="h-lgpd">
         <CardHeader id="h-lgpd" title="Privacidade e seus dados (LGPD)" />
         <div className="text-sm leading-relaxed text-mute-strong">
-          <p>Seus dados ficam no banco do DDS Finance (Supabase) e só são acessíveis com a sua sessão. O administrador cria acessos e redefine PINs, mas não vê seus dados financeiros pelo app.</p>
+          <p>Seus dados ficam no banco do DDS Finance (Supabase) e só são acessíveis com a sua sessão. Cada pessoa cria a própria conta; o administrador só redefine PINs esquecidos e não vê seus dados financeiros pelo app.</p>
           <p className="mt-2">O arquivo CSV é lido no seu aparelho; só as linhas (com os valores originais, para auditoria) são enviadas ao servidor. O arquivo em si não é guardado.</p>
           <p className="mt-2">Registros de segurança (logins, importações, trocas de PIN) não guardam PIN nem valores financeiros.</p>
         </div>

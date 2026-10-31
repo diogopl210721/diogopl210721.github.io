@@ -23,7 +23,7 @@ function Stat({ label, value, valueClass, sub, badge, className, small }: {
         <span className="text-xs font-semibold text-mute">{label}</span>
         {badge}
       </div>
-      <span className={cx("font-extrabold leading-tight tracking-tight tabular-nums", small ? "text-[19px] lg:text-[19px] xl:text-[20px]" : "text-[22px] lg:text-[24px]", valueClass)}>{value}</span>
+      <span className={cx("font-extrabold leading-tight tracking-tight tabular-nums", small ? "text-[19px] lg:text-[19px] xl:text-[20px]" : "text-[clamp(17px,4.8vw,22px)] lg:text-[24px]", valueClass)}>{value}</span>
       {sub && <span className="text-xs leading-snug text-mute">{sub}</span>}
     </Card>
   );
@@ -162,11 +162,14 @@ export default function Dashboard() {
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-mute hover:bg-ink-750 disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button>
             </div>
           </div>
-          <span className={cx("text-[22px] font-extrabold leading-tight tracking-tight tabular-nums lg:text-[24px]", signClass(day.op))}>{fmtUSD(day.op, true)}</span>
+          <span className={cx("text-[clamp(17px,4.8vw,22px)] font-extrabold leading-tight tracking-tight tabular-nums lg:text-[24px]", signClass(day.op))}>{fmtUSD(day.op, true)}</span>
           <span className="text-xs leading-snug text-mute">
             {d.selectedDay === d.today ? "Hoje" : fmtDayLong(d.selectedDay)}
             {day.hasData ? ` · ${day.txCount} mov.` : " · sem movimentações"}
           </span>
+          {day.fees !== 0 && (
+            <span className="text-xs text-mute">Comissão PAMM no dia: {fmtUSD(day.fees)} (saída, não é prejuízo)</span>
+          )}
           {day.prev && (
             <span className="text-xs text-mute">
               Anterior ({fmtDayShort(day.prev.day)}): <span className={signClass(day.prev.op)}>{fmtUSD(day.prev.op, true)}</span>
@@ -175,9 +178,11 @@ export default function Dashboard() {
         </Card>
 
         <Stat className="lg:col-span-4" label="Lucro total" value={fmtUSD(d.totals.op, true)} valueClass={signClass(d.totals.op)}
-          sub={`Todo o histórico · desde ${fmtDate(firstDay)}`} />
+          sub={<>Todo o histórico · desde {fmtDate(firstDay)}<br />
+            Comissões PAMM {fmtUSD(d.totals.fees)} · ficou na conta {fmtUSD(d.totals.net, true)}</>} />
 
-        <Stat className="lg:col-span-4" label="Lucro do período" value={fmtUSD(d.stats.op, true)} valueClass={signClass(d.stats.op)} sub={periodLabel} />
+        <Stat className="lg:col-span-4" label="Lucro do período" value={fmtUSD(d.stats.op, true)} valueClass={signClass(d.stats.op)}
+          sub={<>{periodLabel}{d.stats.fees !== 0 && <><br />Comissões PAMM no período {fmtUSD(d.stats.fees)}</>}</>} />
 
         <Stat
           className="lg:col-span-4"
@@ -185,8 +190,8 @@ export default function Dashboard() {
           value={s.return_method === "twr" ? fmtPct(twrAll) : simpleAll != null ? fmtPct(simpleAll) : "—"}
           valueClass={signClass(s.return_method === "twr" ? twrAll : simpleAll)}
           sub={s.return_method === "twr"
-            ? <>Ponderada pelo tempo, todo o histórico · {simpleAll != null ? <>simples: {fmtPct(simpleAll)}</> : <Link to="/capital" className="text-sky underline">definir capital-base</Link>}</>
-            : simpleAll != null ? <>Sobre capital-base de {fmtUSD(s.capital_base)} · TWR: {fmtPct(twrAll)}</> : <Link to="/capital" className="text-sky underline">Configure o capital-base</Link>}
+            ? <>Das operações, todo o histórico · líquida de comissões: {fmtPct(d.totals.twrNetPct)}</>
+            : simpleAll != null ? <>Sobre capital-base de {fmtUSD(s.capital_base)} · líquida de comissões: {fmtPct(simpleReturn(d.totals.net, s.capital_base))}</> : <Link to="/capital" className="text-sky underline">Configure o capital-base</Link>}
         />
       </div>
 
@@ -222,8 +227,8 @@ export default function Dashboard() {
           {tab === "cum" && (
             <>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs text-mute">Soma do resultado operacional no período (líquido de taxas)</span>
-                <span className={cx("text-lg font-extrabold tabular-nums", signClass(d.stats.op))}>{fmtUSD(d.stats.op, true)}</span>
+                <span className="text-xs text-mute">Lucro das operações no período (sem as comissões PAMM)</span>
+                <span className={cx("whitespace-nowrap text-lg font-extrabold tabular-nums", signClass(d.stats.op))}>{fmtUSD(d.stats.op, true)}</span>
               </div>
               <CumulativeChart points={d.stats.points} height={220} />
             </>
@@ -238,13 +243,13 @@ export default function Dashboard() {
                 <span className="text-lg font-extrabold tabular-nums">{fmtUSD(d.stats.capitalEnd)}</span>
               </div>
               <CapitalChart points={d.stats.points} height={220} />
-              <p className="text-xs text-mute">A distância entre a linha verde e a área azul é o resultado operacional acumulado.</p>
+              <p className="text-xs text-mute">A distância entre a linha verde e a área azul é o lucro das operações menos as comissões PAMM pagas.</p>
             </>
           )}
           {tab === "return" && (
             <>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs text-mute">{s.return_method === "twr" ? "Ponderada pelo tempo (neutraliza aportes e retiradas)" : `Simples sobre capital-base de ${fmtUSD(s.capital_base)}`}</span>
+                <span className="text-xs text-mute">{s.return_method === "twr" ? `Das operações, ponderada pelo tempo · líquida de comissões: ${fmtPct(d.stats.twrNetPct)}` : `Simples sobre capital-base de ${fmtUSD(s.capital_base)}`}</span>
                 <span className={cx("text-lg font-extrabold tabular-nums", signClass(d.stats.twrPct))}>
                   {s.return_method === "twr" ? fmtPct(d.stats.twrPct) : fmtPct(simpleReturn(d.stats.op, s.capital_base))}
                 </span>
@@ -276,8 +281,8 @@ export default function Dashboard() {
           <KeyValue k={<>Capital inicial <span className="text-xs text-mute">(configurável)</span></>} v={fmtUSD(s.opening_balance)} />
           <KeyValue k="Depósitos" v={fmtUSD(d.totals.deposits, true)} vClass="text-sky" />
           <KeyValue k="Retiradas" v={fmtUSD(-d.totals.withdrawals)} vClass="text-mute-strong" />
-          <KeyValue k="Resultado operacional" v={fmtUSD(d.totals.op, true)} vClass={signClass(d.totals.op)}
-            sub={`Trades ${fmtUSD(d.totals.trades, true)} · Taxas de performance ${fmtUSD(d.totals.fees, true)}`} />
+          <KeyValue k="Comissões PAMM" v={fmtUSD(d.totals.fees)} vClass="text-mute-strong" sub="Taxa de performance paga ao gestor: saída, não prejuízo" />
+          <KeyValue k="Lucro das operações" v={fmtUSD(d.totals.op, true)} vClass={signClass(d.totals.op)} />
           <Divider />
           <div className="flex items-baseline justify-between">
             <span className="font-bold">Capital estimado</span>
@@ -288,15 +293,17 @@ export default function Dashboard() {
       </div>
 
       {/* Indicadores complementares */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:gap-4">
-        <Stat small label="Entradas de capital" value={fmtUSD(d.stats.deposits)} valueClass="text-sky" sub="no período" />
-        <Stat small label="Saídas de capital" value={fmtUSD(d.stats.withdrawals)} sub="no período" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
+        <Stat small label="Entradas de capital" value={fmtUSD(d.stats.deposits)} valueClass="text-sky" sub="depósitos no período" />
+        <Stat small label="Saídas de capital" value={fmtUSD(d.stats.withdrawals)} sub="retiradas no período" />
+        <Stat small label="Comissões PAMM" value={fmtUSD(Math.abs(d.stats.fees))} sub="pagas ao gestor no período" />
+        <Stat small label="Ficou na conta" value={fmtUSD(d.stats.net, true)} valueClass={signClass(d.stats.net)} sub="lucro − comissões no período" />
         <Stat small label="Melhor dia" value={d.stats.best ? fmtUSD(d.stats.best.op, true) : "—"} valueClass={signClass(d.stats.best?.op)}
           sub={d.stats.best ? fmtDate(d.stats.best.day) : "sem dados"} />
         <Stat small label="Pior dia" value={d.stats.worst ? fmtUSD(d.stats.worst.op, true) : "—"} valueClass={signClass(d.stats.worst?.op)}
           sub={d.stats.worst ? fmtDate(d.stats.worst.day) : "sem dados"} />
         <Stat small label="Movimentações" value={fmtInt(d.stats.txCount)}
-          sub={`${d.stats.daysWithData} dia(s) com operação · ${winRate != null ? `${fmtPct(winRate, false, 1)} trades positivos` : "sem trades"}`} />
+          sub={`${d.stats.tradeDays} dia(s) com operação · ${winRate != null ? `${fmtPct(winRate, false, 1)} trades positivos` : "sem trades"}`} />
         <Stat small label="Última importação" value={d.overview?.last_import ? fmtDate((d.overview.last_import.completed_at ?? d.overview.last_import.created_at).slice(0, 10)) : "—"}
           sub={d.overview?.last_import ? `${fmtDateTime(d.overview.last_import.completed_at ?? d.overview.last_import.created_at, s.timezone).slice(11)} · ${d.overview.last_import.inserted_rows} nova(s)` : "nenhuma"} />
       </div>

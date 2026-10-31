@@ -35,7 +35,11 @@ começam com `dds_finance_`. Nenhuma tabela de outro sistema é alterada.
   Tudo passa por funções `SECURITY DEFINER` que filtram pelo dono da sessão.
 - Bloqueio de tentativas: 5 erros seguidos no mesmo telefone bloqueiam por 1, 5, 15, 60 e 240 minutos (progressivo);
   30 erros em 15 minutos do mesmo IP bloqueiam o IP por 15 minutos.
-- PINs fáceis (1234, 1111…) são recusados. Recuperação: o administrador gera um PIN provisório; no próximo acesso a
+- **Cadastro aberto** (`dds_finance_register`, desde 31/10/2026): a pessoa informa nome, telefone e PIN, cada um
+  digitado duas vezes no app (telefone e PIN) para evitar erro de digitação, e já entra. Limites: 5 contas novas por IP
+  por hora; tentar um telefone que já tem conta conta como erro no bloqueio por IP. A conta nasce sem ser administradora.
+  O PIN pode ser trocado em Configurações › Trocar PIN.
+- PINs fáceis (1234, 1111…) são recusados. PIN esquecido: o administrador gera um PIN provisório; no próximo acesso a
   pessoa cria o PIN definitivo e as outras sessões dela são encerradas.
 
 **Importação.** O navegador lê o CSV e envia os valores brutos (`{columns, rows}`). O banco valida cada linha, calcula
@@ -54,17 +58,20 @@ uma impressão digital (SHA-256 dos campos financeiros) e compara com o que já 
 A unicidade é garantida no banco por `UNIQUE (user_id, source, external_transaction_id)` com `ON CONFLICT DO NOTHING`
 e um bloqueio por usuário durante a importação, então importações simultâneas não duplicam nada.
 
-**Regras financeiras** (versão 1, validadas com o arquivo real e com o saldo confirmado na plataforma):
+**Regras financeiras** (versão 2, de 31/10/2026; `rule_version` em cada movimentação):
 
-- `TradeResults` → resultado operacional = `AmountProfit`
-- `PerformanceFee` → resultado operacional = `Amount` (a taxa debitada). Nessas linhas o `AmountProfit` é o lucro da
-  semana liquidado no fechamento, não dinheiro saindo da conta. **Isto difere do briefing original**, que pedia
-  `AmountProfit`: com aquela regra o lucro total ficaria muito abaixo do real e o capital estimado não bateria com o
-  saldo da plataforma. A mudança foi confirmada pelo Diogo em 23/10/2026.
+- `TradeResults` → **lucro das operações** = `AmountProfit` (`op_result`).
+- `PerformanceFee` → **comissão da conta PAMM** paga ao gestor = `Amount` (o valor debitado), gravada em `capital_flow`.
+  É saída de dinheiro, **não prejuízo**: reduz o capital, mas não entra no lucro, no lucro diário nem no melhor/pior dia
+  (definição do Diogo em 31/10/2026). Nessas linhas o `AmountProfit` é o lucro da semana sobre o qual a comissão foi
+  calculada e fica só para auditoria. Na versão 1 (23/10) a comissão entrava no resultado operacional; o capital é o
+  mesmo nas duas versões e bate com o saldo confirmado na plataforma.
 - `Deposit` → entrada de capital (`Amount`); `Withdrawal` → saída de capital (`|Amount|`). Nenhum dos dois é lucro ou prejuízo.
-- Capital estimado = capital inicial + depósitos − retiradas + resultado operacional acumulado.
-- Rentabilidade simples = resultado ÷ capital-base × 100 (só com capital-base configurado).
-- TWR = Π(1 + resultado do dia ÷ capital no início do dia) − 1, com aportes e retiradas no início do dia.
+- Capital estimado = capital inicial + depósitos − retiradas − comissões PAMM + lucro das operações.
+- Rentabilidade simples = lucro das operações ÷ capital-base × 100 (só com capital-base configurado); a tela mostra
+  também a versão líquida de comissões.
+- TWR das operações = Π(1 + lucro do dia ÷ capital no início do dia) − 1, com aportes, retiradas e comissões no início
+  do dia. TWR líquida = o mesmo, descontando a comissão do resultado do dia. As duas aparecem no app.
 - A coluna `Time` não informa fuso; ela é interpretada como horário de Brasília (confirmado). Os dias são agrupados no
   fuso configurado pelo usuário (padrão `America/Sao_Paulo`).
 
@@ -106,7 +113,7 @@ configuração extra.
 As migrações estão em `supabase/migrations/` na ordem do nome. Elas foram aplicadas no projeto em partes
 (nomes `dds_finance_*` no histórico do Supabase). Para mudar uma função, crie uma nova migração com `create or replace`.
 
-**Estado em 23/10/2026 (conferido função por função contra o banco):**
+**Estado em 31/10/2026 (conferido função por função contra o banco):**
 
 | Arquivo | Situação |
 |---|---|
@@ -115,6 +122,8 @@ As migrações estão em `supabase/migrations/` na ordem do nome. Elas foram apl
 | `…120200_import` **Parte D** (`dds_finance_delete_my_financial_data`, `dds_finance_delete_account`, `dds_finance__cleanup` e o job `dds_finance_cleanup`) | **pendente de aprovação** — sem ela, "Apagar meus dados" e "Excluir conta" em Configurações dão erro |
 | `…130500_cleanup_auth_uid` (DROP das funções da primeira versão) | não aplicado; substituído por `…210000_revoke_legacy_auth_uid` |
 | `…210000_revoke_legacy_auth_uid` | aplicado: as funções antigas continuam no banco, mas ninguém consegue executá-las |
+| `…20261031120000_rules_v2_commission` | aplicado: comissão PAMM fora do lucro; dados existentes migrados para a regra 2 |
+| `…20261031120100_register` | aplicado: cadastro aberto |
 
 ### Edge Function
 `supabase/functions/forex-ptax/index.ts` — publicar com `supabase functions deploy forex-ptax --no-verify-jwt`
@@ -122,7 +131,9 @@ As migrações estão em `supabase/migrations/` na ordem do nome. Elas foram apl
 
 ## Manutenção
 
-- **Novo usuário / esqueceu o PIN:** Administração (menu) → Novo acesso / Redefinir PIN. O PIN provisório aparece uma vez.
+- **Novo usuário:** a pessoa mesma cria a conta em "Criar conta" no login. O administrador ainda pode criar por
+  Administração → Novo acesso (gera PIN provisório).
+- **Esqueceu o PIN:** Administração (menu) → Redefinir PIN. Confirme que o telefone é da pessoa antes. O PIN provisório aparece uma vez.
 - **Cotação parada:** veja Cotação cambial → "Última consulta". O botão "Verificar agora" força uma nova consulta.
   Os agendamentos são os jobs `dds_finance_ptax_intraday` e `dds_finance_ptax_daily` em `cron.job`.
 - **Backup:** o banco segue a política de backup do plano do Supabase. Cada usuário pode exportar tudo (JSON) e as

@@ -240,8 +240,8 @@ export default function Import() {
 
           <Card className="flex flex-col gap-2.5 p-4" aria-labelledby="h-impact">
             <h2 id="h-impact" className="font-bold">Impacto dos registros novos</h2>
-            <KeyValue k="Resultado operacional" v={fmtUSD(report.impact.op_result, true)} vClass={signClass(report.impact.op_result)}
-              sub={`Trades ${fmtUSD(report.impact.trade_result, true)} · Taxas ${fmtUSD(report.impact.fee_result, true)}`} />
+            <KeyValue k="Lucro das operações" v={fmtUSD(report.impact.trade_result, true)} vClass={signClass(report.impact.trade_result)} />
+            <KeyValue k="Comissões PAMM" v={fmtUSD(report.impact.fee_result)} vClass="text-mute-strong" sub="saída para o gestor, não é prejuízo" />
             <KeyValue k="Entradas de capital" v={fmtUSD(report.impact.deposits, true)} vClass="text-sky" />
             <KeyValue k="Saídas de capital" v={fmtUSD(-report.impact.withdrawals)} vClass="text-mute-strong" />
             {report.other_currency_new_rows > 0 && <p className="text-xs text-amber-300">{report.other_currency_new_rows} registro(s) em outra moeda ficam fora dos totais em {report.reference_currency}.</p>}
@@ -293,8 +293,10 @@ export default function Import() {
                     <div className="truncate text-xs text-mute">Linha {r.row} · ID {r.external_id} · {fmtRawTime(r.time)}</div>
                     {r.classification === "performance_fee" && <div className="text-xs text-mute">Amount {fmtNumber(r.amount)} · AmountProfit {fmtNumber(r.amount_profit)}</div>}
                   </div>
-                  <span className={cx("font-extrabold tabular-nums", r.classification === "deposit" || r.classification === "withdrawal" ? "text-sky" : signClass(r.op_result))}>
-                    {r.classification === "deposit" || r.classification === "withdrawal" ? fmtNumber(r.capital_flow, true) : fmtNumber(r.op_result, true)}
+                  <span className={cx("font-extrabold tabular-nums",
+                    r.classification === "deposit" || r.classification === "withdrawal" ? "text-sky" : r.classification === "performance_fee" ? "text-mute-strong" : signClass(r.op_result))}>
+                    {r.classification === "deposit" || r.classification === "withdrawal" ? fmtNumber(r.capital_flow, true)
+                      : r.classification === "performance_fee" ? fmtNumber(r.amount) : fmtNumber(r.op_result, true)}
                   </span>
                 </div>
               ))}
@@ -326,7 +328,8 @@ export default function Import() {
             <Count label="Sem classificação" value={result.unclassified_new_rows} tone="warn" />
           </div>
           <Card className="flex flex-col gap-2.5 p-4">
-            <KeyValue k="Resultado operacional adicionado" v={fmtUSD(result.impact.op_result, true)} vClass={signClass(result.impact.op_result)} />
+            <KeyValue k="Lucro das operações adicionado" v={fmtUSD(result.impact.trade_result, true)} vClass={signClass(result.impact.trade_result)} />
+            {result.impact.fee_result !== 0 && <KeyValue k="Comissões PAMM adicionadas" v={fmtUSD(result.impact.fee_result)} vClass="text-mute-strong" />}
             <KeyValue k="Depósitos adicionados" v={fmtUSD(result.impact.deposits, true)} vClass="text-sky" />
             <KeyValue k="Retiradas adicionadas" v={fmtUSD(-result.impact.withdrawals)} />
           </Card>

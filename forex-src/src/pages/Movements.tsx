@@ -13,7 +13,7 @@ import { useData } from "../state/data";
 
 export const CLASS_LABEL: Record<Classification, string> = {
   trade: "Trade",
-  performance_fee: "Taxa de performance",
+  performance_fee: "Comissão PAMM",
   deposit: "Depósito",
   withdrawal: "Retirada",
   unclassified: "Sem classificação",
@@ -38,7 +38,8 @@ export function TxIcon({ row }: { row: Pick<TransactionRow, "classification" | "
 }
 
 /** Valor considerado nos cálculos, com o texto certo para cada tipo. */
-export function ConsideredValue({ row, className }: { row: Pick<TransactionRow, "classification" | "op_result" | "capital_flow" | "amount_profit">; className?: string }) {
+export function ConsideredValue({ row, className }: { row: Pick<TransactionRow, "classification" | "op_result" | "capital_flow" | "amount_profit" | "amount">; className?: string }) {
+  if (row.classification === "performance_fee") return <span className={cx("font-extrabold tabular-nums text-mute-strong", className)}>{fmtNumber(row.amount)}</span>;
   if (row.classification === "deposit") return <span className={cx("font-extrabold tabular-nums text-sky", className)}>{fmtNumber(row.capital_flow, true)}</span>;
   if (row.classification === "withdrawal") return <span className={cx("font-extrabold tabular-nums text-mute-strong", className)}>{fmtNumber(row.capital_flow)}</span>;
   if (row.classification === "unclassified") return <span className={cx("text-xs font-bold text-amber-300", className)}>fora do cálculo</span>;
@@ -48,7 +49,7 @@ export function ConsideredValue({ row, className }: { row: Pick<TransactionRow, 
 function subline(r: TransactionRow, tz: string): string {
   const t = fmtTime(r.transaction_time, tz);
   if (r.classification === "deposit" || r.classification === "withdrawal") return `ID ${r.external_transaction_id} · ${t} · não é lucro/prejuízo`;
-  if (r.classification === "performance_fee") return `ID ${r.external_transaction_id} · ${t} · fechamento semanal`;
+  if (r.classification === "performance_fee") return `ID ${r.external_transaction_id} · ${t} · comissão do gestor, não é prejuízo`;
   return `ID ${r.external_transaction_id} · ${t}`;
 }
 
@@ -220,7 +221,7 @@ export default function Movements() {
         <Segmented<TypeFilter> label="Tipo de movimentação" value={type} onChange={setType} options={[
           { value: "", label: "Todas" },
           { value: "trade", label: "Trades" },
-          { value: "performance_fee", label: "Taxas" },
+          { value: "performance_fee", label: "Comissões" },
           { value: "deposit", label: "Depósitos" },
           { value: "withdrawal", label: "Retiradas" },
           { value: "unclassified", label: "Sem classificação" },
@@ -257,8 +258,8 @@ export default function Movements() {
 }
 
 const RULES: Record<Classification, string> = {
-  trade: "Resultado operacional = AmountProfit.",
-  performance_fee: "Resultado operacional = Amount (a taxa debitada). O AmountProfit desta linha é o lucro da semana liquidado no fechamento e fica só para auditoria.",
+  trade: "Lucro das operações = AmountProfit.",
+  performance_fee: "Comissão da conta PAMM paga ao gestor = Amount (o valor debitado). É saída de dinheiro: reduz o capital, mas não é prejuízo e não entra no lucro. O AmountProfit desta linha é o lucro da semana sobre o qual a comissão foi calculada e fica só para auditoria.",
   deposit: "Entrada de capital = Amount. Não conta como lucro.",
   withdrawal: "Saída de capital = |Amount|. Não conta como prejuízo.",
   unclassified: "Tipo (Reason) sem regra documentada: guardado e sinalizado, fora de todos os cálculos.",
@@ -300,8 +301,9 @@ export function MovementDetail() {
               <KeyValue k="Moeda" v={tx.currency} />
               <KeyValue k="Amount" v={fmtNumber(tx.amount)} />
               <KeyValue k="AmountProfit" v={fmtNumber(tx.amount_profit)} />
-              <KeyValue k="Resultado operacional" v={fmtUSD(tx.op_result, true)} vClass={signClass(tx.op_result)} />
-              <KeyValue k="Fluxo de capital" v={fmtUSD(tx.capital_flow, true)} />
+              <KeyValue k="Lucro das operações" v={fmtUSD(tx.classification === "trade" ? tx.op_result : 0, true)} vClass={signClass(tx.classification === "trade" ? tx.op_result : 0)} />
+              <KeyValue k="Entrada ou saída de dinheiro" v={fmtUSD(tx.classification === "performance_fee" ? tx.amount : tx.capital_flow, true)}
+                sub={tx.classification === "performance_fee" ? "comissão PAMM" : tx.classification === "deposit" ? "depósito" : tx.classification === "withdrawal" ? "retirada" : undefined} />
               <KeyValue k="Horário no arquivo" v={fmtRawTime(tx.time_raw)} />
               <KeyValue k="Dia considerado" v={fmtDate(todayIn(settings.timezone, new Date(tx.transaction_time)))} sub={`fuso ${settings.timezone}`} />
               <KeyValue k="Importado em" v={tx.import ? fmtDateTime(tx.import.created_at, settings.timezone) : "—"}

@@ -40,17 +40,19 @@ export function buildMock() {
       id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
       external_transaction_id: r.Id, reason: r.Reason, classification: cls, currency: r.Currency,
       amount, amount_profit: profit,
-      op_result: cls === "trade" ? profit : cls === "performance_fee" ? amount : 0,
-      capital_flow: cls === "deposit" ? amount : cls === "withdrawal" ? -Math.abs(amount) : 0,
+      // regra 2: lucro das operações só de trades; comissão PAMM é saída (capital_flow)
+      op_result: cls === "trade" ? profit : 0,
+      capital_flow: cls === "deposit" ? amount : cls === "withdrawal" ? -Math.abs(amount) : cls === "performance_fee" ? amount : 0,
       transaction_time: `${r.Time}-03:00`, time_raw: r.Time, local_date: r.Time.slice(0, 10), original_payload: r,
     };
   }).sort((a, b) => (a.time_raw < b.time_raw ? 1 : -1));
   const days = new Map<string, Record<string, number | string>>();
   for (const t of tx) {
-    const d = days.get(t.local_date) ?? { day: t.local_date, op_result: 0, trade_result: 0, fee_result: 0, deposits: 0, withdrawals: 0, tx_count: 0, trade_count: 0, positive_trades: 0, negative_trades: 0 };
+    const d = days.get(t.local_date) ?? { day: t.local_date, op_result: 0, trade_result: 0, fee_result: 0, deposits: 0, withdrawals: 0, tx_count: 0, trade_count: 0, positive_trades: 0, negative_trades: 0, capital_flow: 0 };
+    (d.capital_flow as number) += t.capital_flow;
     (d.op_result as number) += t.op_result;
     if (t.classification === "trade") { (d.trade_result as number) += t.op_result; (d.trade_count as number)++; if (t.op_result > 0) (d.positive_trades as number)++; if (t.op_result < 0) (d.negative_trades as number)++; }
-    if (t.classification === "performance_fee") (d.fee_result as number) += t.op_result;
+    if (t.classification === "performance_fee") (d.fee_result as number) += t.capital_flow;
     if (t.classification === "deposit") (d.deposits as number) += t.capital_flow;
     if (t.classification === "withdrawal") (d.withdrawals as number) -= t.capital_flow;
     (d.tx_count as number)++;
@@ -72,6 +74,8 @@ export function buildMock() {
   };
   const token = "ddsf_" + "ab".repeat(32);
   const profile = { id: "p1", display_name: "Diogo Soares", phone: "5541991542931", is_admin: true, must_change_pin: false, last_login_at: null, created_at: "2026-10-23T12:00:00Z" };
+  let current = profile;
+  const isMain = () => current.id === profile.id;
   const settings = { opening_balance: 0, capital_base: null, currency: "USD", timezone: "America/Sao_Paulo", source_timezone: "America/Sao_Paulo", return_method: "twr" };
   const report = {
     total_rows: tx.length, new_rows: 0, existing_rows: tx.length, duplicate_rows: 0, invalid_rows: 0, conflict_rows: 0, conflict_ids: 0,
@@ -86,10 +90,17 @@ export function buildMock() {
     dds_finance_login: (b) => (b.p_pin === "2580"
       ? { ok: true, token, expires_at: "2026-11-22T12:00:00Z", must_change_pin: false, profile }
       : { ok: false, code: "invalid_credentials", attempts_left: 4, locked_until: null }),
-    dds_finance_me: () => ({ profile, settings, session: { expires_at: "2026-11-22T12:00:00Z" }, active_sessions: 1 }),
-    dds_finance_daily_series: () => series,
-    dds_finance_overview: () => ({ transactions_total: tx.length, unclassified_total: 0, other_currency_total: 0, first_transaction_at: null,
-      last_transaction_at: null, open_conflicts: 0, today: "2026-10-23", last_import: lastImport }),
+    dds_finance_register: (b) => {
+      const phone = String(b.p_phone ?? "").replace(/\D/g, "");
+      if (["1234", "1111", "4321"].includes(String(b.p_pin))) return { ok: false, code: "weak_pin" };
+      if (phone.endsWith("991542931")) return { ok: false, code: "phone_in_use" };
+      current = { ...profile, id: "p2", display_name: String(b.p_display_name), phone: "55" + phone, is_admin: false };
+      return { ok: true, token, expires_at: "2026-11-22T12:00:00Z", must_change_pin: false, profile: current };
+    },
+    dds_finance_me: () => ({ profile: current, settings, session: { expires_at: "2026-11-22T12:00:00Z" }, active_sessions: 1 }),
+    dds_finance_daily_series: () => (isMain() ? series : []),
+    dds_finance_overview: () => ({ transactions_total: isMain() ? tx.length : 0, unclassified_total: 0, other_currency_total: 0, first_transaction_at: null,
+      last_transaction_at: null, open_conflicts: 0, today: "2026-10-23", last_import: isMain() ? lastImport : null }),
     dds_finance_fx: () => ({
       latest: { rate: 5.0377, rate_date: "2026-10-23", source: "BCB PTAX", rate_type: "ptax_venda_fechamento", quoted_at: "2026-10-23T16:07:14Z", fetched_at: "2026-10-23T16:20:00Z" },
       latest_buy: { rate: 5.0371, rate_date: "2026-10-23", source: "BCB PTAX", rate_type: "ptax_compra_fechamento", quoted_at: "2026-10-23T16:07:14Z", fetched_at: "2026-10-23T16:20:00Z" },
@@ -98,12 +109,14 @@ export function buildMock() {
     }),
     dds_finance_list_transactions: (b) => {
       const lim = Number(b.p_limit ?? 50), off = Number(b.p_offset ?? 0);
-      const page = tx.slice(off, off + lim);
+      const cls = String((b.p_filters as Record<string, string> | undefined)?.classification ?? "");
+      const list = !cls ? tx : tx.filter((t) => (cls === "capital" ? ["deposit", "withdrawal"].includes(t.classification) : t.classification === cls));
+      const page = list.slice(off, off + lim);
       const dayMap: Record<string, unknown> = {};
-      for (const r of page) { const d = days.get(r.local_date)!; dayMap[r.local_date] = { op_result: d.op_result, capital_flow: 0, count: d.tx_count }; }
-      return { total: tx.length, limit: lim, offset: off, rows: page, days: dayMap };
+      for (const r of page) { const d = days.get(r.local_date)!; dayMap[r.local_date] = { op_result: d.op_result, capital_flow: d.capital_flow, count: d.tx_count }; }
+      return { total: list.length, limit: lim, offset: off, rows: page, days: dayMap };
     },
-    dds_finance_get_transaction: (b) => ({ ...tx.find((t) => t.id === b.p_id)!, fingerprint: "f".repeat(64), rule_version: 1, source: "trading_csv",
+    dds_finance_get_transaction: (b) => ({ ...tx.find((t) => t.id === b.p_id)!, fingerprint: "f".repeat(64), rule_version: 2, source: "trading_csv",
       investment_id: "2126", manager_name: "x", source_import_id: lastImport.id, created_at: lastImport.created_at,
       import: { id: lastImport.id, original_filename: "transactions.csv", created_at: lastImport.created_at }, conflicts: [] }),
     dds_finance_list_imports: () => ({ total: 1, rows: [lastImport] }),
@@ -115,6 +128,7 @@ export function buildMock() {
   return {
     token,
     async install(page: Page) {
+      current = profile;
       await page.route("**/rest/v1/rpc/*", async (route: Route) => {
         const fn = route.request().url().split("/rpc/")[1];
         const body = JSON.parse(route.request().postData() || "{}");
