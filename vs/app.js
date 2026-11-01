@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610312248";
+const APP_VER="202611011554";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
