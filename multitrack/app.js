@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202610311803";
+const APP_VER="202610312248";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -260,8 +260,15 @@ class Deck{
   fade(from,to,secs,at){this.post({type:"fade",at:this.F(at),from,target:to,frames:Math.round(secs*E.SR)})}
   unload(){this.token++;if(this.playing)this.stopNow();if(E.node)this.post({type:"reset"});Object.assign(this,{song:null,key:null,loaded:false,loading:null})}
 }
+/* Saída dividida (Fones L/R): esquerda = fone dos músicos, direita = público (mesa de som). Cada faixa escolhe para onde vai. */
+const ROUTES=["pub","fone","both"],ROUTE_L={pub:"PA",fone:"🎧",both:"🎧+PA"},ROUTE_T={pub:"Só para o público (lado direito)",fone:"Só no fone (lado esquerdo)",both:"Fone e público (os dois lados)"};
+function trackRoute(t){return t.route||(LEFT.has(t.kind)?"fone":"pub")}
+function routeBtn(t){const r=trackRoute(t);return`<button class="r r-${r}${S.settings.iem?"":" off"}" data-tid="${t.id}" data-route="1" title="${ROUTE_T[r]}${S.settings.iem?"":" · ligue Fones L/R"}" aria-label="Saída de ${esc(t.name)}: ${ROUTE_T[r]}">${ROUTE_L[r]}</button>`}
+function cycleRoute(s,tr){if(!S.settings.iem){S.settings.iem=true;applyGlobalMix();saveMeta();renderTransport();
+    toast("Fones L/R ligado: lado esquerdo vai para o fone dos músicos e o direito para o público. Toque de novo para mudar a saída desta faixa.",6500);renderArr();if(typeof Stage!=="undefined")Stage.sync();return}
+  const r=trackRoute(tr);tr.route=ROUTES[(ROUTES.indexOf(r)+1)%3];saveSong(s,{local:true});applyTrackMix(E.cur);renderArr();if(typeof Stage!=="undefined")Stage.sync();toast(tr.name+": "+ROUTE_T[tr.route],2500)}
 function trackMatrix(song,t){const anySolo=song.tracks.some(x=>x.solo);const g=(t.mute?0:(anySolo&&!t.solo?0:t.vol))*minFactor(t);
-  if(S.settings.iem){const left=LEFT.has(t.kind);if((t.ch||2)===1)return left?[g,0,0,0]:[0,0,g,0];const h=g*0.707;return left?[h,h,0,0]:[0,0,h,h]}
+  if(S.settings.iem){const r=trackRoute(t);if((t.ch||2)===1)return r==="fone"?[g,0,0,0]:r==="pub"?[0,0,g,0]:[g,0,g,0];const h=g*0.707;return r==="fone"?[h,h,0,0]:r==="pub"?[0,0,h,h]:[h,h,h,h]}
   const pan=t.pan||0;if((t.ch||2)===1){const th=(pan+1)*Math.PI/4;return[g*Math.min(1,Math.cos(th)*Math.SQRT2),0,g*Math.min(1,Math.sin(th)*Math.SQRT2),0]}
   return[g*Math.min(1,1-pan),0,0,g*Math.min(1,1+pan)]}
 function applyTrackMix(d){if(!d||!d.song||!d.loaded||!E.node)return;const g={};d.song.tracks.forEach(t=>{t.ch=d.ch[t.id]||t.ch;g[t.id]=trackMatrix(d.song,t)});d.post({type:"gains",g})}
@@ -663,12 +670,12 @@ function renderArr(){const s=curSong(),body=$("#arrBody");
   body.innerHTML=`<div class="arr-body"><div class="heads"><div class="rs"><span class="eyebrow">Faixa</span></div>${(s.chords||[]).length?'<div class="chh"><span class="eyebrow">Cifra</span></div>':""}${s.tracks.map(t=>`<div class="lh${t.mute||(anySolo&&!t.solo)?" dim":""}" style="--kc:var(${KIND[t.kind||"other"].v})">
       <div class="meta"><span class="nm" title="${esc(t.name)}">${esc(t.name)}</span><span class="kd">${KIND[t.kind||"other"].l}</span></div>
       <input type="range" min="0" max="1.25" step="0.01" value="${t.vol}" data-tid="${t.id}" aria-label="Volume ${esc(t.name)}" title="Volume (toque duplo volta ao padrão)">
-      <div class="ms"><button class="m${t.mute?" on":""}" data-tid="${t.id}" data-f="mute" aria-label="Mudo ${esc(t.name)}">M</button><button class="s${t.solo?" on":""}" data-tid="${t.id}" data-f="solo" aria-label="Solo ${esc(t.name)}">S</button></div></div>`).join("")}</div><div class="canvas-wrap" id="cvWrap"></div></div>`;
+      <div class="ms"><button class="m${t.mute?" on":""}" data-tid="${t.id}" data-f="mute" aria-label="Mudo ${esc(t.name)}">M</button><button class="s${t.solo?" on":""}" data-tid="${t.id}" data-f="solo" aria-label="Solo ${esc(t.name)}">S</button>${routeBtn(t)}</div></div>`).join("")}</div><div class="canvas-wrap" id="cvWrap"></div></div>`;
   $("#cvWrap").appendChild(arrCanvas);drawArr()}
 $("#arrBody").addEventListener("input",e=>{const t=e.target;if(!t.dataset.tid)return;const s=curSong(),tr=s.tracks.find(x=>x.id===t.dataset.tid);tr.vol=+t.value;saveSong(s);applyTrackMix(E.cur)});
 $("#arrBody").addEventListener("dblclick",e=>{const t=e.target;if(t.type==="range"&&t.dataset.tid){t.value=0.85;t.dispatchEvent(new Event("input",{bubbles:true}))}});
 $("#arrBody").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.act==="import")return openImport();if(b.dataset.act==="link")return;
-  const s=curSong(),tr=s&&s.tracks.find(x=>x.id===b.dataset.tid);if(!tr)return;tr[b.dataset.f]=!tr[b.dataset.f];saveSong(s,{local:true});applyTrackMix(E.cur);renderArr()});
+  const s=curSong(),tr=s&&s.tracks.find(x=>x.id===b.dataset.tid);if(!tr)return;if(b.dataset.route)return cycleRoute(s,tr);tr[b.dataset.f]=!tr[b.dataset.f];saveSong(s,{local:true});applyTrackMix(E.cur);renderArr()});
 function drawArr(){const s=curSong();if(!s||!arrCanvas.isConnected)return;const wrap=arrCanvas.parentElement,dpr=window.devicePixelRatio||1,W=wrap.clientWidth;
   const LH=parseFloat(cv("--lane"))||50,RH0=parseFloat(cv("--ruler"))||30,CH=(s.chords||[]).length?(parseFloat(cv("--chordrow"))||26):0,RH=RH0+CH,H=RH+s.tracks.length*LH;if(!W)return;
   if(arrCanvas.width!==Math.round(W*dpr)||arrCanvas.height!==Math.round(H*dpr)){arrCanvas.width=Math.round(W*dpr);arrCanvas.height=Math.round(H*dpr);arrCanvas.style.height=H+"px"}
@@ -857,7 +864,8 @@ $("#bBless").onclick=openBless;$("#cpKey").onclick=()=>copyText(PIX_KEY,"Chave P
 $("#wClose").onclick=()=>{$("#welcome").hidden=true;try{localStorage.setItem("ddsmt-welcome","fechado")}catch(e){}};
 try{if(localStorage.getItem("ddsmt-welcome")!=="fechado")$("#welcome").hidden=false}catch(e){$("#welcome").hidden=false}$("#bAcc").onclick=()=>openAccount();
 document.addEventListener("click",e=>{const b=e.target.closest('[data-act="link"]');if(b&&curSong())openLink(curSong())});
-$("#tIem").onclick=()=>{ensureCtx();S.settings.iem=!S.settings.iem;applyGlobalMix();saveMeta();renderTransport();toast(S.settings.iem?"Fones L/R: click e guia na esquerda; banda e pad na direita.":"Fones L/R desligado.")};
+$("#bStage").onclick=()=>Stage.open();
+$("#tIem").onclick=()=>{ensureCtx();S.settings.iem=!S.settings.iem;applyGlobalMix();saveMeta();renderTransport();renderArr();if(typeof Stage!=="undefined")Stage.sync();toast(S.settings.iem?"Fones L/R: esquerda = fone dos músicos, direita = público. Em cada faixa, o botão PA/🎧 escolhe a saída.":"Fones L/R desligado: todas as faixas nos dois lados.",6000)};
 $("#tPad").onclick=()=>{ensureCtx();S.settings.padOn=!S.settings.padOn;padFollow(true);saveMeta();renderTransport()};
 $("#tClick").onclick=()=>{const s=curSong();if(!s)return;ensureCtx();s.click.on=!s.click.on;if(!s.click.on)cancelClicks();saveSong(s);renderTransport();if(S.side==="cfg")renderSide()};
 $("#mstVol").oninput=e=>{S.settings.master=+e.target.value;applyGlobalMix();saveMeta()};
@@ -1386,8 +1394,8 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
   close(){this.isOpen=false;$("#stage").hidden=true;document.body.classList.remove("stage-on");try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}renderAll()},
   sync(){if(this.isOpen)this.render()},
   state(){const d=E.cur,s=curSong();const ci=d&&d.song?curSectionIdx(d):-1;
-    return[s&&s.id,s&&s.markers.length,s&&s.markers.map(m=>m.name).join(),ci,E.vamp,E.queued&&E.queued.idx,E.min?(E.min.entering?2:"1"+E.min.next):0,d&&d.playing,S.idx,S.settings.padOn,S.settings.padKey,this.pane,
-      s&&s.tracks.map(t=>(t.mute?1:0)+""+(t.solo?1:0)).join("")].join("|")},
+    return[s&&s.id,s&&s.markers.length,s&&s.markers.map(m=>m.name).join(),ci,E.vamp,E.queued&&E.queued.idx,E.min?(E.min.entering?2:"1"+E.min.next):0,d&&d.playing,S.idx,S.settings.padOn,S.settings.iem,S.settings.padKey,this.pane,
+      s&&s.tracks.map(t=>(t.mute?1:0)+""+(t.solo?1:0)+trackRoute(t)).join("")].join("|")},
   render(){if(!this.isOpen)return;const s=curSong(),d=E.cur;this.sig=this.state();
     const k=s?transposeKey(s.key,s.applied.semi):"—",bpm=s?+(s.bpm*s.applied.tempo/100).toFixed(1):"—";
     $("#sgKey").textContent=k;$("#sgBpm").textContent=bpm;$("#sgName").textContent=s?s.name:"Nenhuma música";
@@ -1409,7 +1417,7 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
     const fader=(id,v,col,label,dim)=>`<div class="fd${dim?" dim":""}" data-fd="${id}" style="--fc:${col}" role="slider" aria-label="Volume ${esc(label)}" aria-valuemin="0" aria-valuemax="125" aria-valuenow="${Math.round(v*100)}" tabindex="0"><i style="height:${Math.min(100,v/1.25*100)}%"></i></div>`;
     return`<div class="st-mix"><div class="ch mst"><span class="cn">Master</span>${fader("master",S.settings.master,"#f2f4f8","Master")}<div class="ms"><button data-act="clickt" class="${s.click.on?"on":""}" title="Click gerado pelo app">Click</button></div></div>`+
       s.tracks.map(t=>{const dim=t.mute||(anySolo&&!t.solo);const col=cv(KIND[t.kind||"other"].v);
-        return`<div class="ch"><span class="cn" title="${esc(t.name)}" style="color:${col}">${esc(t.name)}</span>${fader(t.id,t.vol,col,t.name,dim)}<div class="ms"><button class="m${t.mute?" on":""}" data-tid="${t.id}" data-f="mute">M</button><button class="s${t.solo?" on":""}" data-tid="${t.id}" data-f="solo">S</button></div></div>`}).join("")+`</div>`},
+        return`<div class="ch"><span class="cn" title="${esc(t.name)}" style="color:${col}">${esc(t.name)}</span>${fader(t.id,t.vol,col,t.name,dim)}<div class="ms"><button class="m${t.mute?" on":""}" data-tid="${t.id}" data-f="mute">M</button><button class="s${t.solo?" on":""}" data-tid="${t.id}" data-f="solo">S</button></div>${routeBtn(t)}</div>`}).join("")+`</div>`},
   setHTML(){const set=curSet();if(!set)return'<p class="st-empty">Sem repertório.</p>';
     return`<div class="st-set"><div class="st-sethd">${esc(set.name)}</div>${set.songIds.map((id,i)=>{const x=songById(id);if(!x)return"";
       return`<button class="ss${i===S.idx?" cur":""}" data-song="${i}"><span class="n">${i===S.idx&&E.cur&&E.cur.playing?"▶":i+1}</span><span class="t"><b>${esc(x.name)}</b><small>${esc(transposeKey(x.key,x.applied.semi))} · ${+(x.bpm*x.applied.tempo/100).toFixed(1)} BPM${x.artist?" · "+esc(x.artist):""}</small></span></button>`}).join("")||'<p class="st-empty">Repertório vazio.</p>'}</div>`},
@@ -1500,7 +1508,7 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
     if(a==="padauto"){S.settings.padKey=null;ensureCtx();padFollow(true);saveMeta();return this.render()}
     if(a==="org")return organizeSections(s);
     if(a==="clickt"&&s){ensureCtx();s.click.on=!s.click.on;if(!s.click.on)cancelClicks();saveSong(s);return this.render()}
-    if(b.dataset.tid&&s){const tr=s.tracks.find(x=>x.id===b.dataset.tid);if(!tr)return;tr[b.dataset.f]=!tr[b.dataset.f];saveSong(s,{local:true});applyTrackMix(E.cur);renderArr();return this.render()}}};
+    if(b.dataset.tid&&s){const tr=s.tracks.find(x=>x.id===b.dataset.tid);if(!tr)return;if(b.dataset.route)return cycleRoute(s,tr);tr[b.dataset.f]=!tr[b.dataset.f];saveSong(s,{local:true});applyTrackMix(E.cur);renderArr();return this.render()}}};
 $("#sgExit").onclick=()=>Stage.close();
 $("#sgPlay").onclick=()=>{ensureCtx();const d=E.cur;if(d&&d.playing)pause();else startPlay()};
 $("#sgStop").onclick=()=>{ensureCtx();stopToStart()};
