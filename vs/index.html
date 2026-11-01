@@ -2,644 +2,476 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>DDS MultiTrack</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="DDS MultiTrack: playback de multitracks para o louvor. Importe o pacote da música, toque com click, guia, pad e repertório sincronizado com a equipe.">
-<meta name="theme-color" content="#0a0c11">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MultiTrack">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="icons/logo.svg">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="preload" href="fonts/bricolage-grotesque-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/manrope-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DDS MultiTrack: o VS da sua igreja, grátis</title>
+<meta name="description" content="Playback de multitracks para o louvor. Importe o pacote ou só o MP3: o app encontra BPM, tom, partes e cifra. Modo palco, ministração, pad em camadas e equipe acompanhando ao vivo. Grátis para igrejas.">
+<meta name="theme-color" content="#0a0f1c">
+<meta property="og:title" content="DDS MultiTrack: o VS da sua igreja">
+<meta property="og:description" content="Importe a música, toque no culto, salte partes no tempo e ministre com o pad por baixo. Grátis para igrejas.">
+<meta property="og:image" content="https://www.ddsinovacao.com.br/vs/img/desktop.webp">
+<meta property="og:type" content="website">
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preload" href="app/fonts/bricolage-grotesque-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+/* links antigos de Sala (#sala-CODIGO) e o app instalado na tela inicial vão direto para o sistema */
+(function(){var h=location.hash||"";var sa=window.matchMedia&&matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  if(/^#sala-/i.test(h)||sa)location.replace("app/"+location.search+h)})();
+</script>
 <style>
-@font-face{font-family:"Bricolage Grotesque";src:url(fonts/bricolage-grotesque-latin-500-normal.woff2) format("woff2");font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:"Bricolage Grotesque";src:url(fonts/bricolage-grotesque-latin-600-normal.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
-@font-face{font-family:"Bricolage Grotesque";src:url(fonts/bricolage-grotesque-latin-700-normal.woff2) format("woff2");font-weight:700;font-style:normal;font-display:swap}
-@font-face{font-family:"Bricolage Grotesque";src:url(fonts/bricolage-grotesque-latin-800-normal.woff2) format("woff2");font-weight:800;font-style:normal;font-display:swap}
-@font-face{font-family:"Manrope";src:url(fonts/manrope-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"Manrope";src:url(fonts/manrope-latin-500-normal.woff2) format("woff2");font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:"Manrope";src:url(fonts/manrope-latin-600-normal.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
-@font-face{font-family:"Manrope";src:url(fonts/manrope-latin-700-normal.woff2) format("woff2");font-weight:700;font-style:normal;font-display:swap}
-@font-face{font-family:"JetBrains Mono";src:url(fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2");font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:"JetBrains Mono";src:url(fonts/jetbrains-mono-latin-600-normal.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
-/* Layout: palco escuro. Herói "tocando agora" no topo, trilho de seções, faixas alinhadas à esquerda e repertório/ajustes à direita; no celular vira abas com player fixo embaixo. */
+@font-face{font-family:"Bricolage Grotesque";src:url(app/fonts/bricolage-grotesque-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Bricolage Grotesque";src:url(app/fonts/bricolage-grotesque-latin-700-normal.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Bricolage Grotesque";src:url(app/fonts/bricolage-grotesque-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
+@font-face{font-family:"Manrope";src:url(app/fonts/manrope-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Manrope";src:url(app/fonts/manrope-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Manrope";src:url(app/fonts/manrope-latin-700-normal.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(app/fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+
+/* Palco à noite: cada parte da música tem a sua cor, como no app */
 :root{
-  --bg:#0a0c11; --surface:#11151d; --surface-2:#171c27; --surface-3:#1f2533; --line:#262d3c; --line-2:#323a4d;
-  --fg:#eef0f5; --muted:#8a93a6; --faint:#5b6478;
-  --accent:#ffb547; --accent-ink:#241603; --accent-soft:rgb(255 181 71 / .14);
-  --ok:#52d69a; --danger:#ff5c5c;
-  --k-click:#ff6b5b; --k-guide:#f4e25c; --k-drums:#41d6c3; --k-bass:#8c96ff; --k-gtr:#ff9a52; --k-keys:#5aaaff; --k-vox:#ff7cc8; --k-pad:#b58cff; --k-other:#9aa6bd;
-  --f-display:"Bricolage Grotesque","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
-  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
-  --r:14px; --r-sm:9px; --lane:50px; --ruler:36px; --head:270px; --chordrow:26px;
-  color-scheme:dark;
+  --palco:#0a0f1c; --cortina:#121a2c; --cortina-2:#1a2340; --linha:#263150;
+  --luz:#ffb547; --luz-ink:#241603;
+  --intro:#4fc3dc; --verso:#e3d34a; --pre:#f0a35e; --refrao:#ff5f7e; --ponte:#b48cff; --final:#3fd0a8;
+  --texto:#eef1f7; --neblina:#97a1b6;
+  --display:"Bricolage Grotesque","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  --corpo:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --gutter:clamp(16px,4vw,56px); --max:1240px;
 }
-@media (max-width:760px){:root{--lane:60px;--head:min(46vw,190px)}}
 *{box-sizing:border-box}
-[hidden]{display:none!important}
-html,body{min-height:100%}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--bg)}
-button,input,select{font:inherit;color:inherit}
-button{cursor:pointer;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--r-sm);padding:8px 12px;line-height:1.2;transition:background .15s,border-color .15s,transform .1s}
-button:hover{border-color:var(--line-2);background:var(--surface-3)}
-button:active{transform:scale(.97)}
-button:disabled{opacity:.4;cursor:default;transform:none}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
-.btn-primary:hover{background:#ffc366;border-color:#ffc366}
-.btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
-.btn-ghost:hover{color:var(--fg);background:var(--surface-2)}
-.btn-danger{border-color:rgb(255 92 92 / .5);color:var(--danger);background:transparent}
-.btn-danger.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
-input[type=text],input[type=number],input[type=email],select{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;min-width:0;width:100%}
-input[type=number]{font-family:var(--f-mono);font-size:14px}
-input[type=range]{accent-color:var(--accent);min-width:0}
-.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.muted{color:var(--muted)}
-.icon{width:20px;height:20px;fill:currentColor;flex:none}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--palco);color:var(--texto);font:400 17px/1.6 var(--corpo);overflow-x:hidden}
+img{max-width:100%;height:auto;display:block}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--luz);outline-offset:3px;border-radius:6px}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--gutter)}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.03em;line-height:.98;text-wrap:balance}
+p{margin:0}
+.btn{display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:16px 26px;font:700 17px/1 var(--corpo);text-decoration:none;cursor:pointer;border:0;transition:transform .15s,box-shadow .2s,background .2s}
+.btn svg{width:20px;height:20px}
+.btn-luz{background:var(--luz);color:var(--luz-ink);box-shadow:0 12px 40px -14px rgb(255 181 71 / .8)}
+.btn-luz:hover{transform:translateY(-2px);box-shadow:0 18px 50px -14px rgb(255 181 71 / .95)}
+.btn-linha{color:var(--texto);border:1px solid var(--linha);background:rgb(255 255 255 / .03)}
+.btn-linha:hover{border-color:var(--neblina)}
 
-/* Barra do app */
-.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  display:flex;align-items:center;gap:12px;padding-block:12px;border-bottom:1px solid var(--line);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
-.logo{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.01em}
-.logo img{width:34px;height:34px;display:block}
-.logo .wm{display:flex;flex-direction:column;line-height:1;gap:3px}
-.logo .wm span{font-weight:500;font-size:21px;letter-spacing:-.015em}.logo .wm b{font-weight:800;color:var(--accent)}
-.logo small{font-family:var(--f-mono);font-weight:500;font-size:9.5px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
-.acc{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 6px 6px 12px;background:var(--surface);font-size:13px;font-weight:600}
-.acc:has(> svg){padding:7px 14px 7px 10px}
-.avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--surface-3);font-weight:800;font-size:12px;flex:none}
-.avatar.big{width:44px;height:44px;font-size:18px;background:var(--accent);color:var(--accent-ink)}
-.sdot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:none}
-.sdot.ok{background:var(--ok)}.sdot.bad{background:var(--danger)}.sdot.run{background:var(--accent);animation:pulse 1.4s infinite}
-.mem{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center}
-.mem>span:nth-child(2){display:flex;flex-direction:column;min-width:0}.mem>span:nth-child(2) span{font-size:12px;overflow:hidden;text-overflow:ellipsis}
-.mem button{padding:4px 9px}
-.stack{display:flex;flex-direction:column;gap:10px}
-button.chip{cursor:pointer;font:inherit;font-size:13px}
-.logo .wm span,#bImport{white-space:nowrap}
-@media (max-width:420px){.hide-xs{display:none}#bImport{padding:8px 14px;font-size:18px;line-height:1}}
-input[type=password]{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;min-width:0;width:100%}
-.seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:3px}
-.seg2 button{border:0;background:transparent;font-weight:700;font-size:14px;color:var(--muted);border-radius:8px;padding:8px}.seg2 button.on{background:var(--surface-3);color:var(--fg)}
-.sala-btn{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:8px 14px;background:var(--surface);font-weight:700;font-size:13px;position:relative}
-.sala-btn.live{border-color:var(--ok);color:var(--ok)}.sala-btn.live::after{content:"";position:absolute;top:4px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.6s infinite}
-.sl-opt{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;background:var(--surface-2)}.sl-opt b{font-family:var(--f-display);font-size:18px}
-.sl-code{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px;border-radius:16px;background:var(--surface-2);text-align:center}
-.sl-code b{font-size:clamp(34px,9vw,48px);letter-spacing:.14em;color:var(--accent)}
-.sl-more summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 0}.sl-more[open] summary{margin-bottom:8px}
-button.big{padding:14px 18px;font-size:17px}
-.toprow{display:flex;align-items:flex-end;gap:18px}
-.chordbox{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 14px;border-radius:14px;background:rgb(255 255 255 / .05);border:1px solid var(--line);min-width:96px}
-.chordbox b{font-family:var(--f-display);font-weight:800;font-size:clamp(28px,3.4vw,40px);line-height:1;color:var(--accent)}
-.chordbox span:last-child{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-height:1em}
-.heads .chh{height:var(--chordrow);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 12px;background:var(--bg)}
-.chordedit{display:flex;flex-wrap:wrap;gap:6px;max-height:240px;overflow:auto;padding-right:4px}
-.chordedit label{display:flex;flex-direction:column;gap:2px;width:68px}.chordedit label span{font-size:10px;color:var(--faint)}
-.chordedit input{padding:5px 6px;font-family:var(--f-mono);font-weight:600;font-size:14px;text-align:center}
-.dds-ad{margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 28px;align-items:center;padding:22px 24px;border-radius:calc(var(--r) + 4px);border:1px solid var(--line);
-  background:radial-gradient(90% 160% at 0% 0%,rgb(90 170 255 / .12),transparent 60%),var(--surface)}
-.dds-ad h2{margin:4px 0;font-family:var(--f-display);font-size:clamp(22px,2.6vw,30px);font-weight:800;letter-spacing:-.02em}
-.dds-ad p{margin:0;color:var(--muted);max-width:62ch}
-.btn-link{color:var(--fg);font-weight:700;text-decoration:none;padding:9px 6px}.btn-link:hover{color:var(--accent)}
-@media (max-width:760px){.dds-ad{grid-template-columns:1fr}}
-.foot{display:flex;justify-content:space-between;gap:8px 20px;flex-wrap:wrap;padding-block:20px 8px;margin-top:18px;border-top:1px solid var(--line);font-size:13px}
-.foot a{color:var(--fg);font-weight:700;text-decoration:none}.foot a:hover{color:var(--accent)}
-.follow{position:fixed;inset:0;z-index:45;background:var(--bg);overflow:auto;display:flex;flex-direction:column;
-  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.fw-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding-block:14px;background:var(--bg);border-bottom:1px solid var(--line);flex-wrap:wrap}
-.fw-top .grow{flex:1}.fw-top b{font-family:var(--f-display);font-size:18px}
-.live-dot{width:10px;height:10px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 0 rgb(255 92 92 / .6);animation:pulse 1.6s infinite}
-.fw-body{display:flex;flex-direction:column;gap:16px;padding-top:16px;max-width:980px;width:100%;margin:0 auto}
-.fw-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.fw-head h2{margin:0;font-family:var(--f-display);font-size:clamp(30px,6vw,56px);font-weight:800;line-height:1;letter-spacing:-.02em}
-.fw-status{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}.fw-status.ok{color:var(--ok)}.fw-status.bad{color:var(--danger)}
-.fw-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px}
-@media (max-width:760px){.fw-grid{grid-template-columns:1fr 1fr}.fw-sec{grid-column:1 / -1}}
-.fw-card{display:flex;flex-direction:column;gap:6px;padding:18px;border-radius:18px;background:var(--surface);border:1px solid var(--line);min-width:0}
-.fw-card b{font-family:var(--f-display);font-weight:800;font-size:clamp(34px,7vw,64px);line-height:1;letter-spacing:-.02em;overflow-wrap:anywhere}
-.fw-sec b{color:var(--fg)}.fw-chord b{color:var(--accent)}.fw-bar b{font-family:var(--f-mono);font-size:clamp(28px,5vw,48px)}
-#fwSecNext.hot{color:var(--accent);font-weight:700}
-.fw-beats{display:flex;gap:6px}.fw-beats i{width:16px;height:16px;border-radius:5px;background:var(--surface-3)}.fw-beats i.on{background:var(--accent)}.fw-beats i.on.one{background:var(--k-click)}
-.fw-prog{position:relative;height:16px;border-radius:8px;background:var(--surface-2);overflow:hidden}
-.fw-prog .segs i{position:absolute;top:0;bottom:0;border-right:2px solid var(--bg);background:rgb(255 255 255 / .05)}.fw-prog .segs i:nth-child(odd){background:rgb(255 255 255 / .09)}
-#fwHead{position:absolute;top:0;bottom:0;width:3px;background:var(--accent);left:0}
-.fw-secs{display:flex;gap:6px;flex-wrap:wrap}.fw-secs span{padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-weight:700;font-size:14px;color:var(--muted)}
-.fw-secs span.on{border-color:var(--accent);color:var(--accent-ink);background:var(--accent)}
-.fw-rep{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;background:var(--surface)}.fw-rep ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
-.fw-rep li span{display:inline-block;margin-right:10px}.fw-rep li.on{color:var(--accent);font-weight:700}
-.fw-wait{display:flex;flex-direction:column;gap:8px;padding:40px 10px;text-align:center}.fw-wait b{font-family:var(--f-display);font-size:30px}
-body.following{overflow:hidden}
-.bless-btn{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:8px 14px;background:transparent;border-color:rgb(255 124 200 / .35);color:#ff9fd6;font-weight:700;font-size:13px}
-.bless-btn:hover{background:rgb(255 124 200 / .1);border-color:#ff9fd6}
-.welcome{margin-top:14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 14px 12px 16px;border-radius:14px;border:1px solid rgb(255 124 200 / .28);background:linear-gradient(90deg,rgb(255 124 200 / .1),rgb(255 181 71 / .06) 60%,transparent)}
-.welcome>svg{width:24px;height:24px;fill:#ff9fd6}
-.welcome p{margin:0;font-size:14px;color:var(--muted)}.welcome p b{color:var(--fg)}
-.welcome .btn-primary{white-space:nowrap}
-@media (max-width:640px){.welcome{grid-template-columns:auto minmax(0,1fr)}.welcome .row{grid-column:1 / -1}.welcome .row .btn-primary{flex:1}}
-.dialog.bless{width:min(560px,100%)}
-.pix{display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;align-items:center;background:var(--surface-2);border-radius:16px;padding:16px}
-.pix .qr{background:#fff;border-radius:12px;padding:8px;line-height:0}.pix .qr img{width:100%;height:auto}
-.pixinfo{display:flex;flex-direction:column;gap:6px;min-width:0}
-.pixkey{font-family:var(--f-mono);font-size:26px;font-weight:600;letter-spacing:-.01em}
-.pixinfo .row{margin-top:8px}
-@media (max-width:520px){.pix{grid-template-columns:1fr;justify-items:center;text-align:center}.pix .qr{width:220px}.pixinfo{align-items:center}.pixinfo .row{justify-content:center}}
-.verse{margin:0;font-family:var(--f-display);font-size:19px;font-weight:600;text-align:center;color:var(--fg)}.verse span{display:block;font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-top:4px}
-.authors{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px}
-.authors h3{margin:0;font-family:var(--f-display);font-size:20px}
-.wa{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;background:#25d366;color:#062b14;font-weight:700;text-decoration:none}
-.wa .icon{fill:#062b14}
-.blesscard{border:1px solid rgb(255 124 200 / .28);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(160deg,rgb(255 124 200 / .1),transparent 70%)}
-.blesscard b{font-family:var(--f-display);font-size:17px}
-.blesscard p{margin:0;font-size:13px;color:var(--muted)}
-@media (max-width:560px){.sala-btn span{display:none}.sala-btn{padding:8px}.stage-btn{padding:8px}.chordbox{min-width:76px;padding:6px 10px}#bBless{display:none}.logo .wm span{font-size:18px}.logo img{width:30px;height:30px}.appbar{gap:8px}#bImport{padding:8px 12px}.hide-sm,.acc-l{display:none}.acc{padding:5px}.acc:has(> svg){padding:8px}.logo small{display:none}}
-.appbar .grow{flex:1}
-.setpick{display:flex;align-items:center;gap:8px;min-width:0;max-width:280px}
-.setpick select{background:var(--surface);font-weight:600}
-@media (max-width:560px){.setpick{display:none}.logo small{display:none}}
+/* ---------- Trilho da música: navegação + playhead que anda com a rolagem ---------- */
+.trilho{position:fixed;top:0;left:0;right:0;z-index:50;background:rgb(10 15 28 / .82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgb(38 49 80 / .6)}
+.trilho .wrap{display:flex;align-items:center;gap:18px;height:64px}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;font:800 19px/1 var(--display);letter-spacing:-.02em;white-space:nowrap}
+.marca img{width:32px;height:32px;border-radius:8px}
+.marca b{color:var(--luz)}
+.partes{flex:1;display:flex;height:34px;position:relative;border-radius:8px;overflow:hidden;min-width:0}
+.partes a{position:relative;display:flex;align-items:center;padding:0 10px;text-decoration:none;font:700 13px/1 var(--display);color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);border-right:2px solid var(--palco);white-space:nowrap;overflow:hidden;transition:background .25s}
+.partes a:last-child{border-right:0}
+.partes a.on{background:color-mix(in srgb,var(--c) 30%,transparent);color:#fff}
+.partes .ph{position:absolute;top:0;bottom:0;width:2px;background:#ff4d5e;left:0;pointer-events:none;box-shadow:0 0 12px #ff4d5e}
+.trilho .btn{padding:11px 18px;font-size:15px}
+.trilho .mini{display:none;font:600 13px/1 var(--corpo);color:var(--neblina);white-space:nowrap}
+.trilho .mini b{color:var(--c,var(--texto))}
+.prog{display:none;position:absolute;left:0;bottom:-1px;height:3px;background:linear-gradient(90deg,var(--intro),var(--verso),var(--pre),var(--refrao),var(--ponte),var(--final));transform-origin:left;transform:scaleX(0)}
 
-/* Herói */
-.hero{position:relative;margin-top:16px;border-radius:calc(var(--r) + 4px);border:1px solid var(--line);overflow:hidden;
-  background:radial-gradient(120% 140% at 100% 0%,rgb(255 181 71 / .16),transparent 55%),radial-gradient(90% 120% at 0% 100%,rgb(90 170 255 / .08),transparent 60%),var(--surface);
-  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px 32px;padding:24px 28px;align-items:end}
-.hero-main{min-width:0;display:flex;flex-direction:column;gap:8px}
-.hero h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(34px,5.4vw,68px);line-height:.95;letter-spacing:-.025em;text-wrap:balance;overflow-wrap:anywhere}
-.hero .artist{font-size:18px;color:var(--muted);font-weight:600}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.chip{display:inline-flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:999px;background:rgb(255 255 255 / .05);border:1px solid var(--line);font-size:13px;color:var(--muted)}
-.chip b{font-family:var(--f-mono);color:var(--fg);font-weight:600;font-size:14px}
-.chip.warn{border-color:var(--accent);color:var(--accent)}
-.live{display:inline-flex;align-items:center;gap:8px}
-.live i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
-.live.on i{background:var(--ok);box-shadow:0 0 0 0 rgb(82 214 154 / .6);animation:pulse 1.6s infinite}
-@keyframes pulse{70%{box-shadow:0 0 0 10px rgb(82 214 154 / 0)}100%{box-shadow:0 0 0 0 rgb(82 214 154 / 0)}}
-.hero-side{display:flex;flex-direction:column;align-items:flex-end;gap:14px}
-.timecode{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:clamp(30px,4vw,46px);font-weight:600;letter-spacing:-.02em;line-height:1}
-.timecode small{font-size:.45em;color:var(--muted);font-weight:500;margin-left:6px}
-.barbeat{display:flex;gap:6px;align-items:center}
-.barbeat .bb{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
-.beats{display:flex;gap:5px}
-.beats i{width:10px;height:10px;border-radius:3px;background:var(--surface-3);transition:background .05s}
-.beats i.on{background:var(--accent)}
-.beats i.on.one{background:var(--k-click)}
-.transport{display:flex;align-items:center;gap:10px}
-.tbtn{width:48px;height:48px;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--surface-2)}
-.tbtn.play{width:72px;height:72px;background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 10px 30px -10px rgb(255 181 71 / .55)}
-.tbtn.play:hover{background:#ffc366}
-.tbtn.play .icon{width:30px;height:30px}
-.quick{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.tog{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;background:var(--surface-2)}
-.tog i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
-.tog.on{border-color:var(--accent);background:var(--accent-soft)}
-.tog.on i{background:var(--accent)}
-@media (max-width:760px){.hero{grid-template-columns:1fr;padding:20px}.hero-side{align-items:flex-start}.hero-side .transport{display:none}.quick{justify-content:flex-start}}
-@media (max-width:560px){
-  .hero{margin-top:10px;padding:14px 16px;gap:10px}
-  .hero-main{gap:4px}.hero .eyebrow{font-size:10px}
-  .hero h1{font-size:clamp(22px,6.6vw,28px);line-height:1.05;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .hero .artist{font-size:14px}
-  .chips{margin-top:4px;gap:5px;flex-wrap:nowrap;overflow:hidden}
-  .chip{padding:3px 9px;font-size:11px;gap:4px;flex:none}.chip b{font-size:12px}
-  .hero-side{width:100%;gap:8px}
-  .toprow{display:flex;align-items:center;gap:12px;width:100%}
-  .chordbox{flex-direction:row;align-items:baseline;gap:8px;padding:6px 12px;min-width:0;border-radius:12px}
-  .chordbox .eyebrow{display:none}.chordbox b{font-size:24px}.chordbox span:last-child{font-size:11px}
-  .timecode{font-size:26px;margin-left:auto}
-  .barbeat .bb{font-size:11px}.beats i{width:8px;height:8px}
-  .quick{gap:5px;flex-wrap:nowrap;width:100%}.tog{padding:5px 10px;font-size:12px;flex:1;justify-content:center}
+/* ---------- Intro (hero) ---------- */
+.intro{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;padding:120px 0 0;overflow:hidden}
+#lanes{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.intro::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgb(10 15 28 / .35) 0%,rgb(10 15 28 / .55) 40%,var(--palco) 92%);pointer-events:none}
+.intro .wrap{position:relative;z-index:2;width:100%}
+.intro h1{font-size:clamp(44px,7.6vw,116px);font-weight:800}
+.intro h1 span{display:block}
+.intro .sub{margin-top:28px;max-width:58ch;font-size:clamp(17px,1.6vw,20px);color:#c9d0de}
+.intro .acoes{margin-top:36px;display:flex;gap:12px;flex-wrap:wrap}
+.intro .gratis{margin-top:18px;color:var(--neblina);font-size:15px}
+.intro .tela{position:relative;z-index:2;margin:72px auto 0;width:min(1180px,calc(100% - 2*var(--gutter)));border-radius:18px 18px 0 0;overflow:hidden;border:1px solid var(--linha);border-bottom:0;box-shadow:0 -30px 120px -40px rgb(255 181 71 / .35);transform-origin:50% 100%}
+.intro .tela img{width:100%;height:auto;aspect-ratio:1800/1125;object-fit:cover;object-position:top}
+.chip-ao-vivo{position:absolute;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:14px;background:rgb(18 26 44 / .92);border:1px solid var(--linha);backdrop-filter:blur(8px);font-weight:600;font-size:14px;box-shadow:0 20px 50px -20px #000}
+.chip-ao-vivo b{font:800 26px/1 var(--display);color:var(--luz)}
+.chip-ao-vivo small{display:block;color:var(--neblina);font-size:12px;font-weight:600}
+.chip-a{right:3%;top:30%}.chip-b{left:3%;top:52%}
+
+/* ---------- seções com a faixa de cor da parte na esquerda ---------- */
+.parte{position:relative;padding:clamp(90px,12vw,160px) 0}
+.parte::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c);opacity:.85}
+.rot{display:inline-flex;align-items:center;gap:10px;font:700 15px/1 var(--display);color:var(--c);margin-bottom:22px}
+.rot i{width:28px;height:10px;border-radius:3px;background:var(--c)}
+.parte h2{font-size:clamp(36px,5.6vw,76px);font-weight:800;max-width:16ch}
+.parte .lead{margin-top:22px;max-width:60ch;color:#c4cbda;font-size:clamp(17px,1.4vw,19px)}
+
+/* Verso: situações */
+.verso .grade{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(32px,6vw,90px);align-items:center}
+.casos{list-style:none;margin:40px 0 0;padding:0;display:flex;flex-direction:column}
+.casos li{display:grid;grid-template-columns:10px minmax(0,1fr);gap:20px;padding:20px 0;border-top:1px solid var(--linha)}
+.casos li:last-child{border-bottom:1px solid var(--linha)}
+.casos li::before{content:"";border-radius:4px;background:var(--k)}
+.casos b{display:block;font:700 21px/1.2 var(--display);letter-spacing:-.01em}
+.casos span{display:block;margin-top:6px;color:var(--neblina);font-size:16px}
+.celular{position:relative;justify-self:center;width:min(330px,80vw);border-radius:44px;padding:12px;background:linear-gradient(160deg,#2a3352,#121a2c);box-shadow:0 40px 90px -30px #000,inset 0 0 0 1px #3a4568}
+.celular img{border-radius:34px;width:100%}
+
+/* Pré-refrão: passos (é uma sequência de verdade) */
+.passos{margin-top:56px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(20px,3vw,40px);counter-reset:p}
+.passo{counter-increment:p;position:relative;padding-top:64px}
+.passo::before{content:counter(p);position:absolute;top:0;left:0;font:800 64px/1 var(--display);color:var(--c);opacity:.95}
+.passo h3{font-size:clamp(24px,2.4vw,30px);font-weight:700;letter-spacing:-.02em}
+.passo p{margin-top:12px;color:var(--neblina)}
+.passo .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+.passo .tags span{font:500 13px/1 var(--mono);padding:7px 10px;border-radius:8px;background:var(--cortina);border:1px solid var(--linha);color:#d6dbe6}
+.analise{margin-top:64px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(28px,5vw,72px);align-items:center}
+.analise .quadro{border-radius:18px;overflow:hidden;border:1px solid var(--linha);box-shadow:0 30px 80px -30px #000;max-width:460px}
+.analise ul{margin:22px 0 0;padding:0;list-style:none;display:grid;gap:14px}
+.analise li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;align-items:baseline}
+.analise li b{font:500 15px/1 var(--mono);color:var(--luz)}
+.analise li span{color:#c4cbda}
+
+/* Refrão: vitrine fixa que troca de tela conforme a rolagem */
+.vitrine{margin-top:64px;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(28px,5vw,72px)}
+.recursos{display:flex;flex-direction:column}
+.rec{min-height:72vh;display:flex;flex-direction:column;justify-content:center;padding:24px 0;opacity:.32;transition:opacity .4s}
+.rec.on{opacity:1}
+.rec .rot{margin-bottom:14px}
+.rec h3{font-size:clamp(30px,3.6vw,48px);font-weight:800;letter-spacing:-.03em}
+.rec p{margin-top:16px;color:#c4cbda;max-width:46ch}
+.rec ul{margin:16px 0 0;padding-left:20px;color:var(--neblina)}
+.rec ul li{margin:6px 0}
+.rec .tela-m{display:none;margin-top:24px;border-radius:14px;overflow:hidden;border:1px solid var(--linha)}
+.palco-fixo{position:sticky;top:96px;height:calc(100vh - 140px);display:flex;align-items:center}
+.tablet{position:relative;width:100%;aspect-ratio:1500/1048;border-radius:26px;padding:12px;background:linear-gradient(160deg,#2a3352,#121a2c);box-shadow:0 50px 120px -40px #000,inset 0 0 0 1px #3a4568}
+.tablet .tl{position:absolute;inset:12px;border-radius:16px;overflow:hidden;background:#07090d}
+.tablet img{position:absolute;inset:0;width:100%;height:100%!important;object-fit:cover;opacity:0;transform:scale(1.02);transition:opacity .55s ease,transform .8s ease}
+.tablet img.on{opacity:1;transform:none}
+.sala-ilus{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .55s;background:radial-gradient(80% 80% at 50% 30%,#1a2340,#07090d)}
+.sala-ilus.on{opacity:1}
+.sala-ilus .roda{display:flex;align-items:center;gap:clamp(10px,3vw,34px)}
+.disp{width:clamp(70px,9vw,120px);aspect-ratio:9/17;border-radius:16px;background:#121a2c;border:1px solid #3a4568;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:8px;text-align:center}
+.disp.lider{width:clamp(110px,15vw,200px);aspect-ratio:4/3}
+.disp b{font:800 clamp(14px,1.6vw,22px)/1 var(--display);color:var(--refrao)}
+.disp small{font-size:clamp(9px,.9vw,12px);color:var(--neblina)}
+.disp i{width:60%;height:4px;border-radius:2px;background:#263150;overflow:hidden;position:relative}
+.disp i::after{content:"";position:absolute;inset:0;background:var(--luz);transform-origin:left;animation:barra 3.2s linear infinite}
+@keyframes barra{from{transform:scaleX(.05)}to{transform:scaleX(1)}}
+.onda{width:clamp(26px,4vw,60px);height:2px;background:repeating-linear-gradient(90deg,var(--luz) 0 6px,transparent 6px 12px);animation:fluxo 1s linear infinite;opacity:.8}
+@keyframes fluxo{to{background-position:12px 0}}
+
+/* Ponte: demonstração da ministração */
+.ponte{background:radial-gradient(70% 60% at 85% 20%,rgb(180 140 255 / .13),transparent 70%)}
+.demo{margin-top:56px;border-radius:22px;background:var(--cortina);border:1px solid var(--linha);padding:clamp(18px,3vw,32px);display:grid;gap:22px}
+.demo-topo{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.demo-topo .estado{flex:1;min-width:220px;font-weight:600;color:#d6dbe6}
+.demo-topo .estado small{display:block;color:var(--neblina);font-weight:500;font-size:14px;margin-top:2px}
+.bt-min{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:14px;border:1px solid var(--linha);background:var(--cortina-2);color:var(--texto);font:700 16px/1 var(--corpo);cursor:pointer}
+.bt-min svg{width:20px;height:20px}
+.bt-min.on{background:#3a1f4f;border-color:var(--ponte);box-shadow:0 0 0 6px rgb(180 140 255 / .12)}
+.pistas{display:grid;gap:8px}
+.pista{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;transition:opacity .9s ease}
+.pista span{font:700 13px/1 var(--display);color:var(--k)}
+.pista .barras{height:34px;display:flex;align-items:center;gap:3px;overflow:hidden}
+.pista .barras i{flex:1;min-width:2px;border-radius:2px;background:var(--k);height:30%;animation:pulso 1.3s ease-in-out infinite}
+.demo.min .pista:not(.fica){opacity:.12}
+@keyframes pulso{50%{height:var(--h,80%)}}
+.blocos{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.blocos button{padding:14px 8px;border-radius:12px;border:1px solid color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 12%,#121a2c);color:var(--texto);font:800 18px/1 var(--display);cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.blocos button small{font:600 12px/1 var(--corpo);color:var(--neblina)}
+.blocos button.cur{background:color-mix(in srgb,var(--c) 34%,#121a2c);border-color:var(--c)}
+.blocos button.espera{border-style:dashed;border-color:#fff}
+.passos-min{margin-top:44px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(18px,3vw,36px);counter-reset:m}
+.passos-min li{list-style:none;counter-increment:m;color:#c4cbda}
+.passos-min li::before{content:counter(m);display:block;font:800 40px/1 var(--display);color:var(--ponte);margin-bottom:10px}
+.passos-min{padding:0}
+
+/* Final */
+.final{text-align:left}
+.final .grande{font-size:clamp(48px,8.6vw,128px);font-weight:800;max-width:12ch}
+.final .acoes{margin-top:40px;display:flex;gap:12px;flex-wrap:wrap}
+.selos{margin-top:56px;display:flex;flex-wrap:wrap;gap:10px 28px;color:#c4cbda;font-weight:600}
+.selos span{display:inline-flex;align-items:center;gap:8px}
+.selos span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--final)}
+.faq{margin-top:96px;display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);gap:clamp(24px,5vw,72px)}
+.faq h3{font-size:clamp(28px,3vw,40px);font-weight:800}
+details{border-top:1px solid var(--linha);padding:18px 0}
+details:last-child{border-bottom:1px solid var(--linha)}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px;font:700 19px/1.3 var(--display);letter-spacing:-.01em}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:600 24px/1 var(--corpo);color:var(--luz);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{margin-top:12px;color:var(--neblina);max-width:62ch}
+.dds{margin-top:110px;border-radius:24px;padding:clamp(24px,4vw,48px);background:linear-gradient(120deg,#13203a,#1b1530);border:1px solid var(--linha);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center}
+.dds h3{font-size:clamp(26px,3vw,38px);font-weight:800}
+.dds p{margin-top:10px;color:#c4cbda;max-width:56ch}
+.dds .acoes{display:flex;gap:10px;flex-wrap:wrap}
+.wa{background:#25d366;color:#04230f}
+footer{padding:40px 0 60px;color:var(--neblina);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer a{color:var(--texto)}
+
+/* entrada da página: uma só sequência, no carregamento */
+.intro h1 span,.intro .sub,.intro .acoes,.intro .gratis{opacity:0;transform:translateY(24px);animation:sobe .9s cubic-bezier(.2,.7,.2,1) forwards}
+.intro h1 span:nth-child(2){animation-delay:.12s}.intro .sub{animation-delay:.3s}.intro .acoes{animation-delay:.42s}.intro .gratis{animation-delay:.5s}
+.intro .tela{opacity:0;animation:tela 1.2s .55s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes sobe{to{opacity:1;transform:none}}
+@keyframes tela{from{opacity:0;transform:translateY(60px) perspective(1600px) rotateX(10deg)}to{opacity:1;transform:none}}
+
+@media (max-width:980px){
+  .verso .grade,.analise,.faq,.dds{grid-template-columns:1fr}
+  .passos{grid-template-columns:1fr}
+  .vitrine{grid-template-columns:1fr}
+  .palco-fixo{display:none}
+  .rec{min-height:0;opacity:1;padding:36px 0;border-top:1px solid var(--linha)}
+  .rec .tela-m{display:block}
+  .passos-min{grid-template-columns:1fr}
+  .blocos{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
-
-/* Seções */
-.secrail{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px;align-items:stretch}
-.secrail .hint{grid-column:1 / -1}
-.sec{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 12px;border-radius:12px;background:var(--surface);text-align:left;position:relative}
-.sec .nm{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.sec .sub{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
-.sec.cur{border-color:var(--fg);background:var(--surface-2)}
-.sec.cur::after{content:"";position:absolute;left:14px;right:14px;bottom:5px;height:2px;border-radius:2px;background:var(--fg)}
-.sec.queued{border-color:var(--accent);border-style:dashed}
-.sec.vamp{border-color:var(--accent);background:var(--accent-soft)}
-.sec.vamp .sub{color:var(--accent)}
-.vampbtn{flex:none;border-radius:12px;padding:10px 16px;font-weight:700;display:flex;align-items:center;gap:8px}
-.vampbtn.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.secrail .hint{color:var(--muted);font-size:14px;padding:10px 4px}
-.vampbtn.org{background:var(--accent-soft);border-color:var(--accent);color:var(--fg,#fff)}
-.vampbtn.ghost{background:transparent;opacity:.8}
-.sec.edit{gap:4px;cursor:default}.sec.edit select{font-family:var(--f-display);font-weight:700;font-size:15px;padding:6px 8px;width:100%;min-width:0}
-.secrail .vampbtn{justify-content:center;min-width:0}.secrail .vampbtn{white-space:nowrap;padding:8px 12px;font-size:13px}
-@media (max-width:560px){
-  .secrail{margin-top:10px;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-  .sec{padding:6px 9px;border-radius:10px}.sec .nm{font-size:13px}.sec .sub{font-size:10px}.sec.cur::after{left:9px;right:9px;bottom:3px}
-  .secrail .vampbtn{padding:6px 8px;font-size:12px;border-radius:10px}.secrail .vampbtn .icon{width:14px;height:14px}
-  .sec.edit{padding:5px}.sec.edit select{font-size:13px!important;padding:5px 4px;letter-spacing:-.02em}.sec.edit .sub{padding-left:4px}
-}
-
-/* Abas (celular) */
-.mtabs{display:none}
-@media (max-width:760px){.mtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
-  .mtabs button{border:0;background:transparent;font-weight:700;font-size:14px;color:var(--muted);border-radius:9px}
-  .mtabs button.on{background:var(--surface-3);color:var(--fg)}}
-
-/* Área de trabalho */
-.work{display:grid;grid-template-columns:minmax(0,1fr) 352px;gap:16px;margin-top:16px;align-items:start}
-@media (max-width:1100px){.work{grid-template-columns:minmax(0,1fr)}}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
-.panel-h{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.panel-h h2{margin:0;font-family:var(--f-display);font-size:18px;font-weight:700;letter-spacing:-.01em}
-.panel-h .grow{flex:1}
-.master{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
-.master input{width:120px}
-@media (max-width:760px){body[data-tab="set"] .arr,body[data-tab="cfg"] .arr,body[data-tab="tracks"] .side{display:none}}
-
-/* Faixas */
-.arr-body{display:grid;grid-template-columns:var(--head) minmax(0,1fr)}
-.heads{border-right:1px solid var(--line)}
-.heads .rs{height:var(--ruler);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 12px}
-.lh{height:var(--lane);display:grid;grid-template-columns:4px minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:0 10px 0 0;border-bottom:1px solid var(--line);position:relative}
-.lh::before{content:"";grid-row:1 / 3;align-self:stretch;background:var(--kc);border-radius:0 3px 3px 0}
-.lh .nm{font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.01em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1}
-.lh .kd{font-size:11px;color:var(--muted);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lh .ms{grid-row:1 / 3;grid-column:3;display:flex;gap:4px;align-items:center}
-.lh .ms button{width:30px;height:28px;padding:0;font-weight:800;font-size:12px;border-radius:7px}
-.ms button.r{width:auto!important;min-width:34px;padding:0 6px!important;font-size:11px!important;white-space:nowrap}
-.ms button.r-fone{background:#0f3b47;border-color:#16c7f0;color:#bff3ff}.ms button.r-both{background:var(--accent-soft);border-color:var(--accent)}
-.ms button.r.off{opacity:.45}
-.st-mix .ch{grid-template-rows:auto minmax(0,1fr) auto auto!important}.st-mix .ch>button.r{height:30px;border-radius:8px;font-weight:800;font-size:12px;padding:0;min-width:0}
-.st-mix .ch>button.r-fone{background:#0f3b47;border-color:#16c7f0;color:#bff3ff}.st-mix .ch>button.r-both{background:var(--accent-soft);border-color:var(--accent)}.st-mix .ch>button.r.off{opacity:.45}
-.stage-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-weight:700;background:linear-gradient(135deg,#3a1f4f,#1d2a4a);border:1px solid #b48cff;color:#fff;box-shadow:0 0 0 0 rgb(180 140 255 / .4);animation:stglow 3s 2}
-.stage-btn .icon{width:20px;height:20px}
-@keyframes stglow{50%{box-shadow:0 0 0 6px rgb(180 140 255 / .15)}}
-.lh .ms button.m.on{background:var(--danger);border-color:var(--danger);color:#fff}
-.lh .ms button.s.on{background:var(--k-guide);border-color:var(--k-guide);color:#1d1a02}
-.lh input[type=range]{grid-column:2;width:100%;height:16px;accent-color:var(--kc)}
-.lh .meta{grid-column:2;display:flex;flex-direction:column;gap:2px;min-width:0;padding-top:6px}
-.lh.dim .nm,.lh.dim .kd{opacity:.4}
 @media (max-width:760px){
-  .lh{grid-template-columns:4px minmax(0,1fr) auto;grid-template-rows:auto auto;row-gap:5px;column-gap:8px;padding:0 6px 0 0;align-content:center}
-  .lh .meta{grid-column:2 / 4;grid-row:1;padding-top:0}
-  .lh .nm{font-size:13px;text-transform:none;letter-spacing:0;white-space:normal;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
-  .lh .kd{display:none}
-  .lh input[type=range]{grid-column:2;grid-row:2;height:14px}
-  .lh .ms{grid-column:3;grid-row:2;gap:3px}.lh .ms button{width:26px;height:24px;font-size:11px;border-radius:6px}
-  input,select,textarea{font-size:16px!important}
+  .partes{display:none}.trilho .mini{display:block;flex:1;overflow:hidden;text-overflow:ellipsis}.prog{display:block}
+  .trilho .wrap{height:58px;gap:12px}.marca span{display:none}
+  .chip-ao-vivo{display:none}
+  .intro{padding-top:100px}.intro .tela{margin-top:52px;border-radius:12px 12px 0 0}
+  .pista{grid-template-columns:70px minmax(0,1fr)}
 }
-@media (min-width:761px){.lh{grid-template-columns:4px minmax(0,1fr) 72px auto;grid-template-rows:1fr}.lh::before{grid-row:1}.lh .meta{grid-column:2;grid-row:1;padding-top:0}.lh input[type=range]{grid-column:3;grid-row:1;width:72px}.lh .ms{grid-column:4;grid-row:1}}
-.canvas-wrap{position:relative;min-width:0}
-#arr{display:block;width:100%;touch-action:none;cursor:pointer}
-.empty-arr{padding:40px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:14px;align-items:center}
-.empty-arr h3{margin:0;font-family:var(--f-display);font-size:24px;color:var(--fg)}
-
-/* Painel lateral */
-.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);max-height:calc(100vh - 96px);display:flex;flex-direction:column}
-@media (max-width:1100px){.side{position:static;max-height:none}}
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:3px;margin:12px 12px 0}
-.seg button{border:0;background:transparent;font-weight:700;font-size:13px;color:var(--muted);border-radius:8px;padding:7px}
-.seg button.on{background:var(--surface-3);color:var(--fg)}
-@media (max-width:760px){.seg{display:none}}
-.side-body{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:14px}
-.group{display:flex;flex-direction:column;gap:10px}
-.group+.group{border-top:1px solid var(--line);padding-top:14px}
-.group>h3{margin:0;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px}
-.group>h3 .grow{flex:1}
-.field{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;align-items:center;font-size:14px}
-.field>span{color:var(--muted)}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.row>*{min-width:0}
-.queue{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.qi{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border-radius:12px;background:var(--surface-2);border:1px solid transparent;cursor:pointer}
-.qi:hover{border-color:var(--line-2)}
-.qi.cur{border-color:var(--accent);background:linear-gradient(90deg,var(--accent-soft),var(--surface-2) 70%)}
-.qi .n{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:center}
-.qi.cur .n{color:var(--accent)}
-.qi .t{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.qi .s{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.qi .acts{display:flex;gap:2px}
-.qi .acts button{width:30px;height:30px;padding:0;background:transparent;border-color:transparent;color:var(--muted);font-size:15px}
-.qi .acts button:hover{color:var(--fg);background:var(--surface-3)}
-.tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:5px;border:1px solid var(--line-2);color:var(--muted)}
-.tag.next{border-color:var(--accent);color:var(--accent)}
-.tag.ready{border-color:var(--ok);color:var(--ok)}
-.eq{display:inline-flex;gap:2px;align-items:flex-end;height:12px}
-.eq i{width:3px;background:var(--accent);border-radius:1px;height:40%;animation:eq .9s ease-in-out infinite}
-.eq i:nth-child(2){animation-delay:.15s}.eq i:nth-child(3){animation-delay:.3s}
-@keyframes eq{50%{height:100%}}
-.keyshift{display:flex;align-items:center;gap:8px}
-.keyshift button{width:38px;height:38px;padding:0;font-size:18px;font-weight:700}
-.keyshift output{flex:1;text-align:center;font-family:var(--f-display);font-weight:800;font-size:26px}
-.keyshift output small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);font-weight:500}
-.callout{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r-sm);padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
-.mk{display:grid;grid-template-columns:minmax(0,1fr) 74px 32px;gap:6px;align-items:center}
-.mk .mono{font-size:12px;color:var(--muted);text-align:right}
-.mk button{width:32px;height:34px;padding:0}
-.tk{display:grid;grid-template-columns:10px minmax(0,1fr) 120px;gap:8px;align-items:center}
-.tk i{width:10px;height:10px;border-radius:3px;background:var(--kc)}
-.help{color:var(--muted);font-size:13px}
-.help kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line-2);border-radius:4px;padding:1px 5px;background:var(--surface-2)}
-
-/* Player fixo no celular */
-.minibar{display:none}
-@media (max-width:760px){
-  body{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
-  .minibar{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:35;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;
-    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
-    background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line)}
-  .minibar .mt{min-width:0}.minibar .mt b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--f-display);font-size:17px}
-  .minibar .prog{height:3px;background:var(--surface-3);border-radius:2px;margin-top:6px;overflow:hidden}.minibar .prog i{display:block;height:100%;background:var(--accent);width:0}
-  .minibar .transport{gap:8px}.minibar .tbtn{width:44px;height:44px}.minibar .tbtn.play{width:58px;height:58px}}
-
-/* Importação */
-.overlay{position:fixed;inset:0;z-index:50;background:rgb(4 6 10 / .76);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;
-  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.dialog{width:min(640px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--surface);border:1px solid var(--line-2);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px;box-shadow:0 30px 80px -20px rgb(0 0 0 / .7)}
-.dialog h2{margin:0;font-family:var(--f-display);font-size:28px;font-weight:800;letter-spacing:-.02em}
-.dialog .x{position:sticky;top:0;align-self:flex-end;margin-bottom:-44px}
-.drop{border:2px dashed var(--line-2);border-radius:16px;padding:34px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
-.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
-.drop svg{width:44px;height:44px;fill:none;stroke:var(--accent);stroke-width:1.6}
-.drop b{font-family:var(--f-display);font-size:20px}
-.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-.steps li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:15px}
-.steps .st{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2)}
-.steps li.run .st{border-color:var(--accent);border-top-color:transparent;animation:spin .8s linear infinite}
-.steps li.ok .st{border-color:var(--ok);background:var(--ok);position:relative}
-.steps li.ok .st::after{content:"";position:absolute;left:4px;top:1px;width:5px;height:9px;border:solid var(--bg);border-width:0 2px 2px 0;transform:rotate(45deg)}
-.steps li.warn .st{border-color:var(--accent);background:var(--accent)}
-.steps .rs{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:right}
-.steps li.ok .rs{color:var(--fg)}
-@keyframes spin{to{transform:rotate(360deg)}}
-.found{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.found div{background:var(--surface-2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
-.found b{font-family:var(--f-display);font-size:22px;font-weight:800}
-.found span{font-size:11px;color:var(--muted);font-family:var(--f-mono);letter-spacing:.06em;text-transform:uppercase}
-@media (max-width:560px){.found{grid-template-columns:repeat(2,minmax(0,1fr))}.field{grid-template-columns:96px minmax(0,1fr)}}
-.trklist{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto;padding-right:4px}
-.busy{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:60;width:min(380px,calc(100% - 32px));background:var(--surface-2);border:1px solid var(--accent);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 20px 50px -20px rgb(0 0 0 / .8)}
-@media (max-width:760px){.busy{bottom:calc(120px + env(safe-area-inset-bottom,0px))}}
-.busy .bar{height:4px;border-radius:2px;background:var(--surface-3);overflow:hidden}.busy .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
-.toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(80px + env(safe-area-inset-top,0px));z-index:61;max-width:min(380px,calc(100% - 32px));background:var(--surface-3);border:1px solid var(--line-2);border-radius:12px;padding:12px 14px;font-size:14px;box-shadow:0 20px 50px -20px rgb(0 0 0 / .8)}
-
-/* Modo palco */
-.stage{position:fixed;inset:0;z-index:60;background:#07090d;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(110px,30vh) minmax(0,1fr);gap:10px;
-  padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
-body.stage-on{overflow:hidden}body.stage-on .minibar{display:none}
-.st-top{display:flex;align-items:stretch;gap:10px;min-width:0}
-.st-top button{border-radius:12px;background:var(--surface-2);border:1px solid transparent;display:grid;place-items:center;padding:0 14px;min-height:54px;color:var(--fg,#fff)}
-.st-top .icon{width:24px;height:24px}
-.st-tr{display:flex;gap:8px}.st-tr button{width:64px}
-.st-tr .play{background:#f2f4f8;color:#0a0c11;width:84px}
-.st-name{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 4px}
-.st-name b{font-family:var(--f-display);font-weight:800;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.st-name small{color:var(--accent);font-size:12px;font-weight:600;min-height:1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.st-tools{display:flex;gap:8px;align-items:stretch}
-.st-tools button{display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px}
-.st-tools button.on{background:var(--accent-soft);border-color:var(--accent)}
-.st-tools button.min.on{background:#3a1f4f;border-color:#b48cff;animation:minpulse 1.6s infinite}
-@keyframes minpulse{50%{box-shadow:0 0 0 4px rgb(180 140 255 / .18)}}
-.st-box{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:62px;padding:0 10px;border-radius:12px;background:var(--surface-2)}
-.st-box b{font-family:var(--f-mono);font-size:20px;line-height:1.05}.st-box small{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
-.st-time{font-family:var(--f-mono);font-size:20px;min-width:118px;flex-direction:row;gap:6px;align-items:baseline}.st-time small{font-size:12px;letter-spacing:0;text-transform:none}
-.st-ov{position:relative;border-radius:14px;background:#0d1118;overflow:hidden;cursor:pointer;touch-action:manipulation}
-.st-ov canvas{position:absolute;inset:0;display:block}
-.st-main{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:10px;min-height:0}
-.st-pane{min-height:0;overflow:auto;border-radius:14px;background:#0d1118;padding:12px}
-.st-nav{display:flex;flex-direction:column;gap:8px}
-.st-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:14px}
-.st-nav button .icon{width:24px;height:24px}.st-nav button.on{border-color:#f2f4f8;background:var(--surface-2)}
-.st-empty{color:var(--muted);padding:16px}
-.st-parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
-.sp{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--sc) 12%,#121722);border:1px solid color-mix(in srgb,var(--sc) 35%,transparent);text-align:left;min-width:0}
-.sp b{font-family:var(--f-display);font-size:24px;line-height:1;color:var(--sc)}.sp span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.sp.cur{background:color-mix(in srgb,var(--sc) 30%,#121722);border-color:var(--sc);box-shadow:inset 0 -3px 0 var(--sc)}
-.sp.queued{border-style:dashed;border-color:#fff}.sp.vamp{outline:2px solid var(--accent);outline-offset:-2px}
-.st-mix{display:flex;gap:10px;height:100%;min-height:220px;overflow-x:auto}
-.st-mix .ch{flex:none;width:84px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px}
-.st-mix .ch.mst{width:76px}
-.cn{font-family:var(--f-display);font-weight:700;font-size:13px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
-.fd{position:relative;border-radius:10px;background:#141a25;overflow:hidden;touch-action:none;cursor:ns-resize;min-height:90px}
-.fd i{position:absolute;left:0;right:0;bottom:0;background:var(--fc);border-radius:10px 10px 0 0;opacity:.9}
-.fd.dim i{opacity:.25}.fd:focus-visible{outline:2px solid var(--accent)}
-.st-mix .ms{display:flex;gap:4px}.st-mix .ms button{flex:1;height:38px;padding:0;border-radius:8px;font-weight:800;background:var(--surface-2)}
-.st-mix .ms button.m.on{background:#16c7f0;color:#05222b;border-color:#16c7f0}.st-mix .ms button.s.on{background:var(--k-guide);color:#1d1a02}
-.st-mix .ms button.on{background:var(--accent-soft);border-color:var(--accent)}
-.st-set{display:flex;flex-direction:column;gap:4px}
-.st-sethd{font-family:var(--f-display);font-weight:800;font-size:18px;padding:4px 6px 8px}
-.ss{display:flex;gap:14px;align-items:center;padding:12px;border-radius:12px;background:transparent;text-align:left}
-.ss .n{width:26px;text-align:center;font-family:var(--f-mono);color:var(--muted)}.ss .t{display:flex;flex-direction:column;min-width:0}
-.ss b{font-size:17px}.ss small{color:var(--muted);font-size:13px}.ss.cur{background:var(--surface-2)}.ss.cur b,.ss.cur .n{color:#16c7f0}
-.st-pad{display:grid;grid-template-columns:minmax(0,1fr) 84px;gap:12px;min-height:100%}
-.pad-body{display:flex;flex-direction:column;gap:10px;min-width:0}
-.pad-top{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px}
-.pad-top button{border-radius:12px;font-weight:700;min-height:56px}.pw{font-size:26px}.pw.on{background:var(--k-pad);color:#0a0c11}
-.pa.on,.pres button.on{border-color:var(--accent);background:var(--accent-soft)}
-.pad-info{display:flex;flex-direction:column;justify-content:center;padding:6px 14px;border-radius:12px;background:var(--surface-2);min-width:0}
-.pad-info b{font-family:var(--f-display);font-size:20px}.pad-info small{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pad-keys{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-.pad-keys button{font-family:var(--f-display);font-size:20px;font-weight:700;border-radius:10px;background:var(--surface-2);min-height:46px}
-.pad-keys button.on{background:#16c7f0;color:#05222b;border-color:#16c7f0}.pad-keys button.sel{border-color:#16c7f0}
-.pad-row{display:flex;gap:8px;flex-wrap:wrap}
-.pseg{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
-.pseg button{border:0;background:transparent;padding:7px 12px;border-radius:8px;font-size:13px;font-weight:700;color:var(--muted)}
-.pseg button.on{background:var(--surface-3);color:var(--fg,#fff)}
-.pad-body h4{margin:6px 0 0;font-family:var(--f-display);font-size:15px;display:flex;gap:8px;align-items:baseline}
-.pad-body h4 span{font-family:inherit;font-weight:500;font-size:12px;color:var(--muted)}
-.pls{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-.pl{display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:12px;background:var(--surface-2);border:1px solid transparent}
-.pl button{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px}.pl b{font-size:15px}.pl small{font-size:11px;color:var(--muted)}
-.pl.on{border-color:var(--k-pad);background:color-mix(in srgb,var(--k-pad) 16%,var(--surface-2))}
-.pl input[type=range]{width:100%;accent-color:var(--k-pad);height:18px}
-.pctls{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
-.pctl{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:13px;font-weight:600}
-.pctl span{min-width:70px}.pctl input[type=range]{flex:1;accent-color:var(--k-pad)}.pctl em{font-style:normal;color:var(--muted);font-family:var(--f-mono);font-size:12px;min-width:34px}
-.pctl input[type=number]{width:80px}
-.pres{display:flex;gap:6px;flex-wrap:wrap}
-.mine{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
-.ms1{display:flex;align-items:stretch;border-radius:12px;background:var(--surface-2);border:1px solid transparent}.ms1.on{border-color:var(--k-pad);background:color-mix(in srgb,var(--k-pad) 16%,var(--surface-2))}
-.ms1 button{all:unset;cursor:pointer;flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 12px;min-width:0}.ms1 b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ms1 small{font-size:11px;color:var(--muted)}
-.ms1 .x{flex:none;padding:0 12px;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
-.mineadd{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;border:1px dashed var(--line-2);cursor:pointer}.mineadd b{font-size:14px;color:var(--accent)}.mineadd small{font-size:11px;color:var(--muted)}
-.degs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-.dg{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;border-radius:12px;background:var(--surface-2)}
-.dg b{font-family:var(--f-display);font-size:18px}.dg small{font-size:11px;color:var(--muted);font-family:var(--f-mono)}
-.dg.on{background:color-mix(in srgb,var(--k-pad) 30%,var(--surface-2));border-color:var(--k-pad)}
-@media (max-width:700px){.degs{grid-template-columns:repeat(3,1fr)}}.pres button{border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px}
-.pad-vol{display:flex;position:sticky;top:0;max-height:calc(100vh - 220px)}.pad-vol .fd{flex:1}
-.vampbtn.min.on{background:#3a1f4f;border-color:#b48cff}
-@media (max-width:900px){.st-tools button span{display:none}.st-tr button{width:52px}.st-tr .play{width:64px}.st-box{min-width:52px}.st-time{min-width:96px}}
-@media (max-width:700px){
-  .stage{grid-template-rows:auto auto 92px minmax(0,1fr);gap:8px}
-  .st-top{display:contents}
-  .st-tr{grid-row:1}.st-tr button{flex:1;width:auto;min-height:50px}.st-tr .play{flex:1.4}
-  .st-tr,.st-tools{min-width:0}.st-tools{grid-row:2;flex-wrap:nowrap;gap:6px}.st-tools button{min-height:44px;padding:0 10px;flex:none}.st-tools .st-box{flex:1;min-width:0;padding:0 4px}.st-tools .st-time{flex:2;font-size:16px}.st-box b{font-size:17px}
-  .st-name{display:none}
-  .st-ov{grid-row:3}
-  .st-main{grid-row:4;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
-  .st-nav{flex-direction:row}.st-nav button{flex-direction:row;padding:10px 4px;font-size:12px;gap:4px}.st-nav button .icon{width:18px;height:18px}
-  .st-parts{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.sp{padding:10px}.sp b{font-size:20px}
-  .st-pad{grid-template-columns:minmax(0,1fr) 44px;gap:8px}.pad-top{grid-template-columns:52px minmax(0,1fr)}.pa{grid-column:1 / -1;min-height:40px!important}
-  .pad-keys{grid-template-columns:repeat(6,1fr);gap:4px}.pad-keys button{font-size:16px;min-height:42px}.pls{grid-template-columns:repeat(2,minmax(0,1fr))}.pseg button{padding:6px 8px;font-size:12px}
-  .st-mix .ch{width:70px}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .intro h1 span,.intro .sub,.intro .acoes,.intro .gratis,.intro .tela{opacity:1;transform:none}
 }
-@media (max-height:500px) and (orientation:landscape){.stage{grid-template-rows:auto 76px minmax(0,1fr);gap:6px}.st-top button{min-height:42px}.st-name b{font-size:16px}
-  .st-main{grid-template-columns:minmax(0,1fr) 96px}.st-nav{gap:5px}.st-nav button{min-height:0;gap:2px;font-size:11px;border-radius:10px}.st-nav button .icon{width:18px;height:18px}
-  .st-pane{padding:8px}.st-mix{min-height:0}.st-mix .ch{width:68px;gap:5px}.fd{min-height:40px}.st-mix .ms button{height:30px}
-  .st-pad{gap:6px}.pad-keys{gap:4px}.pad-keys button{min-height:36px;font-size:16px}.pad-top button,.pad-info{min-height:40px!important;padding:2px 10px}.pad-info b{font-size:16px}.pad-vol{max-height:calc(100vh - 150px)}
-  .sp{padding:8px 10px}.sp b{font-size:18px}}
-@media (max-width:460px){.appbar{gap:6px}.logo .wm span{font-size:16px}.logo img{width:28px;height:28px}.sala-btn,.stage-btn,.acc{padding:7px!important}#bImport{padding:7px 12px}}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
-
 </head>
 <body>
-<header class="appbar">
-  <div class="logo" aria-label="DDS MultiTrack">
-    <img src="icons/logo.svg" alt="" width="34" height="34">
-    <div class="wm"><span><b>DDS</b> MultiTrack</span><small>Grátis para igrejas</small></div>
+
+<header class="trilho" id="trilho">
+  <div class="wrap">
+    <a class="marca" href="#intro" aria-label="DDS MultiTrack, voltar ao topo"><img src="img/logo.svg" alt=""><span><b>DDS</b> MultiTrack</span></a>
+    <nav class="partes" aria-label="Partes da página">
+      <a href="#intro" style="--c:var(--intro);flex:1">Intro</a>
+      <a href="#verso" style="--c:var(--verso);flex:1.4">Verso</a>
+      <a href="#pre" style="--c:var(--pre);flex:1.2">Pré-refrão</a>
+      <a href="#refrao" style="--c:var(--refrao);flex:2.2">Refrão</a>
+      <a href="#ponte" style="--c:var(--ponte);flex:1.3">Ponte</a>
+      <a href="#final" style="--c:var(--final);flex:1">Final</a>
+      <i class="ph" id="ph" aria-hidden="true"></i>
+    </nav>
+    <p class="mini" id="mini" aria-hidden="true"></p>
+    <a class="btn btn-luz" href="app/">Acessar o sistema</a>
   </div>
-  <div class="setpick"><select id="setSel" aria-label="Repertório"></select></div>
-  <div class="grow"></div>
-  <button class="bless-btn" id="bBless" title="Abençoe o DDS MultiTrack"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.4.4.6 1.6.6 2 0 .7-1.2 2.2-2.4 4.3-2.4 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg><span class="hide-sm">Abençoar</span></button>
-  <button class="sala-btn" id="bSala" title="Sala do ministério: acompanhe o líder ao vivo"><svg class="icon" viewBox="0 0 24 24"><path d="M9 11a4 4 0 100-8 4 4 0 000 8zm7.5 0a3.5 3.5 0 10-1.6-6.6A5.9 5.9 0 0115 7a6 6 0 01-1 3.3 3.5 3.5 0 002.5.7zM9 13c-4 0-7 2-7 4.5V20h14v-2.5C16 15 13 13 9 13zm8.6.2A5.4 5.4 0 0118 17.5V20h4v-2.2c0-2.3-2.4-4.1-4.4-4.6z"/></svg><span>Sala</span></button>
-  <button class="acc" id="bAcc" aria-label="Conta e sincronização"></button>
-  <button class="stage-btn" id="bStage" title="Modo palco: tela de operação para o culto"><svg class="icon" viewBox="0 0 24 24"><path d="M4 5h16v10H4zm2 2v6h12V7zM8 19h8v2H8zm3-3h2v3h-2z"/></svg><span class="hide-sm">Modo palco</span></button>
-  <button class="btn-primary" id="bImport" aria-label="Importar música">+<span class="hide-xs"> Importar</span><span class="hide-sm"> música</span></button>
+  <i class="prog" id="prog" aria-hidden="true"></i>
 </header>
 
-<section class="welcome" id="welcome" hidden>
-  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.4.4.6 1.6.6 2 0 .7-1.2 2.2-2.4 4.3-2.4 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>
-  <p><b>Grátis para igrejas.</b> Sem cadastro e sem senha: importe o pacote da sua música e toque no culto. O login é só para quem quer sincronizar com a equipe.</p>
-  <div class="row"><button class="btn-primary" data-bless>Abençoar o projeto</button><button class="btn-ghost" id="wClose" aria-label="Fechar aviso">✕</button></div>
-</section>
-<section class="hero" aria-live="polite">
-  <div class="hero-main">
-    <div class="eyebrow live" id="hEyebrow"><i></i><span>Pronto</span></div>
-    <h1 id="hTitle">DDS MultiTrack</h1>
-    <div class="artist" id="hArtist"></div>
-    <div class="chips" id="hChips"></div>
-  </div>
-  <div class="hero-side">
-    <div class="toprow"><div class="chordbox" id="chordBox" hidden><span class="eyebrow">Acorde</span><b id="chordNow">—</b><span id="chordNext"></span></div>
-    <div class="timecode" id="tc">0:00<small>/ 0:00</small></div></div>
-    <div class="barbeat"><span class="bb" id="bb">Compasso —</span><span class="beats" id="beats"></span></div>
-    <div class="transport">
-      <button class="tbtn" id="bPrev" aria-label="Música anterior" title="Anterior (←)"><svg class="icon" viewBox="0 0 24 24"><path d="M6 5h2.2v14H6zM19 5v14L9.5 12z"/></svg></button>
-      <button class="tbtn play" id="bPlay" aria-label="Tocar" title="Tocar / pausar (espaço)"><svg class="icon pi" viewBox="0 0 24 24"><path d="M8 5l12 7-12 7z"/></svg></button>
-      <button class="tbtn" id="bNext" aria-label="Próxima música" title="Próxima (→)"><svg class="icon" viewBox="0 0 24 24"><path d="M15.8 5H18v14h-2.2zM5 5l9.5 7L5 19z"/></svg></button>
-      <button class="tbtn" id="bStop" aria-label="Parar e voltar ao início" title="Parar"><svg class="icon" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg></button>
+<main>
+<!-- INTRO -->
+<section class="intro" id="intro" data-parte="Intro" style="--c:var(--intro)">
+  <canvas id="lanes" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <h1><span>O VS da sua igreja,</span><span>pronto para o culto.</span></h1>
+    <p class="sub">Importe o pacote de multitrack ou só o MP3 da música. O DDS MultiTrack encontra o BPM, o tom, as partes e a cifra sozinho. No culto, você troca de parte no tempo, ministra com o pad por baixo e a equipe acompanha pelo celular.</p>
+    <div class="acoes">
+      <a class="btn btn-luz" href="app/"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l12 7-12 7z"/></svg>Acessar o sistema</a>
+      <a class="btn btn-linha" href="#pre">Ver como funciona</a>
     </div>
-    <div class="quick">
-      <button class="tog" id="tIem" title="Click e guia no lado esquerdo, banda no direito"><i></i>Fones L/R</button>
-      <button class="tog" id="tClick" title="Click gerado pelo app"><i></i>Click extra</button>
-      <button class="tog" id="tPad" title="Pad ambiente no tom da música"><i></i>Pad</button>
-    </div>
+    <p class="gratis">Grátis para igrejas. Sem cadastro para começar. Funciona no celular, no tablet e no computador.</p>
   </div>
+  <figure class="tela" style="margin-bottom:0">
+    <img src="img/desktop.webp" width="1800" height="1125" alt="Tela do DDS MultiTrack tocando uma música: acorde atual em destaque, partes com nome (Intro, Verso, Refrão, Ponte, Final) e 12 faixas sincronizadas com mixer.">
+    <div class="chip-ao-vivo chip-a" aria-hidden="true"><b>138</b><span>BPM<small>achado pelo click</small></span></div>
+    <div class="chip-ao-vivo chip-b" aria-hidden="true"><b>Dm</b><span>Tom<small>e cifra no tempo</small></span></div>
+  </figure>
 </section>
 
-<nav class="secrail" id="secrail" aria-label="Seções da música"></nav>
+<!-- VERSO -->
+<section class="parte verso" id="verso" data-parte="Verso" style="--c:var(--verso)">
+  <div class="wrap grade">
+    <div>
+      <p class="rot"><i></i>Verso</p>
+      <h2>Para a igreja que toca com quem tem.</h2>
+      <p class="lead">O VS completa a banda nas partes que faltam e deixa todo mundo no mesmo tempo, do ensaio ao culto.</p>
+      <ul class="casos">
+        <li style="--k:var(--verso)"><div><b>Faltou o baterista no domingo</b><span>A bateria do pacote toca no lugar, e o click no fone mantém o resto da banda junto.</span></div></li>
+        <li style="--k:var(--refrao)"><div><b>Banda pequena, som de banda grande</b><span>Ligue só as faixas que faltam: teclas, cordas, efeitos. O que a banda toca ao vivo fica no mudo.</span></div></li>
+        <li style="--k:var(--ponte)"><div><b>Ministério começando do zero</b><span>Não tem o pacote da música? Importe o MP3 e use a cifra, as partes e o pad que o app monta.</span></div></li>
+        <li style="--k:var(--final)"><div><b>Ensaio em casa ou pelo celular</b><span>Cada músico abre no próprio aparelho e treina a sua faixa com solo e mudo.</span></div></li>
+      </ul>
+    </div>
+    <div class="celular"><img src="img/phone.webp" width="620" height="1342" loading="lazy" alt="DDS MultiTrack no celular: música aberta com tom, BPM, acorde atual e as partes em grade para tocar com um toque."></div>
+  </div>
+</section>
 
-<div class="mtabs" role="tablist"><button data-tab="tracks" class="on">Faixas</button><button data-tab="set">Repertório</button><button data-tab="cfg">Ajustes</button></div>
+<!-- PRÉ-REFRÃO -->
+<section class="parte" id="pre" data-parte="Pré-refrão" style="--c:var(--pre)">
+  <div class="wrap">
+    <p class="rot"><i></i>Pré-refrão</p>
+    <h2>Da pasta da música ao culto em três passos.</h2>
+    <div class="passos">
+      <div class="passo" style="--c:var(--intro)"><h3>Importe a música</h3><p>Envie o .zip do multitrack, as faixas soltas ou só o MP3. Pacotes grandes também passam no celular.</p><div class="tags"><span>.zip</span><span>wav</span><span>mp3</span><span>m4a</span></div></div>
+      <div class="passo" style="--c:var(--verso)"><h3>O app organiza tudo</h3><p>Alinha as faixas no mesmo ponto zero e descobre BPM, tom, partes com nome e a cifra que vai aparecendo enquanto toca.</p><div class="tags"><span>BPM</span><span>tom</span><span>partes</span><span>cifra</span></div></div>
+      <div class="passo" style="--c:var(--refrao)"><h3>Toque no culto</h3><p>Monte o repertório, abra o Modo palco e conduza a música com toques grandes, feitos para a pressa do altar.</p><div class="tags"><span>repertório</span><span>modo palco</span></div></div>
+    </div>
+    <div class="analise">
+      <div class="quadro"><img src="img/import.webp" width="1000" height="1356" loading="lazy" alt="Janela de importação: pacote de 12 faixas analisado com 138 BPM pelo metrônomo, tom Ré menor, 14 partes com nome e 85 trocas de acorde."></div>
+      <div>
+        <h3 style="font-size:clamp(28px,3.2vw,44px);font-weight:800">O que ele descobre em segundos</h3>
+        <ul>
+          <li><b>BPM</b><span>Pelo metrônomo do pacote ou pela batida da própria música.</span></li>
+          <li><b>Tom</b><span>Pela harmonia das faixas de baixo, teclas e guitarra.</span></li>
+          <li><b>Parte</b><span>Intro, Verso, Pré-refrão, Refrão, Ponte, Final, numeradas e editáveis.</span></li>
+          <li><b>Cifra</b><span>O acorde de agora e o próximo, que mudam junto com a música, até se você trocar o tom.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
-<main class="work">
-  <section class="panel arr" aria-label="Faixas">
-    <div class="panel-h"><h2>Faixas</h2><span class="muted" id="arrInfo"></span><div class="grow"></div>
-      <label class="master" for="mstVol">Master <input type="range" id="mstVol" min="0" max="1.25" step="0.01"></label></div>
-    <div id="arrBody"></div>
-  </section>
-  <aside class="panel side">
-    <div class="seg"><button data-side="set" class="on">Repertório</button><button data-side="cfg">Ajustes</button></div>
-    <div class="side-body" id="sideBody"></div>
-  </aside>
+<!-- REFRÃO -->
+<section class="parte" id="refrao" data-parte="Refrão" style="--c:var(--refrao)">
+  <div class="wrap">
+    <p class="rot"><i></i>Refrão</p>
+    <h2>Tudo o que o líder precisa, sem tirar o olho da igreja.</h2>
+    <div class="vitrine">
+      <div class="recursos">
+        <article class="rec" data-tela="t-partes" style="--c:var(--verso)">
+          <p class="rot"><i></i>Partes</p>
+          <h3>Volte no refrão quando o Espírito pedir.</h3>
+          <p>Toque na parte e ela entra quando a atual terminar, sem atravessar o tempo. Tocou errado? Toque de novo e cancela. Para segurar um trecho, use Repetir.</p>
+          <img class="tela-m" src="img/stage-min.webp" loading="lazy" alt="Modo palco com o mapa da música colorido por parte e botões grandes de cada parte.">
+        </article>
+        <article class="rec" data-tela="t-mix" style="--c:var(--intro)">
+          <p class="rot"><i></i>Modo palco</p>
+          <h3>Uma tela feita para operar no altar.</h3>
+          <p>Mapa da música colorido, botões grandes, mixer com faders de verdade e o repertório na lateral. No celular deitado ou no tablet.</p>
+          <ul><li>Mudo e solo por faixa</li><li>Saída por faixa: fone dos músicos, público ou os dois</li><li>Tom e andamento ajustáveis por música</li></ul>
+          <img class="tela-m" src="img/stage-mix.webp" loading="lazy" alt="Mixer do modo palco com faders verticais por faixa e botões de mudo, solo e saída.">
+        </article>
+        <article class="rec" data-tela="t-pad" style="--c:var(--ponte)">
+          <p class="rot"><i></i>Pad</p>
+          <h3>Um fundo que respira com o louvor.</h3>
+          <p>Pad no tom da música com camadas para dar corpo: vozes angelicais, cordas, shimmer, órgão. A harmonia pode andar sozinha no tempo ou seguir os acordes que você toca. Também dá para importar os seus próprios pads.</p>
+          <img class="tela-m" src="img/stage-pad.webp" loading="lazy" alt="Painel do pad com os 12 tons, camadas de som, sequência de acordes e ritmo no tempo.">
+        </article>
+        <article class="rec" data-tela="t-sala" style="--c:var(--final)">
+          <p class="rot"><i></i>Sala ao vivo</p>
+          <h3>A equipe vê o que o líder está fazendo.</h3>
+          <p>O líder cria a sala e passa um código. Cada músico acompanha no celular: a parte atual, a próxima, o acorde e o compasso, no mesmo instante.</p>
+        </article>
+      </div>
+      <div class="palco-fixo" aria-hidden="true">
+        <div class="tablet"><div class="tl">
+          <img id="t-partes" class="on" src="img/stage-min.webp" alt="">
+          <img id="t-mix" src="img/stage-mix.webp" alt="" loading="lazy">
+          <img id="t-pad" src="img/stage-pad.webp" alt="" loading="lazy">
+          <div id="t-sala" class="sala-ilus"><div class="roda">
+            <div class="disp"><b>R1</b><small>Refrão 1</small><i></i></div><span class="onda"></span>
+            <div class="disp lider"><b>Refrão 1</b><small>Líder · próxima: Ponte 1</small><i></i></div><span class="onda"></span>
+            <div class="disp"><b>R1</b><small>Refrão 1</small><i></i></div></div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PONTE -->
+<section class="parte ponte" id="ponte" data-parte="Ponte" style="--c:var(--ponte)">
+  <div class="wrap">
+    <p class="rot"><i></i>Ponte</p>
+    <h2>Ministre sem parar a música.</h2>
+    <p class="lead">Ao ligar Ministrar, a banda sai e fica só o pad, enquanto a música segue no tempo, em silêncio. Você fala, ora, conduz. Escolha a parte de volta e, quando desligar, a banda entra nela no compasso certo.</p>
+
+    <div class="demo" id="demo" aria-label="Demonstração da ministração">
+      <div class="demo-topo">
+        <button class="bt-min" id="btMin" aria-pressed="false"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg><span>Ministrar</span></button>
+        <p class="estado" id="estado" aria-live="polite">Banda tocando o Verso 2<small>Experimente: toque em Ministrar.</small></p>
+      </div>
+      <div class="pistas" id="pistas"></div>
+      <div class="blocos" id="blocos" role="group" aria-label="Partes da música de exemplo"></div>
+    </div>
+
+    <ol class="passos-min">
+      <li>Toque em Ministrar. A banda sai em dois segundos e o pad continua no tom.</li>
+      <li>Escolha a parte de volta. Ela fica marcada, esperando você.</li>
+      <li>Desligue Ministrar. A banda entra na parte escolhida, no próximo compasso.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- FINAL -->
+<section class="parte final" id="final" data-parte="Final" style="--c:var(--final)">
+  <div class="wrap">
+    <p class="rot"><i></i>Final</p>
+    <h2 class="grande">Grátis para abençoar a sua igreja.</h2>
+    <p class="lead">Feito para os ministérios que não têm acesso a ferramentas caras de VS. Abra no navegador, importe sua primeira música e toque hoje mesmo.</p>
+    <div class="acoes">
+      <a class="btn btn-luz" href="app/"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l12 7-12 7z"/></svg>Acessar o sistema</a>
+    </div>
+    <div class="selos"><span>Sem mensalidade</span><span>Sem cadastro para começar</span><span>As músicas ficam no seu aparelho</span><span>Toca sem internet depois de importada</span></div>
+
+    <div class="faq">
+      <h3>Perguntas de quem está começando</h3>
+      <div>
+        <details><summary>Preciso instalar alguma coisa?</summary><p>Não. Abra ddsinovacao.com.br/vs no navegador e toque em Acessar o sistema. No iPhone ou Android, dá para adicionar à tela de início e usar como um aplicativo.</p></details>
+        <details><summary>Precisa de internet no culto?</summary><p>Depois que a música foi importada, ela fica guardada no aparelho e toca sem internet. A internet só é usada para sincronizar o repertório e para a Sala ao vivo.</p></details>
+        <details><summary>Como ligo na mesa de som com click separado?</summary><p>Ligue Fones L/R no app e use um cabo P2 estéreo para dois P10. O lado esquerdo vai para o retorno ou in-ear dos músicos (click e guia) e o direito vai para o público. Em cada faixa você escolhe para qual lado ela vai.</p></details>
+        <details><summary>O app separa os instrumentos de um MP3?</summary><p>Ainda não. Com o MP3, o app encontra BPM, tom, partes e cifra e toca a música inteira. Para ter cada instrumento separado, importe o pacote de multitrack com as faixas.</p></details>
+        <details><summary>Posso usar qualquer multitrack?</summary><p>Use os pacotes e pads que você tem direito de usar: comprados, liberados pelo artista ou gravados pela própria igreja. O app não distribui músicas, cada igreja importa as suas.</p></details>
+        <details><summary>A equipe precisa criar conta?</summary><p>Para tocar, não. A conta, com e-mail e senha, serve para sincronizar o repertório entre aparelhos e para entrar na Sala do ministério.</p></details>
+      </div>
+    </div>
+
+    <aside class="dds">
+      <div><h3>A DDS Inovação resolve a sua dor.</h3><p>Sistemas sob medida, aplicativos, sites e automações para igrejas, ministérios e empresas. O DDS MultiTrack é um dos nossos projetos.</p></div>
+      <div class="acoes"><a class="btn wa" href="https://wa.me/5541991542931?text=Ol%C3%A1%20Diogo!%20Vim%20pelo%20DDS%20MultiTrack%20e%20quero%20um%20or%C3%A7amento." target="_blank" rel="noopener">Pedir orçamento no WhatsApp</a><a class="btn btn-linha" href="https://www.ddsinovacao.com.br/" target="_blank" rel="noopener">Conhecer a DDS</a></div>
+    </aside>
+  </div>
+</section>
 </main>
 
-<section class="dds-ad" aria-label="DDS Inovação">
-  <div><span class="eyebrow">DDS Inovação</span><h2>Precisa de um sistema, app ou site?</h2><p>A DDS resolve a sua dor: sistemas sob medida, aplicativos, sites e landing pages, automações e identidade visual para igrejas, ministérios e empresas.</p></div>
-  <div class="row"><a class="wa" href="https://wa.me/5541991542931?text=Ol%C3%A1%20Diogo!%20Vim%20pelo%20DDS%20MultiTrack%20e%20quero%20um%20or%C3%A7amento." target="_blank" rel="noopener">Pedir orçamento no WhatsApp</a><a class="btn-link" href="https://www.ddsinovacao.com.br" target="_blank" rel="noopener">Conhecer a DDS →</a></div>
-</section>
-<footer class="foot"><span>© <span id="ano">2026</span> <a href="https://www.ddsinovacao.com.br" target="_blank" rel="noopener">DDS Inovação</a>. Todos os direitos reservados.</span><span class="muted">DDS MultiTrack · Grátis para igrejas</span></footer>
+<footer><div class="wrap"><p>© <span id="ano">2026</span> <a href="https://www.ddsinovacao.com.br/">DDS Inovação</a>. Todos os direitos reservados.</p><p><a href="app/">Acessar o sistema</a></p></div></footer>
 
-<div class="minibar">
-  <div class="mt"><b id="mbTitle">—</b><span class="mono muted" id="mbTime">0:00 / 0:00</span><div class="prog"><i id="mbProg"></i></div></div>
-  <div class="transport">
-    <button class="tbtn" id="mPrev" aria-label="Anterior"><svg class="icon" viewBox="0 0 24 24"><path d="M6 5h2.2v14H6zM19 5v14L9.5 12z"/></svg></button>
-    <button class="tbtn play" id="mPlay" aria-label="Tocar"><svg class="icon pi" viewBox="0 0 24 24"><path d="M8 5l12 7-12 7z"/></svg></button>
-    <button class="tbtn" id="mNext" aria-label="Próxima"><svg class="icon" viewBox="0 0 24 24"><path d="M15.8 5H18v14h-2.2zM5 5l9.5 7L5 19z"/></svg></button>
-  </div>
-</div>
+<script>
+(function(){
+const reduz=matchMedia("(prefers-reduced-motion: reduce)").matches;
+document.getElementById("ano").textContent=new Date().getFullYear();
 
-<div class="overlay" id="imp" hidden><div class="dialog" id="impDlg" role="dialog" aria-modal="true" aria-labelledby="impTitle"></div></div>
-<div class="overlay" id="bless" hidden><div class="dialog bless" role="dialog" aria-modal="true" aria-labelledby="blTitle">
-  <button class="btn-ghost x" data-blclose aria-label="Fechar">✕</button>
-  <span class="eyebrow">Oferta voluntária</span>
-  <h2 id="blTitle">Abençoe o DDS MultiTrack</h2>
-  <p class="muted" style="margin:0">O app é gratuito para todas as igrejas e vai continuar assim. Se ele tem abençoado o seu ministério, oferte o valor que sentir no coração para mantê-lo no ar e evoluindo.</p>
-  <div class="pix">
-    <div class="qr"><img src="icons/pix-qr.svg" alt="QR Code Pix para Diogo Domingues Soares" width="200" height="200"></div>
-    <div class="pixinfo">
-      <span class="eyebrow">Pix · celular</span>
-      <b class="pixkey">41 99154-2931</b>
-      <span class="muted">Diogo Domingues Soares</span>
-      <div class="row"><button class="btn-primary" id="cpKey">Copiar chave</button><button id="cpCode">Pix copia e cola</button></div>
-      <input type="text" id="cpFallback" readonly hidden aria-label="Código para copiar">
-    </div>
-  </div>
-  <p class="verse">"Deus ama quem dá com alegria." <span>2 Coríntios 9:7</span></p>
-  <div class="authors">
-    <h3>Tem músicas autorais?</h3>
-    <p class="muted" style="margin:0">Se você é artista, compositor ou ministério e quer liberar seus multitracks autorais para igrejas que não têm acesso, fale comigo. Publico somente com autorização de quem tem os direitos da música.</p>
-    <a class="wa" href="https://wa.me/5541991542931?text=Ol%C3%A1%20Diogo!%20Tenho%20multitracks%20autorais%20e%20quero%20liberar%20no%20DDS%20MultiTrack." target="_blank" rel="noopener"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3a.4.4 0 000-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.8 11.9 11.9 0 004.6 4c1.7.7 2.3.8 3.2.7a2.7 2.7 0 001.8-1.3 2.2 2.2 0 00.2-1.3c-.1-.1-.3-.2-.6-.3z"/></svg>Falar no WhatsApp</a>
-  </div>
-</div></div>
-<div class="overlay" id="sala" hidden><div class="dialog" id="salaDlg" role="dialog" aria-modal="true" aria-label="Sala do ministério"></div></div>
-<div class="follow" id="follow" hidden role="dialog" aria-modal="true" aria-label="Acompanhar ao vivo">
-  <div class="fw-top"><span class="live-dot" aria-hidden="true"></span><b id="fwSala">Sala</b><span class="muted" id="fwLider"></span><span class="grow"></span><button id="fwExit">Sair</button></div>
-  <div class="fw-body" id="fwBody"></div>
-</div>
-<div class="overlay" id="acc" hidden><div class="dialog" id="accDlg" role="dialog" aria-modal="true" aria-label="Conta e equipe"></div></div>
-<section class="stage" id="stage" hidden aria-label="Modo palco">
-  <div class="st-top">
-    <div class="st-tr">
-      <button id="sgPrev" aria-label="Voltar ao início ou música anterior"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.2v14H6zM19 5v14L9.5 12z"/></svg></button>
-      <button id="sgPlay" class="play" aria-label="Tocar ou pausar"><svg class="icon pi" viewBox="0 0 24 24"><path d="M8 5l12 7-12 7z"/></svg></button>
-      <button id="sgStop" aria-label="Parar"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5h11v11h-11z"/></svg></button>
-      <button id="sgNext" aria-label="Próxima música"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.8 5H18v14h-2.2zM5 5l9.5 7L5 19z"/></svg></button>
-    </div>
-    <div class="st-name"><b id="sgName"></b><small id="sgHint"></small></div>
-    <div class="st-tools">
-      <button id="sgVamp" title="Repetir a parte atual (V)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg><span>Repetir</span></button>
-      <button id="sgMin" class="min" title="A banda vira fundo até você tocar a parte em que quer entrar (M)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg><span>Ministrar</span></button>
-      <div class="st-box st-time" id="sgTime">0:00<small>/ 0:00</small></div>
-      <div class="st-box"><b id="sgBpm">—</b><small>BPM</small></div>
-      <div class="st-box"><b id="sgKey">—</b><small>Tom</small></div>
-      <button id="sgExit" aria-label="Sair do modo palco" title="Sair (Esc)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7l-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z"/></svg></button>
-    </div>
-  </div>
-  <div class="st-ov"><canvas id="sgCv" aria-label="Mapa da música: toque numa parte para ir até ela"></canvas></div>
-  <div class="st-main">
-    <div class="st-pane" id="sgPane"></div>
-    <nav class="st-nav" aria-label="Painéis">
-      <button data-pane="parts"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg><span>Partes</span></button>
-      <button data-pane="mix"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h2v6h2v2H8v10H6V11H4V9h2zm6 0h2v12h2v2h-2v4h-2v-4h-2v-2h2zm6 0h2v4h2v2h-2v12h-2V9h-2V7h2z"/></svg><span>Mixer</span></button>
-      <button data-pane="set"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h14v2H3zm0 5h14v2H3zm0 5h9v2H3zm13 0 5 3-5 3z"/></svg><span>Repertório</span></button>
-      <button data-pane="pad"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/></svg><span>Pad</span></button>
-    </nav>
-  </div>
-</section>
-<div class="busy" id="busy" hidden><span id="busyLabel"></span><div class="bar"><i id="busyBar"></i></div></div>
-<div class="toast" id="toast" hidden></div>
-<datalist id="secNames"><option>Intro</option><option>Verso</option><option>Verso 1</option><option>Verso 2</option><option>Pré-refrão</option><option>Refrão</option><option>Ponte</option><option>Instrumental</option><option>Interlúdio</option><option>Tag</option><option>Final</option></datalist>
+/* ---- Intro: pistas de áudio desenhadas atrás do título, com o playhead varrendo uma vez ---- */
+const cv=document.getElementById("lanes"),g=cv.getContext("2d");
+const cores=["#4fc3dc","#e3d34a","#f0a35e","#ff5f7e","#b48cff","#3fd0a8","#5aa9ff","#e3d34a"];
+let W=0,H=0,dpr=1,seeds=[];
+function rnd(s){return function(){s=(s*16807)%2147483647;return(s-1)/2147483646}}
+function prep(){dpr=Math.min(2,devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);
+  seeds=cores.map((c,i)=>{const r=rnd(97+i*131),n=Math.ceil(W/5),a=[];let env=0.4;for(let k=0;k<n;k++){if(k%Math.floor(18+i*3)===0)env=0.2+r()*0.8;a.push(Math.max(0.05,env*(0.45+r()*0.55)*(r()<0.08?0.2:1)))}return{c,a}})}
+function draw(t){g.clearRect(0,0,W,H);const n=seeds.length,lh=H/(n+1),ph=reduz?W*0.62:Math.min(1,t/2600)*W*0.62;
+  seeds.forEach((s,i)=>{const y=lh*(i+0.9),amp=lh*0.36;g.fillStyle=s.c;
+    for(let k=0;k<s.a.length;k++){const x=k*5;const lit=x<ph;g.globalAlpha=lit?0.95:0.32;const h=s.a[k]*amp;g.fillRect(x,y-h,2.4,h*2)}});
+  g.globalAlpha=1;g.fillStyle="#ff4d5e";g.shadowColor="#ff4d5e";g.shadowBlur=18;g.fillRect(ph,0,2,H);g.shadowBlur=0;
+  if(!reduz&&t<2700)requestAnimationFrame(()=>draw(performance.now()-t0))}
+let t0=performance.now();prep();draw(0);
+addEventListener("resize",()=>{prep();draw(9999)},{passive:true});
 
-<script src="vendor/jszip.min.js"></script>
-<script src="vendor/supabase.js"></script>
-<script src="app.js?v=202611011554"></script>
+/* ---- Trilho: playhead e parte atual seguem a rolagem ---- */
+const secs=[...document.querySelectorAll("main > section")],links=[...document.querySelectorAll(".partes a")],ph=document.getElementById("ph"),mini=document.getElementById("mini"),prog=document.getElementById("prog");
+function trilho(){const y=scrollY+innerHeight*0.35,docH=document.documentElement.scrollHeight-innerHeight;
+  let i=0;secs.forEach((s,k)=>{if(s.offsetTop<=y)i=k});const s=secs[i],nx=secs[i+1],f=Math.max(0,Math.min(1,(y-s.offsetTop)/((nx?nx.offsetTop:document.documentElement.scrollHeight)-s.offsetTop)));
+  links.forEach((a,k)=>a.classList.toggle("on",k===i));const a=links[i];if(a){ph.style.left=(a.offsetLeft+a.offsetWidth*f)+"px"}
+  mini.innerHTML="<b style='color:"+getComputedStyle(s).getPropertyValue("--c")+"'>"+s.dataset.parte+"</b>";prog.style.transform="scaleX("+(docH>0?scrollY/docH:0)+")"}
+addEventListener("scroll",()=>requestAnimationFrame(trilho),{passive:true});addEventListener("resize",trilho);trilho();
 
+/* ---- Refrão: a tela do tablet acompanha o recurso que está no meio da tela ---- */
+const recs=[...document.querySelectorAll(".rec")];
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(!e.isIntersecting)return;recs.forEach(r=>r.classList.toggle("on",r===e.target));
+  const id=e.target.dataset.tela;document.querySelectorAll(".tablet .tl > *").forEach(el=>el.classList.toggle("on",el.id===id))})},{rootMargin:"-45% 0px -45% 0px"});
+recs.forEach(r=>io.observe(r));recs[0].classList.add("on");
+
+/* ---- Ponte: demonstração interativa da ministração (sem som) ---- */
+const pistas=[["Bateria","#3fd0a8",0],["Baixo","#8a8cf0",0],["Guitarra","#f0a35e",0],["Teclas","#5aa9ff",0],["Voz","#ff5f7e",0],["Pad","#b48cff",1]];
+const pe=document.getElementById("pistas");pe.innerHTML=pistas.map(([n,c,fica])=>{let b="";for(let k=0;k<64;k++){const h=20+((k*37+n.length*13)%70);b+=`<i style="--h:${h}%;animation-delay:${-(k%9)*0.13}s"></i>`}
+  return`<div class="pista${fica?" fica":""}" style="--k:${c}"><span>${n}</span><div class="barras">${b}</div></div>`}).join("");
+const partes=[["In","Intro","#4fc3dc"],["V1","Verso 1","#e3d34a"],["V2","Verso 2","#e3d34a"],["R1","Refrão 1","#ff5f7e"],["P1","Ponte 1","#b48cff"],["F","Final","#3fd0a8"]];
+let cur=2,min=false,espera=null,timer=null;const be=document.getElementById("blocos"),demo=document.getElementById("demo"),bt=document.getElementById("btMin"),est=document.getElementById("estado");
+function pinta(){be.innerHTML=partes.map(([s,n,c],i)=>`<button style="--c:${c}" class="${i===cur?"cur":""}${i===espera?" espera":""}" data-i="${i}" aria-pressed="${i===cur}"><span>${s}</span><small>${n}</small></button>`).join("");
+  bt.classList.toggle("on",min);bt.setAttribute("aria-pressed",min);bt.querySelector("span").textContent=min?(espera!=null?"Entrar: "+partes[espera][1]:"Ministrando"):"Ministrar";demo.classList.toggle("min",min)}
+function diz(a,b){est.innerHTML=a+"<small>"+b+"</small>"}
+bt.onclick=()=>{clearTimeout(timer);
+  if(!min){min=true;espera=null;diz("Só o pad, no tom","A música segue no tempo, em silêncio. Escolha a parte em que a banda vai entrar.")}
+  else if(espera!=null){const alvo=espera;diz("A banda entra no próximo compasso…","Entrando em "+partes[alvo][1]+".");timer=setTimeout(()=>{min=false;cur=alvo;espera=null;pinta();diz("Banda de volta em "+partes[alvo][1],"No tempo certo. Toque em Ministrar para repetir.")},1100);bt.querySelector("span").textContent="Entrando…";return}
+  else{min=false;diz("Banda tocando o "+partes[cur][1],"Você saiu da ministração sem escolher parte, então a banda volta onde estava.")}
+  pinta()};
+be.onclick=e=>{const b=e.target.closest("button");if(!b)return;const i=+b.dataset.i;
+  if(min){espera=espera===i?null:i;diz(espera!=null?partes[i][1]+" em espera":"Só o pad, no tom",espera!=null?"Quando terminar de falar, desligue Ministrar.":"Escolha a parte em que a banda vai entrar.")}
+  else{diz("Próxima: "+partes[i][1],"Ela entra quando a parte atual terminar.");clearTimeout(timer);timer=setTimeout(()=>{cur=i;pinta();diz("Banda tocando "+partes[i][1],"Agora toque em Ministrar.")},1200)}
+  pinta()};
+pinta();
+})();
+</script>
 </body>
 </html>
