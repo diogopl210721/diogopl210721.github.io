@@ -890,6 +890,18 @@ header.top .et-av{margin-left:2px}
 .et-pf-id span{font-size:13px;color:var(--muted,#7F90AB);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .et-pf-nome{gap:8px}
 .et-pf-nome .et-btn{align-self:flex-start}
+.et-planos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 4px}
+.et-plano{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px 12px 12px;border-radius:14px;cursor:pointer;text-align:left;font:inherit;color:var(--text,#E8EEF7);background:color-mix(in srgb,var(--panel,#0D1627) 70%,transparent);border:1px solid var(--line2,#2A3B5C);transition:border-color .15s,box-shadow .15s}
+.et-plano[aria-pressed="true"]{border-color:#3be3f0;box-shadow:0 0 0 1px #3be3f0 inset,0 8px 26px #22d3ee22}
+.et-plano strong{font-size:14px;letter-spacing:.02em}.et-plano-v{font:700 21px var(--f-ui,system-ui);color:#7ff6ff}.et-plano-d{font-size:12.5px;opacity:.75}
+.et-plano-selo{position:absolute;top:-9px;right:10px;padding:2px 8px;border-radius:99px;font:700 11px var(--f-ui,system-ui);color:#04121a;background:#F2B648}
+.et-pix{display:flex;flex-direction:column;align-items:center;gap:10px}.et-pix:empty{display:none}
+.et-pix-v{margin:0;font-size:15px}.et-pix-qr{width:min(230px,70vw);aspect-ratio:1;border-radius:14px;background:#fff;padding:8px;image-rendering:pixelated}
+.et-pix-dica{margin:0;font-size:13px;opacity:.8;line-height:1.5}.et-pix-cod{width:100%;resize:none;font:12px ui-monospace,monospace;word-break:break-all}
+.et-pix-st{margin:2px 0 0;font-weight:600;color:#7ff6ff;animation:etPulso 1.6s ease-in-out infinite}.et-pix-tempo{font-size:12.5px;opacity:.7}
+@keyframes etPulso{50%{opacity:.55}}@media (prefers-reduced-motion:reduce){.et-pix-st{animation:none}}
+.af-conta .et-renova{color:#F2B648;font-weight:600}
+@media (max-width:360px){.et-planos{grid-template-columns:1fr}}
 .et-pf-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:14px;border-top:1px solid color-mix(in srgb,#3be3f0 14%,var(--line,#1C2A43))}
 .et-pf-t{display:flex;flex-direction:column;min-width:0;flex:1 1 180px}
 .et-pf-t strong{font-size:15px}
@@ -1192,14 +1204,80 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
           row('Senha', 'Troque a sua senha quando quiser.', bt('Trocar senha', () => show('nova'))),
           row('Meu cérebro', 'Guarde uma cópia das suas anotações ou traga de um arquivo.', bt('Exportar', () => ET.exportar()), bt('Importar', () => ET.importar())),
           row('Uso da IA hoje', 'Zera à meia-noite.', ET.medidor('et-pf-ia')),
+          row('Assinatura', ET.textoAcesso(), ...(ET.acesso?.cortesia ? [] : [bt(ET.acesso?.ativo ? 'Renovar' : 'Assinar', () => show('assinar'), ET.acesso?.ativo ? 'ghost' : '')])),
           $e('div', { class: 'et-pf-foot' }, bt('Voltar ao app', () => hide(), ''), bt('Sair da conta', () => ET.sair())));
+        return [wrap, null];
+      },
+      // assinatura por Pix (Mercado Pago): escolhe o plano, mostra o QR Code e libera sozinho quando o pagamento cai
+      assinar() {
+        const A = ET.acesso || {};
+        const brl = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const pm = Number(A.preco_mensal || 19.9), pa = Number(A.preco_anual || 199);
+        const eco = Math.max(0, Math.round((1 - pa / (pm * 12)) * 100));
+        let plano = 'anual';
+        const card = (id, nome, preco, det, selo) => $e('button', { type: 'button', class: 'et-plano', 'data-p': id, 'aria-pressed': String(id === plano), onclick: () => { plano = id; planos.querySelectorAll('.et-plano').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === id))); } },
+          selo ? $e('span', { class: 'et-plano-selo', text: selo }) : null,
+          $e('strong', { text: nome }), $e('span', { class: 'et-plano-v', text: preco }), $e('span', { class: 'et-plano-d', text: det }));
+        const planos = $e('div', { class: 'et-planos' },
+          card('mensal', 'Mensal', brl(pm), '30 dias de acesso'),
+          card('anual', 'Anual', brl(pa), '365 dias · ' + brl(pa / 12) + '/mês', eco ? eco + '% de desconto' : null));
+        const situ = $e('p', { class: 'et-sub', text: A.ativo ? ET.textoAcesso() + ' O novo período soma aos dias que você ainda tem.' : 'Pague com Pix e o acesso libera na hora, sem enviar comprovante.' });
+        const go = $e('button', { class: 'et-btn', type: 'button', text: 'Gerar Pix', onclick: () => gera() });
+        const area = $e('div', { class: 'et-pix' });
+        const wrap = $e('div', { class: 'et-form' }, situ, planos, go, area,
+          $e('div', { class: 'et-links' }, $e('button', { type: 'button', class: 'et-link', text: 'Voltar ao perfil', onclick: () => { ET.pararPix?.(); show('perfil'); } })));
+        async function gera() {
+          say(''); busy(go, true, 'Gerando Pix…');
+          let j = {};
+          try {
+            const { data: s } = await sb.auth.getSession();
+            const r = await fetch(ET.url + '/functions/v1/mp-criar-pix', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (s.session?.access_token || ''), apikey: ET.key }, body: JSON.stringify({ plano }) });
+            j = await r.json().catch(() => ({}));
+            if (!r.ok || !j.id) throw new Error(j.error || 'Não consegui gerar o Pix agora.');
+          } catch (e) { busy(go, false, 'Gerar Pix'); return say(e.message || 'Sem conexão com o servidor.', 'err'); }
+          go.remove(); planos.remove();
+          mostraPix(j);
+        }
+        function mostraPix(j) {
+          area.innerHTML = '';
+          const st = $e('p', { class: 'et-pix-st', role: 'status', 'aria-live': 'polite', text: 'Aguardando o pagamento…' });
+          const cod = $e('textarea', { class: 'et-in et-pix-cod', readonly: true, rows: '3', 'aria-label': 'Pix copia e cola' }); cod.value = j.qr_code || '';
+          const copia = $e('button', { class: 'et-btn sm', type: 'button', text: 'Copiar código Pix', onclick: async () => { try { await navigator.clipboard.writeText(cod.value); } catch { cod.select(); document.execCommand('copy'); } copia.textContent = 'Copiado!'; setTimeout(() => copia.textContent = 'Copiar código Pix', 1800); } });
+          const fim = j.expira_em ? new Date(j.expira_em) : null;
+          const rel = $e('span', { class: 'et-pix-tempo' });
+          area.append(
+            $e('p', { class: 'et-pix-v' }, (j.plano === 'anual' || plano === 'anual' ? 'Plano anual' : 'Plano mensal') + ' · ', $e('strong', { text: brl(j.valor) })),
+            j.qr_code_base64 ? $e('img', { class: 'et-pix-qr', alt: 'QR Code do Pix', src: 'data:image/png;base64,' + j.qr_code_base64 }) : null,
+            $e('p', { class: 'et-pix-dica', text: 'Abra o app do seu banco, escolha Pix › Ler QR Code, ou copie o código abaixo e use Pix › Copia e cola.' }),
+            cod, copia, st, rel);
+          // relógio de validade do Pix
+          const relogio = setInterval(() => {
+            if (!fim) return; const s = Math.max(0, Math.round((fim - Date.now()) / 1000));
+            rel.textContent = s ? 'Este Pix vale por mais ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : 'Este Pix expirou. Volte e gere outro.';
+            if (!s) { clearInterval(relogio); }
+          }, 1000);
+          // aprovação: escuta o banco em tempo real e, por garantia, confere a cada 6 s
+          let feito = false;
+          const aprovado = async () => {
+            if (feito) return; feito = true; ET.pararPix();
+            await ET.carregaAcesso(); ET.contaUI();
+            area.innerHTML = '';
+            area.append($e('p', { class: 'et-ok', text: 'Pagamento confirmado! ' + ET.textoAcesso() + ' Obrigado por apoiar a Escola da Torá.' }),
+              $e('button', { class: 'et-btn', type: 'button', text: 'Voltar ao app', onclick: () => hide() }));
+          };
+          const confere = async () => { try { const { data } = await sb.from('et_pagamentos').select('status').eq('id', j.id).maybeSingle(); if (data?.status === 'approved') aprovado(); else if (['rejected', 'cancelled'].includes(data?.status)) { st.textContent = 'Este Pix foi cancelado ou expirou. Gere outro.'; ET.pararPix(); } } catch {} };
+          const canal = sb.channel('et-pix-' + j.id).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'et_pagamentos', filter: 'id=eq.' + j.id }, p => { if (p.new?.status === 'approved') aprovado(); }).subscribe();
+          const tick = setInterval(confere, 6000);
+          ET.pararPix = () => { clearInterval(tick); clearInterval(relogio); try { sb.removeChannel(canal); } catch {} ET.pararPix = null; };
+          confere();
+        }
         return [wrap, null];
       },
       aviso(t) {
         return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), ET.uid ? null : VISITA && !ET.visitante ? $e('button', { class: 'et-btn', type: 'button', text: 'Conhecer a Escola da Torá', onclick: () => location.replace(ET.app) }) : $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
       },
     };
-    function show(v, arg) { say(''); body.innerHTML = ''; el.classList.toggle('intro', v === 'carregando'); el.dataset.v = v; el.dataset.logado = ET.uid ? '1' : ''; titulo.textContent = v === 'perfil' ? 'Meu perfil' : v === 'nova' && ET.uid ? 'Trocar senha' : 'Escola da Torá'; const [node, focus] = views[v](arg); body.append(node); if (ET.visitante && ['entrar', 'criar', 'esqueci', 'convite'].includes(v)) body.append($e('button', { class: 'et-link et-volta', type: 'button', text: '‹ Voltar ao estudo', onclick: () => hide() })); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
+    function show(v, arg) { say(''); body.innerHTML = ''; el.classList.toggle('intro', v === 'carregando'); el.dataset.v = v; el.dataset.logado = ET.uid ? '1' : ''; titulo.textContent = v === 'perfil' ? 'Meu perfil' : v === 'assinar' ? 'Assinar' : v === 'nova' && ET.uid ? 'Trocar senha' : 'Escola da Torá'; const [node, focus] = views[v](arg); body.append(node); if (ET.visitante && ['entrar', 'criar', 'esqueci', 'convite'].includes(v)) body.append($e('button', { class: 'et-link et-volta', type: 'button', text: '‹ Voltar ao estudo', onclick: () => hide() })); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
     function hide() { el.classList.add('out'); document.documentElement.classList.remove('et-locked'); setTimeout(() => { el.hidden = true; el.classList.remove('out'); stopAnim(); }, 450); }
     // fundo: neurônios devagar
     let raf = 0;
@@ -1239,6 +1317,7 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poeAvatar); else poeAvatar();
     try { const { data } = await sb.rpc('et_assumir_biblioteca'); ET.admin = !!data?.admin; } catch { ET.admin = false; }
     try { const { data } = await sb.rpc('et_meu_uso'); if (data) { ET.usados = data.usados || 0; ET.limite = data.limite || null; } } catch {}
+    await ET.carregaAcesso();
     gate.intro.etapa(58, 88, 'Trazendo as suas anotações…');
     resolveReady(session); ET.contaUI();
     // a abertura fecha quando o cérebro termina de carregar (ou depois de alguns segundos, para nunca prender)
@@ -1501,6 +1580,9 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
     if (!ET.uid) return p;
     const ia = ET.usados != null ? `IA hoje: ${ET.usados}${ET.limite ? ' de ' + ET.limite : ''}` : '';
     const link = (t, fn) => $e('a', { href: '#', text: t, onclick: e => { e.preventDefault(); fn(); } });
+    const A = ET.acesso || {};
+    const renova = !A.cortesia && A.ativo && A.dias_restantes <= 3 ? $e('a', { href: '#', class: 'et-renova', text: 'Renovar (faltam ' + A.dias_restantes + (A.dias_restantes === 1 ? ' dia' : ' dias') + ')', onclick: e => { e.preventDefault(); gate.show('assinar'); } }) : null;
+    if (renova) p.append(renova, ' · ');
     p.append(...(ia ? [ia, ' · '] : []), link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Meu perfil', () => gate.show('perfil')), ' · ', link('Sair', ET.sair));
     return p;
   };
@@ -1512,6 +1594,14 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
     s.classList.toggle('alto', pct >= 80); s.classList.toggle('fim', !!L && u >= L);
     s.title = L ? `Você usou ${u} de ${L} pedidos de IA hoje (restam ${resta}). Zera à meia-noite.` : `Pedidos de IA hoje: ${u}`;
     s.append($e('span', { class: 'et-ia-l', text: 'IA hoje' }), $e('span', { class: 'et-ia-b', 'aria-hidden': 'true' }, $e('i', { style: `width:${pct}%` })), $e('span', { class: 'et-ia-n', text: L ? `${u}/${L}` : String(u) }));
+  };
+  ET.carregaAcesso = async () => { try { const { data } = await sb.rpc('et_meu_acesso'); if (data) ET.acesso = data; } catch {} return ET.acesso; };
+  ET.textoAcesso = () => {
+    const A = ET.acesso || {};
+    if (A.cortesia) return 'Acesso liberado como cortesia.';
+    if (!A.ativo) return A.acesso_ate ? 'Sua assinatura venceu. Assine para voltar a usar a IA.' : 'Você ainda não tem assinatura.';
+    const d = new Date(A.acesso_ate).toLocaleDateString('pt-BR');
+    return (A.plano === 'anual' ? 'Plano anual' : 'Plano mensal') + ' ativo até ' + d + ' (' + A.dias_restantes + (A.dias_restantes === 1 ? ' dia' : ' dias') + ').';
   };
   ET.medidor = (cls = '') => { const s = $e('span', { class: 'et-ia ' + cls, role: 'status' }); pintaIA(s); return s; };
   ET.contaUI = () => { document.querySelectorAll('.af-conta').forEach(x => x.replaceWith(ET.rodape())); document.querySelectorAll('.et-ia').forEach(pintaIA); };
