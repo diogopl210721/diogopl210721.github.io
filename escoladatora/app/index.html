@@ -713,6 +713,15 @@ details summary{cursor:pointer;color:var(--soft);font-size:13px}
 .es-qs li span{margin-right:8px}
 .es-fontes{font-size:12.5px}
 @media (max-width:720px){.es-pair{grid-template-columns:minmax(0,1fr)}.es-pair-x{display:none}.es-tese-c{grid-template-columns:1fr}.calc-grid,.ej-grid,.es-words,.es-tese-grid{grid-template-columns:minmax(0,1fr)}.inv-core{display:none}}
+/* estudo compartilhado (só no app hospedado) */
+.es-visita{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));background:linear-gradient(120deg,color-mix(in srgb,var(--gold) 10%,var(--panel)),var(--panel));border-radius:16px;padding:12px 14px;margin-bottom:14px}
+.es-visita-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 220px}
+.es-visita-t b{font-size:15px}.es-visita-t span{font-size:13px;color:var(--soft)}
+.es-visita-fim{border:1px solid color-mix(in srgb,var(--gold) 35%,var(--line));border-radius:20px;padding:22px;margin-top:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 9%,var(--panel)),var(--panel))}
+.es-visita-fim h2{margin:0;font-family:var(--f-display);font-size:clamp(24px,3vw,32px)}
+.es-visita-fim ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;max-width:64ch}
+.es-visita-fim li b{margin-right:6px}.es-visita-fim li span{color:var(--soft)}
+.es-pop-v{margin:0;font-family:var(--f-text);font-size:18px;line-height:1.6}
 /* v17 · pessoas, lugares no tempo, medidas e linha do tempo */
 .es-pes-grid,.es-lug-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
 .es-pes,.es-lug{border:1px solid var(--line);border-radius:18px;padding:16px;background:var(--panel);display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -888,6 +897,11 @@ header.top .et-av{margin-left:2px}
 .et-pf-acts{display:flex;gap:8px;flex-wrap:wrap}
 .et-pf-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;padding-top:14px;border-top:1px solid color-mix(in srgb,#3be3f0 14%,var(--line,#1C2A43))}
 
+/* estudo compartilhado: quem abre o link sem conta vê só o estudo */
+html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visita #calChip,html.et-visita .estudo>.btn.ghost:first-child{display:none!important}
+.et-volta{display:block;margin:14px auto 0}
+.et-gate[data-v=convite] .et-card>.et-sub{display:none}
+
 </style>
 
 </head>
@@ -973,6 +987,9 @@ header.top .et-av{margin-left:2px}
   };
   window.ETN = () => ET.nome || 'você';
   const RECUP = /type=recovery/.test(location.hash + location.search);
+  // link público de um estudo (…/app/?c=TOKEN): abre só aquele estudo, sem conta e sem login
+  const VISITA = (() => { try { const t = new URLSearchParams(location.search).get('c'); return t && /^[A-Za-z0-9_-]{8,40}$/.test(t) && !RECUP ? t : null; } catch { return null; } })();
+  if (VISITA) document.documentElement.classList.add('et-visita');
   const $e = (tag, attrs = {}, ...kids) => {
     const el = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
@@ -1072,7 +1089,7 @@ header.top .et-av{margin-left:2px}
           const { data, error } = await sb.auth.signInWithPassword({ email: em.value.trim(), password: pw.value });
           busy(go, false, 'Entrar');
           if (error) return say(traduz(error), 'err');
-          if (data.session) entrou(data.session);
+          if (data.session) logou(data.session);
         } }, l1, l2, go,
           $e('div', { class: 'et-links' },
             $e('button', { type: 'button', class: 'et-link', text: 'Criar minha conta', onclick: () => show('criar') }),
@@ -1102,7 +1119,7 @@ header.top .et-av{margin-left:2px}
           const { data, error } = await sb.auth.signInWithPassword({ email, password: pw.value });
           busy(go, false, 'Criar minha conta');
           if (error) return say(traduz(error), 'err');
-          if (data.session) entrou(data.session);
+          if (data.session) logou(data.session);
         } }, l0, l1, l1b, l2, l2b, go,
           $e('div', { class: 'et-links' }, $e('button', { type: 'button', class: 'et-link', text: 'Já tenho conta', onclick: () => show('entrar') })));
         return [f, nm];
@@ -1141,6 +1158,16 @@ header.top .et-av{margin-left:2px}
         return [f, pw];
       },
       carregando() { return [$e('div')]; },
+      // quem está lendo um estudo compartilhado e toca em algo que só existe com conta
+      convite(motivo) {
+        const V = ET.visitante || {};
+        const f = $e('div', { class: 'et-form' },
+          $e('p', { class: 'et-sub', text: (motivo ? 'Para ' + motivo + ', entre na Escola da Torá. ' : '') + 'Com a sua conta grátis você investiga qualquer passagem com o Binah, lê a Bíblia com hebraico, grego e 344 mil ligações, e guarda tudo no seu segundo cérebro.' }),
+          V.logado ? $e('button', { class: 'et-btn', type: 'button', text: 'Abrir o meu app', onclick: () => location.replace(ET.app) })
+            : $e('button', { class: 'et-btn', type: 'button', text: 'Criar conta grátis', onclick: () => show('criar') }),
+          V.logado ? null : $e('button', { class: 'et-btn ghost', type: 'button', text: 'Já tenho conta', onclick: () => show('entrar') }));
+        return [f, null];
+      },
       perfil() {
         const ini = (ET.nome || '?').charAt(0).toUpperCase();
         const [l1, nm] = field('Seu nome', { type: 'text', autocomplete: 'name', maxlength: '40', value: ET.nomeCompleto || ET.nome || '' });
@@ -1169,10 +1196,10 @@ header.top .et-av{margin-left:2px}
         return [wrap, null];
       },
       aviso(t) {
-        return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), ET.uid ? null : $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
+        return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), ET.uid ? null : VISITA && !ET.visitante ? $e('button', { class: 'et-btn', type: 'button', text: 'Conhecer a Escola da Torá', onclick: () => location.replace(ET.app) }) : $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
       },
     };
-    function show(v, arg) { say(''); body.innerHTML = ''; el.classList.toggle('intro', v === 'carregando'); el.dataset.v = v; el.dataset.logado = ET.uid ? '1' : ''; titulo.textContent = v === 'perfil' ? 'Meu perfil' : v === 'nova' && ET.uid ? 'Trocar senha' : 'Escola da Torá'; const [node, focus] = views[v](arg); body.append(node); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
+    function show(v, arg) { say(''); body.innerHTML = ''; el.classList.toggle('intro', v === 'carregando'); el.dataset.v = v; el.dataset.logado = ET.uid ? '1' : ''; titulo.textContent = v === 'perfil' ? 'Meu perfil' : v === 'nova' && ET.uid ? 'Trocar senha' : 'Escola da Torá'; const [node, focus] = views[v](arg); body.append(node); if (ET.visitante && ['entrar', 'criar', 'esqueci', 'convite'].includes(v)) body.append($e('button', { class: 'et-link et-volta', type: 'button', text: '‹ Voltar ao estudo', onclick: () => hide() })); const bt = node.querySelector?.('.et-btn'); if (bt) bt.after(msg); else body.after(msg); el.hidden = false; document.documentElement.classList.add('et-locked'); if (focus) setTimeout(() => focus.focus(), 60); anim(); }
     function hide() { el.classList.add('out'); document.documentElement.classList.remove('et-locked'); setTimeout(() => { el.hidden = true; el.classList.remove('out'); stopAnim(); }, 450); }
     // fundo: neurônios devagar
     let raf = 0;
@@ -1193,11 +1220,13 @@ header.top .et-av{margin-left:2px}
     function stopAnim() { cancelAnimationFrame(raf); raf = 0; }
     const mount = () => document.body.append(el);
     if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
-    show('carregando'); intro_.etapa(3, 30, 'Conferindo sua conta…');
+    show('carregando'); intro_.etapa(3, 30, VISITA ? 'Abrindo o estudo compartilhado…' : 'Conferindo sua conta…');
     return { show, hide, say, intro: intro_, get emIntro() { return el.classList.contains('intro') && !el.hidden; } };
   })();
   ET.gate = gate;
 
+  // quem entra ou cria a conta a partir de um estudo compartilhado vai para o app completo
+  function logou(session) { if (ET.visitante || VISITA) location.replace(ET.app); else entrou(session); }
   async function entrou(session) {
     if (ET.uid) return;
     if (!gate.emIntro) { gate.intro.reinicia(30); gate.show('carregando'); }
@@ -1219,9 +1248,25 @@ header.top .et-av{margin-left:2px}
   sb.auth.onAuthStateChange((ev, session) => {
     if (ev === 'PASSWORD_RECOVERY') { gate.show('nova'); return; }
     if (ev === 'SIGNED_OUT') { setTimeout(() => location.replace(ET.app), 50); return; }
-    if (session && !ET.uid && !RECUP && (ev === 'SIGNED_IN' || ev === 'INITIAL_SESSION')) entrou(session);
+    if (session && !ET.uid && !RECUP && !VISITA && (ev === 'SIGNED_IN' || ev === 'INITIAL_SESSION')) entrou(session);
   });
-  ET.inicio = sb.auth.getSession().then(({ data }) => {
+  // estudo compartilhado: busca só aquele estudo (função pública do banco) e abre o app em modo leitura
+  async function abreVisita() {
+    let logado = false; try { logado = !!(await sb.auth.getSession()).data.session; } catch {}
+    gate.intro.etapa(20, 80, 'Abrindo o estudo compartilhado…');
+    let d = null; try { const r = await sb.rpc('et_estudo_publico', { p_token: VISITA }); if (r.error) throw r.error; d = r.data; } catch (e) { console.warn('estudo compartilhado', e); }
+    if (!d?.estudo?.id) {
+      gate.intro.fim(() => gate.show('aviso', 'Este estudo não está disponível agora. Ele pode estar em revisão ou ter sido apagado por quem compartilhou.'));
+      return;
+    }
+    ET.visitante = { token: VISITA, autor: d.autor || '', logado, link: ET.app + '?c=' + VISITA, id: d.estudo.id };
+    DB.visita(d);
+    try { history.replaceState(null, '', location.pathname + location.search + '#e-' + d.estudo.id); } catch {}
+    try { document.title = (d.estudo.titulo || 'Estudo') + ' · Escola da Torá'; } catch {}
+    resolveReady(null);
+    gate.intro.fim(() => gate.hide(), d.autor ? 'Estudo de ' + d.autor : 'Pronto');
+  }
+  ET.inicio = VISITA ? Promise.resolve().then(abreVisita) : sb.auth.getSession().then(({ data }) => {
     if (RECUP) gate.show('nova');
     else if (data.session) entrou(data.session);
     else gate.intro.fim(() => gate.show('entrar'), 'Bem-vindo!');
@@ -1256,6 +1301,7 @@ header.top .et-av{margin-left:2px}
     const limpa = d => { const o = {}; for (const [k, v] of Object.entries(d || {})) if (!k.startsWith('_') && k !== 'id') o[k] = v; return o; };
     const novoId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     async function gravar(id, d) {
+      if (ET.visitante) throw { code: 'invalid_argument' };
       const dados = limpa(d);
       const row = { id, user_id: ET.uid, status: dados.status || 'rascunho', tipo: dados.tipo || null, dados };
       const { error } = await sb.from('et_nos').upsert(row, { onConflict: 'user_id,id' });
@@ -1263,6 +1309,7 @@ header.top .et-av{margin-left:2px}
       rows.set(id, row); fire();
     }
     async function apagar(c, id) {
+      if (ET.visitante) throw { code: 'invalid_argument' };
       const cur = rows.get(id); if (!cur || !meu(cur) || colOf(cur) !== c) return;
       if (cur.base) { rows.delete(id); fire(); return; }
       const { error } = await sb.from('et_nos').delete().eq('user_id', ET.uid).eq('id', id);
@@ -1282,7 +1329,9 @@ header.top .et-av{margin-left:2px}
         add: async d => { const id = novoId(); await gravar(id, d); return { id }; },
       }),
       doc: p => { const [c, id] = String(p).split('/'); return ref(c, id); },
-      async recarregar() { await carregar(); fire(); },
+      async recarregar() { if (ET.visitante) return; await carregar(); fire(); },
+      // modo visitante: só o estudo compartilhado e as descobertas dele, sem ler mais nada do banco
+      visita(d) { rows = new Map([d.estudo, ...(d.filhos || [])].map(n => { const { id, ...dados } = n; return [id, { id, user_id: 'visita', status: dados.status || 'verificado', dados }]; })); carregado = Promise.resolve(); },
       meus: () => [...rows.values()].filter(r => r.user_id === ET.uid),
       async importar(lista) {
         const prontos = lista.filter(n => n && n.id).map(n => { const dados = limpa(n); return { id: String(n.id), user_id: ET.uid, status: dados.status || 'rascunho', tipo: dados.tipo || null, dados }; });
@@ -1413,8 +1462,18 @@ header.top .et-av{margin-left:2px}
   };
   sample.limits = async () => ({ tools: true, images: false });
 
-  const USER = { isOwner: async () => true, canEdit: async () => true, can: async () => true, me: async () => ({ id: ET.uid, email: ET.email, name: ET.nome }) };
-  window.claude = { use: async n => { await ET.ready; return n === 'db' ? DB : n === 'user' ? USER : n === 'sample' ? sample : null; } };
+  const USER = { isOwner: async () => !ET.visitante, canEdit: async () => !ET.visitante, can: async () => !ET.visitante, me: async () => ET.visitante ? null : ({ id: ET.uid, email: ET.email, name: ET.nome }) };
+  // no estudo compartilhado, tudo o que usa a IA vira o convite para criar a conta
+  const semIA = async () => { ET.convite('conversar com o Binah e investigar passagens'); throw { code: 'cancelled' }; };
+  semIA.json = semIA; semIA.limits = async () => ({ tools: false, images: false });
+  window.claude = { use: async n => { await ET.ready; return n === 'db' ? DB : n === 'user' ? USER : n === 'sample' ? (ET.visitante ? semIA : sample) : null; } };
+  ET.convite = motivo => gate.show('convite', motivo);
+  // gera (ou reaproveita) o link público fixo de um estudo verificado
+  ET.compartilhar = async id => {
+    const { data, error } = await sb.rpc('et_compartilhar', { p_id: id });
+    if (error || !data) { const m = String(error?.message || ''); throw { message: /rascunho/.test(m) ? 'Só estudos verificados ganham link público. Marque como verificado primeiro.' : /nao_encontrado|nao_e_estudo/.test(m) ? 'Este estudo ainda não está salvo na sua conta. Marque como verificado e tente de novo.' : 'Não consegui gerar o link. Tente de novo.' }; }
+    return ET.app + '?c=' + encodeURIComponent(data);
+  };
 
   /* ---------------- microfone de verdade ---------------- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1438,6 +1497,7 @@ header.top .et-av{margin-left:2px}
   /* ---------------- conta, uso da IA, exportar e importar ---------------- */
   ET.rodape = () => {
     const p = $e('p', { class: 'af-conta' });
+    if (ET.visitante) { const l = (t, fn) => $e('a', { href: '#', text: t, onclick: e => { e.preventDefault(); fn(); } }); p.append(l(ET.visitante.logado ? 'Abrir o meu app' : 'Criar conta grátis', () => ET.visitante.logado ? location.replace(ET.app) : gate.show('criar')), ET.visitante.logado ? '' : ' · ', ET.visitante.logado ? null : l('Entrar', () => gate.show('entrar'))); return p; }
     if (!ET.uid) return p;
     const ia = ET.usados != null ? `IA hoje: ${ET.usados}${ET.limite ? ' de ' + ET.limite : ''}` : '';
     const link = (t, fn) => $e('a', { href: '#', text: t, onclick: e => { e.preventDefault(); fn(); } });
@@ -1705,6 +1765,8 @@ function appFooter() {
 const VIEWS = {};
 function setTab(tab, opts = {}) {
   if (tab === 'lupa') tab = 'descobertas';
+  // estudo compartilhado: o visitante só vê o estudo; o resto do app pede a conta
+  if (window.ET?.visitante && !(tab === 'descobertas' && opts.estudo === ET.visitante.id)) { if (S.tab) ET.convite(); else setTab('descobertas', { estudo: ET.visitante.id }); return; }
   if (FS.isOpen) FS.close();
   if (NEURO.isOpen) NEURO.close();
   if (matchMedia('(max-width:1080px)').matches && !$('#panel').hidden) closePanel();
@@ -5029,6 +5091,34 @@ function linhaTempo(L) {
   return h('div', { class: 'es-tl-grid' }, col('Antes', L.antes, 'a'), col('Na época', L.epoca, 'e'), col('Depois', L.depois, 'd'));
 }
 
+/* ---------- estudo compartilhado: quem abre o link sem conta ---------- */
+function visitaFaixa() {
+  const V = window.ET.visitante;
+  return h('div', { class: 'es-visita' },
+    h('div', { class: 'es-visita-t' }, h('b', { text: 'Estudo compartilhado' + (V.autor ? ' por ' + V.autor : '') }), h('span', { text: 'Feito na Escola da Torá com o Binah. Você pode ler tudo sem conta.' })),
+    h('button', { class: 'btn primary', text: V.logado ? 'Abrir o meu app' : 'Criar conta grátis', onclick: () => V.logado ? location.replace(ET.app) : ET.convite() }));
+}
+function visitaFim() {
+  const V = window.ET.visitante;
+  const it = (t, d) => h('li', {}, h('b', { text: t + ':' }), h('span', { text: d }));
+  return h('section', { class: 'es-sec es-visita-fim' },
+    h('div', { class: 'eyebrow', text: 'Escola da Torá' }), h('h2', { text: 'Investigue qualquer passagem assim' }),
+    h('ul', {}, it('O Binah faz o pente fino', 'pessoas, lugares, medidas, linha do tempo, palavras no original e tradições, em poucos minutos.'),
+      it('A Bíblia inteira ligada', 'hebraico e grego palavra por palavra, 344 mil ligações entre versículos e mapas com as jornadas.'),
+      it('O seu segundo cérebro', 'cada descoberta fica guardada e ligada aos versículos, para você voltar e continuar.')),
+    h('div', { class: 'es-acts' }, h('button', { class: 'btn primary big', text: V.logado ? 'Abrir o meu app' : 'Criar conta grátis', onclick: () => V.logado ? location.replace(ET.app) : ET.convite() }),
+      V.logado ? null : h('button', { class: 'btn', text: 'Já tenho conta', onclick: () => ET.gate.show('entrar') })));
+}
+async function versoPopup(id) {
+  const m = $('#modal'); m.innerHTML = ''; m.hidden = false;
+  const fecha = () => { m.hidden = true; m.innerHTML = ''; };
+  m.onclick = e => { if (e.target === m) fecha(); };
+  const txt = h('p', { class: 'es-pop-v', text: '…' });
+  m.append(h('div', { class: 'box', role: 'dialog', 'aria-label': refLabel(id, true) }, h('div', { class: 'eyebrow', text: refLabel(id, true) }), txt,
+    h('div', { class: 'es-acts' }, h('button', { class: 'btn primary', text: 'Ler o capítulo inteiro', onclick: () => { fecha(); ET.convite('ler a Bíblia inteira com hebraico, grego e as ligações entre versículos'); } }), h('button', { class: 'btn', text: 'Fechar', onclick: fecha }))));
+  txt.textContent = await verseText(id).catch(() => '') || 'Não consegui carregar o versículo.';
+}
+
 /* ---------- página do estudo ---------- */
 function estudoChildren(id) { return [...S.brain.values()].filter(n => n.estudo === id || (S.brain.get(id)?.filhos || []).includes(n.id)).filter(n => n.id !== id); }
 function estudoRelated(E) {
@@ -5042,13 +5132,28 @@ function renderEstudo(root, id) {
   const E = S.brain.get(id);
   const wrap = h('div', { class: 'wide estudo' });
   wrap.append(h('button', { class: 'btn ghost', style: 'margin-bottom:10px', text: '‹ Descobertas', onclick: () => setTab('descobertas') }));
+  if (E && window.ET?.visitante) wrap.append(visitaFaixa());
   if (!E) { S.estudoSig = estudoSig(id); wrap.append(h('div', { class: 'empty', text: S.brainReady ? 'Este estudo não está disponível. Ele pode ainda ser um rascunho, que só o autor vê.' : 'Carregando o cérebro…' })); root.append(wrap); return; }
   S.estudoSig = estudoSig(id);
   const p = E.passagem || {};
   const secs = E.secoes || [];
   const fala = (E.resumo || '') + ' ' + (secs.find(s => s.k === 'sintese')?.md || '');
   const ouvir = VOZ.ok ? h('button', { class: 'btn glow', text: 'Ouvir resumo', onclick: () => { if (VOZ.busy) { VOZ.stop(); ouvir.textContent = 'Ouvir resumo'; return; } VOZ.unlock(); ouvir.textContent = 'Parar'; VOZ.sayAll(fala, () => { if (ouvir.isConnected) ouvir.textContent = 'Ouvir resumo'; }); } }) : null;
-  const share = !window.ET?.admin ? null : h('button', { class: 'btn', text: 'Compartilhar', onclick: () => { const url = ART_URL + '#e-' + id; if (E.status === 'rascunho') toast('Rascunhos só você vê. Marque como verificado para compartilhar.'); if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast('Link do estudo copiado'), () => prompt2(url)); else prompt2(url); } });
+  const VIS = window.ET?.visitante;
+  const share = h('button', { class: 'btn', text: 'Compartilhar', onclick: async () => {
+    let url;
+    if (VIS) url = VIS.link;
+    else if (window.ET?.compartilhar) {
+      // app hospedado: link público fixo, que abre o estudo sem conta (só para estudos verificados)
+      if (E.status !== 'verificado') { toast('Só estudos verificados ganham link público. Marque como verificado primeiro.'); return; }
+      share.disabled = true; try { url = await ET.compartilhar(id); } catch (e) { toast(e?.message || 'Não consegui gerar o link. Tente de novo.'); } finally { share.disabled = false; }
+      if (!url) return;
+    } else { url = ART_URL + '#e-' + id; if (E.status === 'rascunho') toast('Rascunhos só você vê. Marque como verificado para compartilhar.'); }
+    const titulo = 'Estudo “' + (E.titulo || 'bíblico') + '” na Escola da Torá';
+    if (window.ET && navigator.share && matchMedia('(pointer:coarse)').matches) { try { await navigator.share({ title: titulo, text: titulo, url }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
+    const ok = window.ET ? 'Link copiado: quem abrir lê o estudo sem precisar de conta' : 'Link do estudo copiado';
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast(ok), () => prompt2(url)); else prompt2(url);
+  } });
   const prompt2 = url => { const box = h('input', { class: 'fs-search', value: url, readonly: true, style: 'width:100%;margin-top:8px' }); share.after(box); box.select(); };
   const owner = S.isOwner !== false && S.canWrite && !E._lib;
   const verify = owner && S.db ? h('button', { class: 'btn', text: E.status === 'verificado' ? 'Voltar a rascunho' : 'Marcar estudo como verificado', onclick: async () => {
@@ -5064,8 +5169,8 @@ function renderEstudo(root, id) {
     E.subtitulo ? h('p', { class: 'es-sub', text: E.subtitulo }) : null,
     E.resumo ? h('p', { class: 'lede-big', text: E.resumo }) : null,
     h('div', { class: 'es-meta' }, h('span', { class: 'chip st-' + E.status, text: E.status }), h('span', { class: 'chip', text: E.autor === 'claude' ? 'pesquisado pelo Claude' : E._lib ? 'Diogo Soares' : 'você' }), (E.tags || []).slice(0, 8).map(t => h('span', { class: 'chip', text: t }))),
-    h('div', { class: 'es-acts' }, p.de ? h('button', { class: 'btn primary', text: 'Ler a passagem', onclick: () => gotoVerse(p.de) }) : null, ouvir,
-      h('button', { class: 'btn glow', text: 'Perguntar ao Binah', onclick: e => { NEURO.open({ from: e.currentTarget, focus: true }); setTimeout(() => { const i = $('#nrQ'); if (i) i.value = 'Sobre o estudo “' + E.titulo + '”: '; }, 300); } }),
+    h('div', { class: 'es-acts' }, p.de ? h('button', { class: 'btn primary', text: 'Ler a passagem', onclick: () => { if (VIS) { const d = $('.es-text'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; } gotoVerse(p.de); } }) : null, ouvir,
+      h('button', { class: 'btn glow', text: 'Perguntar ao Binah', onclick: e => { if (VIS) { ET.convite('perguntar ao Binah sobre este estudo'); return; } NEURO.open({ from: e.currentTarget, focus: true }); setTimeout(() => { const i = $('#nrQ'); if (i) i.value = 'Sobre o estudo “' + E.titulo + '”: '; }, 300); } }),
       h('button', { class: 'btn', text: 'Ver no cérebro', onclick: e => { NEURO.open({ from: e.currentTarget }); setTimeout(() => { const V = NEURO.V; const i = V?.g.idx.get(id); if (i != null) V.select(i); }, 700); } }),
       share, verify),
     h('div', { class: 'es-selos' }, h('span', { class: 'muted', style: 'font-size:12px', text: 'Origem de cada parte:' }), Object.keys(SELOS).map(seloChip))));
@@ -5111,6 +5216,7 @@ function renderEstudo(root, id) {
   const tools = (E.ferramentas || ['conversor', 'primeira_mencao']).filter(k => T[k]);
   if (tools.length) wrap.append(h('section', { class: 'es-sec', id: 'sec-ferr' }, h('div', { class: 'es-sec-h' }, h('span', { class: 'es-ic', text: '⚙' }), h('h2', { text: 'Ferramentas para este estudo' }), h('span', { class: 'muted', style: 'font-size:13px', text: 'depois do pente fino, faça as suas contas' })), h('div', { class: 'grid2' }, h('div', { style: 'display:flex;flex-direction:column;gap:16px' }, tools.filter((_, i) => i % 2 === 0).map(k => T[k]())), h('div', { style: 'display:flex;flex-direction:column;gap:16px' }, tools.filter((_, i) => i % 2 === 1).map(k => T[k]())))));
   if ((E.fontes || []).length) wrap.append(h('section', { class: 'es-sec' }, h('div', { class: 'es-sec-h' }, h('span', { class: 'es-ic', text: '§' }), h('h2', { text: 'Fontes do estudo' })), h('ul', { class: 'lic' }, E.fontes.map(f => h('li', {}, f.u ? h('a', { href: f.u, target: '_blank', rel: 'noopener', text: f.t }) : f.t)))));
+  if (VIS) wrap.append(visitaFim());
   root.append(wrap);
   try { history.replaceState(null, '', '#e-' + id); } catch {}
 }
@@ -5545,7 +5651,7 @@ async function boot() {
   $('#brand').onclick = () => setTab('inicio');
   $('#calChip').onclick = () => setTab('mesa');
   $('#searchForm').onsubmit = e => { e.preventDefault(); runSearch($('#busca').value); $('#busca').blur(); };
-  document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) { e.preventDefault(); gotoVerse(+g.dataset.goto); } });
+  document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) { e.preventDefault(); if (window.ET?.visitante) versoPopup(+g.dataset.goto); else gotoVerse(+g.dataset.goto); } });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && NEURO.isOpen) { if (!NEURO.hist.hidden) NEURO.hist.hidden = true; else if (!NEURO.card.hidden) NEURO.deselect(); else NEURO.close(); return; } if (e.key === 'Escape') { if (FS.isOpen && $('#modal').hidden) { FS.close(); return; } if (!$('#modal').hidden) { $('#modal').hidden = true; $('#modal').innerHTML = ''; } else closePanel(); } });
   renderCalChip();
   const hash = (location.hash || '').slice(1);
