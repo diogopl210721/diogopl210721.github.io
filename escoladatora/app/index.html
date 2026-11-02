@@ -902,6 +902,36 @@ header.top .et-av{margin-left:2px}
 @keyframes etPulso{50%{opacity:.55}}@media (prefers-reduced-motion:reduce){.et-pix-st{animation:none}}
 .af-conta .et-renova{color:#F2B648;font-weight:600}
 @media (max-width:360px){.et-planos{grid-template-columns:1fr}}
+.et-adm{position:fixed;inset:0;z-index:10050;display:flex;justify-content:center;align-items:flex-start;padding:24px 16px;overflow:auto;background:color-mix(in srgb,#02060d 78%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.et-adm-box{width:min(980px,100%);padding:20px;border-radius:20px;background:var(--panel,#0D1627);border:1px solid color-mix(in srgb,#3be3f0 22%,var(--line,#1C2A43));box-shadow:0 30px 80px #0009;color:var(--text,#E8EEF7)}
+.et-adm-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.et-adm-top h2{margin:0;font-size:22px}
+.et-adm-abas{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line2,#2A3B5C);margin-bottom:12px}
+.et-adm-abas button{background:none;border:0;border-bottom:2px solid transparent;color:inherit;font:600 15px var(--f-ui,system-ui);padding:10px 12px;cursor:pointer;opacity:.7}
+.et-adm-abas button[aria-selected="true"]{opacity:1;border-color:#3be3f0}
+.et-adm-aviso{min-height:1.2em;margin:0 0 10px;font-size:14px}.et-adm-aviso.ok{color:#9ff0c4}.et-adm-aviso.err{color:#ff9a9a}
+.et-adm-corpo .et-in{width:100%;box-sizing:border-box}
+.et-adm-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.et-adm-chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line2,#2A3B5C);background:none;color:inherit;font:600 13px var(--f-ui,system-ui);cursor:pointer}
+.et-adm-chip[aria-pressed="true"]{background:#3be3f0;color:#04121a;border-color:#3be3f0}
+.et-adm-lista{display:grid;gap:10px}
+.et-adm-user{padding:14px;border-radius:14px;border:1px solid var(--line2,#2A3B5C);background:color-mix(in srgb,var(--panel,#0D1627) 60%,#000)}
+.et-adm-uhead{display:flex;align-items:center;gap:10px}.et-adm-uid{display:flex;flex-direction:column;min-width:0;flex:1}.et-adm-uid span{font-size:13px;opacity:.75;overflow-wrap:anywhere}
+.et-adm-sit{padding:3px 10px;border-radius:99px;font:700 12px var(--f-ui,system-ui);white-space:nowrap;background:#2A3B5C}
+.et-adm-sit.s-assinante{background:#16503a;color:#bff5d8}.et-adm-sit.s-teste{background:#1d3f63;color:#cfe8ff}.et-adm-sit.s-cortesia{background:#5a4512;color:#ffe3a3}
+.et-adm-sit.s-vencido{background:#4a2a14;color:#ffc9a3}.et-adm-sit.s-bloqueado{background:#5a1a1a;color:#ffb3b3}.et-adm-sit.s-admin{background:#3be3f0;color:#04121a}
+.et-adm-nota{margin:8px 0 0;font-size:13.5px;opacity:.85}
+.et-adm-det{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px;margin:10px 0 0}.et-adm-det dt{font-size:11.5px;opacity:.6;text-transform:uppercase;letter-spacing:.04em}.et-adm-det dd{margin:0;font-size:14px}
+.et-adm-acoes{margin-top:10px}.et-adm-acoes summary{cursor:pointer;font-weight:600;color:#7ff6ff}
+.et-adm-grupo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}.et-adm-grupo strong{width:100%;font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.05em}
+.et-btn.sm.perigo{background:#7a1f1f;color:#fff;box-shadow:none}
+.et-adm-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}.et-adm-kpis div{padding:14px;border-radius:14px;border:1px solid var(--line2,#2A3B5C)}
+.et-adm-kpis span{display:block;font-size:12.5px;opacity:.7}.et-adm-kpis strong{font:700 22px var(--f-ui,system-ui);color:#7ff6ff}
+.et-adm-tab{overflow:auto}.et-adm-tab table{width:100%;border-collapse:collapse;font-size:14px}.et-adm-tab th,.et-adm-tab td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line2,#2A3B5C);white-space:nowrap}
+.et-adm-tab tr.teste td{opacity:.6}
+.et-adm-corpo h3{margin:18px 0 8px;font-size:16px}
+.et-adm-cfg{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid color-mix(in srgb,#3be3f0 10%,var(--line,#1C2A43))}
+.et-adm-cfg label{flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px}.et-adm-cfg label span{font-size:12.5px;opacity:.7}
+@media (max-width:520px){.et-adm{padding:0}.et-adm-box{border-radius:0;min-height:100%;padding:16px}}
 .et-pf-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:14px;border-top:1px solid color-mix(in srgb,#3be3f0 14%,var(--line,#1C2A43))}
 .et-pf-t{display:flex;flex-direction:column;min-width:0;flex:1 1 180px}
 .et-pf-t strong{font-size:15px}
@@ -1204,7 +1234,8 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
           row('Senha', 'Troque a sua senha quando quiser.', bt('Trocar senha', () => show('nova'))),
           row('Meu cérebro', 'Guarde uma cópia das suas anotações ou traga de um arquivo.', bt('Exportar', () => ET.exportar()), bt('Importar', () => ET.importar())),
           row('Uso da IA hoje', 'Zera à meia-noite.', ET.medidor('et-pf-ia')),
-          row('Assinatura', ET.textoAcesso(), ...(ET.acesso?.cortesia ? [] : [bt(ET.acesso?.ativo ? 'Renovar' : 'Assinar', () => show('assinar'), ET.acesso?.ativo ? 'ghost' : '')])),
+          row('Assinatura', ET.textoAcesso(), ...(ET.podeAssinar() ? [bt(ET.acesso?.situacao === 'assinante' ? 'Renovar' : 'Assinar', () => show('assinar'), ET.acesso?.situacao === 'assinante' ? 'ghost' : '')] : [])),
+          ET.admin ? row('Administração', 'Usuários, senhas, acessos, pagamentos e preços.', bt('Abrir painel', () => { hide(); ET.painelAdmin(); }, '')) : null,
           $e('div', { class: 'et-pf-foot' }, bt('Voltar ao app', () => hide(), ''), bt('Sair da conta', () => ET.sair())));
         return [wrap, null];
       },
@@ -1221,11 +1252,12 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
         const planos = $e('div', { class: 'et-planos' },
           card('mensal', 'Mensal', brl(pm), '30 dias de acesso'),
           card('anual', 'Anual', brl(pa), '365 dias · ' + brl(pa / 12) + '/mês', eco ? eco + '% de desconto' : null));
-        const situ = $e('p', { class: 'et-sub', text: A.ativo ? ET.textoAcesso() + ' O novo período soma aos dias que você ainda tem.' : 'Pague com Pix e o acesso libera na hora, sem enviar comprovante.' });
+        const situ = $e('p', { class: 'et-sub', text: A.situacao === 'assinante' ? ET.textoAcesso() + ' O novo período soma aos dias que você ainda tem.' : (A.situacao === 'teste' || A.situacao === 'vencido' ? ET.textoAcesso() + ' ' : '') + 'Pague com Pix e o acesso libera na hora, sem enviar comprovante.' });
         const go = $e('button', { class: 'et-btn', type: 'button', text: 'Gerar Pix', onclick: () => gera() });
         const area = $e('div', { class: 'et-pix' });
         const wrap = $e('div', { class: 'et-form' }, situ, planos, go, area,
-          $e('div', { class: 'et-links' }, $e('button', { type: 'button', class: 'et-link', text: 'Voltar ao perfil', onclick: () => { ET.pararPix?.(); show('perfil'); } })));
+          $e('div', { class: 'et-links' }, $e('button', { type: 'button', class: 'et-link', text: 'Voltar ao perfil', onclick: () => { ET.pararPix?.(); show('perfil'); } }),
+            $e('button', { type: 'button', class: 'et-link', text: A.ativo ? 'Voltar ao app' : 'Continuar só lendo', onclick: () => { ET.pararPix?.(); hide(); } })));
         async function gera() {
           say(''); busy(go, true, 'Gerando Pix…');
           let j = {};
@@ -1274,6 +1306,10 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
         }
         return [wrap, null];
       },
+      bloqueado() {
+        return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-msg err', text: 'Sua conta está bloqueada. Se achar que é um engano, fale com o suporte da Escola da Torá.' }),
+          $e('button', { class: 'et-btn ghost', type: 'button', text: 'Sair da conta', onclick: () => ET.sair() })), null];
+      },
       aviso(t) {
         return [$e('div', { class: 'et-form' }, $e('p', { class: 'et-ok', text: t }), ET.uid ? null : VISITA && !ET.visitante ? $e('button', { class: 'et-btn', type: 'button', text: 'Conhecer a Escola da Torá', onclick: () => location.replace(ET.app) }) : $e('button', { class: 'et-btn ghost', type: 'button', text: 'Ir para Entrar', onclick: () => show('entrar') }))];
       },
@@ -1319,10 +1355,11 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
     try { const { data } = await sb.rpc('et_assumir_biblioteca'); ET.admin = !!data?.admin; } catch { ET.admin = false; }
     try { const { data } = await sb.rpc('et_meu_uso'); if (data) { ET.usados = data.usados || 0; ET.limite = data.limite || null; } } catch {}
     await ET.carregaAcesso();
+    if (ET.acesso?.situacao === 'bloqueado') { gate.intro.fim(() => gate.show('bloqueado')); return; }
     gate.intro.etapa(58, 88, 'Trazendo as suas anotações…');
     resolveReady(session); ET.contaUI();
     // a abertura fecha quando o cérebro termina de carregar (ou depois de alguns segundos, para nunca prender)
-    ET.introFim = () => gate.intro.fim(() => gate.hide(), 'Tudo pronto. Shalom, ' + ET.nome + '!');
+    ET.introFim = () => gate.intro.fim(() => { if (ET.acesso?.situacao === 'vencido') gate.show('assinar'); else gate.hide(); }, 'Tudo pronto. Shalom, ' + ET.nome + '!');
     setTimeout(ET.introFim, 9000);
   }
   sb.auth.onAuthStateChange((ev, session) => {
@@ -1582,9 +1619,11 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
     const ia = ET.usados != null ? `IA hoje: ${ET.usados}${ET.limite ? ' de ' + ET.limite : ''}` : '';
     const link = (t, fn) => $e('a', { href: '#', text: t, onclick: e => { e.preventDefault(); fn(); } });
     const A = ET.acesso || {};
-    const renova = !A.cortesia && A.ativo && A.dias_restantes <= 3 ? $e('a', { href: '#', class: 'et-renova', text: 'Renovar (faltam ' + A.dias_restantes + (A.dias_restantes === 1 ? ' dia' : ' dias') + ')', onclick: e => { e.preventDefault(); gate.show('assinar'); } }) : null;
+    const dd = A.dias_restantes + (A.dias_restantes === 1 ? ' dia' : ' dias');
+    const txt = A.situacao === 'teste' ? 'Teste grátis: faltam ' + dd + ' · Assinar' : A.situacao === 'vencido' ? 'Acesso vencido · Assinar' : A.situacao === 'assinante' && A.dias_restantes <= 3 ? 'Renovar (faltam ' + dd + ')' : null;
+    const renova = txt ? $e('a', { href: '#', class: 'et-renova', text: txt, onclick: e => { e.preventDefault(); gate.show('assinar'); } }) : null;
     if (renova) p.append(renova, ' · ');
-    p.append(...(ia ? [ia, ' · '] : []), link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Meu perfil', () => gate.show('perfil')), ' · ', link('Sair', ET.sair));
+    p.append(...(ia ? [ia, ' · '] : []), link('Exportar meu cérebro', ET.exportar), ' · ', link('Importar', ET.importar), ' · ', link('Meu perfil', () => gate.show('perfil')), ...(ET.admin ? [' · ', link('Admin', () => ET.painelAdmin())] : []), ' · ', link('Sair', ET.sair));
     return p;
   };
   const pintaIA = s => {
@@ -1598,15 +1637,156 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
   };
   ET.carregaAcesso = async () => { try { const { data } = await sb.rpc('et_meu_acesso'); if (data) ET.acesso = data; } catch {} return ET.acesso; };
   ET.textoAcesso = () => {
-    const A = ET.acesso || {};
-    if (A.cortesia) return 'Acesso liberado como cortesia.';
-    if (!A.ativo) return A.acesso_ate ? 'Sua assinatura venceu. Assine para voltar a usar a IA.' : 'Você ainda não tem assinatura.';
-    const d = new Date(A.acesso_ate).toLocaleDateString('pt-BR');
-    return (A.plano === 'anual' ? 'Plano anual' : 'Plano mensal') + ' ativo até ' + d + ' (' + A.dias_restantes + (A.dias_restantes === 1 ? ' dia' : ' dias') + ').';
+    const A = ET.acesso || {}, n = A.dias_restantes || 0, dd = n + (n === 1 ? ' dia' : ' dias');
+    const data = v => v ? new Date(v).toLocaleDateString('pt-BR') : '';
+    switch (A.situacao) {
+      case 'admin': return 'Conta administradora: acesso completo.';
+      case 'cortesia': return 'Acesso liberado como cortesia.';
+      case 'bloqueado': return 'Conta bloqueada.';
+      case 'assinante': return (A.plano === 'anual' ? 'Plano anual' : 'Plano mensal') + ' ativo até ' + data(A.acesso_ate) + ' (' + dd + ').';
+      case 'teste': return 'Teste grátis: faltam ' + dd + ' (até ' + data(A.teste_ate) + ').';
+      case 'vencido': return A.acesso_ate ? 'Sua assinatura venceu. Assine para voltar a usar o Binah.' : 'Seu teste grátis terminou. Assine para voltar a usar o Binah.';
+      default: return '';
+    }
   };
+  ET.podeAssinar = () => !['admin', 'cortesia', 'bloqueado'].includes(ET.acesso?.situacao);
   ET.medidor = (cls = '') => { const s = $e('span', { class: 'et-ia ' + cls, role: 'status' }); pintaIA(s); return s; };
   ET.contaUI = () => { document.querySelectorAll('.af-conta').forEach(x => x.replaceWith(ET.rodape())); document.querySelectorAll('.et-ia').forEach(pintaIA); };
+  /* ---------------- Painel Admin (só a conta admin) ---------------- */
+  ET.painelAdmin = () => {
+    if (!ET.admin) return;
+    document.querySelector('.et-adm')?.remove();
+    const brl = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const dt = (v, h) => v ? new Date(v).toLocaleString('pt-BR', h ? { dateStyle: 'short', timeStyle: 'short' } : { dateStyle: 'short' }) : '—';
+    const SIT = { admin: 'Admin', teste: 'Em teste', assinante: 'Assinante', cortesia: 'Cortesia', vencido: 'Vencido', bloqueado: 'Bloqueado' };
+    const aviso = $e('p', { class: 'et-adm-aviso', role: 'status', 'aria-live': 'polite' });
+    const diz = (t, tipo) => { aviso.textContent = t || ''; aviso.className = 'et-adm-aviso' + (tipo ? ' ' + tipo : ''); if (t) clearTimeout(diz.t), diz.t = setTimeout(() => { aviso.textContent = ''; }, 7000); };
+    const corpo = $e('div', { class: 'et-adm-corpo' });
+    const abas = ['Usuários', 'Pagamentos', 'Configurações'];
+    let aba = 0;
+    const nav = $e('div', { class: 'et-adm-abas', role: 'tablist' }, ...abas.map((t, i) => $e('button', { type: 'button', role: 'tab', 'aria-selected': String(i === aba), text: t, onclick: () => { aba = i; nav.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-selected', String(j === i))); abre(); } })));
+    const fecha = () => { el.remove(); document.documentElement.classList.remove('et-locked'); };
+    const el = $e('div', { class: 'et-adm', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Painel admin' },
+      $e('div', { class: 'et-adm-box' },
+        $e('header', { class: 'et-adm-top' }, $e('h2', { text: 'Painel admin' }), $e('button', { type: 'button', class: 'et-btn sm ghost', text: 'Fechar', onclick: fecha })),
+        nav, aviso, corpo));
+    document.body.append(el); document.documentElement.classList.add('et-locked');
+    el.addEventListener('keydown', e => { if (e.key === 'Escape') fecha(); });
+    const rpc = async (fn, args) => { const { data, error } = await sb.rpc(fn, args); if (error) throw new Error(error.message.replace(/^.*?:\s*/, '')); return data; };
+    const fnAdmin = async body => {
+      const { data: s } = await sb.auth.getSession();
+      const r = await fetch(ET.url + '/functions/v1/et-admin', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (s.session?.access_token || ''), apikey: ET.key }, body: JSON.stringify({ ...body, app: ET.app }) });
+      const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Não deu certo.'); return j;
+    };
+    const copia = async t => { try { await navigator.clipboard.writeText(t); diz('Copiado.', 'ok'); } catch { prompt('Copie:', t); } };
+    const btn = (t, fn, cls = 'ghost') => $e('button', { type: 'button', class: 'et-btn sm ' + cls, text: t, onclick: async ev => { const b = ev.currentTarget; b.disabled = true; try { await fn(); } catch (e) { diz(e.message || 'Não deu certo.', 'err'); } finally { b.disabled = false; } } });
+
+    async function abre() {
+      corpo.innerHTML = ''; corpo.append($e('p', { class: 'muted', text: 'Carregando…' }));
+      try { await [usuarios, pagamentos, config][aba](); } catch (e) { corpo.innerHTML = ''; corpo.append($e('p', { class: 'et-msg err', text: e.message || 'Não consegui carregar.' })); }
+    }
+
+    let filtro = 'todos', busca = '';
+    async function usuarios() {
+      const lista = await rpc('et_admin_usuarios');
+      const conta = s => lista.filter(u => s === 'todos' || u.situacao === s).length;
+      const lst = $e('div', { class: 'et-adm-lista' });
+      const pinta = () => {
+        lst.innerHTML = '';
+        const q = busca.trim().toLowerCase();
+        const vis = lista.filter(u => (filtro === 'todos' || u.situacao === filtro) && (!q || (u.nome + ' ' + u.email).toLowerCase().includes(q)));
+        if (!vis.length) lst.append($e('p', { class: 'muted', text: 'Nenhum usuário aqui.' }));
+        vis.forEach(u => lst.append(cartao(u)));
+      };
+      const chips = $e('div', { class: 'et-adm-chips' }, ...['todos', 'teste', 'assinante', 'cortesia', 'vencido', 'bloqueado'].map(s =>
+        $e('button', { type: 'button', class: 'et-adm-chip', 'aria-pressed': String(s === filtro), text: (s === 'todos' ? 'Todos' : SIT[s]) + ' ' + conta(s), onclick: ev => { filtro = s; chips.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === ev.currentTarget))); pinta(); } })));
+      const q = $e('input', { class: 'et-in', type: 'search', placeholder: 'Buscar por nome ou e-mail', value: busca, 'aria-label': 'Buscar usuário', oninput: () => { busca = q.value; pinta(); } });
+      corpo.innerHTML = ''; corpo.append(q, chips, lst); pinta();
+    }
+    function cartao(u) {
+      const lim = u.ia ? u.limite : 0;
+      const det = [
+        ['Cadastro', dt(u.criado)], ['Último acesso', dt(u.ultimo_acesso, 1)],
+        u.situacao === 'teste' ? ['Teste até', dt(u.teste_ate)] : ['Acesso até', u.acesso_ate ? dt(u.acesso_ate) : '—'],
+        ['IA hoje', u.ia_hoje + ' de ' + lim + (u.limite_ia_proprio != null ? ' (limite próprio)' : '')],
+        ['Anotações', String(u.notas)], ['Pago (produção)', brl(u.pago_total)]];
+      const acao = (a, v, msg) => async () => { await rpc('et_admin_acao', { p_user: u.id, p_acao: a, p_valor: v == null ? null : String(v) }); diz(msg, 'ok'); await usuarios(); };
+      const eu = u.situacao === 'admin';
+      const acoes = $e('details', { class: 'et-adm-acoes' }, $e('summary', { text: 'Ações' }),
+        $e('div', { class: 'et-adm-grupo' }, $e('strong', { text: 'Acesso' }),
+          btn(u.cortesia ? 'Tirar cortesia' : 'Dar cortesia (grátis)', acao('cortesia', u.cortesia ? 'nao' : 'sim', u.cortesia ? 'Cortesia removida.' : 'Cortesia liberada.')),
+          btn('+30 dias', acao('somar_dias', 30, '30 dias somados.')),
+          btn('+1 ano', acao('somar_dias', 365, '365 dias somados.')),
+          btn('Somar dias…', async () => { const n = prompt('Quantos dias somar? (use número negativo para tirar)', '7'); if (n == null) return; if (!/^-?\d{1,3}$/.test(n.trim())) throw new Error('Digite só o número de dias.'); await acao('somar_dias', n.trim(), 'Dias ajustados.')(); }),
+          u.acesso_ate && new Date(u.acesso_ate) > new Date() ? btn('Encerrar assinatura', async () => { if (!confirm('Encerrar agora a assinatura de ' + (u.nome || u.email) + '?')) return; await acao('encerrar', null, 'Assinatura encerrada.')(); }) : null,
+          eu ? null : btn(u.bloqueado ? 'Desbloquear' : 'Bloquear', async () => { if (!u.bloqueado && !confirm('Bloquear ' + (u.nome || u.email) + '? A pessoa não consegue mais entrar no app.')) return; await acao('bloquear', u.bloqueado ? 'nao' : 'sim', u.bloqueado ? 'Conta desbloqueada.' : 'Conta bloqueada.')(); }, u.bloqueado ? 'ghost' : 'perigo')),
+        $e('div', { class: 'et-adm-grupo' }, $e('strong', { text: 'IA' }),
+          btn('Zerar uso de hoje', acao('zerar_ia', null, 'Uso de hoje zerado.')),
+          btn('Limite próprio…', async () => { const n = prompt('Limite diário de IA só para esta pessoa (deixe vazio para voltar ao padrão):', u.limite_ia_proprio ?? ''); if (n == null) return; if (n.trim() && !/^\d{1,4}$/.test(n.trim())) throw new Error('Digite só um número.'); await acao('limite_ia', n.trim(), 'Limite atualizado.')(); })),
+        $e('div', { class: 'et-adm-grupo' }, $e('strong', { text: 'Senha' }),
+          btn('Enviar e-mail de nova senha', async () => { const j = await fnAdmin({ acao: 'senha_email', user_id: u.id }); diz(j.msg, 'ok'); }),
+          btn('Gerar link (WhatsApp)', async () => { const j = await fnAdmin({ acao: 'senha_link', user_id: u.id }); await copia(j.link); diz('Link copiado. Mande para a pessoa: ele vale por pouco tempo e uma vez só.', 'ok'); }),
+          btn('Senha provisória', async () => { if (!confirm('Criar uma senha provisória para ' + (u.nome || u.email) + '? A senha atual deixa de funcionar.')) return; const j = await fnAdmin({ acao: 'senha_provisoria', user_id: u.id }); await copia(j.senha); diz('Senha provisória: ' + j.senha + ' (copiada). ' + j.msg, 'ok'); })),
+        $e('div', { class: 'et-adm-grupo' }, $e('strong', { text: 'Anotação interna' }),
+          btn(u.nota ? 'Editar nota' : 'Adicionar nota', async () => { const t = prompt('Nota sobre esta pessoa (só você vê):', u.nota || ''); if (t == null) return; await acao('nota', t, 'Nota salva.')(); }),
+          $e('button', { type: 'button', class: 'et-btn sm ghost', text: 'Copiar e-mail', onclick: () => copia(u.email) })));
+      return $e('article', { class: 'et-adm-user' },
+        $e('div', { class: 'et-adm-uhead' },
+          $e('span', { class: 'et-av', 'aria-hidden': 'true', text: (u.nome || u.email || '?').charAt(0).toUpperCase() }),
+          $e('div', { class: 'et-adm-uid' }, $e('strong', { text: u.nome || '(sem nome)' }), $e('span', { text: u.email })),
+          $e('span', { class: 'et-adm-sit s-' + u.situacao, text: SIT[u.situacao] || u.situacao })),
+        u.nota ? $e('p', { class: 'et-adm-nota', text: '📝 ' + u.nota }) : null,
+        $e('dl', { class: 'et-adm-det' }, ...det.flatMap(([k, v]) => [$e('dt', { text: k }), $e('dd', { text: v })])),
+        acoes);
+    }
+
+    async function pagamentos() {
+      const d = await rpc('et_admin_pagamentos');
+      const ST = { approved: 'Pago', pending: 'Aguardando', cancelled: 'Cancelado/expirado', rejected: 'Recusado', refunded: 'Reembolsado' };
+      const pagos = d.lista.filter(p => p.status === 'approved' && p.ambiente === 'producao').length;
+      corpo.innerHTML = '';
+      corpo.append(
+        $e('div', { class: 'et-adm-kpis' },
+          $e('div', {}, $e('span', { text: 'Recebido este mês' }), $e('strong', { text: brl(d.mes) })),
+          $e('div', {}, $e('span', { text: 'Recebido no total' }), $e('strong', { text: brl(d.total) })),
+          $e('div', {}, $e('span', { text: 'Pix pagos' }), $e('strong', { text: String(pagos) }))),
+        $e('p', { class: 'muted', text: 'Valores contam só pagamentos reais (modo produção). Os de teste aparecem na lista marcados como teste.' }),
+        d.lista.length ? $e('div', { class: 'et-adm-tab' }, $e('table', {},
+          $e('thead', {}, $e('tr', {}, ...['Data', 'Pessoa', 'Plano', 'Valor', 'Situação'].map(t => $e('th', { text: t })))),
+          $e('tbody', {}, ...d.lista.map(p => $e('tr', { class: p.ambiente === 'teste' ? 'teste' : '' },
+            $e('td', { text: dt(p.aprovado_em || p.criado, 1) }), $e('td', { text: p.nome || p.email || '—' }),
+            $e('td', { text: (p.plano === 'anual' ? 'Anual' : 'Mensal') + (p.ambiente === 'teste' ? ' · teste' : '') }),
+            $e('td', { text: brl(p.valor) }), $e('td', { text: ST[p.status] || p.status }))))))
+          : $e('p', { class: 'muted', text: 'Nenhum pagamento ainda.' }));
+    }
+
+    async function config() {
+      const c = await rpc('et_admin_config');
+      const campo = (chave, rot, ajuda, tipo = 'text') => {
+        const i = $e('input', { class: 'et-in', type: tipo, value: c[chave] ?? '', inputmode: 'decimal', 'aria-label': rot });
+        return $e('div', { class: 'et-adm-cfg' }, $e('label', {}, $e('strong', { text: rot }), $e('span', { text: ajuda }), i),
+          btn('Salvar', async () => { const v = i.value.trim().replace(',', '.'); Object.assign(c, await rpc('et_admin_config_set', { p_chave: chave, p_valor: v })); diz(rot + ' salvo.', 'ok'); }, ''));
+      };
+      const modo = $e('select', { class: 'et-in', 'aria-label': 'Modo do Mercado Pago' }, $e('option', { value: 'teste', text: 'Teste (Pix de mentira, aprova sozinho)' }), $e('option', { value: 'producao', text: 'Produção (cobra de verdade)' }));
+      modo.value = c.mp_modo || 'teste';
+      corpo.innerHTML = '';
+      corpo.append(
+        $e('h3', { text: 'Preços' }),
+        campo('preco_mensal', 'Plano mensal (R$)', '30 dias de acesso. Use ponto: 19.90'),
+        campo('preco_anual', 'Plano anual (R$)', '365 dias de acesso. Use ponto: 199.00'),
+        $e('h3', { text: 'Teste grátis e IA' }),
+        campo('dias_teste', 'Dias de teste grátis', 'Contados a partir do cadastro.'),
+        campo('limite_ia_dia_teste', 'IA por dia no teste', 'Pedidos ao Binah por dia enquanto a pessoa está no teste.'),
+        campo('limite_ia_dia', 'IA por dia (assinantes e cortesia)', 'Pedidos ao Binah por dia.'),
+        campo('limite_ia_dia_admin', 'IA por dia (sua conta)', 'O seu limite.'),
+        $e('h3', { text: 'Mercado Pago' }),
+        $e('div', { class: 'et-adm-cfg' }, $e('label', {}, $e('strong', { text: 'Modo do Pix' }), $e('span', { text: 'Só mude para Produção depois de trocar o Access Token no Supabase pelo de produção.' }), modo),
+          btn('Salvar', async () => { if (modo.value === 'producao' && !confirm('Passar para PRODUÇÃO? A partir de agora os Pix cobram de verdade.')) return; Object.assign(c, await rpc('et_admin_config_set', { p_chave: 'mp_modo', p_valor: modo.value })); diz('Modo do Pix: ' + (c.mp_modo === 'producao' ? 'PRODUÇÃO' : 'teste') + '.', 'ok'); }, '')));
+    }
+    abre();
+  };
   ET.exportar = () => {
+    if (ET.acesso && !ET.acesso.ativo) { gate.show('assinar'); setTimeout(() => gate.say('Exportar o cérebro fica disponível com a assinatura em dia.', 'err'), 50); return; }
     const nos = DB.meus().map(r => ({ id: r.id, ...r.dados }));
     const blob = new Blob([JSON.stringify({ formato: 'escola-da-tora-cerebro', versao: 1, exportado: new Date().toISOString(), nos }, null, 1)], { type: 'application/json' });
     const a = $e('a', { href: URL.createObjectURL(blob), download: 'cerebro-escola-da-tora-' + new Date().toISOString().slice(0, 10) + '.json' });
