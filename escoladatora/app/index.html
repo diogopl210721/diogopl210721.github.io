@@ -1293,12 +1293,13 @@ header.top .et-av{margin-left:2px}
     const msgs = normMsgs(input);
     const tools = Array.isArray(opts.tools) ? opts.tools : [];
     const apiTools = tools.map(t => ({ name: t.name, description: t.description || '', input_schema: t.inputSchema || t.input_schema || { type: 'object', properties: {} } }));
-    let text = '', antes = '';
+    let text = '', antes = '', stop = '';
     const junta = t => opts._json ? t : (antes && t ? antes + '\n\n' + t : antes || t);
     for (let volta = 0; volta < 10; volta++) {
       if (opts.signal?.aborted) throw { code: 'cancelled' };
-      const out = await chamar({ tier: opts.modelTier || 'default', system: opts.system, messages: msgs, tools: apiTools.length ? apiTools : undefined, max_tokens: opts.maxTokens || (opts._json ? 7000 : 2500) }, opts.signal, t => opts.onText?.({ text: junta(t) }));
-      const content = out.content || [];
+      const out = await chamar({ tier: opts.modelTier || 'default', system: opts.system, messages: msgs, tools: apiTools.length ? apiTools : undefined, max_tokens: opts.maxTokens || (opts._json ? 12000 : 2500),
+        leve: opts._json ? true : undefined, formato: opts._json && opts.schema ? opts.schema : undefined }, opts.signal, t => opts.onText?.({ text: junta(t) }));
+      const content = out.content || []; stop = out.stop_reason || '';
       const t = content.filter(c => c.type === 'text').map(c => c.text).join('');
       const usos = content.filter(c => c.type === 'tool_use');
       if (out.stop_reason !== 'tool_use' || !usos.length || !tools.length) { text = junta(t); break; }
@@ -1315,14 +1316,38 @@ header.top .et-av{margin-left:2px}
       msgs.push({ role: 'user', content: res });
     }
     opts.onText?.({ text });
-    return { text, truncated: false };
+    return { text, truncated: stop === 'max_tokens', stop };
   }
+  // lê o JSON da resposta; se veio cortado no fim, aproveita tudo o que chegou inteiro e fecha as chaves
+  const leJSON = raw => {
+    let s = String(raw || '').replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+    const a = s.indexOf('{'); if (a < 0) return null; s = s.slice(a);
+    const b = s.lastIndexOf('}');
+    if (b > 0) { try { return JSON.parse(s.slice(0, b + 1)); } catch {} }
+    const st = []; let inS = false, esc = false, corte = -1, pilha = null;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (inS) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inS = false; continue; }
+      if (ch === '"') inS = true;
+      else if (ch === '{' || ch === '[') st.push(ch);
+      else if (ch === '}' || ch === ']') { st.pop(); corte = i + 1; pilha = st.slice(); }
+      else if (ch === ',') { corte = i; pilha = st.slice(); }
+    }
+    if (corte < 0 || !pilha) return null;
+    const fecha = pilha.reverse().map(c => c === '{' ? '}' : ']').join('');
+    try { return JSON.parse(s.slice(0, corte).replace(/,\s*$/, '') + fecha); } catch { return null; }
+  };
   sample.json = async (input, opts = {}) => {
     const sys = 'Responda somente com um único objeto JSON válido, sem nenhum texto antes ou depois e sem cercas de código.';
-    const r = await sample(input, { ...opts, _json: true, system: (opts.system ? opts.system + '\n\n' : '') + sys });
-    const raw = r.text || '';
-    const a = raw.indexOf('{'), b = raw.lastIndexOf('}');
-    try { return JSON.parse(raw.slice(a, b + 1)); } catch { throw { code: 'invalid_json' }; }
+    for (let tent = 0; ; tent++) {
+      const r = await sample(input, { ...opts, _json: true, system: (opts.system ? opts.system + '\n\n' : '') + sys });
+      const o = leJSON(r.text);
+      // um objeto só com campos vazios também não serve: pede de novo
+      const cheio = v => typeof v === 'string' ? v.trim().length > 0 : typeof v === 'number' || typeof v === 'boolean' ? true : Array.isArray(v) ? v.some(cheio) : v && typeof v === 'object' ? Object.values(v).some(cheio) : false;
+      if (o && typeof o === 'object' && cheio(o)) return o;
+      console.warn('json da IA não veio legível', r.stop, String(r.text || '').slice(-200));
+      if (tent >= 1 || opts.signal?.aborted) throw { code: 'invalid_json' };
+    }
   };
   sample.limits = async () => ({ tools: true, images: false });
 
@@ -4972,6 +4997,19 @@ function renderEstudoAgain(id) { if (S.tab === 'descobertas' && S.estudo === id)
 
 /* ---------- investigador ---------- */
 const INV = { busy: false, abort: null };
+// formato exato de cada resposta: no app hospedado a própria API garante o JSON (nada de resposta "incompleta")
+const jsO = props => ({ type: 'object', properties: props, required: Object.keys(props), additionalProperties: false });
+const jsS = { type: 'string' }, jsN = { type: 'number' }, jsA = it => ({ type: 'array', items: it });
+const INV_SCHEMA = {
+  passagem: jsO({ de: jsS, ate: jsS }),
+  1: jsO({ titulo: jsS, subtitulo: jsS, resumo: jsS, tags: jsA(jsS), passagem: jsS, geografia: jsS,
+    jornadas: jsA(jsO({ t: jsS, stops: jsA(jsS), modo: { type: 'string', enum: ['pe', 'familia', 'jumento', 'corredor', 'caravana', 'cavalo', 'carro', 'carregadores', 'procissao', 'exercito', 'barco'] } })),
+    contas: jsS, calcs: jsA(jsO({ id: jsS, t: jsS, nota: jsS, ent: jsA(jsO({ k: jsS, rot: jsS, v: jsN, min: jsN, max: jsN, p: jsN, un: jsS })), sai: jsA(jsO({ rot: jsS, f: jsS, un: jsS, d: jsN })) })) }),
+  2: jsO({ palavras: jsA(jsO({ he: jsS, tr: jsS, s: jsS, ref: jsS, nota: jsS })), conexoes: jsS, pares: jsA(jsA(jsS)), judaica: jsS, crista: jsS, arqueologia: jsS, fontes: jsA(jsO({ t: jsS, u: jsS })) }),
+  3: jsO({ teses: jsA(jsO({ t: jsS, a: jsS, c: jsS })), sintese: jsS, perguntas: jsA(jsS) }),
+  4: jsO({ nos: jsA(jsO({ tipo: { type: 'string', enum: ['descoberta', 'conexao', 'palavra', 'geografia', 'arqueologia', 'rabinico', 'tipologia', 'pergunta'] }, titulo: jsS, texto: jsS, refs: jsA(jsS) })) }),
+};
+const invOpts = k => window.ET ? { schema: INV_SCHEMA[k] } : {};
 function invPrompt(parte, ctx) {
   const base = `Você é o investigador bíblico do app Escola da Torá, para ${ETN()}. Faça um pente fino da passagem abaixo para um dossiê de estudo em português do Brasil. Use as ferramentas para conferir texto, original, conexões, lugares e jornadas antes de afirmar. Nada de inventar fontes, autores ou números: o que vier do seu conhecimento geral fica como está, e o app marca como "a conferir". Cite versículos no formato "Gn 22:2".\n\n${ctx}\n\n`;
   if (parte === 1) return base + `PARTE 1. Responda só com um objeto JSON:
@@ -4981,13 +5019,13 @@ function invPrompt(parte, ctx) {
 "jornadas":[{"t":"título","stops":["Lugar A","Lugar B"],"modo":"pe|familia|jumento|corredor|caravana|cavalo|carro|carregadores|procissao|exercito|barco"}],
 "contas":"markdown curto: que contas o texto pede (tempo, quantidades, medidas)",
 "calcs":[{"id":"x","t":"título","nota":"premissas","ent":[{"k":"nome","rot":"rótulo","v":1,"min":0,"max":10,"p":1,"un":"unidade ou hora"}],"sai":[{"rot":"rótulo","f":"expressão com + - * / ^ ( ) e nomes das entradas","un":"unidade","d":0}]}]}
-Use nos stops nomes de lugares em português como aparecem na Bíblia; só lugares que o texto ou o contexto justificam. Até 3 jornadas e até 3 calculadoras.`;
+Use nos stops nomes de lugares em português como aparecem na Bíblia; só lugares que o texto ou o contexto justificam. Até 3 jornadas e até 3 calculadoras. Seja direto: cada campo em markdown com até 3 parágrafos curtos.`;
   if (parte === 2) return base + `PARTE 2. Responda só com um objeto JSON:
 {"palavras":[{"he":"palavra no original","tr":"transliteração","s":"Strong como H1234 ou G1234","ref":"Livro c:v","nota":"por que importa (ocorrências, primeira menção, raiz)"}],
 "conexoes":"markdown: ligações com outros textos (AT e NT)","pares":[["Gn 1:1","Jo 1:1"]],
 "judaica":"markdown: Talmud, midrash e comentaristas, com o nome da obra","crista":"markdown: leituras cristãs (Pais da Igreja, tipologia)","arqueologia":"markdown: arqueologia e história",
 "fontes":[{"t":"nome da obra ou página","u":"link se tiver certeza, senão vazio"}]}
-Até 6 palavras e 6 pares.`;
+Até 6 palavras e 6 pares. Seja direto: cada campo em markdown com até 3 parágrafos curtos e cada nota de palavra em até 3 frases.`;
   // a parte final foi dividida em duas respostas menores: uma resposta muito longa passava do tempo máximo do servidor
   if (parte === 3) return base + `PARTE 3. Responda só com um objeto JSON:
 {"teses":[{"t":"tese","a":"a favor","c":"contra"}],"sintese":"markdown: resumo geográfico, teológico e das teses, tudo interligado","perguntas":["perguntas para continuar"]}
@@ -5010,7 +5048,7 @@ async function investigar(q, ui) {
     if (SV.de) { de = SV.de; ate = SV.ate; }
     else if (r) { de = vid(r.b, r.c, r.v || 1); const nv = S.books[r.b].v[r.c - 1]; ate = rng ? vid(r.b, rng[3] ? +rng[3] : r.c, +rng[4]) : r.v ? (r.ve ? vid(r.b, r.c, r.ve) : vid(r.b, r.c, r.v)) : vid(r.b, r.c, nv); }
     else {
-      const res = await S.sample.json(`Qual passagem bíblica corresponde a "${q}"? Responda só com JSON: {"de":"Livro c:v","ate":"Livro c:v"} usando abreviações em português (ex.: "2 Rs 4:8"). Escolha o trecho narrativo completo.`, { modelTier: 'quick', signal: INV.abort.signal });
+      const res = await S.sample.json(`Qual passagem bíblica corresponde a "${q}"? Responda só com JSON: {"de":"Livro c:v","ate":"Livro c:v"} usando abreviações em português (ex.: "2 Rs 4:8"). Escolha o trecho narrativo completo.`, { modelTier: 'quick', signal: INV.abort.signal, ...invOpts('passagem') });
       const a = parseRef(String(res?.de || '')), b = parseRef(String(res?.ate || ''));
       if (!a || !a.v) throw { code: 'sem_passagem' };
       de = vid(a.b, a.c, a.v); ate = b && b.v ? vid(b.b, b.c, b.v) : de;
@@ -5027,7 +5065,7 @@ async function investigar(q, ui) {
     if (rel.length) { ui.step(rel.length + ' notas suas já ligadas a este trecho'); HUDFX.emit({ type: 'nodes', ids: rel.map(n => n.id) }); }
     const ctx = `PASSAGEM: ${rot}\nTEXTO (Bíblia Livre):\n${lines.join('\n')}\n\nLUGARES QUE O APP ACHOU NO TRECHO: ${places.map(p => p.lab + ' (hoje ' + (p.modPt || '?') + ')').join('; ') || 'nenhum'}\n\nO QUE ${ETN().toUpperCase()} JÁ TEM NO CÉREBRO SOBRE ESTE TRECHO:\n${rel.map(n => '• ' + n.titulo + ' (' + n.status + '): ' + (n.texto || '').slice(0, 220)).join('\n') || 'nada ainda'}`;
     const tools = S.sampleTools ? binahTools().filter(t => t.name !== 'gravar_no_cerebro' && t.name !== 'briefing_de_hoje') : undefined;
-    const call = async (parte, label) => { if (SV.partes[parte]) { ui.step(label + ' · já estava pronto'); return SV.partes[parte]; } ui.step(label); HUDFX.setMode('thinking'); let n = 0; return SV.partes[parte] = await S.sample.json(invPrompt(parte, ctx), { modelTier: 'complex', signal: INV.abort.signal, tools, onText: u => { const L = (u.text || '').length; if (L - n > 120) { n = L; ui.chars(L); HUDFX.bump(0.8); } } }); };
+    const call = async (parte, label) => { if (SV.partes[parte]) { ui.step(label + ' · já estava pronto'); return SV.partes[parte]; } ui.step(label); HUDFX.setMode('thinking'); let n = 0; return SV.partes[parte] = await S.sample.json(invPrompt(parte, ctx), { modelTier: 'complex', signal: INV.abort.signal, tools, ...invOpts(parte), onText: u => { const L = (u.text || '').length; if (L - n > 120) { n = L; ui.chars(L); HUDFX.bump(0.8); } } }); };
     const A = await call(1, 'Montando passagem, geografia e contas');
     const B = await call(2, 'Buscando palavras, conexões e tradições');
     const C = { ...(await call(3, 'Escrevendo teses e síntese')), ...(await call(4, 'Separando as descobertas para o cérebro')) };
