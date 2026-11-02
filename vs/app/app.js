@@ -1,5 +1,5 @@
 "use strict";
-const APP_VER="202611011554";
+const APP_VER="202611012155";
 /* ===== Análise automática de pacotes de multitrack ===== */
 const KIND_RULES=[
   ["click",/click|clique|metr[oô]nomo|metronome/i],
@@ -1394,7 +1394,7 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
   close(){this.isOpen=false;$("#stage").hidden=true;document.body.classList.remove("stage-on");try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}renderAll()},
   sync(){if(this.isOpen)this.render()},
   state(){const d=E.cur,s=curSong();const ci=d&&d.song?curSectionIdx(d):-1;
-    return[s&&s.id,s&&s.markers.length,s&&s.markers.map(m=>m.name).join(),ci,E.vamp,E.queued&&E.queued.idx,E.min?(E.min.entering?2:"1"+E.min.next):0,d&&d.playing,S.idx,S.settings.padOn,S.settings.iem,S.settings.padKey,this.pane,
+    return[s&&s.id,s&&s.markers.length,s&&s.markers.map(m=>m.name).join(),ci,E.vamp,E.queued&&E.queued.idx,E.min?(E.min.entering?2:"1"+E.min.next):0,d&&d.playing,S.idx,S.settings.padOn,S.settings.iem,E.secEdit,S.settings.padKey,this.pane,
       s&&s.tracks.map(t=>(t.mute?1:0)+""+(t.solo?1:0)+trackRoute(t)).join("")].join("|")},
   render(){if(!this.isOpen)return;const s=curSong(),d=E.cur;this.sig=this.state();
     const k=s?transposeKey(s.key,s.applied.semi):"—",bpm=s?+(s.bpm*s.applied.tempo/100).toFixed(1):"—";
@@ -1412,7 +1412,17 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
   partsHTML(){const d=E.cur,s=curSong();if(!s)return'<p class="st-empty">Abra uma música.</p>';
     const dd=d&&d.song===s?d:null;const secs=dd?sectionsOf(dd):[...s.markers].sort((a,b)=>a.t-b.t).map(m=>({name:m.name}));const ci=dd?curSectionIdx(dd):-1;
     if(secs.length<2)return`<p class="st-empty">Esta música ainda não tem partes. <button data-act="org">✨ Organizar partes</button></p>`;
-    return`<div class="st-parts">${secs.map((x,i)=>`<button class="sp${i===ci?" cur":""}${isWaiting(i)?" queued":""}${E.vamp===i?" vamp":""}" data-sec="${i}" style="--sc:${secColor(x.name)}"><b>${esc(secShort(x.name))}</b><span>${esc(x.name)}</span></button>`).join("")}</div>`},
+    if(E.secEdit){const sorted=[...s.markers].sort((a,b)=>a.t-b.t);
+      return`<div class="st-parts">${sorted.map((m,i)=>{const b=m.name.replace(/\s+\d+$/,""),opts=SEC_OPTS.includes(b)?SEC_OPTS:[b,...SEC_OPTS];
+        return`<label class="sp ed" style="--sc:${secColor(m.name)}"><b>${esc(secShort(m.name))}</b><select data-secname="${i}" aria-label="Nome da parte ${i+1}">${opts.map(o=>`<option${o===b?" selected":""}>${esc(o)}</option>`).join("")}</select></label>`}).join("")}</div>
+        <div class="st-acts two"><button class="on" data-act="secdone">✓ Concluir edição</button><button data-act="org">✨ Organizar sozinho</button></div>`}
+    const nx=E.min&&E.min.next!=null?secs[E.min.next]:null;
+    return`<div class="st-parts">${secs.map((x,i)=>`<button class="sp${i===ci?" cur":""}${isWaiting(i)?" queued":""}${E.vamp===i?" vamp":""}" data-sec="${i}" style="--sc:${secColor(x.name)}"><b>${esc(secShort(x.name))}</b><span>${esc(x.name)}</span></button>`).join("")}</div>
+      <div class="st-acts">
+        <button class="${E.vamp!=null?"on":""}" data-act="vamp"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg>${E.vamp!=null?"Soltar repetição":"Repetir seção"}</button>
+        <button class="min${E.min?" on":""}" data-act="min"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg>${E.min?(E.min.entering?"Entrando…":nx?"Entrar: "+esc(nx.name):"Sair da ministração"):"Ministrar"}</button>
+        <button data-act="secedit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.2V21h3.8l11-11-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8z"/></svg>Editar partes</button>
+      </div>`},
   mixHTML(){const s=curSong();if(!s)return'<p class="st-empty">Abra uma música.</p>';const anySolo=s.tracks.some(t=>t.solo);
     const fader=(id,v,col,label,dim)=>`<div class="fd${dim?" dim":""}" data-fd="${id}" style="--fc:${col}" role="slider" aria-label="Volume ${esc(label)}" aria-valuemin="0" aria-valuemax="125" aria-valuenow="${Math.round(v*100)}" tabindex="0"><i style="height:${Math.min(100,v/1.25*100)}%"></i></div>`;
     return`<div class="st-mix"><div class="ch mst"><span class="cn">Master</span>${fader("master",S.settings.master,"#f2f4f8","Master")}<div class="ms"><button data-act="clickt" class="${s.click.on?"on":""}" title="Click gerado pelo app">Click</button></div></div>`+
@@ -1504,6 +1514,10 @@ const Stage={isOpen:false,pane:null,sig:"",cv:null,
     if(b.dataset.pp){ensureCtx();padPreset(b.dataset.pp);if(!S.settings.padOn){S.settings.padOn=true;padFollow(true);renderTransport()}return this.render()}
     if(b.dataset.padkey!=null){const k=+b.dataset.padkey;ensureCtx();if(S.settings.padOn&&S.settings.padKey===k){S.settings.padOn=false}else{S.settings.padKey=k;S.settings.padOn=true}padFollow(true);saveMeta();renderTransport();return this.render()}
     const a=b.dataset.act;
+    if(a==="vamp"){toggleVamp(E.vamp);return this.render()}
+    if(a==="min"){toggleMin();return}
+    if(a==="secedit"){E.secEdit=true;renderSections();return this.render()}
+    if(a==="secdone"){E.secEdit=false;renderSections();return this.render()}
     if(a==="padpow"){ensureCtx();S.settings.padOn=!S.settings.padOn;padFollow(true);saveMeta();renderTransport();return this.render()}
     if(a==="padauto"){S.settings.padKey=null;ensureCtx();padFollow(true);saveMeta();return this.render()}
     if(a==="org")return organizeSections(s);
@@ -1522,7 +1536,8 @@ $("#sgCv").addEventListener("dblclick",e=>{const r=$("#sgCv").getBoundingClientR
 $("#sgPane").addEventListener("pointerdown",e=>{const f=e.target.closest(".fd");if(f){e.preventDefault();Stage.fader(f,e)}});
 $("#sgPane").addEventListener("keydown",e=>{const f=e.target.closest(".fd");if(!f||!/Arrow(Up|Down)/.test(e.key))return;e.preventDefault();e.stopPropagation();Stage.setFader(f,Stage.getFader(f)+(e.key==="ArrowUp"?0.05:-0.05))});
 function confirmTwice(b,label){if(b.dataset.armed){return true}b.dataset.armed=1;const old=b.textContent;b.textContent=label;setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent=old}},3000);return false}
-$("#sgPane").addEventListener("change",e=>{if(e.target.id==="padFiles"&&e.target.files.length){const fl=[...e.target.files];e.target.value="";importMinePads(fl)}});
+$("#sgPane").addEventListener("change",e=>{const t=e.target;if(t.id==="padFiles"&&t.files.length){const fl=[...t.files];t.value="";importMinePads(fl);return}
+  if(t.dataset.secname!=null){const s=curSong();if(!s)return;const sorted=[...s.markers].sort((a,b)=>a.t-b.t);sorted[+t.dataset.secname].name=t.value;renumberSections(s.markers);saveSong(s);renderSections();drawArr();Stage.render()}});
 $("#sgPane").addEventListener("input",e=>{const t=e.target,c=padCfg();
   if(t.dataset.plv){padLayer(t.dataset.plv,+t.value);c.preset=null}
   else if(t.dataset.pcr){c[t.dataset.pcr]=+t.value;padTone();const em=t.parentElement.querySelector("em");if(em)em.textContent=t.value+"s";saveMeta()}
