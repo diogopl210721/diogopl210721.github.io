@@ -1265,9 +1265,10 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
             area.append($e('p', { class: 'et-ok', text: 'Pagamento confirmado! ' + ET.textoAcesso() + ' Obrigado por apoiar a Escola da Torá.' }),
               $e('button', { class: 'et-btn', type: 'button', text: 'Voltar ao app', onclick: () => hide() }));
           };
-          const confere = async () => { try { const { data } = await sb.from('et_pagamentos').select('status').eq('id', j.id).maybeSingle(); if (data?.status === 'approved') aprovado(); else if (['rejected', 'cancelled'].includes(data?.status)) { st.textContent = 'Este Pix foi cancelado ou expirou. Gere outro.'; ET.pararPix(); } } catch {} };
+          // confere direto no Mercado Pago (a função libera o acesso se o Pix já caiu), além do aviso em tempo real
+          const confere = async () => { try { const { data: s } = await sb.auth.getSession(); const r = await fetch(ET.url + '/functions/v1/mp-criar-pix', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (s.session?.access_token || ''), apikey: ET.key }, body: JSON.stringify({ conferir: j.id }) }); const d = await r.json().catch(() => ({})); if (d.status === 'approved') aprovado(); else if (['rejected', 'cancelled'].includes(d.status)) { st.textContent = 'Este Pix foi cancelado ou expirou. Gere outro.'; ET.pararPix?.(); } } catch {} };
           const canal = sb.channel('et-pix-' + j.id).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'et_pagamentos', filter: 'id=eq.' + j.id }, p => { if (p.new?.status === 'approved') aprovado(); }).subscribe();
-          const tick = setInterval(confere, 6000);
+          const tick = setInterval(confere, 8000);
           ET.pararPix = () => { clearInterval(tick); clearInterval(relogio); try { sb.removeChannel(canal); } catch {} ET.pararPix = null; };
           confere();
         }
