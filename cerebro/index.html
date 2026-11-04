@@ -312,6 +312,7 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
 }
 #send:hover { background: rgba(63,217,255,.22); }
 #form.ready #send { color: #022029; background: linear-gradient(135deg, #7ff0ff, #2bc4ee); border-color: transparent; box-shadow: 0 0 18px rgba(63,217,255,.7); }
+@media (max-height: 520px) { .kh { display: none; } .p-title { font-size: 19px; } }
 @media (max-width: 560px) {
   .kh { display: none; }
   .pr { display: none; }
@@ -1622,9 +1623,32 @@ function addFiles(list) {
     extractText(f).then(t => {
       it.text = (t || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, MAXCH);
       it.state = it.text ? 'ok' : 'vazio';
-    }).catch(() => { it.state = 'erro'; }).then(() => { renderChips(); if (mode === 'note') runPreview(); });
+    }).catch(() => { it.state = 'erro'; }).then(() => { renderChips(); if (mode === 'note') { runPreview(); if (!files.some(x => x.state === 'lendo')) showFilePanel(); } });
   });
   renderChips(); runPreview();
+  if (!files.length) return;
+  S.previewText = 'LENDO O ARQUIVO…'; renderStatus();
+}
+function showFilePanel() {
+  if (!files.length) return;
+  S.sel = null; S.zt = 1;
+  const ex = files.map(f => f.text).join('\n\n'), A = analyze(q.value.trim(), files, ex.slice(0, 8000));
+  const ok = files.filter(f => f.state === 'ok');
+  const head = el('div', 'p-head');
+  head.append(dotEl(A.cat), el('span', 'tag', ok.length ? 'Arquivo lido' : 'Arquivo anexado'), closeBtn(hidePanel));
+  const kids = [head, el('h2', 'p-title', files.length === 1 ? files[0].name : files.length + ' arquivos')];
+  const bad = files.filter(f => f.state !== 'ok');
+  if (ok.length) kids.push(el('p', 'hint', ex.length.toLocaleString('pt-BR') + ' caracteres lidos · vai para ' + CATS[A.cat].name.toUpperCase() + (stepsFrom(ex).length ? ' · ' + stepsFrom(ex).length + ' passos encontrados' : '')));
+  bad.forEach(f => kids.push(el('p', 'hint', f.name + ': ' + (f.state === 'vazio' ? 'não encontrei texto (imagem ou PDF escaneado). Será salvo só com o nome.' : 'não consegui ler este arquivo.'))));
+  if (ex) { kids.push(sec('Prévia'), el('p', 'p-body', ex.slice(0, 420) + (ex.length > 420 ? '…' : ''))); }
+  const lk = A.ents.concat(A.rel).slice(0, 5);
+  if (lk.length) { kids.push(sec('Vai se ligar com')); const row = el('div', 'chips-row'); lk.forEach(m => { const b = el('span', 'chip'); b.append(dotEl(m.cat), el('span', null, m.title)); row.append(b); }); kids.push(row); }
+  const btns = el('div', 'btns'), go = el('button', 'pbtn', 'Salvar no cérebro'), no = el('button', 'pbtn ghost', 'Remover');
+  go.type = 'button'; no.type = 'button';
+  go.addEventListener('click', submitNote);
+  no.addEventListener('click', () => { files = []; renderChips(); hidePanel(); S.preview = null; S.previewText = null; renderStatus(); });
+  btns.append(go, no); kids.push(btns);
+  showPanel(kids);
 }
 fileIn.addEventListener('change', () => { addFiles(fileIn.files); fileIn.value = ''; });
 ['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => { if (mode === 'note' && e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') > -1) { e.preventDefault(); document.body.classList.add('drag'); } }));
