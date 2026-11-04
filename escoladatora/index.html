@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Escola da Torá · Estude a Bíblia com um segundo cérebro</title>
-<meta name="description" content="Hebraico e grego palavra por palavra, 344 mil referências cruzadas, mapas, Mesa Rabínica e a Binah, que conversa por texto e voz. 5 dias grátis, sem cartão. Depois, R$ 19,90 por mês.">
+<meta name="description" content="Hebraico e grego palavra por palavra, 344 mil referências cruzadas, mapas, Mesa Rabínica e a Binah, um segundo cérebro que investiga cada passagem: pessoas, lugares, medidas e linha do tempo. 7 dias grátis, sem cartão. Depois, R$ 19,90 por mês ou R$ 199,00 por ano no Pix.">
 <meta name="theme-color" content="#060B14">
 <link rel="canonical" href="https://www.ddsinovacao.com.br/escoladatora/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23060B14'/%3E%3Cpath d='M32 9 L53 45 H11 Z' fill='none' stroke='%2362B2E6' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M32 55 L11 19 H53 Z' fill='none' stroke='%23E8EEF7' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='32' r='3.4' fill='%23F2B648'/%3E%3C/svg%3E">
@@ -12,7 +12,7 @@
 <meta property="og:locale" content="pt_BR">
 <meta property="og:site_name" content="Escola da Torá">
 <meta property="og:title" content="Escola da Torá · Estude a Bíblia com um segundo cérebro">
-<meta property="og:description" content="Hebraico e grego, 344 mil referências cruzadas, mapas, Mesa Rabínica e a Binah. 5 dias grátis, sem cartão.">
+<meta property="og:description" content="Hebraico e grego, 344 mil referências cruzadas, mapas, Mesa Rabínica e a Binah. 7 dias grátis, sem cartão.">
 <meta property="og:url" content="https://www.ddsinovacao.com.br/escoladatora/">
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -300,10 +300,12 @@ p{margin:0}
 .dossier>div{display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
 .dossier>div:last-child{border-bottom:0}
 .dossier dt{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;padding-top:3px}
-.dossier dd{margin:0;font-size:14.5px;color:var(--soft);line-height:1.5}
+.dossier dd{margin:0;font-size:14.5px;color:var(--soft);line-height:1.5;min-width:0;overflow-wrap:anywhere}
+.feat>*{min-width:0}
+#dsc{max-width:100%}
 .dossier dd b{color:var(--text)}
 .dossier dd .he{color:var(--gold);font-size:1.15em}
-.c-km{color:var(--sky)}.c-tm{color:var(--cyan)}.c-ct{color:var(--gold)}.c-or{color:var(--gold)}.c-tj{color:var(--purple)}.c-lc{color:var(--rose)}.c-ar{color:var(--sand)}.c-te{color:var(--green)}
+.c-ps{color:var(--green)}.c-lg{color:var(--sand)}.c-km{color:var(--sky)}.c-tm{color:var(--cyan)}.c-ct{color:var(--gold)}.c-or{color:var(--gold)}.c-tj{color:var(--purple)}.c-lc{color:var(--rose)}.c-ar{color:var(--sand)}.c-te{color:var(--green)}
 @media (max-width:520px){.dossier>div{grid-template-columns:minmax(0,1fr);gap:4px}}
 
 /* mapa */
@@ -414,6 +416,7 @@ svg[data-focus="tj"] .sm-pl.end circle{r:9;stroke-width:3}
 .price li svg{flex:none;margin-top:4px;color:var(--gold)}
 .price .cta{width:100%}
 .price .micro{text-align:center}
+.alt-plan{display:flex;flex-direction:column;gap:2px;border:1px dashed var(--line2);border-radius:14px;padding:10px 14px;margin-top:-6px}.alt-plan span{font-size:12.5px;color:var(--muted)}.alt-plan b{font-size:18px;color:var(--text)}.alt-plan i{font-style:normal;font-size:13px;color:var(--green)}
 .per-day{font-family:var(--f-mono);font-size:14px;color:var(--muted)}
 @media (max-width:860px){.price-wrap{grid-template-columns:minmax(0,1fr)}}
 
@@ -490,12 +493,12 @@ footer .credits{flex-basis:100%;font-size:12.5px}
       <div class="hero-copy">
         <span class="he-line" lang="he">בִּינָה · בית ספר תורני</span>
         <h1 class="mega" id="h1">Estude a Bíblia com um <span class="grad">segundo cérebro.</span></h1>
-        <p class="lede">Hebraico e grego palavra por palavra, 344 mil referências cruzadas, mapas, a mesa dos rabinos e a Binah: uma inteligência que conversa com você por texto e voz e mostra cada conexão acendendo.</p>
+        <p class="lede">Hebraico e grego palavra por palavra, 344 mil referências cruzadas, mapas, a mesa dos rabinos e a Binah: uma inteligência que investiga cada passagem com você e mostra cada conexão acendendo.</p>
         <div class="cta-row">
-          <a class="cta" id="heroCta" href="app/">Começar meus 5 dias grátis <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="cta" id="heroCta" href="app/">Começar meus 7 dias grátis <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
           <a class="ghost" href="#exemplo">Ver um exemplo real <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
         </div>
-        <p class="micro"><b>Sem cartão de crédito.</b> Depois, R$ 19,90 por mês.</p>
+        <p class="micro"><b>Sem cartão de crédito.</b> Depois, R$ 19,90 por mês ou R$ 199,00 por ano, no Pix.</p>
       </div>
       <div class="hero-brain" id="brainSpot" aria-hidden="true"></div>
     </div>
@@ -534,7 +537,7 @@ footer .credits{flex-basis:100%;font-size:12.5px}
         <div class="chip3d c1" data-depth="40"><span class="big" lang="he">שָׁלוֹם</span><span><span class="k">H7965 · sha.lom</span><br>paz, bem-estar</span></div>
         <div class="chip3d c2" data-depth="60"><span class="k">ARCO</span> 2 Rs 4:36 → Lc 7:15</div>
         <div class="chip3d c3" data-depth="30"><span class="k">JORNADA</span> 31 km · ≈ 5 h de jumenta</div>
-        <div class="chip3d c4" data-depth="50"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span> Binah está ouvindo</div>
+        <div class="chip3d c4" data-depth="50"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span> Binah está pensando</div>
       </div>
     </div>
   </section>
@@ -626,22 +629,22 @@ footer .credits{flex-basis:100%;font-size:12.5px}
       <article class="feat" aria-labelledby="fBinah">
         <div class="feat-copy">
           <span class="tag">Binah · segundo cérebro</span>
-          <h3 id="fBinah">Converse com a Binah por texto ou por voz.</h3>
-          <p>Binah, <span class="he" lang="he">בִּינָה</span>, é a palavra hebraica para entendimento. No app ela guarda o que você estuda, liga com o que você já viu e responde em voz alta, no estilo JARVIS, enquanto os neurônios acendem na sua frente.</p>
-          <ul class="facts"><li>texto</li><li>voz e microfone</li><li>neurônios vivos</li><li>briefing ao abrir</li></ul>
+          <h3 id="fBinah">Converse com a Binah.</h3>
+          <p>Binah, <span class="he" lang="he">בִּינָה</span>, é a palavra hebraica para entendimento. No app ela guarda o que você estuda, liga com o que você já viu e responde na hora, com os versículos, no estilo JARVIS, enquanto os neurônios acendem na sua frente.</p>
+          <ul class="facts"><li>perguntas livres</li><li>neurônios vivos</li><li>grava no cérebro</li><li>briefing ao abrir</li></ul>
         </div>
         <div class="mock">
           <div class="panel tilt">
             <div class="binah">
               <div class="bh-hud">
                 <canvas id="binahBrain" aria-hidden="true"></canvas>
-                <div class="bh-state" id="bhState" data-m="ouvindo"><i></i><span>OUVINDO</span></div>
+                <div class="bh-state" id="bhState" data-m="ouvindo"><i></i><span>LENDO</span></div>
                 <div class="bh-log" id="bhLog" aria-hidden="true"><span>buscando “filho” + “mãe”</span><span>3 neurônios ligados</span></div>
               </div>
               <div class="bh-chat" aria-live="off">
                 <div class="msg me">Binah, onde mais um filho é devolvido à mãe?</div>
                 <div class="msg bot" id="bhAnswer"><span class="who">BINAH</span>Em três lugares, com o mesmo gesto. Elias em Sarepta <span class="ref">1Rs 17:23</span>, Eliseu em Suném <span class="ref">2Rs 4:36</span> e Jesus em Naim <span class="ref">Lc 7:15</span>. Naim fica a 3 km de Suném. Quer ver no mapa?</div>
-                <div class="bh-input"><span>Pergunte ou fale com a Binah…</span><span class="bh-mic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span></div>
+                <div class="bh-input"><span>Pergunte à Binah…</span><span class="bh-mic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
               </div>
             </div>
           </div>
@@ -652,8 +655,8 @@ footer .credits{flex-basis:100%;font-size:12.5px}
         <div class="feat-copy">
           <span class="tag">Descobertas · pente fino</span>
           <h3 id="fDesc">Escolha uma história. O app passa o pente fino.</h3>
-          <p>A Descoberta monta um dossiê da passagem: distâncias em km, tempo de viagem, as contas, palavras no original, tradição judaica, leitura cristã, arqueologia e teses para você pensar. Três exemplos já vêm prontos. Toque para trocar:</p>
-          <ul class="facts"><li>km e tempo</li><li>contas</li><li>original</li><li>judaica e cristã</li><li>arqueologia</li><li>teses</li></ul>
+          <p>A Descoberta monta um dossiê da passagem: as pessoas e o que elas viveram antes e depois, os lugares ao longo da Bíblia e as cidades por perto, distâncias e tempo de viagem, pesos e medidas convertidos, linha do tempo, palavras no original, tradição judaica, leitura cristã, arqueologia e teses. Cada versículo citado é conferido no hebraico e no grego. Três exemplos já vêm prontos. Toque para trocar:</p>
+          <ul class="facts"><li>pessoas</li><li>lugares no tempo</li><li>km e tempo</li><li>pesos e medidas</li><li>linha do tempo</li><li>original</li><li>judaica e cristã</li><li>teses</li></ul>
         </div>
         <div class="mock">
           <div class="panel tilt" id="dsc">
@@ -751,9 +754,9 @@ footer .credits{flex-basis:100%;font-size:12.5px}
         <h2 id="hComo">Três passos, <span class="grad">nenhum cartão.</span></h2>
       </div>
       <ol class="steps" style="list-style:none;margin:0;padding:0">
-        <li class="step"><span class="n grad">1</span><h3>Toque em "Começar meus 5 dias grátis".</h3><p>Você cria seu acesso e já entra no app. Não pedimos cartão de crédito.</p></li>
+        <li class="step"><span class="n grad">1</span><h3>Toque em "Começar meus 7 dias grátis".</h3><p>Você cria seu acesso e já entra no app. Não pedimos cartão de crédito.</p></li>
         <li class="step"><span class="n grad">2</span><h3>Comece por uma história ou uma pergunta.</h3><p>A Sunamita, Noé e a Arca a Jerusalém já vêm prontos. Ou abra qualquer capítulo e pergunte à Binah.</p></li>
-        <li class="step"><span class="n grad">3</span><h3>No sexto dia, você decide.</h3><p>Gostou? Assine por R$ 19,90 por mês. Se não assinar, o acesso pausa e nada é cobrado.</p></li>
+        <li class="step"><span class="n grad">3</span><h3>No oitavo dia, você decide.</h3><p>Gostou? Assine no Pix: R$ 19,90 por mês ou R$ 199,00 por ano. Se não assinar, nada é cobrado: a Bíblia e as suas anotações continuam abertas, só a Binah pausa.</p></li>
       </ol>
     </div>
   </section>
@@ -762,26 +765,28 @@ footer .credits{flex-basis:100%;font-size:12.5px}
     <div class="wrap price-wrap">
       <div class="sec-head rise" style="margin:0">
         <span class="eyebrow">Preço</span>
-        <h2 id="hPreco">Um plano. <span class="grad">Tudo incluído.</span></h2>
+        <h2 id="hPreco">Um acesso. <span class="grad">Tudo incluído.</span></h2>
         <p class="lede">Menos que um lanche por mês para ter o hebraico, o grego, os rabinos, os mapas e a Binah no mesmo lugar.</p>
       </div>
       <div class="price tilt" id="price">
         <div class="price-in">
           <span class="glare" aria-hidden="true"></span>
-          <div class="plan"><b>Escola da Torá</b><span class="badge">5 dias grátis</span></div>
+          <div class="plan"><b>Escola da Torá</b><span class="badge">7 dias grátis</span></div>
           <div class="amount" aria-label="R$ 19,90 por mês"><span class="cur">R$</span><span class="val grad">19,90</span><span class="per">/mês</span></div>
           <span class="per-day">≈ R$ 0,66 por dia</span>
+          <div class="alt-plan"><span>ou no plano anual</span><b>R$ 199,00 por ano</b><i>sai a R$ 16,58 por mês: 2 meses de presente</i></div>
           <ul>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Leitor com hebraico, grego e Strong</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>344.799 referências cruzadas em arcos</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Binah, o segundo cérebro, por texto e voz</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Descobertas: o pente fino em qualquer passagem</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Binah, o segundo cérebro que grava cada descoberta</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Descobertas: pessoas, lugares, medidas e linha do tempo de qualquer passagem</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Mapa com mais de 1.300 lugares e jornadas</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Mesa Rabínica, parashá e briefing diário</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Estudos com link para compartilhar</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Celular, tablet e computador</li>
           </ul>
-          <a class="cta" id="priceCta" href="app/">Começar meus 5 dias grátis</a>
-          <p class="micro">Sem cartão para testar. Cancele quando quiser.</p>
+          <a class="cta" id="priceCta" href="app/">Começar meus 7 dias grátis</a>
+          <p class="micro">Sem cartão para testar. Pagamento no Pix, sem renovação automática.</p>
         </div>
       </div>
     </div>
@@ -794,12 +799,14 @@ footer .credits{flex-basis:100%;font-size:12.5px}
         <h2 id="hFaq">Antes de começar.</h2>
       </div>
       <div class="faq">
-        <details open><summary>Preciso de cartão de crédito para testar?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>Não. Você usa tudo por 5 dias sem cadastrar cartão nenhum.</p></details>
-        <details><summary>O que acontece depois dos 5 dias?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>O acesso pausa. Se quiser continuar, assine por R$ 19,90 por mês e volte a usar tudo. Se não assinar, nada é cobrado.</p></details>
+        <details open><summary>Preciso de cartão de crédito para testar?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>Não. Você testa por 7 dias sem cadastrar cartão nenhum.</p></details>
+        <details><summary>O que acontece depois dos 7 dias?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>A Bíblia, os mapas e as suas anotações continuam abertos. A Binah, as Descobertas e a exportação do cérebro pausam até você assinar: R$ 19,90 por mês ou R$ 199,00 por ano. Se não assinar, nada é cobrado.</p></details>
+        <details><summary>Como é o pagamento?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>No Pix, dentro do app. Você escolhe o plano, o app mostra o QR Code e o copia e cola, e o acesso é liberado sozinho assim que o Pix cai. Antes de vencer, o app avisa para renovar.</p></details>
         <details><summary>Preciso saber hebraico ou grego?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>Não. Cada palavra do original vem com transliteração, número Strong e significado em português. Você aprende tocando nas palavras.</p></details>
         <details><summary>A Binah substitui meu pastor, rabino ou professor?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>Não. Ela é uma ferramenta de estudo: aponta versículos, fontes e ligações para você conferir. A leitura judaica e a leitura cristã aparecem separadas e identificadas.</p></details>
         <details><summary>Funciona no celular?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>Sim. O app abre no navegador do celular, do tablet e do computador, sem instalar nada.</p></details>
-        <details><summary>Posso cancelar quando quiser?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>Sim. A assinatura é mensal, sem multa e sem fidelidade.</p></details>
+        <details><summary>Posso cancelar quando quiser?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>Sim. Não existe cobrança automática: você paga um Pix por mês (ou por ano) e só renova se quiser. Sem multa e sem fidelidade.</p></details>
+        <details><summary>Posso mandar um estudo para alguém?<span class="pm" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary><p>Sim. Os estudos que você confere ganham um link. Quem recebe lê o estudo inteiro, sem precisar criar conta.</p></details>
       </div>
     </div>
   </section>
@@ -808,10 +815,10 @@ footer .credits{flex-basis:100%;font-size:12.5px}
     <canvas id="brainEnd" aria-hidden="true"></canvas>
     <div class="wrap">
       <span class="he-line" lang="he" style="font-family:var(--f-heb);font-size:clamp(22px,2.4vw,30px);color:var(--gold)">לְכוּ וְנִלְמַד</span>
-      <h2 id="hFinal">Os próximos 5 dias de estudo <span class="grad">são por nossa conta.</span></h2>
+      <h2 id="hFinal">Os próximos 7 dias de estudo <span class="grad">são por nossa conta.</span></h2>
       <p class="lede" style="margin-inline:auto">Abra a Sunamita, pergunte à Binah, siga os arcos. Se não for para você, é só não assinar.</p>
-      <a class="cta" id="finalCta" href="app/">Começar meus 5 dias grátis <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-      <p class="micro"><b>Sem cartão de crédito.</b> Depois, R$ 19,90 por mês.</p>
+      <a class="cta" id="finalCta" href="app/">Começar meus 7 dias grátis <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <p class="micro"><b>Sem cartão de crédito.</b> Depois, R$ 19,90 por mês ou R$ 199,00 por ano, no Pix.</p>
     </div>
   </section>
 </main>
@@ -828,7 +835,7 @@ footer .credits{flex-basis:100%;font-size:12.5px}
 </footer>
 
 <div class="mbar" id="mbar">
-  <a class="cta" href="app/">Começar meus 5 dias grátis</a>
+  <a class="cta" href="app/">Começar meus 7 dias grátis</a>
   <span class="micro">Sem cartão · depois R$ 19,90/mês</span>
 </div>
 
@@ -1132,10 +1139,10 @@ onVisible(arcsCv, v => {
   requestAnimationFrame(go);
 }, { threshold: .35 });
 
-/* ================= Binah: ouvindo → pensando → falando ================= */
+/* ================= Binah: lendo → pensando → respondendo ================= */
 const bhState = $('#bhState'), bhLog = $('#bhLog'), bhAns = $('#bhAnswer');
 const ansHTML = bhAns.innerHTML;
-const MODES = [['ouvindo', 'OUVINDO', .6, ['microfone aberto', 'transcrevendo a pergunta']], ['pensando', 'PENSANDO', 3.2, ['buscando “filho” + “mãe”', '3 neurônios ligados: Sarepta · Suném · Naim']], ['falando', 'FALANDO', 1.2, ['respondendo em voz alta', 'citando 1Rs 17:23 · 2Rs 4:36 · Lc 7:15']]];
+const MODES = [['ouvindo', 'LENDO', .6, ['lendo a pergunta', 'procurando no seu cérebro']], ['pensando', 'PENSANDO', 3.2, ['buscando “filho” + “mãe”', '3 neurônios ligados: Sarepta · Suném · Naim']], ['falando', 'RESPONDENDO', 1.2, ['escrevendo a resposta', 'citando 1Rs 17:23 · 2Rs 4:36 · Lc 7:15']]];
 let bhI = 0, bhTimer = null;
 function bhStep() {
   const [m, lbl, rate, log] = MODES[bhI % 3];
@@ -1160,6 +1167,8 @@ if (!RM) onVisible($('.binah'), v => {
 /* ================= Descobertas ================= */
 const DOSS = {
   sun: { t: 'A Sunamita', r: '2 Reis 4:8–37', rows: [
+    ['c-ps', 'pessoas', '<b>Eliseu</b> aparece em 53 versículos. Antes, recebe o manto de Elias (2Rs 2:14). Depois, avisa a mesma sunamita da fome (2Rs 8:1), e Jesus lembra dele em Nazaré (Lc 4:27).'],
+    ['c-lg', 'lugares', '<b>Suném</b> aparece 3 vezes: terra de Issacar (Js 19:18), acampamento filisteu antes da última batalha de Saul (1Sm 28:4) e a casa dela (2Rs 4:8). Abisague, que serviu Davi, também era sunamita (1Rs 1:3).'],
     ['c-km', 'km', '<b>31 km</b> de Suném ao monte Carmelo, pelo vale de Jezreel (30 km em linha reta).'],
     ['c-tm', 'tempo', '<b>≈ 5 h</b> de jumenta tocada sem parar: "Guia e anda" (v. 24).'],
     ['c-ct', 'contas', '<b>62 km</b> ida e volta. Ela pediu a jumenta para ir e voltar (v. 22).'],
@@ -1169,6 +1178,8 @@ const DOSS = {
     ['c-ar', 'arqueologia', 'Suném é a aldeia de Sulam, ao pé da colina de Moré. O quarto do profeta: <span class="he" lang="he">עֲלִיַּת קִיר</span>, cômodo de paredes no terraço.'],
     ['c-te', 'tese', 'A fé dela cabe numa palavra: <i>shalom</i>.']] },
   noe: { t: 'Noé e a arca', r: 'Gênesis 6–9', rows: [
+    ['c-ps', 'pessoas', '<b>Noé</b> aparece em 47 versículos, 8 deles no NT. Depois do dilúvio, volta com Daniel e Jó como os três justos (Ez 14:14) e nos "dias de Noé" de Jesus (Mt 24:37).'],
+    ['c-lg', 'lugares', '<b>Ararate</b>: onde a arca pousa (Gn 8:4), para onde fogem os filhos de Senaqueribe (2Rs 19:37) e o reino chamado contra Babilônia (Jr 51:27).'],
     ['c-km', 'medidas', '<b>300 × 50 × 30 côvados</b> (Gn 6:15). Com côvado de 45 cm: 135 × 22,5 × 13,5 m.'],
     ['c-ct', 'contas', '<b>≈ 41 mil m³</b> de volume, em três andares (Gn 6:16).'],
     ['c-tm', 'tempo', '<b>1 ano e 10 dias</b> dentro da arca: do dia 17 do 2º mês ao dia 27 do 2º mês do ano seguinte (Gn 7:11; 8:14).'],
@@ -1178,6 +1189,8 @@ const DOSS = {
     ['c-ar', 'geografia', '"Montes de Ararate" (Gn 8:4) é a região de Urartu, no leste da Turquia e na Armênia. O texto não aponta um pico.'],
     ['c-te', 'tese', 'Duas tevás na Bíblia, as duas vedadas, as duas guardando quem vai recomeçar a história.']] },
   arca: { t: 'A Arca a Jerusalém', r: '2 Samuel 6 · 1 Crônicas 13–15', rows: [
+    ['c-ps', 'pessoas', '<b>Obede-Edom</b> guarda a arca por 3 meses (2Sm 6:11). Depois vira músico e porteiro diante dela (1Cr 15:21; 16:38), "porque Deus o tinha abençoado" (1Cr 26:5).'],
+    ['c-lg', 'lugares', '<b>Quiriate-Jearim</b>: cidade dos gibeonitas (Js 9:17), onde a arca ficou 20 anos (1Sm 7:1–2), e terra do profeta Urias (Jr 26:20).'],
     ['c-km', 'km', '<b>12,8 km</b> em linha reta, de Quiriate-Jearim a Jerusalém.'],
     ['c-tm', 'tempo', '<b>3 meses</b> de parada na casa de Obede-Edom depois da morte de Uzá (2Sm 6:11).'],
     ['c-ct', 'contas', 'Seis passos e um sacrifício (2Sm 6:13). Se fosse a cada seis passos, como lê uma opinião no Talmud (Sotá 35b), seriam <b>mais de 2.800 paradas</b>.'],
