@@ -1635,7 +1635,24 @@ html.et-visita #searchForm,html.et-visita .tabs,html.et-visita #orb,html.et-visi
     s.title = L ? `Você usou ${u} de ${L} pedidos de IA hoje (restam ${resta}). Zera à meia-noite.` : `Pedidos de IA hoje: ${u}`;
     s.append($e('span', { class: 'et-ia-l', text: 'IA hoje' }), $e('span', { class: 'et-ia-b', 'aria-hidden': 'true' }, $e('i', { style: `width:${pct}%` })), $e('span', { class: 'et-ia-n', text: L ? `${u}/${L}` : String(u) }));
   };
-  ET.carregaAcesso = async () => { try { const { data } = await sb.rpc('et_meu_acesso'); if (data) ET.acesso = data; } catch {} return ET.acesso; };
+  ET.carregaAcesso = async () => { try { const { data } = await sb.rpc('et_meu_acesso'); if (data) ET.acesso = data; } catch {} if (!ET._pixConferido) { ET._pixConferido = true; ET.conferePendentes(); } return ET.acesso; };
+  // ao abrir o app, confere no Mercado Pago os Pix pendentes dos últimos 3 dias: libera o acesso
+  // mesmo se a pessoa pagou e fechou a tela antes da confirmação
+  ET.conferePendentes = async () => {
+    try {
+      if (!ET.uid) return;
+      const desde = new Date(Date.now() - 3 * 86400e3).toISOString();
+      const { data: pend } = await sb.from('et_pagamentos').select('id').eq('user_id', ET.uid).eq('status', 'pending').gt('criado', desde).order('criado', { ascending: false }).limit(3);
+      if (!pend?.length) return;
+      const { data: s } = await sb.auth.getSession(); const tok = s.session?.access_token; if (!tok) return;
+      let pago = false;
+      for (const p of pend) {
+        const r = await fetch(ET.url + '/functions/v1/mp-criar-pix', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok, apikey: ET.key }, body: JSON.stringify({ conferir: p.id }) });
+        const d = await r.json().catch(() => ({})); if (d.status === 'approved') pago = true;
+      }
+      if (pago) { const { data } = await sb.rpc('et_meu_acesso'); if (data) ET.acesso = data; ET.contaUI?.(); }
+    } catch {}
+  };
   ET.textoAcesso = () => {
     const A = ET.acesso || {}, n = A.dias_restantes || 0, dd = n + (n === 1 ? ' dia' : ' dias');
     const data = v => v ? new Date(v).toLocaleDateString('pt-BR') : '';
