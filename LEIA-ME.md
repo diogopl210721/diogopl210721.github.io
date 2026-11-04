@@ -57,3 +57,9 @@ A logo branca sem fundo enviada pelo usuário é usada no cabeçalho e rodapé. 
 As fontes DM Sans e Manrope são carregadas do Google Fonts. Se a conexão falhar, o site usa fontes do dispositivo. Os demais recursos visuais estão nos próprios arquivos, sem dependências de imagens remotas. As animações respeitam a preferência de reduzir movimento do dispositivo.
 
 O site foi preparado localmente. Repositório, publicação e DNS não foram alterados.
+
+## Escola da Torá (mudou de lugar)
+
+Desde 04/11/2026 a Escola da Torá fica no repositório próprio **diogopl210721/escoladatora**, publicado em **www.escoladatora.com.br** (landing na raiz, app em /app). Faça alterações da landing e do app lá.
+
+Aqui, `escoladatora/index.html` e `escoladatora/app/index.html` só redirecionam para o domínio novo, levando junto o resto do endereço (links de estudos compartilhados `?c=` e links de nova senha). A pasta `escoladatora/app/data` ficou como cópia antiga e não é mais usada.
