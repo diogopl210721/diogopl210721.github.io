@@ -298,6 +298,25 @@ body::after {
 }
 .file i { font: 400 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); font-style: normal; }
 .file.ok i { color: #6fe3a8; } .file.er i { color: #ff8c7a; }
+/* seletor de ligações e rascunho */
+.pick { margin-top: 6px; }
+.pick .srch { width: 100%; box-sizing: border-box; padding: 10px 12px; font: 400 16px/1.4 var(--body); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 2px; outline: 0; }
+.pick .srch:focus { border-color: var(--cyan); }
+.chosen { margin: 10px 0 4px; }
+.chosen .lrow { padding: 8px 10px; background: rgba(63,217,255,.06); border: 1px solid var(--line); margin-top: 6px; }
+.chosen .lh { display: flex; align-items: center; gap: 8px; font: 600 13.5px/1.3 var(--display); }
+.chosen .lh button { margin-left: auto; width: 30px; height: 30px; background: transparent; border: 0; color: var(--dim); cursor: pointer; font-size: 18px; }
+.chosen .lh button:hover { color: #ff8c7a; }
+.chosen .lrow input { font-size: 14px; padding: 8px 10px; }
+.cands { max-height: 190px; overflow-y: auto; margin-top: 6px; border: 1px solid var(--line); background: rgba(63,217,255,.03); }
+.cand { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 6px 10px; background: transparent; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); text-align: left; cursor: pointer; font: 400 14px/1.3 var(--body); }
+.cand:hover { background: rgba(63,217,255,.1); }
+.cand small { margin-left: auto; font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cyan); }
+.cand .pl { color: var(--cyan); font: 500 15px/1 var(--mono); }
+.ents { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.ents label { display: flex; align-items: center; gap: 10px; min-height: 36px; font: 400 14px/1.3 var(--body); color: var(--ink-soft); cursor: pointer; }
+.ents input { width: 18px; height: 18px; accent-color: #3fd9ff; }
+.btns.stk { position: sticky; bottom: -18px; margin: 16px -16px -18px; padding: 10px 16px 14px; background: rgba(4,14,23,.97); border-top: 1px solid var(--line); }
 body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
 #q::placeholder { color: rgba(109,146,166,.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ibtn { width: 42px; height: 42px; flex: none; display: grid; place-items: center; background: transparent; border: 0; border-radius: 2px; color: var(--ink-soft); cursor: pointer; }
@@ -354,7 +373,7 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
         <span class="ml" id="modeL">ANOTAR</span>
       </button>
       <span class="pr" aria-hidden="true">›</span>
-      <textarea id="q" rows="1" enterkeyhint="send" placeholder="Escreva ou anexe um arquivo…" aria-label="Campo de captura e pergunta"></textarea>
+      <textarea id="q" rows="1" enterkeyhint="send" placeholder="Escreva, anexe ou pergunte…" aria-label="Campo de captura e pergunta"></textarea>
       <button type="button" id="clip" class="ibtn" aria-label="Anexar arquivos">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.2-8.2"/></svg>
       </button>
@@ -1334,6 +1353,91 @@ function renderNote(n) {
   showPanel(kids);
 }
 
+function linkPicker(exclude, sugg, defReason) {
+  const sel = new Map();
+  sugg.forEach(m => sel.set(m.id, defReason(m)));
+  const sugIds = new Set(sugg.map(m => m.id));
+  const wrap = el('div', 'pick'), si = el('input', 'srch'), chosen = el('div', 'chosen'), list = el('div', 'cands');
+  si.type = 'text'; si.placeholder = 'Buscar pensamento, pessoa ou lugar para ligar…'; si.setAttribute('aria-label', 'Buscar pensamento para ligar');
+  function draw() {
+    S.preview = new Set(sel.keys());
+    chosen.replaceChildren();
+    sel.forEach((r, id) => {
+      const m = noteById[id]; if (!m) return;
+      const row = el('div', 'lrow'), lh = el('div', 'lh'), x = el('button', null, '×'), inp = el('input');
+      x.type = 'button'; x.setAttribute('aria-label', 'Remover ligação com ' + m.title);
+      x.addEventListener('click', () => { sel.delete(id); draw(); });
+      lh.append(dotEl(m.cat), el('span', null, m.title), x);
+      inp.type = 'text'; inp.value = r; inp.placeholder = 'Por que se ligam?'; inp.setAttribute('aria-label', 'Motivo da ligação com ' + m.title);
+      inp.addEventListener('input', () => sel.set(id, inp.value));
+      row.append(lh, inp); chosen.append(row);
+    });
+    list.replaceChildren();
+    const nq = norm(si.value.trim());
+    const c = notes.filter(m => !exclude.has(m.id) && !sel.has(m.id) && (!nq || norm(m.title).includes(nq) || norm(CATS[m.cat].name).includes(nq)));
+    c.sort((a, b) => (sugIds.has(b.id) - sugIds.has(a.id)) || (ORDER.indexOf(a.cat) - ORDER.indexOf(b.cat)));
+    c.slice(0, 40).forEach(m => {
+      const b = el('button', 'cand'); b.type = 'button';
+      b.append(el('span', 'pl', '+'), dotEl(m.cat), el('span', null, m.title), el('small', null, sugIds.has(m.id) ? 'sugerido' : CATS[m.cat].name));
+      b.addEventListener('click', () => { sel.set(m.id, ''); draw(); });
+      list.append(b);
+    });
+    if (!c.length) list.append(el('p', 'hint', nq ? 'Nada com esse nome.' : 'Todos os pensamentos já estão ligados.'));
+  }
+  si.addEventListener('input', draw);
+  wrap.append(chosen, si, list); draw();
+  return { node: wrap, get: () => Array.from(sel.entries()).filter(e => noteById[e[0]]) };
+}
+
+/* rascunho: revisar e editar antes de entrar no cérebro */
+let drafts = [];
+function nextDraft() {
+  if (!drafts.length) { S.preview = null; return; }
+  renderDraft(drafts[0]);
+}
+function renderDraft(D) {
+  editing = true; S.sel = null;
+  const head = el('div', 'p-head');
+  head.append(dotEl(D.cat), el('span', 'tag', 'Revisar antes de salvar' + (drafts.length > 1 ? ' · ' + drafts.length + ' restantes' : '')), closeBtn(discard));
+  const fld = (label, id, node, hint) => { const w = el('div', 'fld'), l = el('label', null, label); l.htmlFor = id; node.id = id; w.append(l, node); if (hint) w.append(el('div', 'hint', hint)); return w; };
+  const cs = el('select'); ORDER.forEach(k => cs.append(new Option(CATS[k].name, k))); cs.value = D.cat;
+  const ti = el('input'); ti.type = 'text'; ti.value = D.title;
+  const dt = el('input'); dt.type = 'text'; dt.value = toInput(D.date, D.time); dt.placeholder = 'dd/mm/aaaa';
+  const dtErr = el('p', 'err'); dtErr.hidden = true; dtErr.textContent = 'Data inválida. Use 12/05/1990, 05/1990 ou 1990.';
+  const bo = el('textarea'); bo.rows = 6; bo.value = D.body;
+  const wy = el('textarea'); wy.rows = 2; wy.value = D.why; wy.placeholder = 'Para que serve? Qual problema isto resolve?';
+  const st = el('textarea'); st.rows = 6; st.value = stepsText(D.steps); st.placeholder = 'Um passo por linha.\nConferir documentos | RG e CPF';
+  const kids = [head, el('p', 'hint', 'Confira o que o cérebro entendeu. Nada entra na rede até você salvar.'),
+    fld('Região', 'dr-cat', cs), fld('Título', 'dr-title', ti)];
+  const dw = fld('Quando aconteceu', 'dr-date', dt, 'Pode ser no passado: 12/05/1990, 05/1990 ou só 1990.'); dw.append(dtErr);
+  kids.push(dw, fld('Contexto (sua mensagem)', 'dr-body', bo), fld('Para que serve', 'dr-why', wy), fld('Passo a passo', 'dr-steps', st, 'Um passo por linha. Use | para separar o passo do detalhe.'));
+  const checks = [];
+  if (D.newEnts.length) {
+    kids.push(sec('Criar também'));
+    const box = el('div', 'ents');
+    D.newEnts.forEach(sp => { const l = el('label'), c = el('input'); c.type = 'checkbox'; c.checked = true; l.append(c, el('span', null, sp.name + ' · ' + (sp.cat === 'lug' ? 'lugar' : 'pessoa'))); box.append(l); checks.push([c, sp]); });
+    kids.push(box);
+  }
+  const pk = linkPicker(new Set(), D.sugg, m => CATS[m.cat].ent ? (m.cat === 'lug' ? 'Aconteceu aqui.' : 'Esteve neste momento.') : 'Falam de assuntos parecidos.');
+  kids.push(sec('Ligar com'), pk.node);
+  const btns = el('div', 'btns stk'), ok = el('button', 'pbtn', 'Salvar no cérebro'), no = el('button', 'pbtn ghost', 'Descartar');
+  ok.type = 'button'; no.type = 'button';
+  no.addEventListener('click', discard);
+  function discard() { drafts.shift(); S.preview = null; editing = false; if (D.text) { q.value = D.text; fit(); } hidePanel(); nextDraft(); renderStatus(); }
+  ok.addEventListener('click', () => {
+    const w = parseWhen(dt.value);
+    if (!w) { dtErr.hidden = false; dt.focus(); return; }
+    const n = addNote({ id: 'u' + Date.now().toString(36) + Math.floor(Math.random() * 99), cat: cs.value, title: ti.value.trim() || 'Sem título', body: bo.value.trim(), why: wy.value.trim(), steps: parseSteps(st.value), date: w.date, time: w.time, reg: TODAY, user: true }, notes.length);
+    pk.get().forEach(x => link(n, noteById[x[0]], x[1].trim()));
+    checks.forEach(c => { if (c[0].checked) { const e = makeEntity(c[1]); link(n, e, e.cat === 'lug' ? 'Aconteceu aqui.' : 'Esteve neste momento.'); dirty.add(e.id); } });
+    flashes.push({ n: n, t: performance.now() }); dirty.add(n.id); save();
+    drafts.shift(); S.preview = null; editing = false;
+    if (drafts.length) { hidePanel(); nextDraft(); renderStatus(); } else select(n);
+  });
+  btns.append(ok, no); kids.push(btns);
+  showPanel(kids);
+}
+
 function renderEdit(n, focusId) {
   editing = true;
   const ent = !!CATS[n.cat].ent;
@@ -1367,20 +1471,13 @@ function renderEdit(n, focusId) {
     inp.placeholder = 'Por que estes dois pensamentos se ligam?';
     row.append(l, inp); kids.push(row);
   });
-  const sel = el('select');
-  sel.append(new Option('Ligar com outro pensamento…', ''));
-  ORDER.forEach(k => {
-    const og = document.createElement('optgroup'); og.label = CATS[k].name;
-    notes.filter(m => m.cat === k && m !== n && !n.links.has(m.id)).forEach(m => og.append(new Option(m.title, m.id)));
-    if (og.children.length) sel.append(og);
-  });
-  const ar = el('input'); ar.type = 'text'; ar.placeholder = 'Por que se ligam?';
-  kids.push(sec('Nova ligação'), fld('Pensamento', 'ed-add', sel), fld('Motivo', 'ed-add-r', ar));
+  const pk = linkPicker(new Set([n.id].concat(ids)), [], () => '');
+  kids.push(sec('Ligar com outros pensamentos'), pk.node);
 
-  const btns = el('div', 'btns');
+  const btns = el('div', 'btns stk');
   const ok = el('button', 'pbtn', 'Salvar'); ok.type = 'button';
   const no = el('button', 'pbtn ghost', 'Cancelar'); no.type = 'button';
-  no.addEventListener('click', () => renderNote(n));
+  no.addEventListener('click', () => { S.preview = null; renderNote(n); });
   ok.addEventListener('click', () => {
     let w = { date: n.date, time: n.time };
     if (!ent) {
@@ -1394,7 +1491,8 @@ function renderEdit(n, focusId) {
       if (JSON.stringify(ns) !== JSON.stringify(n.steps)) { n.steps = ns; delete checks[n.id]; saveChecks(); }
     }
     ids.forEach(id => { const inp = $('ed-r-' + id); if (inp) setReason(n, id, inp.value.trim()); });
-    if (sel.value) link(n, noteById[sel.value], ar.value.trim());
+    pk.get().forEach(x => link(n, noteById[x[0]], x[1].trim()));
+    S.preview = null;
     index(n); dirty.add(n.id); save(); renderNote(n); renderStatus();
   });
   btns.append(ok, no); kids.push(btns);
@@ -1553,7 +1651,7 @@ q.addEventListener('keydown', e => {
 
 function setPh() {
   const sm = innerWidth < 560;
-  q.placeholder = mode === 'find' ? (sm ? 'Pergunte ao cérebro…' : 'Pergunte: o que aconteceu ontem?') : (sm ? 'Escreva ou anexe…' : 'Escreva ou anexe um arquivo…');
+  q.placeholder = mode === 'find' ? (sm ? 'Pergunte ao cérebro…' : 'Pergunte: o que aconteceu ontem?') : (sm ? 'Escreva, anexe, pergunte…' : 'Escreva, anexe ou pergunte…');
 }
 addEventListener('resize', setPh);
 function setMode(m) {
@@ -1653,7 +1751,7 @@ function showFilePanel() {
   if (ex) { kids.push(sec('Prévia'), el('p', 'p-body', ex.slice(0, 420) + (ex.length > 420 ? '…' : ''))); }
   const lk = A.ents.concat(A.rel).slice(0, 5);
   if (lk.length) { kids.push(sec('Vai se ligar com')); const row = el('div', 'chips-row'); lk.forEach(m => { const b = el('span', 'chip'); b.append(dotEl(m.cat), el('span', null, m.title)); row.append(b); }); kids.push(row); }
-  const btns = el('div', 'btns'), go = el('button', 'pbtn', 'Salvar no cérebro'), no = el('button', 'pbtn ghost', 'Remover');
+  const btns = el('div', 'btns'), go = el('button', 'pbtn', 'Revisar e salvar'), no = el('button', 'pbtn ghost', 'Remover');
   go.type = 'button'; no.type = 'button';
   go.addEventListener('click', submitNote);
   no.addEventListener('click', () => { files = []; renderChips(); hidePanel(); S.preview = null; S.previewText = null; renderStatus(); });
@@ -1668,7 +1766,7 @@ function stepsFrom(t) {
   const m = t.split('\n').map(l => l.trim()).filter(l => /^(passo\s*)?\d{1,2}\s*[.):\-–]\s+\S/i.test(l));
   return m.length >= 3 ? m.slice(0, 20).map(l => ({ t: l.replace(/^(passo\s*)?\d{1,2}\s*[.):\-–]\s+/i, '').slice(0, 140), d: '' })) : [];
 }
-function makeNote(text, fs) {
+function makeDraft(text, fs) {
   const extra = fs.map(f => f.text).join('\n\n');
   const A = analyze(text, fs, extra);
   const first = (text.split(/[.!?\n]/)[0] || '').trim();
@@ -1676,18 +1774,7 @@ function makeNote(text, fs) {
   const title = first ? (first.length > 48 ? first.slice(0, 46).trim() + '…' : first) : (base.length > 48 ? base.slice(0, 46) + '…' : base);
   let body = text;
   fs.forEach(f => { body += (body ? '\n\n' : '') + 'Arquivo: ' + f.name + (f.text ? '\n' + f.text : f.state === 'vazio' ? '\n(sem texto legível: se for escaneado ou imagem, a leitura por IA virá depois)' : ''); });
-  const n = addNote({
-    id: 'u' + Date.now().toString(36) + Math.floor(Math.random() * 99), cat: A.cat, title: title, body: body.slice(0, MAXCH + 400),
-    steps: stepsFrom(extra),
-    date: A.when ? A.when.date : TODAY, time: A.when ? A.when.time : '', reg: TODAY, user: true
-  }, notes.length);
-  A.rel.forEach(r => link(n, r, 'Falam de assuntos parecidos.'));
-  const reasonFor = e => e.cat === 'lug' ? 'Aconteceu aqui.' : 'Esteve neste momento.';
-  A.ents.forEach(e => link(n, e, reasonFor(e)));
-  A.newEnts.forEach(sp => { const e = makeEntity(sp); link(n, e, reasonFor(e)); dirty.add(e.id); });
-  flashes.push({ n: n, t: performance.now() });
-  dirty.add(n.id);
-  return n;
+  return { cat: A.cat, title: title, body: body.slice(0, MAXCH + 400), why: '', steps: stepsFrom(extra), date: A.when ? A.when.date : TODAY, time: A.when ? A.when.time : '', sugg: A.ents.concat(A.rel), newEnts: A.newEnts, text: text };
 }
 const isQuestion = v => /\?\s*$/.test(v) || /^(como|quando|que dia|qual|quais|onde|quem|o que|quanto|me mostre|mostre)\b/.test(norm(v));
 function submitNote() {
@@ -1696,12 +1783,10 @@ function submitNote() {
   if (text && !files.length && isQuestion(text)) { setMode('find'); return; }
   if (files.some(f => f.state === 'lendo')) { S.previewText = 'AGUARDE: LENDO O ARQUIVO…'; renderStatus(); return; }
   const groups = (text || files.length === 1) ? [files.slice()] : files.map(f => [f]);
-  let last = null;
-  groups.forEach(g => { last = makeNote(text, g); });
+  drafts = groups.map(g => makeDraft(text, g));
   q.value = ''; fit(); files = []; renderChips();
-  S.preview = null; S.previewText = null;
-  save(); select(last);
-  if (groups.length > 1) { S.previewText = groups.length + ' ARQUIVOS SALVOS NO CÉREBRO'; renderStatus(); }
+  S.previewText = null; S.matches = null; S.chain = null;
+  nextDraft(); renderStatus();
 }
 form.addEventListener('submit', e => {
   e.preventDefault();
