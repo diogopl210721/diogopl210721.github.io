@@ -1299,6 +1299,8 @@ function analyze(text, files, extra) {
     if (NOTPERSON.has(k) || findByTitle(nm) || GAZ.some(g => norm(g[0]) === k) || newEnts.some(e => norm(e.name) === k)) continue;
     newEnts.push({ name: nm, cat: 'pes' });
   }
+  const rr = /\b(?:m[ãa]e|pai|irm[ãa]o|irm[ãa]|esposa|marido|filh[oa]|av[ôo]|av[óo]|tio|tia|primo|prima|amig[oa]|chefe|colega|padrinho|madrinha|casad[oa] com|namorad[oa] (?:de|com))\s+(?:o\s+|a\s+)?([A-ZÀ-Ý][a-zà-ÿ]{2,})/g;
+  while ((m = rr.exec(text))) { const nm = m[1], k = norm(nm); if (NOTPERSON.has(k) || findByTitle(nm) || newEnts.some(e => norm(e.name) === k)) continue; newEnts.push({ name: nm, cat: 'pes' }); }
   const rs = /\b(?:setor|departamento|area|área)\s+(?:de\s+|do\s+|da\s+)?([A-ZÀ-Ý][A-Za-zÀ-ÿ-]{2,}(?:\s+[A-ZÀ-Ý][A-Za-zÀ-ÿ-]+)?)/g;
   while ((m = rs.exec(text))) { const nm = m[1].trim(); if (!findByTitle(nm) && !newEnts.some(e => norm(e.name) === norm(nm))) newEnts.push({ name: nm, cat: 'set' }); }
   const full = (text + ' ' + extra).slice(0, 8000);
@@ -1956,7 +1958,7 @@ function renderEdit(n, focusId) {
     ids.forEach(id => { const inp = $('ed-r-' + id); if (inp) setReason(n, id, inp.value.trim()); });
     pk.get().forEach(x => link(n, noteById[x[0]], x[1].trim()));
     S.preview = null;
-    if (isAdmin()) n.vis = vs.value; index(n); touch(n.id); save(); renderNote(n); renderStatus();
+    if (isAdmin()) n.vis = vs.value; index(n); touch(n.id); save(); renderStatus(); suggestAfterEdit(n);
   });
   btns.append(ok, no); kids.push(btns);
   showPanel(kids);

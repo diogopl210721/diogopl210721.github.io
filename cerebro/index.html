@@ -1184,6 +1184,10 @@ function analyze(text, files, extra) {
     if (NOTPERSON.has(k) || findByTitle(nm) || GAZ.some(g => norm(g[0]) === k) || newEnts.some(e => norm(e.name) === k)) continue;
     newEnts.push({ name: nm, cat: 'pes' });
   }
+  const rr = /\b(?:m[ãa]e|pai|irm[ãa]o|irm[ãa]|esposa|marido|filh[oa]|av[ôo]|av[óo]|tio|tia|primo|prima|amig[oa]|chefe|colega|padrinho|madrinha|casad[oa] com|namorad[oa] (?:de|com))\s+(?:o\s+|a\s+)?([A-ZÀ-Ý][a-zà-ÿ]{2,})/g;
+  while ((m = rr.exec(text))) { const nm = m[1], k = norm(nm); if (NOTPERSON.has(k) || findByTitle(nm) || newEnts.some(e => norm(e.name) === k)) continue; newEnts.push({ name: nm, cat: 'pes' }); }
+  const rp = /\b(?:nascid[oa] em|nasceu em|mora em|moram em|morou em|vive em|cidade de|cidade)\s+([A-ZÀ-Ý][a-zà-ÿ]{2,}(?:\s+(?:do|da|de|dos|das)\s+[A-ZÀ-Ý][a-zà-ÿ]+)?)/g;
+  while ((m = rp.exec(text))) { const nm = m[1], k = norm(nm); if (NOTPERSON.has(k) || findByTitle(nm) || newEnts.some(e => norm(e.name) === k)) continue; newEnts.push({ name: nm, cat: 'lug' }); }
   const full = (text + ' ' + extra).slice(0, 8000);
   return { cat: detectCat(full, files), when: detectWhen(text), ents: ents, rel: related(full).filter(n => ents.indexOf(n) < 0), newEnts: newEnts };
 }
@@ -1663,6 +1667,51 @@ function renderNote(n) {
   showPanel(kids);
 }
 
+/* depois de editar: achar e propor ligações com o que o texto menciona */
+const tch = id => { dirty.add(id); if (typeof pending !== 'undefined') pending.add(id); };
+const kindCat = k => (k === 'lugar' && CATS.lug) ? 'lug' : (k === 'setor' && CATS.set) ? 'set' : 'pes';
+async function suggestAfterEdit(n) {
+  const text = [n.title, n.body, n.why, n.steps.map(s => s.t + ' ' + s.d).join(' ')].join('. ');
+  const found = new Map(), fresh = [];
+  const addOld = (m, why) => { if (m && m !== n && !n.links.has(m.id) && !found.has(m.id)) found.set(m.id, why || (n.title + ' menciona ' + m.title + '.')); };
+  const addNew = (name, cat, parent) => {
+    name = String(name || '').trim().slice(0, 60); if (!name || norm(name) === norm(n.title)) return;
+    const ex = findByTitle(name); if (ex) { addOld(ex); return; }
+    if (!fresh.some(f => norm(f.name) === norm(name))) fresh.push({ name: name, cat: cat, parent: parent || '' });
+  };
+  const A = analyze(text, [], '');
+  A.ents.forEach(e => addOld(e)); A.newEnts.forEach(e => addNew(e.name, e.cat, e.parent));
+  if (cloud.on) {
+    const head = el('div', 'p-head'); head.append(el('span', 'tag', 'IA'));
+    showPanel([head, el('h2', 'p-title', 'Procurando ligações…'), el('p', 'hint', 'A IA está lendo o que você escreveu para ligar a pessoas, lugares e outros registros.')]);
+    try {
+      const compact = m => ({ id: m.id, t: m.title, c: m.cat, d: m.date, s: (m.body || m.why || '').slice(0, 110) });
+      const j = await ai('analyze', { hoje: TODAY, texto: text.slice(0, 5000), arquivos: [], notas: notes.filter(m => m !== n && !isHidden(m)).map(compact) });
+      const r = j.result || {};
+      (r.entities || []).forEach(e => { if (e && e.name) addNew(e.name, kindCat(e.kind), e.parent); });
+      (r.links || []).forEach(l => { const m = noteById[l && l.id]; if (m) addOld(m, String(l.reason || '').slice(0, 200) || undefined); });
+    } catch (e) { /* segue só com a análise local */ }
+  }
+  if (!found.size && !fresh.length) { renderNote(n); return; }
+  editing = true;
+  const head = el('div', 'p-head'); head.append(dotEl(n.cat), el('span', 'tag', 'Ligações encontradas'), closeBtn(() => { editing = false; renderNote(n); }));
+  const kids = [head, el('h2', 'p-title', n.title), el('p', 'hint', 'Achei estas menções no que você escreveu. Marque o que quer ligar; o motivo pode ser editado.')];
+  const rows = [];
+  const mk = (label, cat, reason, onYes) => {
+    const row = el('div', 'lrow'), lh = el('label', 'lh'), c = el('input'), inp = el('input');
+    c.type = 'checkbox'; c.checked = true; inp.type = 'text'; inp.value = reason; inp.setAttribute('aria-label', 'Motivo da ligação com ' + label);
+    lh.append(c, dotEl(cat), el('span', null, label)); row.append(lh, inp); kids.push(row); rows.push({ c: c, inp: inp, yes: onYes });
+  };
+  found.forEach((why, id) => { const m = noteById[id]; mk(m.title, m.cat, why, r => link(n, m, r)); });
+  fresh.forEach(f => mk(f.name + ' · novo(a) ' + (CATS[f.cat].name.slice(0, -1).toLowerCase()), f.cat, n.title + ' menciona ' + f.name + '.', r => { const e = makeEntity(f); link(n, e, r); tch(e.id); }));
+  const btns = el('div', 'btns stk'), ok = el('button', 'pbtn', 'Ligar selecionados'), no = el('button', 'pbtn ghost', 'Pular');
+  ok.type = 'button'; no.type = 'button';
+  ok.addEventListener('click', () => { rows.forEach(x => { if (x.c.checked) x.yes(x.inp.value.trim()); }); tch(n.id); editing = false; save(); renderStatus(); renderNote(n); });
+  no.addEventListener('click', () => { editing = false; renderNote(n); });
+  btns.append(ok, no); kids.push(btns);
+  showPanel(kids);
+}
+
 function linkPicker(exclude, sugg, defReason) {
   const sel = new Map();
   sugg.forEach(m => sel.set(m.id, defReason(m)));
@@ -1803,7 +1852,7 @@ function renderEdit(n, focusId) {
     ids.forEach(id => { const inp = $('ed-r-' + id); if (inp) setReason(n, id, inp.value.trim()); });
     pk.get().forEach(x => link(n, noteById[x[0]], x[1].trim()));
     S.preview = null;
-    index(n); dirty.add(n.id); save(); renderNote(n); renderStatus();
+    index(n); dirty.add(n.id); save(); renderStatus(); suggestAfterEdit(n);
   });
   btns.append(ok, no); kids.push(btns);
   showPanel(kids);
