@@ -385,7 +385,9 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
   .scan { animation: none; display: none; }
   #stx::before { animation: none; }
 }
+.pbtn.danger { color: #ff8c7a; border-color: rgba(255,140,122,.55); }
 
+.pbtn.danger { color: #ff8c7a; border-color: rgba(255,140,122,.55); }
 .ro #mode, .ro #clip { display: none; }
 .grp { margin: 12px 0 2px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
 .gd { display: flex; align-items: flex-start; gap: 10px; width: 100%; box-sizing: border-box; padding: 10px 4px; background: transparent; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); text-align: left; cursor: pointer; }
@@ -794,7 +796,8 @@ if (DEMO) {
   DATA.forEach(d => { if (d.parent) link(noteById[d.id], noteById[d.parent], d.title + (d.cat === 'pes' ? ' atua em ' : ' faz parte de ') + noteById[d.parent].title + '.'); });
 }
 
-const findByTitle = name => notes.find(n => norm(n.title) === norm(name));
+const tkey = x => norm(x).replace(/^(setor|departamento|area)\s+(de\s+|do\s+|da\s+)?/, '');
+const findByTitle = name => notes.find(n => tkey(n.title) === tkey(name));
 function descendants(n) {
   const out = [], q = [n.id];
   while (q.length) { const id = q.shift(); notes.forEach(m => { if (m.parent === id) { out.push(m); q.push(m.id); } }); }
@@ -1308,6 +1311,7 @@ function analyze(text, files, extra) {
 }
 function makeEntity(spec) {
   spec = spec || {};
+  if (spec.cat === 'set') spec = Object.assign({}, spec, { name: String(spec.name).replace(/^(setor|departamento|área|area)\s+(de\s+|do\s+|da\s+)?/i, '').trim() || spec.name });
   let e = findByTitle(spec.name);
   if (e) return e;
   e = addNote({ id: 'e' + Date.now().toString(36) + Math.floor(Math.random() * 999), cat: spec.cat, title: spec.name, body: 'Criado automaticamente a partir de um registro. Edite para completar.', date: '', user: true }, notes.length);
@@ -1810,6 +1814,103 @@ function renderNote(n) {
   showPanel(kids);
 }
 
+async function cloudDelete(n) {
+  if (!cloud.on) return;
+  const oid = cloud.org.id;
+  let r = await cloud.sb.from('cbe_links').delete().eq('org_id', oid).or('a.eq.' + n.id + ',b.eq.' + n.id); if (r.error) throw r.error;
+  r = await cloud.sb.from('cbe_notes').delete().eq('org_id', oid).eq('id', n.id); if (r.error) throw r.error;
+}
+/* depois de editar: achar e propor ligações com o que o texto menciona */
+const tch = id => { dirty.add(id); if (typeof pending !== 'undefined') pending.add(id); };
+const kindCat = k => (k === 'lugar' && CATS.lug) ? 'lug' : (k === 'setor' && CATS.set) ? 'set' : 'pes';
+async function suggestAfterEdit(n) {
+  const text = [n.title, n.body, n.why, n.steps.map(s => s.t + ' ' + s.d).join(' ')].join('. ');
+  const found = new Map(), fresh = [];
+  const addOld = (m, why) => { if (m && m !== n && !n.links.has(m.id) && !found.has(m.id)) found.set(m.id, why || (n.title + ' menciona ' + m.title + '.')); };
+  const addNew = (name, cat, parent) => {
+    name = String(name || '').trim().slice(0, 60); if (!name || norm(name) === norm(n.title)) return;
+    const ex = findByTitle(name); if (ex) { addOld(ex); return; }
+    if (!fresh.some(f => norm(f.name) === norm(name))) fresh.push({ name: name, cat: cat, parent: parent || '' });
+  };
+  const A = analyze(text, [], '');
+  A.ents.forEach(e => addOld(e)); A.newEnts.forEach(e => addNew(e.name, e.cat, e.parent));
+  if (cloud.on) {
+    const head = el('div', 'p-head'); head.append(el('span', 'tag', 'IA'));
+    showPanel([head, el('h2', 'p-title', 'Procurando ligações…'), el('p', 'hint', 'A IA está lendo o que você escreveu para ligar a pessoas, lugares e outros registros.')]);
+    try {
+      const compact = m => ({ id: m.id, t: m.title, c: m.cat, d: m.date, s: (m.body || m.why || '').slice(0, 110) });
+      const j = await ai('analyze', { hoje: TODAY, texto: text.slice(0, 5000), arquivos: [], notas: notes.filter(m => m !== n && !isHidden(m)).map(compact) });
+      const r = j.result || {};
+      (r.entities || []).forEach(e => { if (e && e.name) addNew(e.name, kindCat(e.kind), e.parent); });
+      (r.links || []).forEach(l => { const m = noteById[l && l.id]; if (m) addOld(m, String(l.reason || '').slice(0, 200) || undefined); });
+    } catch (e) { /* segue só com a análise local */ }
+  }
+  if (!found.size && !fresh.length) { renderNote(n); return; }
+  editing = true;
+  const head = el('div', 'p-head'); head.append(dotEl(n.cat), el('span', 'tag', 'Ligações encontradas'), closeBtn(() => { editing = false; renderNote(n); }));
+  const kids = [head, el('h2', 'p-title', n.title), el('p', 'hint', 'Achei estas menções no que você escreveu. Marque o que quer ligar; o motivo pode ser editado.')];
+  const rows = [];
+  const mk = (label, cat, reason, onYes) => {
+    const row = el('div', 'lrow'), lh = el('label', 'lh'), c = el('input'), inp = el('input');
+    c.type = 'checkbox'; c.checked = true; inp.type = 'text'; inp.value = reason; inp.setAttribute('aria-label', 'Motivo da ligação com ' + label);
+    lh.append(c, dotEl(cat), el('span', null, label)); row.append(lh, inp); kids.push(row); rows.push({ c: c, inp: inp, yes: onYes });
+  };
+  found.forEach((why, id) => { const m = noteById[id]; mk(m.title, m.cat, why, r => link(n, m, r)); });
+  fresh.forEach(f => mk(f.name + ' · novo(a) ' + (CATS[f.cat].name.slice(0, -1).toLowerCase()), f.cat, n.title + ' menciona ' + f.name + '.', r => { const e = makeEntity(f); link(n, e, r); tch(e.id); }));
+  const btns = el('div', 'btns stk'), ok = el('button', 'pbtn', 'Ligar selecionados'), no = el('button', 'pbtn ghost', 'Pular');
+  ok.type = 'button'; no.type = 'button';
+  ok.addEventListener('click', () => { rows.forEach(x => { if (x.c.checked) x.yes(x.inp.value.trim()); }); tch(n.id); editing = false; save(); renderStatus(); renderNote(n); });
+  no.addEventListener('click', () => { editing = false; renderNote(n); });
+  btns.append(ok, no); kids.push(btns);
+  showPanel(kids);
+}
+
+/* excluir e unir registros */
+function removeNoteLocal(n) {
+  n.links.forEach((_, id) => { const m = noteById[id]; if (m) m.links.delete(n.id); });
+  const gone = new Set(n.edges);
+  for (let i = linkEdges.length - 1; i >= 0; i--) if (gone.has(linkEdges[i])) linkEdges.splice(i, 1);
+  for (let i = flashes.length - 1; i >= 0; i--) if (flashes[i].n === n) flashes.splice(i, 1);
+  notes.forEach(m => { if (m !== n) { if (m.edges.some(e => gone.has(e))) m.edges = m.edges.filter(e => !gone.has(e)); if (m.parent === n.id) m.parent = ''; } });
+  if (n.node) n.node.note = null;
+  notes.splice(notes.indexOf(n), 1); delete noteById[n.id];
+  dirty.delete(n.id); if (typeof pending !== 'undefined') pending.delete(n.id);
+  delete checks[n.id];
+  S.sel = null; S.focus = null; S.matches = null; S.chain = null; S.preview = null;
+}
+async function deleteNote(n) { await cloudDelete(n); removeNoteLocal(n); save(); renderStatus(); }
+function dangerZone(n, kids) {
+  kids.push(sec('Excluir ou unir'));
+  const hint = el('p', 'hint', 'Excluir remove este registro e as ligações dele. Para duplicados, use “Unir”: as ligações passam para o registro escolhido.');
+  const del = el('button', 'pbtn ghost danger', 'Excluir este registro'); del.type = 'button'; let armed = false;
+  del.addEventListener('click', async () => {
+    if (!armed) { armed = true; del.textContent = 'Toque de novo para excluir'; setTimeout(() => { armed = false; del.textContent = 'Excluir este registro'; }, 5000); return; }
+    del.disabled = true;
+    try { await deleteNote(n); editing = false; hidePanel(); toast('Registro excluído.'); } catch (e) { console.error('excluir', e); del.disabled = false; armed = false; del.textContent = 'Excluir este registro'; toast('Não consegui excluir agora.'); }
+  });
+  const sel = el('select'); sel.setAttribute('aria-label', 'Unir com');
+  sel.append(new Option('Unir com…', ''));
+  notes.filter(m => m !== n && !isHidden(m)).sort((a, b) => (a.cat === n.cat ? 0 : 1) - (b.cat === n.cat ? 0 : 1) || a.title.localeCompare(b.title)).forEach(m => sel.append(new Option(m.title + ' · ' + CATS[m.cat].name, m.id)));
+  const mg = el('button', 'pbtn ghost', 'Unir neste registro'); mg.type = 'button'; let marmed = false;
+  mg.addEventListener('click', async () => {
+    const t = noteById[sel.value]; if (!t) { toast('Escolha com qual registro unir.'); return; }
+    if (!marmed) { marmed = true; mg.textContent = 'Toque de novo: “' + n.title.slice(0, 22) + '” some e vira “' + t.title.slice(0, 22) + '”'; return; }
+    mg.disabled = true;
+    try {
+      n.links.forEach((reason, id) => { const m = noteById[id]; if (m && m !== t) link(t, m, reason || ''); });
+      notes.forEach(m => { if (m.parent === n.id) { m.parent = t.id; tch(m.id); } });
+      if (!t.body && n.body) t.body = n.body;
+      if (!t.steps.length && n.steps.length) t.steps = n.steps;
+      tch(t.id); save();
+      await deleteNote(n); select(t); toast('Registros unidos.');
+    } catch (e) { console.error('unir', e); mg.disabled = false; marmed = false; mg.textContent = 'Unir neste registro'; toast('Não consegui unir agora.'); }
+  });
+  const w = el('div', 'fld'); w.append(sel);
+  const r1 = el('div', 'btns stk'); r1.append(del);
+  const r2 = el('div', 'btns stk'); r2.append(mg);
+  kids.push(hint, w, r2, r1);
+}
+
 function linkPicker(exclude, sugg, defReason) {
   const sel = new Map();
   sugg.forEach(m => sel.set(m.id, defReason(m)));
@@ -1939,6 +2040,8 @@ function renderEdit(n, focusId) {
   const pk = linkPicker(new Set([n.id].concat(ids)), [], () => '');
   kids.push(sec('Ligar com outros registros'), pk.node);
 
+  dangerZone(n, kids);
+  if (canEdit()) dangerZone(n, kids);
   const btns = el('div', 'btns stk');
   const ok = el('button', 'pbtn', 'Salvar'); ok.type = 'button';
   const no = el('button', 'pbtn ghost', 'Cancelar'); no.type = 'button';

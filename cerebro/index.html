@@ -385,6 +385,7 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
   .scan { animation: none; display: none; }
   #stx::before { animation: none; }
 }
+.pbtn.danger { color: #ff8c7a; border-color: rgba(255,140,122,.55); }
 </style>
 </head>
 <body>
@@ -1712,6 +1713,58 @@ async function suggestAfterEdit(n) {
   showPanel(kids);
 }
 
+async function cloudDelete(n) {
+  if (!cloud.on) return;
+  const uid = cloud.user.id;
+  let r = await cloud.sb.from('cb_links').delete().eq('user_id', uid).or('a.eq.' + n.id + ',b.eq.' + n.id); if (r.error) throw r.error;
+  r = await cloud.sb.from('cb_notes').delete().eq('user_id', uid).eq('id', n.id); if (r.error) throw r.error;
+}
+/* excluir e unir registros */
+function removeNoteLocal(n) {
+  n.links.forEach((_, id) => { const m = noteById[id]; if (m) m.links.delete(n.id); });
+  const gone = new Set(n.edges);
+  for (let i = linkEdges.length - 1; i >= 0; i--) if (gone.has(linkEdges[i])) linkEdges.splice(i, 1);
+  for (let i = flashes.length - 1; i >= 0; i--) if (flashes[i].n === n) flashes.splice(i, 1);
+  notes.forEach(m => { if (m !== n) { if (m.edges.some(e => gone.has(e))) m.edges = m.edges.filter(e => !gone.has(e)); if (m.parent === n.id) m.parent = ''; } });
+  if (n.node) n.node.note = null;
+  notes.splice(notes.indexOf(n), 1); delete noteById[n.id];
+  dirty.delete(n.id); if (typeof pending !== 'undefined') pending.delete(n.id);
+  delete checks[n.id];
+  S.sel = null; S.focus = null; S.matches = null; S.chain = null; S.preview = null;
+}
+async function deleteNote(n) { await cloudDelete(n); removeNoteLocal(n); save(); renderStatus(); }
+function dangerZone(n, kids) {
+  kids.push(sec('Excluir ou unir'));
+  const hint = el('p', 'hint', 'Excluir remove este registro e as ligações dele. Para duplicados, use “Unir”: as ligações passam para o registro escolhido.');
+  const del = el('button', 'pbtn ghost danger', 'Excluir este registro'); del.type = 'button'; let armed = false;
+  del.addEventListener('click', async () => {
+    if (!armed) { armed = true; del.textContent = 'Toque de novo para excluir'; setTimeout(() => { armed = false; del.textContent = 'Excluir este registro'; }, 5000); return; }
+    del.disabled = true;
+    try { await deleteNote(n); editing = false; hidePanel(); toast('Registro excluído.'); } catch (e) { del.disabled = false; armed = false; del.textContent = 'Excluir este registro'; toast('Não consegui excluir agora.'); }
+  });
+  const sel = el('select'); sel.setAttribute('aria-label', 'Unir com');
+  sel.append(new Option('Unir com…', ''));
+  notes.filter(m => m !== n && !isHidden(m)).sort((a, b) => (a.cat === n.cat ? 0 : 1) - (b.cat === n.cat ? 0 : 1) || a.title.localeCompare(b.title)).forEach(m => sel.append(new Option(m.title + ' · ' + CATS[m.cat].name, m.id)));
+  const mg = el('button', 'pbtn ghost', 'Unir neste registro'); mg.type = 'button'; let marmed = false;
+  mg.addEventListener('click', async () => {
+    const t = noteById[sel.value]; if (!t) { toast('Escolha com qual registro unir.'); return; }
+    if (!marmed) { marmed = true; mg.textContent = 'Toque de novo: “' + n.title.slice(0, 22) + '” some e vira “' + t.title.slice(0, 22) + '”'; return; }
+    mg.disabled = true;
+    try {
+      n.links.forEach((reason, id) => { const m = noteById[id]; if (m && m !== t) link(t, m, reason || ''); });
+      notes.forEach(m => { if (m.parent === n.id) { m.parent = t.id; tch(m.id); } });
+      if (!t.body && n.body) t.body = n.body;
+      if (!t.steps.length && n.steps.length) t.steps = n.steps;
+      tch(t.id); save();
+      await deleteNote(n); select(t); toast('Registros unidos.');
+    } catch (e) { mg.disabled = false; marmed = false; mg.textContent = 'Unir neste registro'; toast('Não consegui unir agora.'); }
+  });
+  const w = el('div', 'fld'); w.append(sel);
+  const r1 = el('div', 'btns stk'); r1.append(del);
+  const r2 = el('div', 'btns stk'); r2.append(mg);
+  kids.push(hint, w, r2, r1);
+}
+
 function linkPicker(exclude, sugg, defReason) {
   const sel = new Map();
   sugg.forEach(m => sel.set(m.id, defReason(m)));
@@ -1833,6 +1886,7 @@ function renderEdit(n, focusId) {
   const pk = linkPicker(new Set([n.id].concat(ids)), [], () => '');
   kids.push(sec('Ligar com outros pensamentos'), pk.node);
 
+  dangerZone(n, kids);
   const btns = el('div', 'btns stk');
   const ok = el('button', 'pbtn', 'Salvar'); ok.type = 'button';
   const no = el('button', 'pbtn ghost', 'Cancelar'); no.type = 'button';
