@@ -317,6 +317,28 @@ body::after {
 .ents label { display: flex; align-items: center; gap: 10px; min-height: 36px; font: 400 14px/1.3 var(--body); color: var(--ink-soft); cursor: pointer; }
 .ents input { width: 18px; height: 18px; accent-color: #3fd9ff; }
 .btns.stk { position: sticky; bottom: -18px; margin: 16px -16px -18px; padding: 10px 16px 14px; background: rgba(4,14,23,.97); border-top: 1px solid var(--line); }
+#gate { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(2,7,12,.88); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+#gate[hidden] { display: none; }
+#gate .card { width: min(380px, 100%); padding: 22px 20px 20px; box-sizing: border-box; }
+#gate h2 { margin: 0 0 4px; font: 600 26px/1.1 var(--display); letter-spacing: .06em; }
+#gate p { margin: 0 0 6px; color: var(--dim); font-size: 14px; line-height: 1.45; }
+#gate .err { color: #ff8c7a; min-height: 18px; margin-top: 10px; font-size: 13.5px; }
+#gate .lnk { display: block; margin: 14px auto 0; padding: 8px; background: transparent; border: 0; color: var(--dim); font: 400 13px/1 var(--body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+#gate .lnk:hover { color: var(--cyan); }
+.tool { display: flex; flex-direction: column; gap: 3px; width: 100%; margin-top: 8px; padding: 11px 12px; text-align: left; background: rgba(63,217,255,.04); border: 1px solid var(--line); border-radius: 2px; color: var(--ink); cursor: pointer; }
+.tool:hover { border-color: var(--cyan); background: rgba(63,217,255,.1); }
+.tool b { font: 600 15px/1.2 var(--display); }
+.tool span { font-size: 13px; line-height: 1.4; color: var(--dim); }
+.seg { display: flex; align-items: center; gap: 6px; margin: -2px 0 8px; }
+.seg .sl { margin-right: auto; }
+.seg button { width: 34px; height: 30px; background: transparent; border: 1px solid var(--line); border-radius: 2px; color: var(--ink-soft); font: 500 12px/1 var(--mono); cursor: pointer; }
+.seg button[aria-pressed="true"] { color: var(--cyan); border-color: var(--cyan); background: rgba(63,217,255,.12); }
+.tlbig { margin: 6px 0 2px; font: 600 28px/1.1 var(--display); color: var(--cyan); }
+.rng { width: 100%; margin: 10px 0 4px; accent-color: #3fd9ff; height: 32px; }
+.hop { display: flex; align-items: center; gap: 8px; padding: 9px 4px; font: 600 14.5px/1.3 var(--display); cursor: pointer; background: transparent; border: 0; width: 100%; color: var(--ink); text-align: left; }
+.hop:hover { background: rgba(63,217,255,.08); }
+.hopr { margin: 0 0 0 11px; padding: 2px 0 2px 14px; border-left: 1px solid var(--cyan); font-size: 13.5px; line-height: 1.4; color: var(--dim); }
+.pill { display: inline-block; margin-left: 6px; padding: 2px 6px; font: 500 9.5px/1 var(--mono); letter-spacing: .1em; border: 1px solid var(--cyan); color: var(--cyan); border-radius: 2px; }
 body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
 #q::placeholder { color: rgba(109,146,166,.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ibtn { width: 42px; height: 42px; flex: none; display: grid; place-items: center; background: transparent; border: 0; border-radius: 2px; color: var(--ink-soft); cursor: pointer; }
@@ -382,6 +404,18 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
       </button>
   </div></form>
 </div>
+<div id="gate" hidden role="dialog" aria-modal="true" aria-labelledby="gt">
+  <form class="card hud" id="gform" autocomplete="on">
+    <h2 id="gt">CÉREBRO</h2>
+    <p>Entre com a conta DDS para guardar seu cérebro na nuvem e usar a IA.</p>
+    <div class="fld"><label for="g-mail">E-mail</label><input id="g-mail" type="email" autocomplete="username" required></div>
+    <div class="fld"><label for="g-pass">Senha</label><input id="g-pass" type="password" autocomplete="current-password" required></div>
+    <div class="err" id="g-err" role="alert"></div>
+    <div class="btns"><button class="pbtn" type="submit" id="g-go">Entrar</button></div>
+    <button type="button" class="lnk" id="g-local">Continuar sem entrar (só neste aparelho)</button>
+  </form>
+</div>
+<input type="file" id="mdIn" accept=".md,.markdown,.txt" multiple hidden>
 <input type="file" id="file" multiple hidden accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.json,image/*">
 
 <script>
@@ -416,6 +450,7 @@ const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const p2 = x => String(x).padStart(2, '0');
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const hasWord = (nt, name) => !!name && new RegExp('(^|[^a-z0-9])' + esc(name) + '([^a-z0-9]|$)').test(nt);
+const EXIDS = new Set();
 const STOP = new Set('para como esta mais muito sobre quando porque ainda tudo essa esse isso minha meu seus suas entre desde onde cada fazer foram tinha pelo pela uma uns umas com por nao mas dos das que foi sao ser tem vai ele ela nos nas num sem ate bem aqui ali todo toda quem qual dele dela seu sua meus minhas estou estava tambem assim voce vamos fiz fui'.split(' '));
 const QSTOP = new Set('mesmo lembro preciso saber alguma anotacao anotei registrei guardei data quando aconteceu aconteceram fiz fez fizemos dia quando onde como quem qual quais tudo sobre algo coisa coisas ontem hoje anteontem semana passada esta essa nesse nesta mes ano anos foi fui estou lembro mostre mostra'.split(' '));
 const MONTH = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -812,7 +847,7 @@ function index(n) {
 function addNote(o, idx) {
   const n = {
     id: o.id, cat: o.cat, title: o.title, body: o.body || '', why: o.why || '', steps: o.steps || [], date: o.date || '', time: o.time || '',
-    reg: o.reg || '', parent: o.parent || '', user: !!o.user, links: new Map(), edges: [], node: null
+    reg: o.reg || '', parent: o.parent || '', user: !!o.user, ex: EXIDS.has(o.id) && !o.user, links: new Map(), edges: [], node: null
   };
   n.node = pickNode(o.cat, idx);
   n.node.note = n;
@@ -829,6 +864,7 @@ function link(a, b, reason) {
   const e = { a: A, b: B, link: true, c: [(A.x + B.x) / 2 * 1.16, (A.y + B.y) / 2 * 1.16, (A.z + B.z) / 2 * 1.16] };
   linkEdges.push(e); a.edges.push(e); b.edges.push(e);
 }
+DATA.forEach(d => EXIDS.add(d.id));
 const catCount = {};
 DATA.forEach(d => { catCount[d.cat] = catCount[d.cat] || 0; addNote(d, catCount[d.cat]++); });
 LINKS.forEach(l => link(noteById[l[0]], noteById[l[1]], l[2]));
@@ -845,7 +881,11 @@ function descendants(n) {
 const STORE = 'cerebro-v2', CHK = 'cerebro-checks-v1';
 let checks = {};
 try { checks = JSON.parse(localStorage.getItem(CHK) || '{}') || {}; } catch (e) { checks = {}; }
-function saveChecks() { try { localStorage.setItem(CHK, JSON.stringify(checks)); } catch (e) { /* sem armazenamento */ } }
+function saveChecks() { try { localStorage.setItem(CHK, JSON.stringify(checks)); } catch (e) { /* sem armazenamento */ } schedulePush(); }
+let reviewed = {};
+try { reviewed = JSON.parse(localStorage.getItem('cerebro-rev-v1') || '{}') || {}; } catch (e) { reviewed = {}; }
+function saveReviewed() { try { localStorage.setItem('cerebro-rev-v1', JSON.stringify(reviewed)); } catch (e) { /* */ } schedulePush(); }
+const isHidden = n => !!(S.hideEx && n.ex && !dirty.has(n.id));
 const isDone = (n, i) => !!(checks[n.id] && checks[n.id].indexOf(i) > -1);
 function toggleDone(n, i) {
   const a = checks[n.id] || (checks[n.id] = []), k = a.indexOf(i);
@@ -860,6 +900,7 @@ function save() {
     }));
     localStorage.setItem(STORE, JSON.stringify(out));
   } catch (e) { /* sem armazenamento */ }
+  schedulePush();
 }
 (function load() {
   try {
@@ -874,11 +915,232 @@ function save() {
   } catch (e) { /* sem armazenamento */ }
 })();
 
+/* ---------- nuvem (Supabase) e IA ---------- */
+const CFG = { url: 'https://kwadhzmdaakxkztggigm.supabase.co', key: 'sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM' };
+const cloud = { sb: null, user: null, on: false, state: 'off', msg: '' };
+const HOSTOK = /(^|\.)ddsinovacao\.com\.br$/.test(location.hostname) || !!window.__CB_TEST;
+function loadScript(src) { return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error('lib')); document.head.append(sc); }); }
+let pushT = null;
+function schedulePush() { if (!cloud.on) return; clearTimeout(pushT); pushT = setTimeout(push, 900); }
+async function push() {
+  if (!cloud.on) return;
+  try {
+    cloud.state = 'sync'; renderStatus();
+    const uid = cloud.user.id, now = new Date().toISOString(), dn = notes.filter(n => dirty.has(n.id));
+    const rows = dn.map(n => ({ user_id: uid, id: n.id, cat: n.cat, title: n.title, body: n.body, why: n.why, steps: n.steps, date: n.date, time: n.time, reg: n.reg, parent: n.parent, updated_at: now }));
+    for (let i = 0; i < rows.length; i += 200) { const r = await cloud.sb.from('cb_notes').upsert(rows.slice(i, i + 200), { onConflict: 'user_id,id' }); if (r.error) throw r.error; }
+    const seen = new Set(), lr = [];
+    dn.forEach(n => n.links.forEach((reason, id) => {
+      if (!noteById[id]) return;
+      const a = n.id < id ? n.id : id, b = n.id < id ? id : n.id, k = a + '|' + b;
+      if (seen.has(k)) return; seen.add(k); lr.push({ user_id: uid, a: a, b: b, reason: reason || '', updated_at: now });
+    }));
+    for (let i = 0; i < lr.length; i += 300) { const r = await cloud.sb.from('cb_links').upsert(lr.slice(i, i + 300), { onConflict: 'user_id,a,b' }); if (r.error) throw r.error; }
+    const pr = await cloud.sb.from('cb_prefs').upsert({ user_id: uid, checks: checks, reviewed: reviewed, updated_at: now }, { onConflict: 'user_id' });
+    if (pr.error) throw pr.error;
+    cloud.state = 'ok';
+  } catch (e) { cloud.state = 'erro'; cloud.msg = (e && e.message) || ''; }
+  renderStatus();
+}
+async function pull() {
+  const [n, l, p] = await Promise.all([cloud.sb.from('cb_notes').select('*'), cloud.sb.from('cb_links').select('*'), cloud.sb.from('cb_prefs').select('*').maybeSingle()]);
+  if (n.error) throw n.error; if (l.error) throw l.error;
+  (n.data || []).forEach(o => {
+    const m = noteById[o.id];
+    if (m) { m.title = o.title; m.body = o.body; m.why = o.why; m.steps = o.steps || []; m.date = o.date; m.time = o.time; index(m); }
+    else addNote({ id: o.id, cat: CATS[o.cat] ? o.cat : 'eu', title: o.title, body: o.body, why: o.why, steps: o.steps || [], date: o.date, time: o.time, reg: o.reg, parent: o.parent, user: true }, notes.length);
+    dirty.add(o.id);
+  });
+  (l.data || []).forEach(r => { if (noteById[r.a] && noteById[r.b]) link(noteById[r.a], noteById[r.b], r.reason); });
+  if (p && p.data) { Object.assign(checks, p.data.checks || {}); Object.assign(reviewed, p.data.reviewed || {}); }
+  try { localStorage.setItem(CHK, JSON.stringify(checks)); localStorage.setItem('cerebro-rev-v1', JSON.stringify(reviewed)); } catch (e) { /* */ }
+}
+async function cloudStart(user) {
+  const r = await cloud.sb.rpc('cb_ok');
+  if (r.error || !r.data) { cloud.user = user; cloud.on = false; cloud.state = 'denied'; showGate('A conta ' + (user.email || '') + ' não tem acesso ao Cérebro. Entre com outra conta.'); return; }
+  cloud.user = user; cloud.on = true; cloud.state = 'sync'; hideGate(); renderStatus();
+  try { await pull(); save(); await push(); } catch (e) { cloud.state = 'erro'; cloud.msg = (e && e.message) || ''; }
+  renderStatus();
+}
+async function cloudInit() {
+  if (!HOSTOK) return;
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
+    cloud.sb = window.supabase.createClient(CFG.url, CFG.key);
+    const { data } = await cloud.sb.auth.getSession();
+    if (data && data.session) await cloudStart(data.session.user);
+    else { renderStatus(); let lo = false; try { lo = localStorage.getItem('cerebro-local') === '1'; } catch (e) { /* */ } if (!lo) showGate(''); }
+  } catch (e) { cloud.sb = null; cloud.state = 'off'; renderStatus(); }
+}
+async function ai(action, payload) {
+  if (!cloud.on) throw new Error('sem conta');
+  const { data } = await cloud.sb.auth.getSession();
+  if (!data || !data.session) throw new Error('sessão expirada');
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 115000);
+  try {
+    const r = await fetch(CFG.url + '/functions/v1/cerebro-ia', { method: 'POST', signal: ctl.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + data.session.access_token, apikey: CFG.key }, body: JSON.stringify(Object.assign({ action: action }, payload)) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'falha da IA');
+    return j;
+  } catch (e) { throw new Error(e.name === 'AbortError' ? 'demorou demais' : e.message); } finally { clearTimeout(t); }
+}
+function showGate(msg) { $('g-err').textContent = msg || ''; $('gate').hidden = false; setTimeout(() => $('g-mail').focus(), 50); }
+function hideGate() { $('gate').hidden = true; }
+/* ---------- ferramentas: linha do tempo, caminho, revisão, Markdown ---------- */
+let tlTimer = null;
+function stopTl() { if (tlTimer) { clearInterval(tlTimer); tlTimer = null; } if (S.tlHide) { S.tlHide = null; } }
+function openTimeline() {
+  const list = notes.filter(n => n.date && !isHidden(n)).sort((a, b) => (rangeOf(a.date)[0] - rangeOf(b.date)[0]) || (a.time < b.time ? -1 : 1));
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Linha do tempo'), closeBtn(hidePanel));
+  if (list.length < 2) { showPanel([head, el('p', 'hint', 'Ainda há poucos pensamentos com data para animar.')]); return; }
+  const big = el('div', 'tlbig'), sub = el('p', 'hint'), rg = el('input', 'rng');
+  rg.type = 'range'; rg.min = 1; rg.max = list.length; rg.value = list.length; rg.setAttribute('aria-label', 'Linha do tempo');
+  const play = el('button', 'pbtn', 'Reproduzir'); play.type = 'button';
+  const apply = k => {
+    S.tlHide = new Set(list.slice(k).map(n => n.id));
+    const cur = list[Math.max(0, k - 1)]; big.textContent = fmtWhen(cur.date, ''); sub.textContent = k + ' de ' + list.length + ' pensamentos · ' + cur.title;
+  };
+  rg.addEventListener('input', () => { if (tlTimer) { clearInterval(tlTimer); tlTimer = null; play.textContent = 'Reproduzir'; } apply(+rg.value); });
+  play.addEventListener('click', () => {
+    if (tlTimer) { clearInterval(tlTimer); tlTimer = null; play.textContent = 'Reproduzir'; return; }
+    if (+rg.value >= list.length) { rg.value = 1; apply(1); }
+    play.textContent = 'Pausar';
+    tlTimer = setInterval(() => { const k = +rg.value + 1; if (k > list.length) { clearInterval(tlTimer); tlTimer = null; play.textContent = 'Reproduzir'; return; } rg.value = k; apply(k); }, RM ? 200 : 420);
+  });
+  const btns = el('div', 'btns'); btns.append(play);
+  showPanel([head, el('p', 'hint', 'Veja o cérebro crescer, pensamento por pensamento, na ordem em que aconteceram.'), big, sub, rg, btns], true);
+  S.sel = null; S.focus = null; S.matches = null; S.chain = null; apply(list.length);
+}
+function bfsPath(a, b) {
+  const prev = new Map([[a.id, null]]), q2 = [a];
+  while (q2.length) {
+    const n = q2.shift(); if (n === b) break;
+    n.links.forEach((_, id) => { const m = noteById[id]; if (m && !prev.has(id) && !isHidden(m)) { prev.set(id, n.id); q2.push(m); } });
+  }
+  if (!prev.has(b.id)) return null;
+  const path = []; for (let id = b.id; id; id = prev.get(id)) path.unshift(noteById[id]);
+  return path;
+}
+function noteSelect(label, id) {
+  const sel = el('select'); sel.id = id; sel.append(new Option('Escolher…', ''));
+  ORDER.forEach(k => { const og = document.createElement('optgroup'); og.label = CATS[k].name; notes.filter(m => m.cat === k && !isHidden(m)).forEach(m => og.append(new Option(m.title, m.id))); if (og.children.length) sel.append(og); });
+  const w = el('div', 'fld'), l = el('label', null, label); l.htmlFor = id; w.append(l, sel); return [w, sel];
+}
+function openPath() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Caminho entre pensamentos'), closeBtn(hidePanel));
+  const [w1, s1] = noteSelect('De', 'pa-1'), [w2, s2] = noteSelect('Até', 'pa-2'), out = el('div');
+  const go = el('button', 'pbtn', 'Encontrar caminho'); go.type = 'button';
+  go.addEventListener('click', () => {
+    out.replaceChildren();
+    if (!s1.value || !s2.value) { out.append(el('p', 'hint', 'Escolha os dois pensamentos.')); return; }
+    const a = noteById[s1.value], b = noteById[s2.value];
+    if (a === b) { out.append(el('p', 'hint', 'São o mesmo pensamento.')); return; }
+    const p = bfsPath(a, b);
+    if (!p) { out.append(el('p', 'hint', 'Não existe caminho: os dois estão em partes separadas do cérebro. Ligue um ao outro editando um deles.')); S.matches = null; S.chain = null; return; }
+    setMatches(p.map(n => n.id)); S.chain = null; S.sel = null; S.focus = null;
+    out.append(sec('Caminho', (p.length - 1) + (p.length === 2 ? ' passo' : ' passos')));
+    p.forEach((n, i) => {
+      const hb = el('button', 'hop'); hb.type = 'button'; hb.append(dotEl(n.cat), el('span', null, n.title)); hb.addEventListener('click', () => select(n)); out.append(hb);
+      if (i < p.length - 1) out.append(el('p', 'hopr', n.links.get(p[i + 1].id) || 'Ligados diretamente.'));
+    });
+    renderStatus();
+  });
+  const btns = el('div', 'btns'); btns.append(go);
+  showPanel([head, el('p', 'hint', 'Escolha dois pensamentos e veja pela rota de ligações como um chega ao outro.'), w1, w2, btns, out]);
+}
+function pickReview(skipId) {
+  const dayN = d => Math.max(0, Math.round((Date.parse(TODAY) - (rangeOf(d) || [Date.parse(TODAY)])[0]) / 864e5));
+  const c = notes.filter(n => !CATS[n.cat].ent && !isHidden(n) && n.id !== skipId && reviewed[n.id] !== TODAY && (n.body || n.steps.length));
+  if (!c.length) return null;
+  const sc = n => { const last = reviewed[n.id] ? Math.round((Date.parse(TODAY) - Date.parse(reviewed[n.id])) / 864e5) : 40; const done = (checks[n.id] || []).length; return last + (n.steps.length && done < n.steps.length ? 15 : 0) + (dirty.has(n.id) ? 10 : 0) + Math.random() * 12; };
+  c.sort((a, b) => sc(b) - sc(a)); return c[0];
+}
+function openReview(skipId) {
+  const n = pickReview(skipId), head = el('div', 'p-head'); head.append(el('span', 'tag', 'Revisão do dia'), closeBtn(hidePanel));
+  if (!n) { showPanel([head, el('p', 'hint', 'Nada para revisar agora. Anote algo novo e volte amanhã.')]); return; }
+  const days = n.date ? Math.max(0, Math.round((Date.parse(TODAY) - rangeOf(n.date)[0]) / 864e5)) : null;
+  const kids = [head, el('p', 'hint', 'Um pensamento seu para reforçar a memória' + (days != null ? ' · ' + (days === 0 ? 'de hoje' : 'de ' + days + ' dia' + (days === 1 ? '' : 's') + ' atrás') : '') + '.'), el('h2', 'p-title', n.title)];
+  if (n.body) kids.push(el('p', 'p-body', n.body.slice(0, 360) + (n.body.length > 360 ? '…' : '')));
+  if (n.why) kids.push(sec('Para que serve'), el('p', 'p-body', n.why));
+  if (n.steps.length) { const d = (checks[n.id] || []).length; kids.push(el('p', 'hint', 'Passo a passo: ' + d + ' de ' + n.steps.length + ' marcados.')); }
+  const btns = el('div', 'btns'), ok = el('button', 'pbtn', 'Lembrei'), ab = el('button', 'pbtn ghost', 'Abrir'), ou = el('button', 'pbtn ghost', 'Outro');
+  [ok, ab, ou].forEach(b => b.type = 'button');
+  ok.addEventListener('click', () => { reviewed[n.id] = TODAY; saveReviewed(); openReview(n.id); });
+  ab.addEventListener('click', () => { reviewed[n.id] = TODAY; saveReviewed(); select(n); });
+  ou.addEventListener('click', () => openReview(n.id));
+  btns.append(ok, ab, ou); kids.push(btns);
+  showPanel(kids); setMatches([n.id]); S.sel = null; S.focus = null;
+}
+const safeName = t => t.replace(/[\\/:*?"<>|#^\[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'sem titulo';
+function noteToMd(n) {
+  const fm = ['---', 'categoria: ' + CATS[n.cat].name];
+  if (n.date) fm.push('data: ' + n.date); if (n.time) fm.push('hora: "' + n.time + '"'); if (n.reg) fm.push('registrado: ' + n.reg); fm.push('---', '');
+  const out = fm.concat(['# ' + n.title, '']);
+  if (n.body) out.push(n.body, '');
+  if (n.why) out.push('## Para que serve', n.why, '');
+  if (n.steps.length) { out.push('## Passo a passo'); n.steps.forEach((s, i) => out.push((i + 1) + '. ' + s.t + (s.d ? ' | ' + s.d : ''))); out.push(''); }
+  const ls = Array.from(n.links.entries()).filter(e => noteById[e[0]]);
+  if (ls.length) { out.push('## Conexões'); ls.forEach(e => out.push('- [[' + safeName(noteById[e[0]].title) + ']]' + (e[1] ? ' — ' + e[1] : ''))); out.push(''); }
+  return out.join('\n');
+}
+async function exportMd() {
+  const mine = notes.filter(n => n.user || (dirty.has(n.id) && !n.ex) || (dirty.has(n.id)));
+  if (!mine.length) { toast('Nada seu para exportar ainda: só há exemplos.'); return; }
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  const z = new window.JSZip(), used = new Set();
+  mine.forEach(n => { let nm = safeName(n.title), k = 2; while (used.has(nm.toLowerCase())) nm = safeName(n.title) + ' ' + k++; used.add(nm.toLowerCase()); z.file(nm + '.md', noteToMd(n)); });
+  const blob = await z.generateAsync({ type: 'blob' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'cerebro-obsidian.zip'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(mine.length + ' notas exportadas (abra a pasta no Obsidian).');
+}
+async function importMd(fl) {
+  const made = [], pend = [];
+  for (const f of Array.from(fl)) {
+    const txt = await f.text(); let body = txt, meta = {};
+    const m = txt.match(/^---\n([\s\S]*?)\n---\n?/);
+    if (m) { body = txt.slice(m[0].length); m[1].split('\n').forEach(l => { const k = l.indexOf(':'); if (k > 0) meta[l.slice(0, k).trim().toLowerCase()] = l.slice(k + 1).trim().replace(/^"|"$/g, ''); }); }
+    const h = body.match(/^#\s+(.+)$/m), title = (h ? h[1] : f.name.replace(/\.[^.]+$/, '')).trim();
+    if (findByTitle(title)) continue;
+    body = body.replace(/^#\s+.+\n?/m, '');
+    const sections = {}; let ctx = 'main'; sections.main = [];
+    body.split('\n').forEach(l => { const hh = l.match(/^##\s+(.+)$/); if (hh) { ctx = norm(hh[1]); sections[ctx] = []; } else sections[ctx].push(l); });
+    const get = k => (sections[k] || []).join('\n').trim();
+    const cat = ORDER.find(k => norm(CATS[k].name) === norm(meta.categoria || '')) || detectCat(title + ' ' + get('main'), []);
+    const w = parseWhen(meta.data ? toInput(meta.data, meta.hora || '') : '') || { date: '', time: '' };
+    const n = addNote({ id: 'u' + Date.now().toString(36) + Math.floor(Math.random() * 9999), cat: cat, title: title, body: get('main').slice(0, MAXCH), why: get('para que serve'), steps: parseSteps(get('passo a passo')), date: w.date, time: w.time || '', reg: TODAY, user: true }, notes.length);
+    dirty.add(n.id); made.push(n);
+    const links = []; (get('conexoes') + '\n' + get('main')).replace(/\[\[([^\]|#]+)[^\]]*\]\](?:\s*[—-]\s*(.*))?/g, (_, t, r) => { links.push([t.trim(), (r || '').trim()]); });
+    pend.push([n, links]);
+  }
+  pend.forEach(p => p[1].forEach(l => { const o = findByTitle(l[0]); if (o && o !== p[0]) link(p[0], o, l[1]); }));
+  made.forEach(n => flashes.push({ n: n, t: performance.now() })); save(); renderStatus();
+  toast(made.length ? made.length + ' notas importadas.' : 'Nada novo para importar.');
+}
+function toast(t) { S.previewText = t.toUpperCase(); renderStatus(); setTimeout(() => { if (S.previewText === t.toUpperCase()) { S.previewText = null; renderStatus(); } }, 5000); }
+function toolRow(t, d, fn) { const b = el('button', 'tool'); b.type = 'button'; b.append(el('b', null, t), el('span', null, d)); b.addEventListener('click', fn); return b; }
+function openMenu() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Menu'), closeBtn(hidePanel));
+  const kids = [head, el('h2', 'p-title', 'Cérebro')];
+  const st = cloud.on ? (cloud.state === 'erro' ? 'Conectado, mas houve erro ao salvar' : 'Conectado: salvo na nuvem') : (cloud.state === 'denied' ? 'Conta sem acesso' : (cloud.sb ? 'Modo local (só neste aparelho)' : 'Modo local'));
+  kids.push(el('p', 'p-meta', st + (cloud.user ? ' · ' + (cloud.user.email || '') : '') + (cloud.on ? ' · IA ligada' : '')));
+  if (cloud.on) kids.push(toolRow('Sair da conta', 'Seus dados continuam na nuvem. Neste aparelho voltam a ficar só os locais.', async () => { await cloud.sb.auth.signOut(); cloud.on = false; cloud.user = null; cloud.state = 'off'; renderStatus(); hidePanel(); }));
+  else if (cloud.sb) kids.push(toolRow('Entrar', 'Guarde seu cérebro na nuvem e use a IA para organizar, ligar e responder.', () => { hidePanel(); showGate(''); }));
+  kids.push(sec('Ferramentas'),
+    toolRow('Linha do tempo animada', 'Veja o cérebro crescer na ordem em que as coisas aconteceram.', openTimeline),
+    toolRow('Caminho entre dois pensamentos', 'Descubra por quais ligações um pensamento chega a outro.', openPath),
+    toolRow('Revisão do dia', 'Um pensamento seu para reforçar a memória, ou um passo a passo que ficou pela metade.', () => openReview()),
+    toolRow(S.hideEx ? 'Mostrar notas de exemplo' : 'Ocultar notas de exemplo', 'Deixa só o que é seu no mapa. As que você editou continuam aparecendo.', () => { S.hideEx = !S.hideEx; try { localStorage.setItem('cerebro-prefs-v1', JSON.stringify({ hideEx: S.hideEx })); } catch (e) { /* */ } renderStatus(); openMenu(); }),
+    toolRow('Exportar para Markdown', 'Baixa suas notas em .md com [[ligações]], prontas para o Obsidian.', () => exportMd().catch(() => toast('Não consegui exportar.'))),
+    toolRow('Importar Markdown', 'Traz notas .md (inclusive do Obsidian) e refaz as ligações [[assim]].', () => $('mdIn').click()));
+  kids.push(sec('Privacidade'), el('p', 'hint', 'Cada conta só enxerga o próprio cérebro. Com a conta ligada, o texto que você manda para a IA (organizar, perguntar, ler arquivos) é enviado à Anthropic só para gerar a resposta; a chave fica no servidor, nunca na página.'));
+  showPanel(kids);
+}
+
 function related(text) {
   const ts = new Set(toks(text).map(t => t.slice(0, 5)));
   const res = [];
   notes.forEach(n => {
-    if (CATS[n.cat].ent) return;
+    if (CATS[n.cat].ent || isHidden(n)) return;
     let s = 0;
     ts.forEach(t => { if (n.tt.has(t)) s += 2; else if (n.tb.has(t)) s += 1; });
     if (s >= 2) res.push([s, n]);
@@ -906,13 +1168,15 @@ function analyze(text, files, extra) {
   return { cat: detectCat(full, files), when: detectWhen(text), ents: ents, rel: related(full).filter(n => ents.indexOf(n) < 0), newEnts: newEnts };
 }
 function makeEntity(spec) {
+  spec = spec || {};
   let e = findByTitle(spec.name);
   if (e) return e;
   e = addNote({ id: 'e' + Date.now().toString(36) + Math.floor(Math.random() * 999), cat: spec.cat, title: spec.name, body: 'Criado automaticamente a partir de uma anotação. Edite para adicionar detalhes.', date: '', user: true }, notes.length);
   dirty.add(e.id); flashes.push({ n: e, t: performance.now() });
   const g = GAZ.find(x => x[0] === spec.name);
-  if (g && g[1]) {
-    const P = makeEntity({ name: g[1], cat: 'lug' });
+  const pn = spec.cat === 'lug' ? (spec.parent || (g && g[1])) : '';
+  if (pn && norm(pn) !== norm(spec.name)) {
+    const P = makeEntity({ name: pn, cat: 'lug' });
     e.parent = P.id; link(e, P, e.title + ' fica em ' + P.title + '.'); dirty.add(P.id);
   }
   return e;
@@ -930,6 +1194,7 @@ function ask(v) {
   const res = [];
   if (dq || ents.length || qt.length) {
     notes.forEach(n => {
+      if (isHidden(n)) return;
       let s = 0;
       if (dq) { if (!overlap(rangeOf(n.date), dq.r)) return; s += 5; }
       if (ents.length) {
@@ -958,8 +1223,10 @@ function ask(v) {
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const S = {
   yaw: 1.15, pitch: .3, ph: 0, sw: 0, zoom: 1, zt: 1, px: 0, py: 0, pause: 0, labels: true,
-  drag: false, sel: null, hover: null, filter: null, matches: null, chain: null, preview: null, previewText: null
+  drag: false, sel: null, hover: null, filter: null, matches: null, chain: null, preview: null, previewText: null,
+  depth: 1, focus: null, tlHide: null, hideEx: false
 };
+try { S.hideEx = JSON.parse(localStorage.getItem('cerebro-prefs-v1') || '{}').hideEx === true; } catch (e) { /* */ }
 let W = 0, H = 0, DPR = 1, dockH = 110, baseH = 110, panelOH = 0;
 let CX = 0, CYB = 0, BASE = 1, CY = 1, SY = 0, CP = 1, SP = 0;
 const sxA = new Float32Array(4096), syA = new Float32Array(4096), pA = new Float32Array(4096), zA = new Float32Array(4096);
@@ -987,7 +1254,12 @@ function pj(x, y, z, o) {
 const dfz = z => Math.max(.35, Math.min(1, .35 + .65 * (z + 1.1) / 2.2));
 
 function noteAlpha(n) {
-  if (S.sel) return (n === S.sel || S.sel.links.has(n.id)) ? 1 : .26;
+  if (isHidden(n) || (S.tlHide && S.tlHide.has(n.id))) return .04;
+  if (S.sel) {
+    if (n === S.sel) return 1;
+    const d = S.focus ? S.focus.get(n.id) : (S.sel.links.has(n.id) ? 1 : undefined);
+    return d === 1 ? 1 : d === 2 ? .62 : d === 3 ? .42 : .2;
+  }
   if (S.matches) return S.matches.has(n.id) ? 1 : (S.chain && S.chain.has(n.id) ? .62 : .2);
   if (S.filter) return n.cat === S.filter ? 1 : .18;
   return 1;
@@ -1083,12 +1355,19 @@ function frame(now) {
   for (const e of linkEdges) {
     const a = e.a.i, b = e.b.i, na = e.a.note, nb = e.b.note;
     let al = 1, hot = false;
-    if (S.sel) { hot = na === S.sel || nb === S.sel; al = hot ? 1 : .16; }
+    if (S.sel) {
+      const fa = S.focus ? S.focus.get(na.id) : undefined, fb = S.focus ? S.focus.get(nb.id) : undefined;
+      const touch = na === S.sel || nb === S.sel, inF = fa !== undefined && fb !== undefined;
+      hot = inF && (touch || S.depth > 1);
+      const dm = Math.max(fa === undefined ? 9 : fa, fb === undefined ? 9 : fb);
+      al = hot ? (dm <= 1 ? 1 : dm === 2 ? .6 : .4) : .14;
+    }
     else if (S.matches) {
       const ma = S.matches.has(na.id), mb = S.matches.has(nb.id);
       hot = ma || mb; al = (ma && mb) ? 1 : (hot ? .75 : .14);
     }
     else if (S.filter) { al = (na.cat === S.filter || nb.cat === S.filter) ? 1 : .1; }
+    if (isHidden(na) || isHidden(nb) || (S.tlHide && (S.tlHide.has(na.id) || S.tlHide.has(nb.id)))) { al = .04; hot = false; }
     const df = dfz((zA[a] + zA[b]) * .5);
     pj(e.c[0], e.c[1], e.c[2], tmp2);
     const g = ctx.createLinearGradient(sxA[a], syA[a], sxA[b], syA[b]);
@@ -1152,7 +1431,7 @@ function frame(now) {
     if (note === S.sel || note === S.hover) pri = 0;
     else if ((S.sel && S.sel.links.has(note.id)) || (S.matches && S.matches.has(note.id)) || (S.preview && S.preview.has(note.id))) pri = 1;
     else if (S.matches && S.chain && S.chain.has(note.id)) pri = 1.5;
-    cand.push({ note: note, sx: sx, sy: sy, r: r, z: zA[i], pri: pri, al: al, df: df });
+    if (al > .1) cand.push({ note: note, sx: sx, sy: sy, r: r, z: zA[i], pri: pri, al: al, df: df });
   }
 
   /* rótulos */
@@ -1211,6 +1490,7 @@ let down = null, pinch = null;
 function hit(x, y) {
   let best = null, bd = 1e9;
   for (const n of notes) {
+    if (isHidden(n) || (S.tlHide && S.tlHide.has(n.id))) continue;
     const i = n.node.i, dx = sxA[i] - x, dy = syA[i] - y, r = Math.max(18, 8 * pA[i] * Math.sqrt(S.zoom)), d = dx * dx + dy * dy;
     if (d < r * r && d < bd) { bd = d; best = n; }
   }
@@ -1274,12 +1554,13 @@ function dotEl(cat) {
   const d = el('span', 'dot' + (CATS[cat].ent ? ' dia' : '')); const c = CATS[cat].rgb;
   d.style.background = rgbs(c); d.style.boxShadow = '0 0 8px ' + rgbs(c); return d;
 }
-function showPanel(kids) {
+function showPanel(kids, keep) {
+  if (!keep) stopTl();
   pb.replaceChildren.apply(pb, kids);
   panel.hidden = false; pb.scrollTop = 0; document.body.classList.add('po');
   requestAnimationFrame(() => panel.classList.add('in'));
 }
-function hidePanel() { editing = false; panel.classList.remove('in'); panel.hidden = true; pb.replaceChildren(); document.body.classList.remove('po'); }
+function hidePanel() { stopTl(); editing = false; panel.classList.remove('in'); panel.hidden = true; pb.replaceChildren(); document.body.classList.remove('po'); }
 function closeBtn(fn) {
   const b = el('button', 'close'); b.type = 'button'; b.setAttribute('aria-label', 'Fechar');
   b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
@@ -1339,6 +1620,15 @@ function renderNote(n) {
   let entries = Array.from(n.links.entries()).filter(e => noteById[e[0]]);
   if (ent) entries.sort((a, b) => { const x = noteById[a[0]].date, y = noteById[b[0]].date; return (y || '').localeCompare(x || ''); });
   kids.push(sec(ent ? 'Momentos e ligações' : 'Conexões', entries.length));
+  if (entries.length) {
+    const sg = el('div', 'seg'); sg.append(el('span', 'sl', 'Profundidade no mapa'));
+    [1, 2, 3].forEach(d => {
+      const b = el('button', null, String(d)); b.type = 'button'; b.setAttribute('aria-pressed', String(S.depth === d)); b.setAttribute('aria-label', d + ' grau de separação');
+      b.addEventListener('click', () => { S.depth = d; S.focus = focusMap(n, d); sg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(+x.textContent === d))); });
+      sg.append(b);
+    });
+    kids.push(sg);
+  }
   if (entries.length) {
     entries.forEach(e => {
       const m = noteById[e[0]], reason = e[1];
@@ -1407,7 +1697,7 @@ function renderDraft(D) {
   const bo = el('textarea'); bo.rows = 6; bo.value = D.body;
   const wy = el('textarea'); wy.rows = 2; wy.value = D.why; wy.placeholder = 'Para que serve? Qual problema isto resolve?';
   const st = el('textarea'); st.rows = 6; st.value = stepsText(D.steps); st.placeholder = 'Um passo por linha.\nConferir documentos | RG e CPF';
-  const kids = [head, el('p', 'hint', 'Confira o que o cérebro entendeu. Nada entra na rede até você salvar.'),
+  const kids = [head, el('p', 'hint', D.ai ? 'Organizado pela IA. Confira, edite o que quiser e salve. Nada entra na rede até você salvar.' : (D.aiErr ? 'A IA não respondeu (' + D.aiErr + '). Usei a análise local; confira abaixo.' : 'Confira o que o cérebro entendeu. Nada entra na rede até você salvar.')),
     fld('Região', 'dr-cat', cs), fld('Título', 'dr-title', ti)];
   const dw = fld('Quando aconteceu', 'dr-date', dt, 'Pode ser no passado: 12/05/1990, 05/1990 ou só 1990.'); dw.append(dtErr);
   kids.push(dw, fld('Contexto (sua mensagem)', 'dr-body', bo), fld('Para que serve', 'dr-why', wy), fld('Passo a passo', 'dr-steps', st, 'Um passo por linha. Use | para separar o passo do detalhe.'));
@@ -1418,7 +1708,7 @@ function renderDraft(D) {
     D.newEnts.forEach(sp => { const l = el('label'), c = el('input'); c.type = 'checkbox'; c.checked = true; l.append(c, el('span', null, sp.name + ' · ' + (sp.cat === 'lug' ? 'lugar' : 'pessoa'))); box.append(l); checks.push([c, sp]); });
     kids.push(box);
   }
-  const pk = linkPicker(new Set(), D.sugg, m => CATS[m.cat].ent ? (m.cat === 'lug' ? 'Aconteceu aqui.' : 'Esteve neste momento.') : 'Falam de assuntos parecidos.');
+  const pk = linkPicker(new Set(), D.sugg, m => (D.reasons && D.reasons.get(m.id)) || (CATS[m.cat].ent ? (m.cat === 'lug' ? 'Aconteceu aqui.' : 'Esteve neste momento.') : 'Falam de assuntos parecidos.'));
   kids.push(sec('Ligar com'), pk.node);
   const btns = el('div', 'btns stk'), ok = el('button', 'pbtn', 'Salvar no cérebro'), no = el('button', 'pbtn ghost', 'Descartar');
   ok.type = 'button'; no.type = 'button';
@@ -1506,7 +1796,7 @@ function rowBtn(n, dateTxt) {
   b.append(rd, dotEl(n.cat), el('b', null, n.title), el('span', 'sn', n.body || n.why));
   b.addEventListener('click', () => select(n)); return b;
 }
-function renderAsk(r, v) {
+function renderAsk(r, v, A) {
   const list = r.res;
   const head = el('div', 'p-head');
   head.append(el('span', 'tag', 'Pergunta'), closeBtn(() => { q.value = ''; fit(); runSearch(); }));
@@ -1518,8 +1808,20 @@ function renderAsk(r, v) {
   kids.push(el('p', 'hint', list.length
     ? list.length + (list.length === 1 ? ' resultado' : ' resultados') + ' · ' + cn + (cn === 1 ? ' conexão acesa' : ' conexões acesas')
     : 'Nada encontrado para “' + v + '”. Tente uma data (12/03/2026, ontem), o nome de uma pessoa ou lugar, ou outra palavra.'));
+  const aiOk = !!(A && A.state === 'ok');
+  if (A) {
+    kids.push(sec('Resposta da IA'));
+    const box = el('div', 'ans');
+    if (A.state === 'loading') box.append(el('p', 'hint', 'Pensando nas suas anotações…'));
+    else if (A.state === 'err') box.append(el('p', 'hint', 'A IA não respondeu (' + A.msg + '). Veja os resultados abaixo.'));
+    else {
+      box.append(el('p', 'p-body', A.answer));
+      if (A.used.length) { const row = el('div', 'chips-row'); A.used.forEach(id => { const m = noteById[id]; const b = el('button', 'chip'); b.type = 'button'; b.append(dotEl(m.cat), el('span', null, m.title)); b.addEventListener('click', () => select(m)); row.append(b); }); box.append(row); }
+    }
+    kids.push(box);
+  }
   let skip = null;
-  if (r.when && !r.dq && list.length && list[0].date) {
+  if (!aiOk && r.when && !r.dq && list.length && list[0].date) {
     const top = list[0]; skip = top;
     kids.push(sec('Resposta'));
     const box = el('div', 'ans'), ah = el('div', 'ah'), op = el('button', 'tbtn', 'ABRIR'); op.type = 'button'; op.addEventListener('click', () => select(top));
@@ -1527,7 +1829,7 @@ function renderAsk(r, v) {
     box.append(el('p', 'p-body', (top.body || top.title).slice(0, 180)));
     kids.push(box);
   }
-  if (r.how && list.length && list[0].steps.length) {
+  if (!aiOk && r.how && list.length && list[0].steps.length) {
     const top = list[0]; skip = top;
     kids.push(sec('Melhor resposta'));
     const box = el('div', 'ans'), ah = el('div', 'ah');
@@ -1562,20 +1864,25 @@ function showExamples() {
   const row = el('div', 'chips-row');
   EX.forEach(t => {
     const b = el('button', 'chip', t); b.type = 'button';
-    b.addEventListener('click', () => { q.value = t; fit(); runSearch(); });
+    b.addEventListener('click', () => { q.value = t; fit(); runSearch(); if (cloud.on) askAI(t); });
     row.append(b);
   });
   kids.push(row);
   showPanel(kids);
 }
 
+function focusMap(n, d) {
+  const m = new Map([[n.id, 0]]); let fr = [n];
+  for (let k = 1; k <= d; k++) { const nx = []; fr.forEach(x => x.links.forEach((_, id) => { if (!m.has(id) && noteById[id]) { m.set(id, k); nx.push(noteById[id]); } })); fr = nx; }
+  return m;
+}
 function select(n) {
-  S.sel = n; S.zt = Math.max(S.zt, 1.8);
+  S.sel = n; S.zt = Math.max(S.zt, 1.8); S.focus = focusMap(n, S.depth);
   if (mode === 'note') { S.matches = null; S.chain = null; }
   renderNote(n); renderStatus();
 }
 function deselect() {
-  S.sel = null; S.zt = 1;
+  S.sel = null; S.focus = null; S.zt = 1;
   if (mode === 'find') { if (q.value.trim()) runSearch(); else showExamples(); } else hidePanel();
   renderStatus();
 }
@@ -1591,8 +1898,10 @@ function renderStatus() {
     const k = notes.filter(n => n.cat === S.filter).length;
     stx.append(el('span', 't', 'FILTRO · ' + CATS[S.filter].name.toUpperCase() + ' · ' + k)); return;
   }
-  stx.append(el('span', 't long', 'EXEMPLO · ' + notes.length + ' NEURÔNIOS · ' + linkEdges.length + ' SINAPSES'),
-    el('span', 't short', 'EXEMPLO · ' + notes.length + ' NÓS · ' + linkEdges.length + ' LIGAÇÕES'));
+  const mine = notes.some(n => n.user || (dirty.has(n.id) && !n.ex)), vis = notes.filter(n => !isHidden(n)).length;
+  const tl = cloud.on ? (cloud.state === 'erro' ? ' · ERRO AO SALVAR' : cloud.state === 'sync' ? ' · SINCRONIZANDO' : ' · NUVEM · IA') : (cloud.sb ? ' · LOCAL' : '');
+  stx.append(el('span', 't long', (mine ? '' : 'EXEMPLO · ') + vis + ' NEURÔNIOS · ' + linkEdges.length + ' SINAPSES' + tl),
+    el('span', 't short', (mine ? '' : 'EXEMPLO · ') + vis + ' NÓS' + tl));
 }
 
 /* régua de regiões e rótulos */
@@ -1600,7 +1909,8 @@ function renderStatus() {
   const tg = el('button', 'rt', 'Aa'); tg.type = 'button'; tg.setAttribute('aria-pressed', 'true'); tg.setAttribute('aria-label', 'Mostrar nomes dos neurônios');
   tg.append(el('span', 'rn', 'Nomes'));
   tg.addEventListener('click', () => { S.labels = !S.labels; tg.setAttribute('aria-pressed', String(S.labels)); });
-  rail.append(tg);
+  const mb = el('button', 'rt', '☰'); mb.type = 'button'; mb.setAttribute('aria-label', 'Menu e ferramentas'); mb.addEventListener('click', openMenu);
+  rail.append(mb, tg);
   ORDER.forEach(k => {
     const b = el('button'); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
     b.setAttribute('aria-label', 'Filtrar ' + CATS[k].name);
@@ -1624,10 +1934,33 @@ function runSearch() {
     renderStatus(); return;
   }
   const r = ask(v);
-  S.matches = new Set(r.res.map(n => n.id)); S.chain = new Set();
-  r.res.forEach(n => n.links.forEach((_, id) => { if (!S.matches.has(id)) S.chain.add(id); }));
-  S.sel = null; S.zt = 1;
+  setMatches(r.res.map(n => n.id));
+  S.sel = null; S.focus = null; S.zt = 1;
   renderAsk(r, v); renderStatus();
+}
+function setMatches(ids) {
+  S.matches = new Set(ids); S.chain = new Set();
+  S.matches.forEach(id => { const n = noteById[id]; if (n) n.links.forEach((_, k) => { if (!S.matches.has(k)) S.chain.add(k); }); });
+}
+let askTok = 0;
+async function askAI(v) {
+  const r = ask(v), tok = ++askTok;
+  setMatches(r.res.map(n => n.id)); S.sel = null; S.focus = null; S.zt = 1; S.previewText = null;
+  renderAsk(r, v, { state: 'loading' }); renderStatus();
+  try {
+    const seen = new Set(), cand = [];
+    r.res.slice(0, 10).concat(related(v)).forEach(n => { if (!seen.has(n.id) && cand.length < 14) { seen.add(n.id); cand.push(n); } });
+    if (cand.length < 4) notes.filter(n => !isHidden(n) && n.date).sort((a, b) => (b.reg || b.date).localeCompare(a.reg || a.date)).slice(0, 6).forEach(n => { if (!seen.has(n.id)) { seen.add(n.id); cand.push(n); } });
+    const full = n => ({ id: n.id, t: n.title, c: n.cat, d: n.date, h: n.time, ex: n.ex && !dirty.has(n.id), b: n.body, w: n.why, p: n.steps.map(s => s.d ? s.t + ': ' + s.d : s.t) });
+    const j = await ai('ask', { hoje: TODAY, pergunta: v, notas: cand.map(full), indice: notes.filter(n => !isHidden(n)).map(n => ({ id: n.id, d: n.date, t: n.title })) });
+    if (tok !== askTok) return;
+    const res = j.result || {}, used = (res.used || []).filter(id => noteById[id]);
+    setMatches(r.res.map(n => n.id).concat(used));
+    renderAsk(r, v, { state: 'ok', answer: String(res.answer || 'Sem resposta.'), used: used }); renderStatus();
+  } catch (e) {
+    if (tok !== askTok) return;
+    renderAsk(r, v, { state: 'err', msg: e.message || 'erro' });
+  }
 }
 function runPreview() {
   const v = q.value.trim();
@@ -1696,6 +2029,7 @@ async function extractText(f) {
   const n = f.name.toLowerCase();
   if (f.size > 15 * 1024 * 1024) throw new Error('grande');
   if (/\.(txt|md|csv|json)$/.test(n)) return await f.text();
+  if (/\.(png|jpe?g|webp|gif)$/.test(n)) return await readByAI(f);
   if (/\.pdf$/.test(n)) {
     await loadLib('pdf');
     const L = window.pdfjsLib; L.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -1711,6 +2045,7 @@ async function extractText(f) {
       });
       out += line.trim() + '\n\n';
     }
+    if (out.replace(/\s/g, '').length < 40) return await readByAI(f);
     return out;
   }
   if (/\.docx$/.test(n)) {
@@ -1724,6 +2059,20 @@ async function extractText(f) {
   }
   return '';
 }
+function b64(blobOrFile) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(new Error('leitura')); r.readAsDataURL(blobOrFile); }); }
+async function readByAI(f) {
+  if (!cloud.on) throw new Error('Entre na sua conta para a IA ler imagens e PDFs escaneados.');
+  const n = f.name.toLowerCase();
+  if (/\.pdf$/.test(n)) {
+    if (f.size > 4.5 * 1024 * 1024) throw new Error('PDF escaneado grande demais (máx. 4,5 MB)');
+    return (await ai('read', { media_type: 'application/pdf', data: await b64(f) })).text || '';
+  }
+  const bmp = await createImageBitmap(f), sc = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .85));
+  return (await ai('read', { media_type: 'image/jpeg', data: await b64(blob) })).text || '';
+}
 function addFiles(list) {
   Array.from(list).forEach(f => {
     const it = { name: f.name, text: '', state: 'lendo' };
@@ -1731,7 +2080,7 @@ function addFiles(list) {
     extractText(f).then(t => {
       it.text = (t || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, MAXCH);
       it.state = it.text ? 'ok' : 'vazio';
-    }).catch(() => { it.state = 'erro'; }).then(() => { renderChips(); if (mode === 'note') { runPreview(); if (!files.some(x => x.state === 'lendo')) showFilePanel(); } });
+    }).catch(e => { it.state = 'erro'; it.msg = e && e.message; }).then(() => { renderChips(); if (mode === 'note') { runPreview(); if (!files.some(x => x.state === 'lendo')) showFilePanel(); } });
   });
   renderChips(); runPreview();
   if (!files.length) return;
@@ -1774,23 +2123,58 @@ function makeDraft(text, fs) {
   const title = first ? (first.length > 48 ? first.slice(0, 46).trim() + '…' : first) : (base.length > 48 ? base.slice(0, 46) + '…' : base);
   let body = text;
   fs.forEach(f => { body += (body ? '\n\n' : '') + 'Arquivo: ' + f.name + (f.text ? '\n' + f.text : f.state === 'vazio' ? '\n(sem texto legível: se for escaneado ou imagem, a leitura por IA virá depois)' : ''); });
-  return { cat: A.cat, title: title, body: body.slice(0, MAXCH + 400), why: '', steps: stepsFrom(extra), date: A.when ? A.when.date : TODAY, time: A.when ? A.when.time : '', sugg: A.ents.concat(A.rel), newEnts: A.newEnts, text: text };
+  return { files: fs, cat: A.cat, title: title, body: body.slice(0, MAXCH + 400), why: '', steps: stepsFrom(extra), date: A.when ? A.when.date : TODAY, time: A.when ? A.when.time : '', sugg: A.ents.concat(A.rel), newEnts: A.newEnts, text: text };
 }
 const isQuestion = v => /\?\s*$/.test(v) || /^(como|quando|que dia|qual|quais|onde|quem|o que|quanto|me mostre|mostre)\b/.test(norm(v));
-function submitNote() {
+let busy = false;
+async function submitNote() {
+  if (busy) return;
   const text = q.value.trim();
   if (!text && !files.length) return;
-  if (text && !files.length && isQuestion(text)) { setMode('find'); return; }
+  if (text && !files.length && isQuestion(text)) { setMode('find'); if (cloud.on) askAI(text); return; }
   if (files.some(f => f.state === 'lendo')) { S.previewText = 'AGUARDE: LENDO O ARQUIVO…'; renderStatus(); return; }
   const groups = (text || files.length === 1) ? [files.slice()] : files.map(f => [f]);
   drafts = groups.map(g => makeDraft(text, g));
   q.value = ''; fit(); files = []; renderChips();
   S.previewText = null; S.matches = null; S.chain = null;
+  if (cloud.on) {
+    busy = true; S.previewText = 'IA ORGANIZANDO…'; renderStatus();
+    const head = el('div', 'p-head'); head.append(el('span', 'tag', 'IA'));
+    showPanel([head, el('h2', 'p-title', 'Lendo e organizando…'), el('p', 'hint', 'A IA está entendendo o registro, achando ligações e montando o passo a passo.')]);
+    for (const D of drafts) { try { await aiDraft(D); } catch (e) { D.aiErr = e.message || 'erro'; } }
+    busy = false; S.previewText = null;
+  }
   nextDraft(); renderStatus();
+}
+async function aiDraft(D) {
+  const compact = n => ({ id: n.id, t: n.title, c: n.cat, d: n.date, s: (n.body || n.why || '').slice(0, 110) });
+  const j = await ai('analyze', { hoje: TODAY, texto: D.text, arquivos: (D.files || []).map(f => ({ nome: f.name, texto: f.text || '' })), notas: notes.filter(n => !isHidden(n)).map(compact) });
+  const r = j.result || {};
+  if (CATS[r.cat]) D.cat = r.cat;
+  if (r.title && String(r.title).trim()) D.title = String(r.title).trim().slice(0, 70);
+  if (r.why) D.why = String(r.why).trim();
+  if (Array.isArray(r.steps) && r.steps.length >= 2 && !D.steps.length) D.steps = r.steps.filter(x => x && x.t).slice(0, 25).map(x => ({ t: String(x.t).slice(0, 140), d: String(x.d || '').slice(0, 300) }));
+  if (/^\d{4}(-\d{2}(-\d{2})?)?$/.test(r.date || '') && parseWhen(toInput(r.date, ''))) D.date = r.date;
+  if (/^\d{2}:\d{2}$/.test(r.time || '')) D.time = r.time;
+  D.reasons = new Map(); const sg = [], seen = new Set();
+  (r.links || []).forEach(l => { const m = noteById[l && l.id]; if (m && !seen.has(m.id)) { seen.add(m.id); sg.push(m); D.reasons.set(m.id, String(l.reason || '').slice(0, 200)); } });
+  const nes = [];
+  (r.entities || []).forEach(e => {
+    if (!e || !e.name) return;
+    const ex = findByTitle(e.name), cat = e.kind === 'lugar' ? 'lug' : 'pes';
+    if (ex) { if (!seen.has(ex.id)) { seen.add(ex.id); sg.push(ex); D.reasons.set(ex.id, ex.cat === 'lug' ? 'Aconteceu aqui.' : 'Esteve neste momento.'); } }
+    else if (!nes.some(x => norm(x.name) === norm(e.name))) nes.push({ name: String(e.name).slice(0, 60), cat: cat, parent: cat === 'lug' ? String(e.parent || '').slice(0, 60) : '' });
+  });
+  D.sugg = sg.length ? sg : D.sugg; D.newEnts = nes.length || (r.entities || []).length ? nes : D.newEnts; D.ai = true;
 }
 form.addEventListener('submit', e => {
   e.preventDefault();
-  if (mode === 'find') { if (q.value.trim() && S.matches && S.matches.size) { const f = noteById[Array.from(S.matches)[0]]; if (f) select(f); } return; }
+  if (mode === 'find') {
+    const v = q.value.trim(); if (!v) return;
+    if (cloud.on) { askAI(v); return; }
+    if (S.matches && S.matches.size) { const f = noteById[Array.from(S.matches)[0]]; if (f) select(f); }
+    return;
+  }
   submitNote();
 });
 document.addEventListener('keydown', e => {
@@ -1807,7 +2191,25 @@ const ro = new ResizeObserver(() => {
 ro.observe(dock); ro.observe(panel);
 
 renderStatus(); setPh();
+function bindTools() {
+$('gform').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!cloud.sb) { $('g-err').textContent = 'Sem conexão com a nuvem agora.'; return; }
+  const go = $('g-go'); go.disabled = true; $('g-err').textContent = '';
+  const r = await cloud.sb.auth.signInWithPassword({ email: $('g-mail').value.trim(), password: $('g-pass').value });
+  go.disabled = false;
+  if (r.error) { $('g-err').textContent = /invalid/i.test(r.error.message) ? 'E-mail ou senha incorretos.' : 'Não consegui entrar: ' + r.error.message; return; }
+  $('g-pass').value = '';
+  try { localStorage.removeItem('cerebro-local'); } catch (er) { /* */ }
+  await cloudStart(r.data.user);
+});
+$('g-local').addEventListener('click', () => { try { localStorage.setItem('cerebro-local', '1'); } catch (e) { /* */ } hideGate(); });
+
+$('mdIn').addEventListener('change', () => { importMd($('mdIn').files).catch(() => toast('Não consegui importar.')); $('mdIn').value = ''; });
+}
+bindTools();
 requestAnimationFrame(frame);
+cloudInit();
 })();
 </script>
 
