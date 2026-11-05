@@ -1755,12 +1755,13 @@ function sec(label, meta) {
   return h;
 }
 /* passos detalhados: cada passo pode ter quem faz, documentos (checklist) e texto pronto (e-mail/mensagem) */
-const stepFull = s => [s.t, s.d, s.who, (s.docs || []).join(' '), s.subj, s.tpl].filter(Boolean).join(' ');
-const hasDet = s => !!(s.who || (s.docs && s.docs.length) || s.tpl);
+const stepFull = s => [s.t, s.d, s.who, (s.docs || []).join(' '), (s.refs || []).join(' '), s.subj, s.tpl].filter(Boolean).join(' ');
+const hasDet = s => !!(s.who || (s.docs && s.docs.length) || s.tpl || (s.refs && s.refs.length));
 function cleanStep(s) {
   const o = { t: String(s.t || '').trim().slice(0, 200), d: String(s.d || '').trim().slice(0, 600) };
   const who = String(s.who || '').trim().slice(0, 100); if (who) o.who = who;
   const docs = (Array.isArray(s.docs) ? s.docs : []).map(x => String(x).trim().slice(0, 160)).filter(Boolean).slice(0, 40); if (docs.length) o.docs = docs;
+  const refs = (Array.isArray(s.refs) ? s.refs : []).map(x => String(x).trim().slice(0, 120)).filter(Boolean).slice(0, 12); if (refs.length) o.refs = refs;
   const subj = String(s.subj || '').trim().slice(0, 200); if (subj) o.subj = subj;
   const tpl = String(s.tpl || '').trim().slice(0, 4000); if (tpl) o.tpl = tpl;
   return o;
@@ -1799,6 +1800,7 @@ function stepsBlock(n) {
       if (s.who) tags.push('Quem: ' + s.who);
       if (s.docs && s.docs.length) tags.push(s.docs.length + (s.docs.length === 1 ? ' documento' : ' documentos'));
       if (s.tpl) tags.push('texto pronto');
+      if (s.refs && s.refs.length) tags.push(s.refs.length + (s.refs.length === 1 ? ' conexão' : ' conexões'));
       if (s.d) tx.append(el('div', 'sd', s.d));
       tx.append(el('div', 'stags', tags.join(' · ')));
       const pn = el('div', 'spanel'); pn.hidden = true;
@@ -1807,6 +1809,12 @@ function stepsBlock(n) {
         const m = findByTitle(s.who), wb = el(m ? 'button' : 'span', m ? 'whobtn' : 'whotxt');
         if (m) { wb.type = 'button'; wb.append(dotEl(m.cat), el('span', null, m.title)); wb.addEventListener('click', () => select(m)); } else wb.textContent = s.who;
         pn.append(wb);
+      }
+      if (s.refs && s.refs.length) {
+        pn.append(el('div', 'sl2', 'Conexões deste passo'));
+        const rw = el('div', 'chips-row');
+        s.refs.forEach(t => { const m = findByTitle(t), b = el(m ? 'button' : 'span', m ? 'chip' : 'chip off'); if (m) { b.type = 'button'; b.append(dotEl(m.cat), el('span', null, m.title)); b.addEventListener('click', () => select(m)); } else b.textContent = t; rw.append(b); });
+        pn.append(rw);
       }
       if (s.docs && s.docs.length) {
         pn.append(el('div', 'sl2', 'Documentos necessários'));
@@ -1862,7 +1870,7 @@ function stepsEditor(init) {
     dt.append(lab('Quem faz', who), lab('Documentos necessários', docs), lab('Assunto do e-mail', subj), lab('Texto pronto', tpl));
     if (hasDet(s)) dt.open = true;
     c.append(top, t, d, dt);
-    c._get = () => cleanStep({ t: t.value, d: d.value, who: who.value, docs: docs.value.split('\n'), subj: subj.value, tpl: tpl.value });
+    c._get = () => cleanStep({ refs: s.refs, t: t.value, d: d.value, who: who.value, docs: docs.value.split('\n'), subj: subj.value, tpl: tpl.value });
     up.addEventListener('click', () => { if (c.previousElementSibling) { list.insertBefore(c, c.previousElementSibling); num_(); } });
     dn.addEventListener('click', () => { if (c.nextElementSibling) { list.insertBefore(c.nextElementSibling, c); num_(); } });
     rm.addEventListener('click', () => { c.remove(); num_(); });
@@ -1906,6 +1914,10 @@ function askControls(v) {
   return box;
 }
 function askExtras(box, A) {
+  if (A.proximos && A.proximos.length) {
+    box.append(sec('Depois disso (próximos passos)'));
+    const ul = el('ul', 'miss'); A.proximos.forEach(x => ul.append(el('li', null, x))); box.append(ul);
+  }
   if (A.cliente) {
     box.append(sec('Resposta pronta para o cliente'));
     box.append(el('pre', 'tpl', A.cliente));
@@ -2277,7 +2289,7 @@ function renderAsk(r, v, A) {
   if (A) {
     kids.push(sec('Resposta da IA'));
     const box = el('div', 'ans');
-    if (A.state === 'loading') box.append(el('p', 'hint', webLigada() ? 'Consultando suas anotações e pesquisando na internet… pode levar até um minuto.' : 'Pensando nas suas anotações…'));
+    if (A.state === 'loading') box.append(el('p', 'hint', (webLigada() || S.autoWeb) ? 'Consultando suas anotações e pesquisando na internet… pode levar até um minuto.' : 'Pensando nas suas anotações…'));
     else if (A.state === 'err') box.append(el('p', 'hint', 'A IA não respondeu (' + A.msg + '). Veja os resultados abaixo.'));
     else {
       box.append(el('p', 'p-body', A.answer));
@@ -2422,21 +2434,24 @@ function setMatches(ids) {
   S.matches.forEach(id => { const n = noteById[id]; if (n) n.links.forEach((_, k) => { if (!S.matches.has(k)) S.chain.add(k); }); });
 }
 let askTok = 0;
-async function askAI(v) {
+async function askAI(v, forceWeb) {
   const r = ask(v), tok = ++askTok;
   setMatches(r.res.map(n => n.id)); S.sel = null; S.focus = null; S.zt = 1; S.previewText = null;
   renderAsk(r, v, { state: 'loading' }); renderStatus();
   try {
     const seen = new Set(), cand = [];
     r.res.slice(0, 10).concat(related(v)).forEach(n => { if (!seen.has(n.id) && cand.length < 16) { seen.add(n.id); cand.push(n); } });
+    cand.slice(0, 8).forEach(n => n.links.forEach((_, k) => { const m = noteById[k]; if (m && !isHidden(m) && !seen.has(m.id) && cand.length < 24) { seen.add(m.id); cand.push(m); } }));
     if (cand.length < 4) notes.filter(n => !isHidden(n) && n.date).sort((a, b) => (b.reg || b.date).localeCompare(a.reg || a.date)).slice(0, 6).forEach(n => { if (!seen.has(n.id)) { seen.add(n.id); cand.push(n); } });
     const full = n => ({ id: n.id, t: n.title, c: n.cat, d: n.date, o: n.owner, ex: n.ex && !dirty.has(n.id), b: n.body, w: n.why, p: n.steps.map(s => [s.t + (s.d ? ': ' + s.d : ''), s.who ? 'quem: ' + s.who : '', s.docs && s.docs.length ? 'docs: ' + s.docs.join('; ') : '', s.tpl ? 'tem texto pronto' : ''].filter(Boolean).join(' | ')), l: Array.from(n.links.entries()).filter(e => noteById[e[0]] && !isHidden(noteById[e[0]])).slice(0, 10).map(e => noteById[e[0]].title + ' (' + CATS[noteById[e[0]].cat].name + ')' + (e[1] ? ': ' + e[1] : '')) });
-    const j = await ai('ask', { hoje: TODAY, pergunta: v, modo: modoAtual(), web: webLigada(), notas: cand.map(full), indice: notes.filter(n => !isHidden(n)).map(n => ({ id: n.id, c: n.cat, t: n.title })) });
+    const j = await ai('ask', { hoje: TODAY, pergunta: v, modo: modoAtual(), web: webLigada() || forceWeb === true, notas: cand.map(full), indice: notes.filter(n => !isHidden(n)).map(n => ({ id: n.id, c: n.cat, t: n.title })) });
     if (tok !== askTok) return;
-    const res = j.result || {}, used = (res.used || []).filter(id => noteById[id]);
+    const res = j.result || {};
+    if (res.precisa_web === true && !webLigada() && forceWeb !== true) { S.autoWeb = true; return askAI(v, true); }
+    const used = (res.used || []).filter(id => noteById[id]);
     setMatches(r.res.map(n => n.id).concat(used));
     const guia = (Array.isArray(res.guia) ? res.guia : []).filter(g => g && g.nome).slice(0, 6), fala = String(res.fala || '');
-    renderAsk(r, v, { state: 'ok', passos: (Array.isArray(res.passos) ? res.passos : []).filter(x => x && x.t).slice(0, 25).map(cleanStep), proc: (noteById[res.proc_id] && noteById[res.proc_id].steps.length) ? res.proc_id : '', cliente: String(res.cliente || ''), aviso: (String(res.aviso || '') + (j.sem_web ? ' A pesquisa na internet não estava disponível agora; a resposta usa só as anotações e o conhecimento geral.' : '')).trim(), fontes: (Array.isArray(j.fontes) ? j.fontes : []).filter(f => f && /^https?:\/\//.test(f.url)).slice(0, 10), answer: String(res.answer || 'Sem resposta.'), used: used, guia: guia, fala: fala }); renderStatus();
+    renderAsk(r, v, { state: 'ok', passos: (Array.isArray(res.passos) ? res.passos : []).filter(x => x && x.t).slice(0, 25).map(cleanStep), proc: (noteById[res.proc_id] && noteById[res.proc_id].steps.length) ? res.proc_id : '', proximos: (Array.isArray(res.proximos) ? res.proximos : []).map(x => String(x).slice(0, 300)).filter(Boolean).slice(0, 8), buscouWeb: forceWeb === true, cliente: String(res.cliente || ''), aviso: (String(res.aviso || '') + (j.sem_web ? ' A pesquisa na internet não estava disponível agora; a resposta usa só as anotações e o conhecimento geral.' : '')).trim(), fontes: (Array.isArray(j.fontes) ? j.fontes : []).filter(f => f && /^https?:\/\//.test(f.url)).slice(0, 10), answer: String(res.answer || 'Sem resposta.'), used: used, guia: guia, fala: fala }); renderStatus();
     if (VOICE.auto && fala) VOICE.speak(fala);
   } catch (e) {
     if (tok !== askTok) return;
