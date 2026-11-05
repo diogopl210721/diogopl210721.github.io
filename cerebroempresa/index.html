@@ -407,6 +407,33 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
 .pill.baixo { color: var(--dim); border-color: var(--dim); }
 ul.miss { margin: 6px 0 0; padding-left: 18px; color: var(--ink-soft); font-size: 14px; line-height: 1.5; }
 .hop small.cd { margin-left: auto; color: var(--dim); font: 500 11px/1 var(--mono); }
+
+.sthead { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 0; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; }
+.sthead .chev { flex: none; margin-top: 2px; color: var(--cyan); font-size: 12px; transition: transform .15s; }
+.step.open .sthead .chev { transform: rotate(180deg); }
+.stags { margin-top: 3px; font: 500 10.5px/1.3 var(--mono); letter-spacing: .06em; color: var(--cyan); opacity: .85; }
+.spanel { margin-top: 10px; padding: 10px 12px; background: var(--field); border: 1px solid var(--line); }
+.spanel[hidden] { display: none; }
+.sl2 { margin: 10px 0 6px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.sl2:first-child { margin-top: 0; }
+.whobtn { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; background: transparent; border: 1px solid var(--line); color: var(--ink); font: 500 14px/1.2 var(--body); cursor: pointer; }
+.whobtn:hover { border-color: var(--cyan); }
+.whotxt { font-size: 14px; color: var(--ink); }
+ul.docs { list-style: none; margin: 0 0 8px; padding: 0; }
+.doc { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; font-size: 14px; line-height: 1.4; color: var(--ink); cursor: pointer; }
+.doc input { margin-top: 3px; accent-color: #3fd9ff; }
+.tplsubj { margin-bottom: 6px; font-size: 14px; color: var(--ink); }
+pre.tpl { margin: 0 0 8px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 13.5px/1.5 var(--body); color: var(--ink); background: rgba(0,0,0,.25); border: 1px solid var(--line); max-height: 300px; overflow: auto; }
+.spanel .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.stcard { margin-bottom: 10px; padding: 10px; background: var(--field); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.stcard .sttop { display: flex; align-items: center; gap: 6px; }
+.stcard .stn { flex: 1; font: 500 11px/1 var(--mono); letter-spacing: .12em; color: var(--cyan); text-transform: uppercase; }
+.stmore summary { cursor: pointer; font-size: 13px; color: var(--cyan); }
+.stmore .stf { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.stmore .stf small { font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.sted .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.stpaste { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.stpaste[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -763,7 +790,7 @@ function pickNode(cat, idx) {
 }
 function index(n) {
   n.tt = stemSet(n.title);
-  n.tb = stemSet([n.body, n.why, n.steps.map(s => s.t + ' ' + s.d).join(' ')].join(' '));
+  n.tb = stemSet([n.body, n.why, n.steps.map(stepFull).join(' ')].join(' '));
 }
 function addNote(o, idx) {
   const n = {
@@ -1348,7 +1375,7 @@ function ask(v) {
         s += hit;
       }
       if (qt.length) {
-        const hay = norm([n.title, n.body, n.why, n.steps.map(x => x.t + ' ' + x.d).join(' '), CATS[n.cat].name].join(' ')), th = norm(n.title);
+        const hay = norm([n.title, n.body, n.why, n.steps.map(stepFull).join(' '), CATS[n.cat].name].join(' ')), th = norm(n.title);
         let mt = 0;
         qt.forEach(t => { if (hay.includes(t) || (t.length > 5 && hay.includes(t.slice(0, t.length - 2)))) { mt++; s += th.includes(t) ? 3 : 2; } });
         if (!dq && !ents.length && mt === 0) return;
@@ -1716,6 +1743,23 @@ function sec(label, meta) {
   if (meta != null) h.append(el('span', 'sm', String(meta)));
   return h;
 }
+/* passos detalhados: cada passo pode ter quem faz, documentos (checklist) e texto pronto (e-mail/mensagem) */
+const stepFull = s => [s.t, s.d, s.who, (s.docs || []).join(' '), s.subj, s.tpl].filter(Boolean).join(' ');
+const hasDet = s => !!(s.who || (s.docs && s.docs.length) || s.tpl);
+function cleanStep(s) {
+  const o = { t: String(s.t || '').trim().slice(0, 200), d: String(s.d || '').trim().slice(0, 600) };
+  const who = String(s.who || '').trim().slice(0, 100); if (who) o.who = who;
+  const docs = (Array.isArray(s.docs) ? s.docs : []).map(x => String(x).trim().slice(0, 160)).filter(Boolean).slice(0, 40); if (docs.length) o.docs = docs;
+  const subj = String(s.subj || '').trim().slice(0, 200); if (subj) o.subj = subj;
+  const tpl = String(s.tpl || '').trim().slice(0, 4000); if (tpl) o.tpl = tpl;
+  return o;
+}
+function copyText(txt, okMsg) {
+  const done = () => toast(okMsg || 'Copiado.');
+  const fb = () => { const t = document.createElement('textarea'); t.value = txt; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.append(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('Não consegui copiar. Selecione o texto.'); } t.remove(); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fb); else fb();
+}
+const dkey = n => 'd:' + n.id;
 function stepsBlock(n) {
   const total = n.steps.length;
   const cnt = () => n.steps.reduce((a, s, i) => a + (isDone(n, i) ? 1 : 0), 0);
@@ -1726,7 +1770,7 @@ function stepsBlock(n) {
   n.steps.forEach((s, i) => {
     const li = el('li', 'step' + (isDone(n, i) ? ' done' : ''));
     const b = el('button', 'sbox'); b.type = 'button'; b.setAttribute('role', 'checkbox');
-    b.setAttribute('aria-checked', String(isDone(n, i))); b.setAttribute('aria-label', 'Passo ' + (i + 1) + ': ' + s.t);
+    b.setAttribute('aria-checked', String(isDone(n, i))); b.setAttribute('aria-label', 'Concluir passo ' + (i + 1) + ': ' + s.t);
     b.textContent = isDone(n, i) ? '✓' : String(i + 1);
     b.addEventListener('click', () => {
       toggleDone(n, i);
@@ -1734,11 +1778,101 @@ function stepsBlock(n) {
       li.classList.toggle('done', d); b.setAttribute('aria-checked', String(d)); b.textContent = d ? '✓' : String(i + 1);
       sm.textContent = cnt() + '/' + total; fill.style.width = (cnt() / total * 100) + '%';
     });
-    const tx = el('div', 'stxt'); tx.append(el('div', 'st', s.t));
-    if (s.d) tx.append(el('div', 'sd', s.d));
+    const tx = el('div', 'stxt');
+    const det = hasDet(s);
+    if (det) {
+      const hd = el('button', 'sthead'); hd.type = 'button'; hd.setAttribute('aria-expanded', 'false');
+      hd.append(el('span', 'st', s.t), el('span', 'chev', '▾'));
+      tx.append(hd);
+      const tags = [];
+      if (s.who) tags.push('Quem: ' + s.who);
+      if (s.docs && s.docs.length) tags.push(s.docs.length + (s.docs.length === 1 ? ' documento' : ' documentos'));
+      if (s.tpl) tags.push('texto pronto');
+      if (s.d) tx.append(el('div', 'sd', s.d));
+      tx.append(el('div', 'stags', tags.join(' · ')));
+      const pn = el('div', 'spanel'); pn.hidden = true;
+      if (s.who) {
+        pn.append(el('div', 'sl2', 'Quem faz'));
+        const m = findByTitle(s.who), wb = el(m ? 'button' : 'span', m ? 'whobtn' : 'whotxt');
+        if (m) { wb.type = 'button'; wb.append(dotEl(m.cat), el('span', null, m.title)); wb.addEventListener('click', () => select(m)); } else wb.textContent = s.who;
+        pn.append(wb);
+      }
+      if (s.docs && s.docs.length) {
+        pn.append(el('div', 'sl2', 'Documentos necessários'));
+        const ul = el('ul', 'docs');
+        const dk = dkey(n);
+        s.docs.forEach((d, j) => {
+          const key = i + '.' + j, lab = el('label', 'doc'), c = el('input'); c.type = 'checkbox';
+          c.checked = !!(checks[dk] && checks[dk].indexOf(key) > -1);
+          c.addEventListener('change', () => { const a = checks[dk] || (checks[dk] = []), k = a.indexOf(key); if (c.checked && k < 0) a.push(key); if (!c.checked && k > -1) a.splice(k, 1); saveChecks(); });
+          lab.append(c, el('span', null, d)); const li2 = el('li'); li2.append(lab); ul.append(li2);
+        });
+        pn.append(ul);
+        const cp = el('button', 'tbtn', 'COPIAR LISTA'); cp.type = 'button'; cp.addEventListener('click', () => copyText(s.docs.map(x => '- ' + x).join('\n'), 'Lista copiada.')); pn.append(cp);
+      }
+      if (s.tpl) {
+        pn.append(el('div', 'sl2', s.subj ? 'Texto pronto' : 'Texto pronto (e-mail ou mensagem)'));
+        if (s.subj) { const sb = el('div', 'tplsubj'); sb.append(el('b', null, 'Assunto: '), document.createTextNode(s.subj)); pn.append(sb); }
+        pn.append(el('pre', 'tpl', s.tpl));
+        const row = el('div', 'btns');
+        const c1 = el('button', 'tbtn', 'COPIAR TEXTO'); c1.type = 'button'; c1.addEventListener('click', () => copyText(s.tpl, 'Texto copiado.')); row.append(c1);
+        if (s.subj) { const c2 = el('button', 'tbtn', 'COPIAR ASSUNTO'); c2.type = 'button'; c2.addEventListener('click', () => copyText(s.subj, 'Assunto copiado.')); row.append(c2); }
+        pn.append(row);
+      }
+      tx.append(pn);
+      hd.addEventListener('click', () => { const o = pn.hidden; pn.hidden = !o; hd.setAttribute('aria-expanded', String(o)); li.classList.toggle('open', o); });
+    } else {
+      tx.append(el('div', 'st', s.t));
+      if (s.d) tx.append(el('div', 'sd', s.d));
+    }
     li.append(b, tx); ol.append(li);
   });
   return [h, bar, ol];
+}
+
+/* editor de passos: um cartão por passo */
+function stepsEditor(init) {
+  const wrap = el('div', 'sted'), list = el('div', 'stlist');
+  const mk = (s) => {
+    s = s || {};
+    const c = el('div', 'stcard');
+    const top = el('div', 'sttop'), num = el('b', 'stn', ''), up = el('button', 'tbtn', '↑'), dn = el('button', 'tbtn', '↓'), rm = el('button', 'tbtn', '✕');
+    [up, dn, rm].forEach(x => x.type = 'button'); up.setAttribute('aria-label', 'Subir'); dn.setAttribute('aria-label', 'Descer'); rm.setAttribute('aria-label', 'Remover passo');
+    top.append(num, up, dn, rm);
+    const inp = (ph, v) => { const i = el('input'); i.type = 'text'; i.placeholder = ph; i.value = v || ''; return i; };
+    const ta = (ph, v, rows) => { const t = el('textarea'); t.rows = rows; t.placeholder = ph; t.value = v || ''; return t; };
+    const t = inp('Passo (curto). Ex.: Coletar todas as assinaturas', s.t), d = inp('Detalhe (opcional)', s.d);
+    const dt = el('details', 'stmore'); dt.append(el('summary', null, 'Quem faz, documentos e texto pronto'));
+    const who = inp('Quem faz: pessoa ou setor (ex.: Jeferson)', s.who);
+    const docs = ta('Documentos, um por linha:\nRG e CPF do titular\nContrato social', (s.docs || []).join('\n'), 3);
+    const subj = inp('Assunto do e-mail (opcional)', s.subj);
+    const tpl = ta('Texto pronto para copiar (corpo do e-mail ou mensagem)', s.tpl, 5);
+    const lab = (x, node) => { const w = el('div', 'stf'); w.append(el('small', null, x), node); return w; };
+    dt.append(lab('Quem faz', who), lab('Documentos necessários', docs), lab('Assunto do e-mail', subj), lab('Texto pronto', tpl));
+    if (hasDet(s)) dt.open = true;
+    c.append(top, t, d, dt);
+    c._get = () => cleanStep({ t: t.value, d: d.value, who: who.value, docs: docs.value.split('\n'), subj: subj.value, tpl: tpl.value });
+    up.addEventListener('click', () => { if (c.previousElementSibling) { list.insertBefore(c, c.previousElementSibling); num_(); } });
+    dn.addEventListener('click', () => { if (c.nextElementSibling) { list.insertBefore(c.nextElementSibling, c); num_(); } });
+    rm.addEventListener('click', () => { c.remove(); num_(); });
+    c._num = num; return c;
+  };
+  const num_ = () => Array.from(list.children).forEach((c, i) => { c._num.textContent = 'Passo ' + (i + 1); });
+  (init || []).forEach(s => list.append(mk(s)));
+  num_();
+  const row = el('div', 'btns');
+  const add = el('button', 'tbtn', '+ ADICIONAR PASSO'); add.type = 'button';
+  add.addEventListener('click', () => { const c = mk({}); list.append(c); num_(); const f = c.querySelector('input'); if (f) f.focus(); });
+  const paste = el('button', 'tbtn', 'COLAR LISTA'); paste.type = 'button';
+  const pbox = el('div', 'stpaste'); pbox.hidden = true;
+  const pta = el('textarea'); pta.rows = 6; pta.placeholder = 'Cole os passos, um por linha. Use | para separar o passo do detalhe.';
+  const pok = el('button', 'tbtn', 'ADICIONAR OS PASSOS'); pok.type = 'button';
+  pok.addEventListener('click', () => { parseSteps(pta.value).forEach(s => list.append(mk(s))); num_(); pta.value = ''; pbox.hidden = true; });
+  pbox.append(pta, pok);
+  paste.addEventListener('click', () => { pbox.hidden = !pbox.hidden; if (!pbox.hidden) pta.focus(); });
+  row.append(add, paste);
+  wrap.append(list, row, pbox);
+  return { node: wrap, get: () => Array.from(list.children).map(c => c._get()).filter(s => s.t) };
 }
 
 function revSelect(v) {
@@ -1827,7 +1961,7 @@ async function cloudDelete(n) {
 const tch = id => { dirty.add(id); if (typeof pending !== 'undefined') pending.add(id); };
 const kindCat = k => (k === 'lugar' && CATS.lug) ? 'lug' : (k === 'setor' && CATS.set) ? 'set' : 'pes';
 async function suggestAfterEdit(n) {
-  const text = [n.title, n.body, n.why, n.steps.map(s => s.t + ' ' + s.d).join(' ')].join('. ');
+  const text = [n.title, n.body, n.why, n.steps.map(stepFull).join(' ')].join('. ');
   const found = new Map(), fresh = [];
   const addOld = (m, why) => { if (m && m !== n && !n.links.has(m.id) && !found.has(m.id)) found.set(m.id, why || (n.title + ' menciona ' + m.title + '.')); };
   const addNew = (name, cat, parent) => {
@@ -1972,11 +2106,11 @@ function renderDraft(D) {
   const dtErr = el('p', 'err'); dtErr.hidden = true; dtErr.textContent = 'Data inválida. Use 12/05/1990, 05/1990 ou 1990.';
   const bo = el('textarea'); bo.rows = 6; bo.value = D.body;
   const wy = el('textarea'); wy.rows = 2; wy.value = D.why; wy.placeholder = 'Para que serve? Qual problema isto resolve?';
-  const st = el('textarea'); st.rows = 6; st.value = stepsText(D.steps); st.placeholder = 'Um passo por linha.\nConferir documentos | RG e CPF';
+  const st = stepsEditor(D.steps);
   const kids = [head, el('p', 'hint', D.ai ? 'Organizado pela IA. Confira, edite o que quiser e salve. Nada entra na rede até você salvar.' : (D.aiErr ? 'A IA não respondeu (' + D.aiErr + '). Usei a análise local; confira abaixo.' : 'Confira o que o cérebro entendeu. Nada entra na rede até você salvar.')),
     fld('Tipo', 'dr-cat', cs), fld('Título', 'dr-title', ti, findByTitle(D.title) ? 'Já existe um registro com este título. Se for o mesmo assunto, descarte e edite o existente.' : '')];
   const dw = fld('Data (fato, emissão ou vigência)', 'dr-date', dt, 'Pode ser no passado: 12/05/1990, 05/1990 ou só 1990.'); dw.append(dtErr);
-  kids.push(dw, fld('Contexto (sua mensagem)', 'dr-body', bo), fld('Para que serve', 'dr-why', wy), fld('Passo a passo', 'dr-steps', st, 'Um passo por linha. Use | para separar o passo do detalhe.'));
+  kids.push(dw, fld('Contexto (sua mensagem)', 'dr-body', bo), fld('Para que serve', 'dr-why', wy), fld('Passo a passo', 'dr-steps', st.node, 'Cada passo pode ter quem faz, documentos e um texto pronto para copiar.'));
   const dow = el('input'); dow.type = 'text'; dow.value = D.owner || ''; dow.placeholder = 'Quem responde por este item?';
   const drm = revSelect(D.revm || ({ proc: 12, norma: 12 }[D.cat] || 0)), dvs = visSelect('todos');
   kids.push(fld('Responsável', 'dr-owner', dow), fld('Revisão periódica', 'dr-revm', drm, 'O cérebro avisa quando o prazo vence.'));
@@ -1997,7 +2131,7 @@ function renderDraft(D) {
   ok.addEventListener('click', () => {
     const w = parseWhen(dt.value);
     if (!w) { dtErr.hidden = false; dt.focus(); return; }
-    const n = addNote({ id: 'u' + Date.now().toString(36) + Math.floor(Math.random() * 99), cat: cs.value, title: ti.value.trim() || 'Sem título', body: bo.value.trim(), why: wy.value.trim(), steps: parseSteps(st.value), date: w.date, time: w.time, reg: TODAY, owner: dow.value.trim(), revm: +drm.value, rev: +drm.value ? TODAY : '', vis: isAdmin() ? dvs.value : 'todos', user: true }, notes.length);
+    const n = addNote({ id: 'u' + Date.now().toString(36) + Math.floor(Math.random() * 99), cat: cs.value, title: ti.value.trim() || 'Sem título', body: bo.value.trim(), why: wy.value.trim(), steps: st.get(), date: w.date, time: w.time, reg: TODAY, owner: dow.value.trim(), revm: +drm.value, rev: +drm.value ? TODAY : '', vis: isAdmin() ? dvs.value : 'todos', user: true }, notes.length);
     pk.get().forEach(x => link(n, noteById[x[0]], x[1].trim()));
     checks.forEach(c => { if (c[0].checked) { const e = makeEntity(c[1]); link(n, e, e.cat === 'set' ? 'Setor responsável.' : 'Pessoa envolvida.'); touch(e.id); } });
     flashes.push({ n: n, t: performance.now() }); touch(n.id); save();
@@ -2023,15 +2157,14 @@ function renderEdit(n, focusId) {
   const dtErr = el('p', 'err'); dtErr.hidden = true; dtErr.textContent = 'Data inválida. Use 12/05/1990, 05/1990 ou 1990.';
   const bo = el('textarea'); bo.rows = 4; bo.value = n.body;
   const wy = el('textarea'); wy.rows = 2; wy.value = n.why; wy.placeholder = 'Para que serve? Qual problema isto resolve?';
-  const st = el('textarea'); st.rows = 7; st.value = stepsText(n.steps);
-  st.placeholder = 'Um passo por linha.\nConferir documentos | RG, CPF e comprovante de residência';
+  const st = stepsEditor(n.steps);
   const kids = [head, fld(ent ? 'Nome' : 'Título', 'ed-title', ti)];
   if (!ent) {
     const dw = fld('Data (fato, emissão ou vigência)', 'ed-date', dt, 'Pode ser no passado: 12/05/1990, 05/1990 ou só 1990. Para incluir a hora: 12/05/1990 14:30.');
     dw.append(dtErr); kids.push(dw);
   }
   kids.push(fld(ent ? 'Sobre' : 'Contexto (sua mensagem)', 'ed-body', bo, ent ? '' : 'Escreva do seu jeito: como funciona e por que isso importa.'));
-  if (!ent) kids.push(fld('Para que serve', 'ed-why', wy), fld('Passo a passo', 'ed-steps', st, 'Um passo por linha. Use | para separar o passo do detalhe.'));
+  if (!ent) kids.push(fld('Para que serve', 'ed-why', wy), fld('Passo a passo', 'ed-steps', st.node, 'Cada passo pode ter quem faz, documentos e um texto pronto para copiar.'));
   const ow = el('input'); ow.type = 'text'; ow.value = n.owner || ''; ow.placeholder = 'Quem responde por este item?';
   const rm = revSelect(n.revm || 0), vs = visSelect(n.vis);
   if (!ent) kids.push(fld('Responsável', 'ed-owner', ow), fld('Revisão periódica', 'ed-revm', rm, 'O cérebro avisa quando o prazo vence.'));
@@ -2063,8 +2196,8 @@ function renderEdit(n, focusId) {
     n.title = ti.value.trim() || n.title; n.body = bo.value.trim();
     if (!ent) {
       n.why = wy.value.trim(); n.date = w.date; n.time = w.time; n.owner = ow.value.trim(); n.revm = +rm.value; if (+rm.value && !n.rev) n.rev = TODAY;
-      const ns = parseSteps(st.value);
-      if (JSON.stringify(ns) !== JSON.stringify(n.steps)) { n.steps = ns; delete checks[n.id]; saveChecks(); }
+      const ns = st.get();
+      if (JSON.stringify(ns) !== JSON.stringify(n.steps)) { n.steps = ns; delete checks[n.id]; delete checks['d:' + n.id]; saveChecks(); }
     }
     ids.forEach(id => { const inp = $('ed-r-' + id); if (inp) setReason(n, id, inp.value.trim()); });
     pk.get().forEach(x => link(n, noteById[x[0]], x[1].trim()));
@@ -2101,7 +2234,10 @@ function renderAsk(r, v, A) {
     if (A.state === 'loading') box.append(el('p', 'hint', 'Pensando nas suas anotações…'));
     else if (A.state === 'err') box.append(el('p', 'hint', 'A IA não respondeu (' + A.msg + '). Veja os resultados abaixo.'));
     else {
-      box.append(el('p', 'p-body', A.answer)); aiExtras(box, A);
+      box.append(el('p', 'p-body', A.answer));
+      if (A.passos && A.passos.length) { box.append.apply(box, stepsBlock({ id: 'ia-' + tkey(v).slice(0, 40), steps: A.passos })); }
+      else if (A.proc) { const pn = noteById[A.proc], ob = el('button', 'tbtn', 'ABRIR ' + pn.title.toUpperCase().slice(0, 40)); ob.type = 'button'; ob.addEventListener('click', () => select(pn)); box.append(ob); stepsBlock(pn).forEach(x => box.append(x)); }
+      aiExtras(box, A);
       if (A.used.length) { const row = el('div', 'chips-row'); A.used.forEach(id => { const m = noteById[id]; const b = el('button', 'chip'); b.type = 'button'; b.append(dotEl(m.cat), el('span', null, m.title)); b.addEventListener('click', () => select(m)); row.append(b); }); box.append(row); }
     }
     kids.push(box);
@@ -2247,13 +2383,13 @@ async function askAI(v) {
     const seen = new Set(), cand = [];
     r.res.slice(0, 10).concat(related(v)).forEach(n => { if (!seen.has(n.id) && cand.length < 16) { seen.add(n.id); cand.push(n); } });
     if (cand.length < 4) notes.filter(n => !isHidden(n) && n.date).sort((a, b) => (b.reg || b.date).localeCompare(a.reg || a.date)).slice(0, 6).forEach(n => { if (!seen.has(n.id)) { seen.add(n.id); cand.push(n); } });
-    const full = n => ({ id: n.id, t: n.title, c: n.cat, d: n.date, o: n.owner, ex: n.ex && !dirty.has(n.id), b: n.body, w: n.why, p: n.steps.map(s => s.d ? s.t + ': ' + s.d : s.t), l: Array.from(n.links.entries()).filter(e => noteById[e[0]] && !isHidden(noteById[e[0]])).slice(0, 10).map(e => noteById[e[0]].title + ' (' + CATS[noteById[e[0]].cat].name + ')' + (e[1] ? ': ' + e[1] : '')) });
+    const full = n => ({ id: n.id, t: n.title, c: n.cat, d: n.date, o: n.owner, ex: n.ex && !dirty.has(n.id), b: n.body, w: n.why, p: n.steps.map(s => [s.t + (s.d ? ': ' + s.d : ''), s.who ? 'quem: ' + s.who : '', s.docs && s.docs.length ? 'docs: ' + s.docs.join('; ') : '', s.tpl ? 'tem texto pronto' : ''].filter(Boolean).join(' | ')), l: Array.from(n.links.entries()).filter(e => noteById[e[0]] && !isHidden(noteById[e[0]])).slice(0, 10).map(e => noteById[e[0]].title + ' (' + CATS[noteById[e[0]].cat].name + ')' + (e[1] ? ': ' + e[1] : '')) });
     const j = await ai('ask', { hoje: TODAY, pergunta: v, notas: cand.map(full), indice: notes.filter(n => !isHidden(n)).map(n => ({ id: n.id, c: n.cat, t: n.title })) });
     if (tok !== askTok) return;
     const res = j.result || {}, used = (res.used || []).filter(id => noteById[id]);
     setMatches(r.res.map(n => n.id).concat(used));
     const guia = (Array.isArray(res.guia) ? res.guia : []).filter(g => g && g.nome).slice(0, 6), fala = String(res.fala || '');
-    renderAsk(r, v, { state: 'ok', answer: String(res.answer || 'Sem resposta.'), used: used, guia: guia, fala: fala }); renderStatus();
+    renderAsk(r, v, { state: 'ok', passos: (Array.isArray(res.passos) ? res.passos : []).filter(x => x && x.t).slice(0, 25).map(cleanStep), proc: (noteById[res.proc_id] && noteById[res.proc_id].steps.length) ? res.proc_id : '', answer: String(res.answer || 'Sem resposta.'), used: used, guia: guia, fala: fala }); renderStatus();
     if (VOICE.auto && fala) VOICE.speak(fala);
   } catch (e) {
     if (tok !== askTok) return;
@@ -2452,7 +2588,7 @@ async function aiDraft(D) {
   if (CATS[r.cat]) D.cat = r.cat;
   if (r.title && String(r.title).trim()) D.title = String(r.title).trim().slice(0, 70);
   if (r.why) D.why = String(r.why).trim();
-  if (Array.isArray(r.steps) && r.steps.length >= 2 && !D.steps.length) D.steps = r.steps.filter(x => x && x.t).slice(0, 25).map(x => ({ t: String(x.t).slice(0, 140), d: String(x.d || '').slice(0, 300) }));
+  if (Array.isArray(r.steps) && r.steps.length >= 2 && !D.steps.length) D.steps = r.steps.filter(x => x && x.t).slice(0, 25).map(cleanStep);
   if (/^\d{4}(-\d{2}(-\d{2})?)?$/.test(r.date || '') && parseWhen(toInput(r.date, ''))) D.date = r.date;
   if (/^\d{2}:\d{2}$/.test(r.time || '')) D.time = r.time;
   D.reasons = new Map(); const sg = [], seen = new Set();
