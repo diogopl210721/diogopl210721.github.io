@@ -1143,7 +1143,7 @@ function openMenu() {
   const kids = [head, el('h2', 'p-title', 'Cérebro')];
   const st = cloud.on ? (cloud.state === 'erro' ? 'Conectado, mas houve erro ao salvar' : 'Conectado: salvo na nuvem') : (cloud.state === 'denied' ? 'Conta sem acesso' : (cloud.sb ? 'Modo local (só neste aparelho)' : 'Modo local'));
   kids.push(el('p', 'p-meta', st + (cloud.user ? ' · ' + (cloud.user.email || '') : '') + (cloud.on ? ' · IA ligada' : '')));
-  if (cloud.on) kids.push(toolRow('Sair da conta', 'Seus dados continuam na nuvem. Neste aparelho voltam a ficar só os locais.', async () => { await cloud.sb.auth.signOut(); cloud.on = false; cloud.user = null; cloud.state = 'off'; renderStatus(); hidePanel(); }));
+  if (cloud.on) kids.push(toolRow('Sair da conta', 'Seus dados continuam na nuvem. Este aparelho é limpo: nada seu fica aqui.', async () => { try { await push(); } catch (e) { /* */ } try { await cloud.sb.auth.signOut(); } catch (e) { /* */ } try { ['cerebro-v2', 'cerebro-checks-v1', 'cerebro-rev-v1', 'cerebro-local', 'cerebro-demo'].forEach(k => localStorage.removeItem(k)); } catch (e) { /* */ } location.reload(); }));
   else if (cloud.sb) kids.push(toolRow('Entrar', 'Guarde seu cérebro na nuvem e use a IA para organizar, ligar e responder.', () => { hidePanel(); showGate(''); }));
   kids.push(sec('Ferramentas'),
     toolRow('Linha do tempo animada', 'Veja o cérebro crescer na ordem em que as coisas aconteceram.', openTimeline),
