@@ -398,7 +398,7 @@ const p2 = x => String(x).padStart(2, '0');
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const hasWord = (nt, name) => !!name && new RegExp('(^|[^a-z0-9])' + esc(name) + '([^a-z0-9]|$)').test(nt);
 const STOP = new Set('para como esta mais muito sobre quando porque ainda tudo essa esse isso minha meu seus suas entre desde onde cada fazer foram tinha pelo pela uma uns umas com por nao mas dos das que foi sao ser tem vai ele ela nos nas num sem ate bem aqui ali todo toda quem qual dele dela seu sua meus minhas estou estava tambem assim voce vamos fiz fui'.split(' '));
-const QSTOP = new Set('aconteceu aconteceram fiz fez fizemos dia quando onde como quem qual quais tudo sobre algo coisa coisas ontem hoje anteontem semana passada esta essa nesse nesta mes ano anos foi fui estou lembro mostre mostra'.split(' '));
+const QSTOP = new Set('mesmo lembro preciso saber alguma anotacao anotei registrei guardei data quando aconteceu aconteceram fiz fez fizemos dia quando onde como quem qual quais tudo sobre algo coisa coisas ontem hoje anteontem semana passada esta essa nesse nesta mes ano anos foi fui estou lembro mostre mostra'.split(' '));
 const MONTH = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const MONTHSET = new Set(MONTH);
 const toks = s => norm(s).split(/[^a-z0-9]+/).filter(t => t.length >= 3 && !STOP.has(t));
@@ -931,7 +931,8 @@ function ask(v) {
   }
   if (dq) res.sort((a, b) => (rangeOf(a.n.date)[0] - rangeOf(b.n.date)[0]) || (a.n.time < b.n.time ? -1 : a.n.time > b.n.time ? 1 : 0));
   else res.sort((a, b) => b.s - a.s);
-  return { res: res.slice(0, 30).map(r => r.n), dq: dq, how: how, ents: ents, qt: qt };
+  const when = /\b(que dia|quando|qual dia|qual a data|que data)\b/.test(nv);
+  return { res: res.slice(0, 30).map(r => r.n), dq: dq, how: how, when: when, ents: ents, qt: qt };
 }
 
 /* ---------- estado e câmera ---------- */
@@ -1420,6 +1421,14 @@ function renderAsk(r, v) {
     ? list.length + (list.length === 1 ? ' resultado' : ' resultados') + ' · ' + cn + (cn === 1 ? ' conexão acesa' : ' conexões acesas')
     : 'Nada encontrado para “' + v + '”. Tente uma data (12/03/2026, ontem), o nome de uma pessoa ou lugar, ou outra palavra.'));
   let skip = null;
+  if (r.when && !r.dq && list.length && list[0].date) {
+    const top = list[0]; skip = top;
+    kids.push(sec('Resposta'));
+    const box = el('div', 'ans'), ah = el('div', 'ah'), op = el('button', 'tbtn', 'ABRIR'); op.type = 'button'; op.addEventListener('click', () => select(top));
+    ah.append(dotEl(top.cat), el('span', 'at', fmtWhen(top.date, top.time)), op); box.append(ah);
+    box.append(el('p', 'p-body', (top.body || top.title).slice(0, 180)));
+    kids.push(box);
+  }
   if (r.how && list.length && list[0].steps.length) {
     const top = list[0]; skip = top;
     kids.push(sec('Melhor resposta'));
@@ -1525,6 +1534,7 @@ function runSearch() {
 function runPreview() {
   const v = q.value.trim();
   if (v.length < 3 && !files.length) { S.preview = null; S.previewText = null; renderStatus(); return; }
+  if (v && !files.length && isQuestion(v)) { S.preview = null; S.previewText = 'PARECE UMA PERGUNTA · ENTER PARA PROCURAR NO CÉREBRO'; renderStatus(); return; }
   const A = analyze(v, files, files.map(f => f.text || '').join(' ').slice(0, 8000));
   S.preview = new Set(A.rel.concat(A.ents).map(n => n.id));
   const parts = ['→ ' + CATS[A.cat].name.toUpperCase()];
@@ -1679,9 +1689,11 @@ function makeNote(text, fs) {
   dirty.add(n.id);
   return n;
 }
+const isQuestion = v => /\?\s*$/.test(v) || /^(como|quando|que dia|qual|quais|onde|quem|o que|quanto|me mostre|mostre)\b/.test(norm(v));
 function submitNote() {
   const text = q.value.trim();
   if (!text && !files.length) return;
+  if (text && !files.length && isQuestion(text)) { setMode('find'); return; }
   if (files.some(f => f.state === 'lendo')) { S.previewText = 'AGUARDE: LENDO O ARQUIVO…'; renderStatus(); return; }
   const groups = (text || files.length === 1) ? [files.slice()] : files.map(f => [f]);
   let last = null;
