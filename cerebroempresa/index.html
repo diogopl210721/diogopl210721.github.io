@@ -1,0 +1,2432 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Cérebro Empresa</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#02070c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: tela cheia com o cérebro 3D no centro; dossiê à esquerda no desktop e acima da barra no celular; régua de regiões na borda direita; dock HUD embaixo; nada no topo. */
+:root {
+  --bg: #02070c;
+  --glow: #0a2537;
+  --ink: #d9f4ff;
+  --ink-soft: #b4d9ea;
+  --dim: #6d92a6;
+  --cyan: #3fd9ff;
+  --line: rgba(110, 200, 255, 0.22);
+  --glass: rgba(5, 16, 26, 0.82);
+  --field: rgba(63, 217, 255, 0.05);
+  --grid: rgba(80, 180, 255, 0.055);
+  --display: 'Chakra Petch', 'Rajdhani', system-ui, sans-serif;
+  --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  box-sizing: border-box;
+  margin: 0;
+  padding-block: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow: hidden;
+  font: 15px/1.5 var(--body);
+  color: var(--ink);
+  background-color: var(--bg);
+  background-image: radial-gradient(ellipse at 50% 42%, var(--glow) 0%, #051420 42%, var(--bg) 100%);
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#grid {
+  position: fixed; inset: 0; pointer-events: none;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 45%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse at 50% 45%, #000 0%, transparent 72%);
+}
+#cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#cv.grabbing { cursor: grabbing; }
+#cv.point { cursor: pointer; }
+
+.hud {
+  position: relative;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.hud::before, .hud::after {
+  content: ""; position: absolute; width: 12px; height: 12px;
+  border: 2px solid var(--cyan); pointer-events: none;
+}
+.hud::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+.hud::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+
+/* régua de regiões */
+#rail {
+  position: fixed; z-index: 5;
+  right: max(6px, env(safe-area-inset-right, 0px));
+  top: calc((100% - var(--dock-h, 110px)) / 2);
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: flex-end;
+}
+#rail button { position: relative; width: 30px; height: 28px; display: grid; place-items: center; background: transparent; border: 0; padding: 0; cursor: pointer; }
+#rail i { width: 9px; height: 9px; border-radius: 50%; display: block; transition: transform .15s ease, box-shadow .15s ease; }
+#rail i.dia { border-radius: 0; transform: rotate(45deg) scale(.85); }
+#rail button:hover i { transform: scale(1.35); }
+#rail button:hover i.dia { transform: rotate(45deg) scale(1.2); }
+#rail button[aria-pressed="true"] i { box-shadow: 0 0 0 3px rgba(217, 244, 255, .28); transform: scale(1.4); }
+#rail button[aria-pressed="true"] i.dia { transform: rotate(45deg) scale(1.1); }
+#rail .rn {
+  position: absolute; right: 34px; top: 50%; transform: translateY(-50%); padding: 5px 8px;
+  font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; color: var(--ink);
+  background: var(--glass); border: 1px solid var(--line); opacity: 0; pointer-events: none; transition: opacity .15s ease;
+}
+#rail button:hover .rn, #rail button:focus-visible .rn, #rail button[aria-pressed="true"] .rn { opacity: 1; }
+#rail .rt {
+  width: 30px; height: 26px; margin-bottom: 6px; font: 500 11px/1 var(--mono); letter-spacing: .02em; color: var(--dim);
+  border: 1px solid var(--line); border-radius: 2px;
+}
+#rail .rt[aria-pressed="true"] { color: var(--cyan); border-color: var(--cyan); background: rgba(63, 217, 255, .1); }
+@media (max-width: 979px) { body.po #rail { display: none; } }
+
+/* dossiê */
+#panel {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--dock-h, 110px) + 10px);
+  max-width: 748px; margin-inline: auto; box-sizing: border-box;
+  max-height: min(48vh, 480px);
+  display: flex; flex-direction: column;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+#panel.in { opacity: 1; transform: none; }
+#pb { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 16px 18px; }
+@media (min-width: 980px) {
+  #panel {
+    left: max(24px, env(safe-area-inset-left, 0px)); right: auto; margin-inline: 0; width: 430px;
+    bottom: calc(var(--dock-h, 110px) + 14px);
+    max-height: calc(100% - var(--dock-h, 110px) - 44px);
+  }
+}
+.p-head { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+.dot.dia { border-radius: 0; transform: rotate(45deg) scale(.9); }
+.tag { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.date { margin-left: auto; font: 400 10.5px/1 var(--mono); letter-spacing: .08em; color: var(--dim); text-transform: uppercase; }
+.tbtn {
+  height: 28px; padding: 0 10px; background: transparent; border: 1px solid var(--line); border-radius: 2px;
+  font: 500 10px/1 var(--mono); letter-spacing: .14em; color: var(--cyan); cursor: pointer;
+}
+.tbtn:hover { border-color: var(--cyan); background: rgba(63, 217, 255, .1); }
+.date + .tbtn, .tag + .tbtn { margin-left: auto; }
+.date ~ .tbtn { margin-left: 0; }
+.close {
+  width: 32px; height: 32px; flex: none; display: grid; place-items: center;
+  background: transparent; border: 1px solid transparent; color: var(--dim); cursor: pointer; border-radius: 2px;
+}
+.close:hover { color: var(--cyan); border-color: var(--line); }
+.p-title { margin: 4px 0 4px; font: 600 24px/1.18 var(--display); letter-spacing: .01em; text-wrap: balance; }
+.p-meta { margin: 0 0 2px; font: 400 11px/1.4 var(--mono); letter-spacing: .04em; color: var(--dim); }
+.p-body { margin: 0; max-width: 62ch; color: var(--ink-soft); white-space: pre-line; overflow-wrap: anywhere; }
+.sec { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.sl { font: 500 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cyan); }
+.sm { font: 400 10.5px/1 var(--mono); letter-spacing: .08em; color: var(--dim); }
+.bar { height: 2px; background: var(--line); margin: -2px 0 12px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); transition: width .25s ease; }
+
+.steps { list-style: none; margin: 0; padding: 0; }
+.step { position: relative; display: flex; gap: 12px; padding-bottom: 14px; }
+.step:not(:last-child)::before { content: ""; position: absolute; left: 12px; top: 28px; bottom: 2px; width: 1px; background: var(--line); }
+.sbox {
+  flex: none; width: 25px; height: 25px; display: grid; place-items: center; padding: 0;
+  font: 500 11px/1 var(--mono); color: var(--cyan); background: var(--field); border: 1px solid var(--cyan); border-radius: 2px; cursor: pointer;
+}
+.sbox:hover { background: rgba(63, 217, 255, .18); }
+.step.done .sbox { background: var(--cyan); color: #02222c; }
+.stxt { min-width: 0; padding-top: 2px; }
+.st { font: 500 15px/1.3 var(--body); color: var(--ink); overflow-wrap: anywhere; }
+.sd { margin-top: 3px; font-size: 13.5px; line-height: 1.45; color: var(--dim); overflow-wrap: anywhere; }
+.step.done .st { color: var(--dim); text-decoration: line-through; text-decoration-color: rgba(109, 146, 166, .6); }
+
+.conn {
+  display: flex; flex-direction: column; align-items: stretch; gap: 3px; width: 100%; padding: 10px 2px;
+  background: transparent; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); text-align: left; cursor: pointer;
+}
+.conn:hover { background: rgba(63, 217, 255, .06); }
+.ct { display: flex; align-items: center; gap: 8px; font: 600 14px/1.3 var(--display); letter-spacing: .01em; }
+.cd { margin-left: auto; padding-left: 10px; font: 400 10.5px/1 var(--mono); letter-spacing: .06em; color: var(--dim); text-transform: uppercase; white-space: nowrap; }
+.cr { padding-left: 16px; font-size: 13.5px; line-height: 1.45; color: var(--dim); }
+.addrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.addbtn {
+  min-height: 36px; padding: 6px 12px; background: transparent; border: 1px dashed var(--line); border-radius: 2px;
+  font: 400 13px/1.2 var(--body); color: var(--ink-soft); cursor: pointer;
+}
+.addbtn:hover { border-color: var(--cyan); color: var(--cyan); }
+.chips-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 4px 11px;
+  font: 400 13px/1.2 var(--body); color: var(--ink); text-align: left;
+  background: rgba(63, 217, 255, 0.04); border: 1px solid var(--line); border-radius: 2px; cursor: pointer;
+}
+.chip:hover { border-color: var(--cyan); background: rgba(63, 217, 255, 0.1); }
+
+.ans { margin-top: 6px; padding: 12px; background: var(--field); border: 1px solid var(--line); }
+.ans .ah { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.ans .at { font: 600 17px/1.25 var(--display); }
+.ans .p-body { margin-bottom: 12px; font-size: 14px; }
+.ans .tbtn { margin-left: auto; flex: none; }
+.res {
+  display: flex; align-items: baseline; gap: 10px; width: 100%; min-height: 40px; padding: 8px 4px;
+  background: transparent; border: 0; border-bottom: 1px solid var(--line); color: var(--ink);
+  text-align: left; cursor: pointer; font: 400 14px/1.35 var(--body);
+}
+.res:hover { background: rgba(63, 217, 255, 0.06); }
+.res .dot { transform: translateY(-1px); }
+.res .dot.dia { transform: translateY(-1px) rotate(45deg) scale(.9); }
+.res .rd { flex: none; min-width: 64px; font: 400 10.5px/1.35 var(--mono); letter-spacing: .04em; color: var(--dim); text-transform: uppercase; }
+.res b { font: 600 14px/1.35 var(--display); flex: none; }
+.res span.sn { color: var(--dim); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hint { margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--dim); }
+
+/* edição */
+.fld { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.fld label, .lrow label { font: 500 10px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.fld input, .fld textarea, .fld select, .lrow input {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; font: 400 16px/1.4 var(--body); color: var(--ink);
+  background: var(--field); border: 1px solid var(--line); border-radius: 2px; outline: 0;
+}
+.fld textarea { resize: vertical; min-height: 72px; }
+.fld input:focus, .fld textarea:focus, .fld select:focus, .lrow input:focus { border-color: var(--cyan); }
+.fld .err { margin: 0; font-size: 12.5px; color: #ff8c7a; }
+.lrow { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.btns { display: flex; gap: 8px; margin-top: 18px; }
+.pbtn {
+  min-height: 42px; padding: 0 18px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
+  color: var(--cyan); background: rgba(63, 217, 255, .14); border: 1px solid var(--cyan); border-radius: 2px;
+}
+.pbtn:hover { background: rgba(63, 217, 255, .26); }
+.pbtn.ghost { color: var(--ink-soft); background: transparent; border-color: var(--line); }
+.pbtn.ghost:hover { border-color: var(--ink-soft); }
+
+/* dock */
+body::after {
+  content: ""; position: fixed; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none;
+  height: calc(var(--dock-h, 110px) + 56px);
+  background: linear-gradient(180deg, rgba(2,7,12,0) 0%, rgba(2,7,12,.78) 55%, rgba(2,7,12,.94) 100%);
+}
+#panel { z-index: 3; }
+#dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 4;
+  max-width: 780px; margin-inline: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+#chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#chips:empty { display: none; }
+.file {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 2px 4px 2px 10px;
+  font: 400 11.5px/1.2 var(--mono); color: var(--ink-soft);
+  background: rgba(63,217,255,.07); border: 1px solid var(--line); border-radius: 2px;
+}
+.file span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file button { width: 28px; height: 28px; background: transparent; border: 0; color: var(--dim); cursor: pointer; font-size: 16px; line-height: 1; }
+.file button:hover { color: var(--cyan); }
+
+#status {
+  display: flex; align-items: center; gap: 12px; min-height: 20px; padding: 0 4px;
+  font: 500 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim);
+}
+#stx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 9px; }
+#stx::before {
+  content: ""; width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan), 0 0 0 3px rgba(63,217,255,.15); animation: blink 2.4s ease-in-out infinite;
+}
+.short { display: none; }
+#stx .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+ #menuBtn { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; font: 500 11px/1 var(--mono); letter-spacing: .16em; color: var(--cyan); background: rgba(63,217,255,.1); border: 1px solid rgba(63,217,255,.5); border-radius: 2px; cursor: pointer; }
+#menuBtn:hover { background: rgba(63,217,255,.22); border-color: var(--cyan); }
+.kh { flex: none; display: flex; gap: 6px; color: rgba(109,146,166,.8); }
+.kh kbd { padding: 3px 5px; font: 500 9.5px/1 var(--mono); letter-spacing: .06em; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 2px; background: rgba(63,217,255,.05); }
+@keyframes blink { 50% { opacity: .35; } }
+@keyframes sweep { from { transform: translateX(-120%); } to { transform: translateX(420%); } }
+
+/* console de comando */
+#form {
+  --cut: 14px;
+  position: relative; padding: 1px; min-height: 58px; box-sizing: border-box;
+  background: linear-gradient(115deg, rgba(63,217,255,.95), rgba(63,217,255,.18) 28%, rgba(138,164,255,.16) 72%, rgba(63,217,255,.75));
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+  filter: drop-shadow(0 0 14px rgba(63,217,255,.18));
+  transition: filter .2s ease;
+}
+#form:focus-within { filter: drop-shadow(0 0 20px rgba(63,217,255,.42)); }
+.cin {
+  position: relative; display: flex; align-items: center; gap: 4px; min-height: 56px; box-sizing: border-box; padding: 0 8px 0 10px;
+  background:
+    linear-gradient(90deg, rgba(63,217,255,.07), transparent 40%),
+    linear-gradient(180deg, rgba(9,29,45,.96), rgba(3,11,19,.97));
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  clip-path: polygon(calc(var(--cut) - 1px) 0, 100% 0, 100% calc(100% - var(--cut) + 1px), calc(100% - var(--cut) + 1px) 100%, 0 100%, 0 calc(var(--cut) - 1px));
+}
+.scan { position: absolute; left: 0; top: 0; width: 24%; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent); animation: sweep 4.5s linear infinite; }
+#mode {
+  flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px 0 10px;
+  font: 500 10.5px/1 var(--mono); letter-spacing: .16em; color: var(--cyan); cursor: pointer;
+  background: rgba(63,217,255,.09); border: 1px solid rgba(63,217,255,.38); border-radius: 2px;
+  transition: background .15s ease, border-color .15s ease;
+}
+#mode:hover { background: rgba(63,217,255,.18); border-color: var(--cyan); }
+#mode svg { width: 15px; height: 15px; flex: none; }
+#mode .i-ask { display: none; }
+#mode[data-m="find"] .i-ask { display: block; }
+#mode[data-m="find"] .i-note { display: none; }
+#mode[data-m="find"] { color: #a9b8ff; background: rgba(138,164,255,.12); border-color: rgba(138,164,255,.5); }
+.pr { flex: none; margin-left: 6px; font: 500 16px/1 var(--mono); color: var(--cyan); opacity: .75; }
+#q {
+  flex: 1; min-width: 0; padding: 18px 8px; background: transparent; border: 0; outline: 0; resize: none;
+  max-height: 120px; font: 400 16px/1.3 var(--body); color: var(--ink); caret-color: var(--cyan);
+}
+.file i { font: 400 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); font-style: normal; }
+.file.ok i { color: #6fe3a8; } .file.er i { color: #ff8c7a; }
+/* seletor de ligações e rascunho */
+.pick { margin-top: 6px; }
+.pick .srch { width: 100%; box-sizing: border-box; padding: 10px 12px; font: 400 16px/1.4 var(--body); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 2px; outline: 0; }
+.pick .srch:focus { border-color: var(--cyan); }
+.chosen { margin: 10px 0 4px; }
+.chosen .lrow { padding: 8px 10px; background: rgba(63,217,255,.06); border: 1px solid var(--line); margin-top: 6px; }
+.chosen .lh { display: flex; align-items: center; gap: 8px; font: 600 13.5px/1.3 var(--display); }
+.chosen .lh button { margin-left: auto; width: 30px; height: 30px; background: transparent; border: 0; color: var(--dim); cursor: pointer; font-size: 18px; }
+.chosen .lh button:hover { color: #ff8c7a; }
+.chosen .lrow input { font-size: 14px; padding: 8px 10px; }
+.cands { max-height: 190px; overflow-y: auto; margin-top: 6px; border: 1px solid var(--line); background: rgba(63,217,255,.03); }
+.cand { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 6px 10px; background: transparent; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); text-align: left; cursor: pointer; font: 400 14px/1.3 var(--body); }
+.cand:hover { background: rgba(63,217,255,.1); }
+.cand small { margin-left: auto; font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cyan); }
+.cand .pl { color: var(--cyan); font: 500 15px/1 var(--mono); }
+.ents { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.ents label { display: flex; align-items: center; gap: 10px; min-height: 36px; font: 400 14px/1.3 var(--body); color: var(--ink-soft); cursor: pointer; }
+.ents input { width: 18px; height: 18px; accent-color: #3fd9ff; }
+.btns.stk { position: sticky; bottom: -18px; margin: 16px -16px -18px; padding: 10px 16px 14px; background: rgba(4,14,23,.97); border-top: 1px solid var(--line); }
+#empty { position: fixed; left: 50%; bottom: calc(var(--dock-h, 110px) + 26px); transform: translateX(-50%); width: min(300px, 78vw); text-align: center; pointer-events: none; z-index: 1; display: flex; flex-direction: column; gap: 8px; }
+#empty[hidden] { display: none; }
+#empty b { font: 600 13px/1.2 var(--mono); letter-spacing: .18em; color: var(--cyan); }
+#empty span { font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+#gate { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(2,7,12,.88); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+#gate[hidden] { display: none; }
+#gate .card { width: min(380px, 100%); padding: 22px 20px 20px; box-sizing: border-box; }
+.gtabs { display: flex; gap: 6px; margin: 12px 0 2px; }
+.gtabs button { flex: 1; min-height: 38px; background: transparent; border: 1px solid var(--line); border-radius: 2px; color: var(--ink-soft); font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.gtabs button[aria-selected="true"] { color: var(--cyan); border-color: var(--cyan); background: rgba(63,217,255,.12); }
+#gform .up { display: none; }
+#gform[data-m="up"] .up { display: flex; }
+#gate h2 { margin: 0 0 4px; font: 600 26px/1.1 var(--display); letter-spacing: .06em; }
+#gate p { margin: 0 0 6px; color: var(--dim); font-size: 14px; line-height: 1.45; }
+#gate .err { color: #ff8c7a; min-height: 18px; margin-top: 10px; font-size: 13.5px; }
+#gate .lnk { display: block; margin: 14px auto 0; padding: 8px; background: transparent; border: 0; color: var(--dim); font: 400 13px/1 var(--body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+#gate .lnk:hover { color: var(--cyan); }
+.tool { display: flex; flex-direction: column; gap: 3px; width: 100%; margin-top: 8px; padding: 11px 12px; text-align: left; background: rgba(63,217,255,.04); border: 1px solid var(--line); border-radius: 2px; color: var(--ink); cursor: pointer; }
+.tool:hover { border-color: var(--cyan); background: rgba(63,217,255,.1); }
+.tool b { font: 600 15px/1.2 var(--display); }
+.tool span { font-size: 13px; line-height: 1.4; color: var(--dim); }
+.seg { display: flex; align-items: center; gap: 6px; margin: -2px 0 8px; }
+.seg .sl { margin-right: auto; }
+.seg button { width: 34px; height: 30px; background: transparent; border: 1px solid var(--line); border-radius: 2px; color: var(--ink-soft); font: 500 12px/1 var(--mono); cursor: pointer; }
+.seg button[aria-pressed="true"] { color: var(--cyan); border-color: var(--cyan); background: rgba(63,217,255,.12); }
+.tlbig { margin: 6px 0 2px; font: 600 28px/1.1 var(--display); color: var(--cyan); }
+.rng { width: 100%; margin: 10px 0 4px; accent-color: #3fd9ff; height: 32px; }
+.hop { display: flex; align-items: center; gap: 8px; padding: 9px 4px; font: 600 14.5px/1.3 var(--display); cursor: pointer; background: transparent; border: 0; width: 100%; color: var(--ink); text-align: left; }
+.hop:hover { background: rgba(63,217,255,.08); }
+.hopr { margin: 0 0 0 11px; padding: 2px 0 2px 14px; border-left: 1px solid var(--cyan); font-size: 13.5px; line-height: 1.4; color: var(--dim); }
+.pill { display: inline-block; margin-left: 6px; padding: 2px 6px; font: 500 9.5px/1 var(--mono); letter-spacing: .1em; border: 1px solid var(--cyan); color: var(--cyan); border-radius: 2px; }
+body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
+#q::placeholder { color: rgba(109,146,166,.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibtn { width: 42px; height: 42px; flex: none; display: grid; place-items: center; background: transparent; border: 0; border-radius: 2px; color: var(--ink-soft); cursor: pointer; }
+.ibtn:hover { color: var(--cyan); background: rgba(63,217,255,.09); }
+.ibtn[aria-disabled="true"] { opacity: .28; cursor: default; }
+.ibtn[aria-disabled="true"]:hover { background: transparent; color: var(--ink-soft); }
+#send {
+  width: 44px; height: 44px; margin-left: 4px; color: var(--cyan);
+  background: rgba(63,217,255,.1); border: 1px solid rgba(63,217,255,.4);
+  border-radius: 2px;
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+#send:hover { background: rgba(63,217,255,.22); }
+#form.ready #send { color: #022029; background: linear-gradient(135deg, #7ff0ff, #2bc4ee); border-color: transparent; box-shadow: 0 0 18px rgba(63,217,255,.7); }
+@media (max-height: 520px) { .kh { display: none; } .p-title { font-size: 19px; } }
+@media (max-width: 560px) {
+  #q::placeholder { font-size: 14.5px; }
+  .kh { display: none; }
+  .pr { display: none; }
+  #mode .ml { display: none; }
+  #mode { padding: 0 9px; }
+}
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+#q:focus-visible, .fld input:focus-visible, .fld textarea:focus-visible, .fld select:focus-visible, .lrow input:focus-visible { outline: 0; }
+
+@media (max-width: 560px) {
+  .long { display: none; }
+  .short { display: inline; }
+  .p-title { font-size: 21px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #panel, .bar i, #rail i { transition: none; }
+  .scan { animation: none; display: none; }
+  #stx::before { animation: none; }
+}
+
+.ro #mode, .ro #clip { display: none; }
+.grp { margin: 12px 0 2px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.gd { display: flex; align-items: flex-start; gap: 10px; width: 100%; box-sizing: border-box; padding: 10px 4px; background: transparent; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); text-align: left; cursor: pointer; }
+.gd:hover:not(:disabled) { background: rgba(63,217,255,.07); }
+.gd:disabled { cursor: default; }
+.gd .gn { flex: none; width: 22px; height: 22px; display: grid; place-items: center; font: 600 12px/1 var(--mono); color: var(--cyan); border: 1px solid var(--cyan); border-radius: 50%; margin-top: 1px; }
+.gd .gt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.gd .gt b { font: 600 15px/1.25 var(--display); }
+.gd .gt small { font-size: 13px; line-height: 1.4; color: var(--dim); }
+.gd .gk { flex: none; font: 500 9.5px/1 var(--mono); letter-spacing: .1em; color: var(--dim); margin-top: 6px; }
+.sug { margin-top: 8px; padding: 10px 12px; background: var(--field); border: 1px solid var(--line); }
+.sug .sh { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sug b { font: 600 15px/1.25 var(--display); }
+.sug .p-body { margin: 6px 0 0; font-size: 14px; }
+.pill.alto { color: #ff8c7a; border-color: #ff8c7a; }
+.pill.medio { color: #ffb547; border-color: #ffb547; }
+.pill.baixo { color: var(--dim); border-color: var(--dim); }
+ul.miss { margin: 6px 0 0; padding-left: 18px; color: var(--ink-soft); font-size: 14px; line-height: 1.5; }
+.hop small.cd { margin-left: auto; color: var(--dim); font: 500 11px/1 var(--mono); }
+</style>
+</head>
+<body>
+
+<h1 class="sr">Cérebro Empresa</h1>
+<div id="grid"></div>
+<canvas id="cv" role="img" aria-label="Cérebro da empresa: neurônios e sinapses. Arraste para girar, use a roda ou pinça para ampliar, toque em um neurônio para abrir o registro."></canvas>
+
+<nav id="rail" aria-label="Regiões do cérebro"></nav>
+<section id="panel" class="hud" hidden aria-live="polite"><div id="pb"></div></section>
+
+<div id="dock">
+  <div id="chips"></div>
+  <div id="status"><span id="stx"></span><span class="kh"><kbd>ENTER ↵</kbd><kbd>SHIFT + ENTER</kbd></span><button type="button" id="menuBtn" aria-label="Abrir menu e ferramentas"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>MENU</span></button></div>
+  <form id="form" autocomplete="off"><div class="cin">
+      <i class="scan"></i>
+      <button type="button" id="mode" data-m="note" aria-label="Modo registrar. Toque para trocar para perguntar.">
+        <svg class="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
+        <svg class="i-ask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>
+        <span class="ml" id="modeL">REGISTRAR</span>
+      </button>
+      <span class="pr" aria-hidden="true">›</span>
+      <textarea id="q" rows="1" enterkeyhint="send" placeholder="Registre um processo, anexe ou pergunte…" aria-label="Campo de captura e pergunta"></textarea>
+      <button type="button" id="clip" class="ibtn" aria-label="Anexar arquivos">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.2-8.2"/></svg>
+      </button>
+      <button type="submit" id="send" class="ibtn" aria-label="Enviar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+      </button>
+  </div></form>
+</div>
+<div id="empty" hidden><b>O CÉREBRO DA EMPRESA ESTÁ VAZIO</b><span>Comece pelos setores e pessoas, por exemplo: “O setor de Pós-vendas cuida de contratos. A Ana coordena.” Depois registre os processos. Cada registro acende um neurônio, e as ligações aparecem sozinhas.</span></div>
+<div id="gate" hidden role="dialog" aria-modal="true" aria-labelledby="gt">
+  <form class="card hud" id="gform" autocomplete="on">
+    <h2 id="gt">CÉREBRO EMPRESA</h2>
+    <p>Entre com o seu e-mail de trabalho. Quem ainda não tem conta cria uma na aba ao lado, com o mesmo e-mail que o administrador cadastrou.</p>
+    <div class="gtabs" role="tablist"><button type="button" id="g-t-in" role="tab" aria-selected="true">Entrar</button><button type="button" id="g-t-up" role="tab" aria-selected="false">Criar conta</button></div>
+    <div class="fld"><label for="g-mail">E-mail</label><input id="g-mail" type="email" autocomplete="username" required></div>
+    <div class="fld up"><label for="g-mail2">Confirme o e-mail</label><input id="g-mail2" type="email" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+    <div class="fld"><label for="g-pass">Senha</label><input id="g-pass" type="password" autocomplete="current-password" required minlength="6"></div>
+    <div class="fld up"><label for="g-pass2">Confirme a senha</label><input id="g-pass2" type="password" autocomplete="new-password"></div>
+    <div class="err" id="g-err" role="alert"></div>
+    <div class="btns"><button class="pbtn" type="submit" id="g-go">Entrar</button></div>
+    <button type="button" class="lnk" id="g-local">Ver um exemplo sem entrar</button>
+  </form>
+</div>
+<input type="file" id="mdIn" accept=".md,.markdown,.txt" multiple hidden>
+<input type="file" id="file" multiple hidden accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.json,image/*">
+
+<script>
+(function () {
+'use strict';
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TAU = Math.PI * 2;
+
+/* ---------- regiões ---------- */
+const CATS = {
+  proc:  { name: 'Processos', rgb: [54, 224, 168] },
+  norma: { name: 'Normas',    rgb: [255, 181, 71] },
+  proj:  { name: 'Projetos',  rgb: [196, 161, 255] },
+  curso: { name: 'Cursos',    rgb: [138, 164, 255] },
+  sis:   { name: 'Sistemas',  rgb: [255, 111, 97] },
+  reg:   { name: 'Registros', rgb: [226, 236, 255] },
+  set:   { name: 'Setores',   rgb: [63, 217, 255], ent: true },
+  pes:   { name: 'Pessoas',   rgb: [255, 126, 182], ent: true }
+};
+const ORDER = ['proc', 'norma', 'proj', 'curso', 'sis', 'reg', 'set', 'pes'];
+const MIRROR = new Set(['curso', 'sis']);
+/* z+ = frente do cérebro */
+const REGION = {
+  proc: [0, 0.2, 0.8], norma: [0, 0.52, -0.2], proj: [0, 0.55, 0.42], curso: [0.55, -0.25, 0.15], sis: [0.5, 0.4, -0.05],
+  reg: [0, 0.05, -0.85], set: [0, -0.15, -0.35], pes: [0, -0.35, 0.5]
+};
+const ICE = [160, 212, 255];
+
+/* ---------- texto e datas ---------- */
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const p2 = x => String(x).padStart(2, '0');
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const hasWord = (nt, name) => !!name && new RegExp('(^|[^a-z0-9])' + esc(name) + '([^a-z0-9]|$)').test(nt);
+const EXIDS = new Set();
+const STOP = new Set('para como esta mais muito sobre quando porque ainda tudo essa esse isso minha meu seus suas entre desde onde cada fazer foram tinha pelo pela uma uns umas com por nao mas dos das que foi sao ser tem vai ele ela nos nas num sem ate bem aqui ali todo toda quem qual dele dela seu sua meus minhas estou estava tambem assim voce vamos fiz fui'.split(' '));
+const QSTOP = new Set('mesmo lembro preciso saber alguma anotacao anotei registrei guardei data quando aconteceu aconteceram fiz fez fizemos dia quando onde como quem qual quais tudo sobre algo coisa coisas ontem hoje anteontem semana passada esta essa nesse nesta mes ano anos foi fui estou lembro mostre mostra'.split(' '));
+const MONTH = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const MONTHSET = new Set(MONTH);
+const toks = s => norm(s).split(/[^a-z0-9]+/).filter(t => t.length >= 3 && !STOP.has(t));
+const stemSet = s => new Set(toks(s).map(t => t.slice(0, 5)));
+const MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const rgbs = c => 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+const rgba = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + Math.max(0, Math.min(1, a)).toFixed(3) + ')';
+const isoOf = d => d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+const ago = n => { const d = new Date(); d.setDate(d.getDate() - n); return isoOf(d); };
+const TODAY = ago(0);
+
+function validISO(y, m, d) {
+  y = +y; m = +m;
+  if (!(y >= 1000 && y <= 2999) || !(m >= 1 && m <= 12)) return null;
+  if (d == null) return y + '-' + p2(m);
+  d = +d;
+  const dim = new Date(y, m, 0).getDate();
+  if (!(d >= 1 && d <= dim)) return null;
+  return y + '-' + p2(m) + '-' + p2(d);
+}
+function fmtWhen(d, t) {
+  if (!d) return '';
+  const p = d.split('-');
+  let s;
+  if (p.length === 1) s = p[0];
+  else if (p.length === 2) s = MES[+p[1] - 1] + ' ' + p[0];
+  else s = (+p[2]) + ' ' + MES[+p[1] - 1] + ' ' + p[0];
+  return t ? s + ' · ' + t : s;
+}
+function toInput(d, t) {
+  if (!d) return '';
+  const p = d.split('-');
+  if (p.length === 1) return p[0];
+  if (p.length === 2) return p[1] + '/' + p[0];
+  return p[2] + '/' + p[1] + '/' + p[0] + (t ? ' ' + t : '');
+}
+function parseWhen(s) {
+  s = s.trim();
+  if (!s) return { date: '', time: '' };
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2})[:h](\d{2}))?$/);
+  if (m) {
+    const d = validISO(m[3], m[2], m[1]);
+    if (!d) return null;
+    if (m[4] != null && (+m[4] > 23 || +m[5] > 59)) return null;
+    return { date: d, time: m[4] != null ? p2(m[4]) + ':' + m[5] : '' };
+  }
+  m = s.match(/^(\d{1,2})\/(\d{4})$/);
+  if (m) { const d = validISO(m[2], m[1]); return d ? { date: d, time: '' } : null; }
+  m = s.match(/^(\d{4})$/);
+  if (m) return { date: m[1], time: '' };
+  return null;
+}
+function rangeOf(d) {
+  if (!d) return null;
+  const p = d.split('-').map(Number);
+  if (p.length === 1) return [Date.UTC(p[0], 0, 1), Date.UTC(p[0], 11, 31)];
+  if (p.length === 2) return [Date.UTC(p[0], p[1] - 1, 1), Date.UTC(p[0], p[1], 0)];
+  return [Date.UTC(p[0], p[1] - 1, p[2]), Date.UTC(p[0], p[1] - 1, p[2])];
+}
+const overlap = (a, b) => !!a && !!b && a[0] <= b[1] && b[0] <= a[1];
+
+/* data dentro de uma pergunta */
+function queryDate(nv) {
+  let m;
+  const y = new Date().getFullYear();
+  const mk = (iso, label) => iso ? { r: rangeOf(iso), label: label || fmtWhen(iso, '') } : null;
+  if (/\banteontem\b/.test(nv)) return mk(ago(2));
+  if (/\bontem\b/.test(nv)) return mk(ago(1));
+  if (/\bhoje\b/.test(nv)) return mk(ago(0));
+  if (/\b(esta|essa|nesta|nessa|ultima|ultimos)\s+(semana|7 dias)\b|\bsemana passada\b/.test(nv)) return { r: [rangeOf(ago(6))[0], rangeOf(ago(0))[1]], label: 'Últimos 7 dias' };
+  if ((m = nv.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/))) return mk(validISO(m[3], m[2], m[1]));
+  if ((m = nv.match(/\b(\d{1,2})\/(\d{4})\b/))) return mk(validISO(m[2], m[1]));
+  if ((m = nv.match(/\b(\d{1,2})\/(\d{1,2})\b/))) return mk(validISO(y, m[2], m[1]));
+  if ((m = nv.match(new RegExp('\\b(\\d{1,2}) de (' + MONTH.join('|') + ')(?: de (\\d{4}))?')))) return mk(validISO(m[3] || y, MONTH.indexOf(m[2]) + 1, m[1]));
+  if ((m = nv.match(new RegExp('\\b(' + MONTH.join('|') + ')(?: de)? (\\d{4})\\b')))) return mk(validISO(m[2], MONTH.indexOf(m[1]) + 1));
+  if ((m = nv.match(/\b(19\d{2}|20\d{2})\b/))) return mk(m[1]);
+  return null;
+}
+/* data explícita dentro de uma anotação */
+function detectWhen(text) {
+  const nt = norm(text);
+  let m, date = null, time = '';
+  const y = new Date().getFullYear();
+  if ((m = nt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/))) date = validISO(m[3], m[2], m[1]);
+  else if ((m = nt.match(/\b(\d{1,2})\/(\d{4})\b/))) date = validISO(m[2], m[1]);
+  else if (/\banteontem\b/.test(nt)) date = ago(2);
+  else if (/\bontem\b/.test(nt)) date = ago(1);
+  else if ((m = nt.match(/\bem (19\d{2}|20\d{2})\b/))) date = m[1];
+  else if ((m = nt.match(/\b(\d{1,2})\/(\d{1,2})\b/))) date = validISO(y, m[2], m[1]);
+  const t = nt.match(/\b(\d{1,2})(?::|h)(\d{2})\b/) || nt.match(/\bas (\d{1,2})h\b/);
+  if (t && +t[1] < 24 && (t[2] == null || +t[2] < 60)) time = p2(t[1]) + ':' + (t[2] != null ? t[2] : '00');
+  return (date || time) ? { date: date || TODAY, time: time } : null;
+}
+
+/* passo a passo: "Título | detalhe" por linha */
+function parseSteps(src) {
+  const lines = Array.isArray(src) ? src : String(src || '').split('\n');
+  return lines.map(l => l.replace(/^\s*(\d+[.)]|[-•*])\s*/, '').trim()).filter(Boolean).map(l => {
+    const k = l.indexOf('|');
+    return k < 0 ? { t: l, d: '' } : { t: l.slice(0, k).trim(), d: l.slice(k + 1).trim() };
+  });
+}
+const stepsText = steps => steps.map(s => s.d ? s.t + ' | ' + s.d : s.t).join('\n');
+
+/* ---------- dados de exemplo (troque pelo seu conteúdo real) ---------- */
+function N(id, cat, title, date, body, why, steps, o) {
+  return Object.assign({ id: id, cat: cat, title: title, date: date, body: body || '', why: why || '', steps: parseSteps(steps || []), time: '', parent: '' }, o || {});
+}
+function E(id, cat, title, body, parent) {
+  return { id: id, cat: cat, title: title, date: '', body: body, why: '', steps: [], time: '', parent: parent || '' };
+}
+/* ---------- dados de exemplo (empresa fictícia) ---------- */
+function N(id, cat, title, date, body, why, steps, o) {
+  return Object.assign({ id: id, cat: cat, title: title, date: date, body: body || '', why: why || '', steps: parseSteps(steps || []), time: '', parent: '' }, o || {});
+}
+function E(id, cat, title, body, parent) {
+  return { id: id, cat: cat, title: title, date: '', body: body, why: '', steps: [], time: '', parent: parent || '' };
+}
+const DATA = [
+  E('s-pos', 'set', 'Pós-vendas', 'Cuida do cliente depois da venda: contratos, titularidade, ocorrências e cancelamentos. Exemplo.'),
+  E('s-com', 'set', 'Comercial', 'Vendas, propostas e relacionamento com novos clientes. Exemplo.'),
+  E('s-fin', 'set', 'Financeiro', 'Cobrança, reembolsos, aprovação de descontos e fluxo de caixa. Exemplo.'),
+  E('s-ope', 'set', 'Operações', 'Equipes de campo, instalação e retirada de equipamentos. Exemplo.'),
+  E('s-rh', 'set', 'Recursos Humanos', 'Admissão, treinamentos e vida funcional. Exemplo.'),
+  E('s-ti', 'set', 'TI', 'Sistemas, acessos e suporte técnico interno. Exemplo.'),
+  E('p-ana', 'pes', 'Ana Souza', 'Coordenadora de Pós-vendas. Fala com ela sobre contratos e titularidade. Exemplo.', 's-pos'),
+  E('p-carlos', 'pes', 'Carlos Lima', 'Analista financeiro: cobranças, reembolsos e descontos. Exemplo.', 's-fin'),
+  E('p-joana', 'pes', 'Joana Prado', 'Supervisora de Operações: agenda de retirada e instalação. Exemplo.', 's-ope'),
+  E('p-marta', 'pes', 'Marta Ribeiro', 'RH: admissão e treinamentos. Exemplo.', 's-rh'),
+  E('p-bruno', 'pes', 'Bruno Alves', 'TI: CRM, acessos e suporte. Exemplo.', 's-ti'),
+  N('pr-titular', 'proc', 'Troca de titularidade', ago(30), 'Quando o cliente muda de dono do imóvel, o contrato precisa passar para o novo titular, com documentos conferidos e termo assinado.', 'Evitar erro de cadastro e cobrança no nome errado.',
+    ['Receber a solicitação | Pelo canal de atendimento, com o contrato atual', 'Pedir documentos | RG, CPF e comprovante do novo titular', 'Conferir pendências financeiras | Fale com o Financeiro', 'Registrar a alteração no CRM', 'Emitir o termo de aditivo', 'Enviar para assinatura e arquivar'], { owner: 'Ana Souza', rev: ago(230), revm: 6 }),
+  N('pr-cancel', 'proc', 'Cancelamento de contrato', ago(45), 'Passos para encerrar um contrato sem deixar pendência financeira nem equipamento no cliente.', 'Garantir que o cancelamento feche sem cobrança indevida.',
+    ['Registrar o pedido no CRM', 'Verificar pendências | Financeiro confirma saldo', 'Agendar a retirada do equipamento | Operações', 'Emitir o termo de encerramento', 'Dar baixa no CRM'], { owner: 'Ana Souza', rev: ago(60), revm: 12 }),
+  N('pr-segunda', 'proc', 'Segunda via de fatura', ago(20), 'O cliente pode pedir a segunda via pelo atendimento ou pelo portal.', 'Atender rápido e sem erro um pedido comum.',
+    ['Confirmar a identidade do cliente', 'Localizar a fatura no ERP', 'Enviar por e-mail ou WhatsApp'], { owner: 'Carlos Lima', rev: ago(20), revm: 12 }),
+  N('pr-reembolso', 'proc', 'Reembolso ao cliente', ago(15), 'Quando houver cobrança indevida, o valor volta ao cliente após aprovação do Financeiro.', 'Dar um caminho único para devoluções.',
+    ['Abrir a solicitação com comprovante', 'Financeiro analisa em até 5 dias úteis', 'Aprovar ou negar com justificativa', 'Registrar o pagamento'], { owner: 'Carlos Lima' }),
+  N('pr-admissao', 'proc', 'Admissão de colaborador', ago(90), 'Fluxo do RH para quem está entrando na empresa.', 'Nenhum acesso ou documento faltar no primeiro dia.',
+    ['Coletar documentos', 'Criar acessos | TI', 'Agendar a integração', 'Apresentar ao gestor'], { owner: 'Marta Ribeiro', rev: ago(500), revm: 12 }),
+  N('n-desc', 'norma', 'Política de descontos', ago(120), 'Descontos até 10% o atendente concede. Acima disso, só com aprovação do Financeiro.', 'Evitar descontos fora da regra.', '', { owner: 'Carlos Lima', rev: ago(100), revm: 12 }),
+  N('n-prazo', 'norma', 'Prazo de resposta ao cliente', ago(60), 'Toda solicitação recebe resposta em até 2 dias úteis.', 'Padronizar o que prometemos ao cliente.', '', { owner: 'Ana Souza' }),
+  N('n-lgpd', 'norma', 'LGPD: dados do cliente', ago(200), 'Dados pessoais só podem ser usados para atender o cliente e não podem ser enviados por canais pessoais.', 'Cumprir a lei e proteger o cliente.', '', { owner: 'Bruno Alves', rev: ago(400), revm: 12 }),
+  N('pj-crm', 'proj', 'Migração do CRM', ago(25), 'Trocar o CRM atual por uma plataforma nova até o fim do semestre.', 'Reduzir retrabalho no atendimento.', '', { owner: 'Bruno Alves' }),
+  N('c-integ', 'curso', 'Integração de novos colaboradores', ago(70), 'Treinamento de um dia com apresentação da empresa, setores e sistemas.', 'Quem entra saber a quem recorrer.', '', { owner: 'Marta Ribeiro' }),
+  N('c-lgpd', 'curso', 'Treinamento de LGPD', ago(140), 'Curso curto, obrigatório para o atendimento.', 'Garantir que todos conheçam a norma.', '', { owner: 'Marta Ribeiro' }),
+  N('sis-crm', 'sis', 'CRM', ago(300), 'Sistema onde ficam clientes, contratos e ocorrências.', 'Fonte oficial do cadastro do cliente.', '', { owner: 'Bruno Alves' }),
+  N('sis-erp', 'sis', 'ERP financeiro', ago(300), 'Sistema de faturas, cobranças e reembolsos.', 'Fonte oficial dos valores.', '', { owner: 'Carlos Lima' }),
+  N('r-ata', 'reg', 'Ata: revisão dos prazos de atendimento', ago(10), 'Reunião decidiu manter o prazo de 2 dias úteis e medir o tempo real por 30 dias.', 'Registrar a decisão e por que foi tomada.', '', { owner: 'Ana Souza' })
+];
+const LINKS = [
+  ['pr-titular', 's-pos', 'Executado pelo Pós-vendas.'], ['pr-titular', 'p-ana', 'Ana responde por este processo.'], ['pr-titular', 's-fin', 'O Financeiro confirma pendências antes da troca.'],
+  ['pr-titular', 'sis-crm', 'A alteração é registrada no CRM.'], ['pr-titular', 'n-prazo', 'Segue o prazo de resposta ao cliente.'], ['pr-titular', 'n-lgpd', 'Documentos pessoais seguem a LGPD.'],
+  ['pr-cancel', 's-pos', 'Executado pelo Pós-vendas.'], ['pr-cancel', 'p-ana', 'Ana responde por este processo.'], ['pr-cancel', 's-fin', 'O Financeiro confirma o saldo antes de encerrar.'],
+  ['pr-cancel', 's-ope', 'Operações retira o equipamento.'], ['pr-cancel', 'p-joana', 'Joana agenda a retirada.'], ['pr-cancel', 'sis-crm', 'A baixa é feita no CRM.'],
+  ['pr-segunda', 's-fin', 'Faturas são do Financeiro.'], ['pr-segunda', 'p-carlos', 'Carlos responde por faturas.'], ['pr-segunda', 'sis-erp', 'A fatura vem do ERP.'],
+  ['pr-reembolso', 's-fin', 'Quem aprova é o Financeiro.'], ['pr-reembolso', 'p-carlos', 'Carlos analisa os pedidos.'], ['pr-reembolso', 'n-desc', 'Descontos e reembolsos seguem a política de descontos.'], ['pr-reembolso', 'sis-erp', 'O pagamento é registrado no ERP.'],
+  ['pr-admissao', 's-rh', 'Conduzido pelo RH.'], ['pr-admissao', 'p-marta', 'Marta conduz as admissões.'], ['pr-admissao', 's-ti', 'A TI cria os acessos.'], ['pr-admissao', 'c-integ', 'Todo novo colaborador faz a integração.'],
+  ['n-desc', 's-fin', 'Quem aprova exceções.'], ['n-desc', 'p-carlos', 'Carlos aprova descontos acima de 10%.'],
+  ['n-lgpd', 'c-lgpd', 'O treinamento ensina esta norma.'], ['n-lgpd', 's-ti', 'A TI cuida da proteção técnica dos dados.'], ['n-lgpd', 'p-bruno', 'Bruno responde por esta norma.'],
+  ['n-prazo', 's-pos', 'Aplica-se ao Pós-vendas.'], ['r-ata', 'n-prazo', 'A reunião decidiu manter este prazo.'], ['r-ata', 's-pos', 'Reunião do Pós-vendas.'],
+  ['pj-crm', 'sis-crm', 'O projeto troca este sistema.'], ['pj-crm', 'p-bruno', 'Bruno lidera o projeto.'], ['pj-crm', 's-ti', 'Projeto da TI.'], ['pj-crm', 's-pos', 'O Pós-vendas é o principal usuário do CRM.'],
+  ['c-integ', 's-rh', 'Organizado pelo RH.'], ['c-integ', 'p-marta', 'Marta ministra a integração.'], ['c-lgpd', 'p-marta', 'Marta organiza o treinamento.']
+];
+const GAZ = [];
+const EX = [
+  'Como faço uma troca de titularidade?',
+  'Com quem falo sobre reembolso?',
+  'Qual setor cuida de acessos e sistemas?',
+  'Qual é a regra de desconto?',
+  'Quem faz parte do Pós-vendas?'
+];
+const KW = {
+  proc: ['proce', 'passo', 'fluxo', 'etapa', 'rotin', 'atend', 'solic', 'emiss', 'cadas', 'cance', 'troca', 'renov', 'pedid', 'orden', 'recebe', 'confer', 'regist', 'enviar'],
+  norma: ['norma', 'regra', 'polit', 'lei', 'regul', 'nbr', 'iso', 'compl', 'legis', 'exige', 'proib', 'obrig', 'anp', 'lgpd', 'prazo', 'permi'],
+  proj: ['proje', 'inici', 'meta', 'entre', 'crono', 'sprin', 'objet', 'impla', 'migra', 'lider'],
+  curso: ['curso', 'trein', 'capac', 'certi', 'palest', 'aula', 'works', 'integ', 'ministr'],
+  sis: ['siste', 'softw', 'erp', 'crm', 'plani', 'ferra', 'equip', 'acess', 'senha', 'impre', 'servi', 'plata'],
+  reg: ['ata', 'reuni', 'decis', 'ocorr', 'comun', 'aviso', 'relat', 'incid', 'ficou']
+};
+function detectCat(text, files) {
+  const sc = {}; ORDER.forEach(k => sc[k] = 0);
+  const tk = norm(text).split(/[^a-z0-9]+/).filter(Boolean);
+  tk.forEach(t => Object.keys(KW).forEach(k => KW[k].forEach(s => { if (s.length <= 3 ? t === s : t.startsWith(s)) sc[k]++; })));
+  if (stepsFrom(text).length >= 3) sc.proc += 3;
+  files.forEach(f => {
+    const n = f.name.toLowerCase();
+    if (/\.(pdf|docx?)$/.test(n)) sc.proc += .5;
+    else if (/\.(xlsx?|csv)$/.test(n)) sc.sis += .5;
+    else if (/\.(png|jpe?g|gif|webp)$/.test(n)) sc.reg += 1;
+  });
+  let best = 'reg', b = 0;
+  Object.keys(KW).forEach(k => { if (sc[k] > b) { b = sc[k]; best = k; } });
+  return best;
+}
+
+/* ---------- geração do cérebro ---------- */
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = rng(11);
+function dir() { const z = rand() * 2 - 1, a = rand() * TAU, r = Math.sqrt(1 - z * z); return [r * Math.cos(a), r * Math.sin(a), z]; }
+function hemi() {
+  for (;;) {
+    const d = dir(), s = rand() < .5 ? -1 : 1;
+    let k = rand() < .72 ? .84 + rand() * .16 : .25 + rand() * .6;
+    k *= 1 + .07 * Math.sin(d[0] * 6 + d[1] * 4) * Math.cos(d[2] * 7);
+    const x = s * .34 + d[0] * .58 * k;
+    let y = .06 + d[1] * .62 * k;
+    const z = d[2] * .98 * k;
+    if (y < .06) y = .06 + (y - .06) * .72;
+    if (s * x < .05) continue;
+    return [x, y, z];
+  }
+}
+function tintFor(x, y, z) {
+  let bc = 'proc', bd = 1e9;
+  for (const k of ORDER) {
+    const c = REGION[k];
+    const cx = MIRROR.has(k) ? (x < 0 ? -1 : 1) * c[0] : c[0];
+    const d = (x - cx) ** 2 + (y - c[1]) ** 2 + (z - c[2]) ** 2;
+    if (d < bd) { bd = d; bc = k; }
+  }
+  const r = CATS[bc].rgb;
+  return [0, 1, 2].map(i => Math.round(ICE[i] * .6 + r[i] * .4));
+}
+const nodes = [];
+function addNodeAt(x, y, z) { const n = { i: nodes.length, x, y, z, note: null, tint: tintFor(x, y, z) }; nodes.push(n); return n; }
+for (let k = 0; k < 330; k++) { const p = hemi(); addNodeAt(p[0], p[1], p[2]); }
+for (let k = 0; k < 44; k++) { const d = dir(); addNodeAt(d[0] * .42, -.52 + Math.min(d[1], .6) * .22, -.62 + d[2] * .3); }
+for (let k = 0; k < 12; k++) { const t = k / 11; addNodeAt((rand() - .5) * .1, -.5 - t * .42, -.2 - t * .12 + (rand() - .5) * .06); }
+
+const ambEdges = [], linkEdges = [];
+(function () {
+  const seen = new Set();
+  for (const n of nodes) {
+    const ds = [];
+    for (const m of nodes) { if (m !== n) ds.push([(n.x - m.x) ** 2 + (n.y - m.y) ** 2 + (n.z - m.z) ** 2, m]); }
+    ds.sort((p, q) => p[0] - q[0]);
+    for (let k = 0; k < 3; k++) {
+      if (ds[k][0] > .1) break;
+      const m = ds[k][1], key = n.i < m.i ? n.i + '_' + m.i : m.i + '_' + n.i;
+      if (seen.has(key)) continue;
+      seen.add(key); ambEdges.push({ a: n, b: m, link: false });
+    }
+  }
+})();
+
+/* ---------- notas ---------- */
+const notes = [], noteById = {}, dirty = new Set();
+function pickNode(cat, idx) {
+  const c = REGION[cat].slice();
+  if (MIRROR.has(cat) && idx % 2) c[0] = -c[0];
+  const j = [c[0] + (rand() - .5) * .35, c[1] + (rand() - .5) * .3, c[2] + (rand() - .5) * .35];
+  let best = null, bd = 1e9;
+  for (const n of nodes) {
+    if (n.note) continue;
+    let near = false;
+    for (const m of notes) { if ((n.x - m.node.x) ** 2 + (n.y - m.node.y) ** 2 + (n.z - m.node.z) ** 2 < .02) { near = true; break; } }
+    if (near) continue;
+    const d = (n.x - j[0]) ** 2 + (n.y - j[1]) ** 2 + (n.z - j[2]) ** 2;
+    if (d < bd) { bd = d; best = n; }
+  }
+  if (!best) best = addNodeAt(j[0], j[1], j[2]);
+  return best;
+}
+function index(n) {
+  n.tt = stemSet(n.title);
+  n.tb = stemSet([n.body, n.why, n.steps.map(s => s.t + ' ' + s.d).join(' ')].join(' '));
+}
+function addNote(o, idx) {
+  const n = {
+    id: o.id, cat: o.cat, title: o.title, body: o.body || '', why: o.why || '', steps: o.steps || [], date: o.date || '', time: o.time || '',
+    reg: o.reg || '', parent: o.parent || '', owner: o.owner || '', rev: o.rev || '', revm: o.revm || 0, vis: o.vis || 'todos', user: !!o.user, ex: EXIDS.has(o.id) && !o.user, links: new Map(), edges: [], node: null
+  };
+  n.node = pickNode(o.cat, idx);
+  n.node.note = n;
+  index(n);
+  notes.push(n); noteById[n.id] = n;
+  return n;
+}
+function setReason(a, id, r) { a.links.set(id, r); noteById[id].links.set(a.id, r); }
+function link(a, b, reason) {
+  if (!a || !b || a === b) return;
+  if (a.links.has(b.id)) { if (reason) setReason(a, b.id, reason); return; }
+  a.links.set(b.id, reason || ''); b.links.set(a.id, reason || '');
+  const A = a.node, B = b.node;
+  const e = { a: A, b: B, link: true, c: [(A.x + B.x) / 2 * 1.16, (A.y + B.y) / 2 * 1.16, (A.z + B.z) / 2 * 1.16] };
+  linkEdges.push(e); a.edges.push(e); b.edges.push(e);
+}
+DATA.forEach(d => EXIDS.add(d.id));
+let DEMO = false;
+const HOSTOK0 = /(^|\.)ddsinovacao\.com\.br$/.test(location.hostname) || !!window.__CB_TEST;
+try { const dv = localStorage.getItem('cerebroemp-demo'); DEMO = dv === '1' || (dv === null && !HOSTOK0); } catch (e) { DEMO = !HOSTOK0; }
+if (DEMO) {
+  const catCount = {};
+  DATA.forEach(d => { catCount[d.cat] = catCount[d.cat] || 0; addNote(d, catCount[d.cat]++); });
+  LINKS.forEach(l => link(noteById[l[0]], noteById[l[1]], l[2]));
+  DATA.forEach(d => { if (d.parent) link(noteById[d.id], noteById[d.parent], d.title + (d.cat === 'pes' ? ' atua em ' : ' faz parte de ') + noteById[d.parent].title + '.'); });
+}
+
+const findByTitle = name => notes.find(n => norm(n.title) === norm(name));
+function descendants(n) {
+  const out = [], q = [n.id];
+  while (q.length) { const id = q.shift(); notes.forEach(m => { if (m.parent === id) { out.push(m); q.push(m.id); } }); }
+  return out;
+}
+
+/* ---------- armazenamento, nuvem por empresa e IA ---------- */
+const STORE = 'cerebroemp-v1';
+let ckKey = 'cerebroemp-checks-v1', checks = {};
+function loadChecks() { try { checks = JSON.parse(localStorage.getItem(ckKey) || '{}') || {}; } catch (e) { checks = {}; } }
+loadChecks();
+function saveChecks() { try { localStorage.setItem(ckKey, JSON.stringify(checks)); } catch (e) { /* sem armazenamento */ } }
+const pending = new Set();
+function touch(id) { dirty.add(id); pending.add(id); }
+const isHidden = n => !!(S.hideEx && n.ex && !dirty.has(n.id));
+const isDone = (n, i) => !!(checks[n.id] && checks[n.id].indexOf(i) > -1);
+function toggleDone(n, i) {
+  const a = checks[n.id] || (checks[n.id] = []), k = a.indexOf(i);
+  if (k > -1) a.splice(k, 1); else a.push(i);
+  saveChecks();
+}
+/* voz: ponto único. Hoje usa a voz do navegador; troque speak() por ElevenLabs/Realtime quando for a hora. */
+const VOICE = {
+  auto: false,
+  speak(text) {
+    try {
+      if (!('speechSynthesis' in window) || !text) return false;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(String(text)); u.lang = 'pt-BR'; u.rate = 1.02;
+      const v = (speechSynthesis.getVoices() || []).find(x => /pt-BR/i.test(x.lang)); if (v) u.voice = v;
+      speechSynthesis.speak(u); return true;
+    } catch (e) { return false; }
+  },
+  stop() { try { speechSynthesis.cancel(); } catch (e) { /* */ } }
+};
+function prefs() { try { return JSON.parse(localStorage.getItem('cerebroemp-prefs-v1') || '{}') || {}; } catch (e) { return {}; } }
+function setPref(k, v) { const p = prefs(); p[k] = v; try { localStorage.setItem('cerebroemp-prefs-v1', JSON.stringify(p)); } catch (e) { /* */ } }
+VOICE.auto = prefs().voz === true;
+
+function save() {
+  if (!HOSTOK0) {
+    try {
+      const out = notes.filter(n => dirty.has(n.id)).map(n => ({
+        id: n.id, cat: n.cat, title: n.title, body: n.body, why: n.why, steps: n.steps, date: n.date, time: n.time, reg: n.reg, parent: n.parent,
+        owner: n.owner, rev: n.rev, revm: n.revm, vis: n.vis, user: n.user, links: Array.from(n.links.entries())
+      }));
+      localStorage.setItem(STORE, JSON.stringify(out));
+    } catch (e) { /* sem armazenamento */ }
+  }
+  schedulePush();
+}
+(function load() {
+  if (HOSTOK0) return; /* com conta, tudo vem da nuvem da empresa */
+  try {
+    const a = JSON.parse(localStorage.getItem(STORE) || '[]');
+    a.forEach(o => {
+      let n = noteById[o.id];
+      if (n) { n.title = o.title; n.body = o.body || ''; n.why = o.why || ''; n.steps = o.steps || []; n.date = o.date || ''; n.time = o.time || ''; n.owner = o.owner || ''; n.rev = o.rev || ''; n.revm = o.revm || 0; n.vis = o.vis || 'todos'; index(n); }
+      else { n = addNote({ id: o.id, cat: o.cat, title: o.title, body: o.body, why: o.why, steps: o.steps, date: o.date, time: o.time, reg: o.reg, parent: o.parent, owner: o.owner, rev: o.rev, revm: o.revm, vis: o.vis, user: true }, notes.length); }
+      dirty.add(o.id);
+    });
+    a.forEach(o => (o.links || []).forEach(l => { if (noteById[l[0]] && noteById[o.id]) link(noteById[o.id], noteById[l[0]], l[1]); }));
+  } catch (e) { /* sem armazenamento */ }
+})();
+
+const CFG = { url: 'https://kwadhzmdaakxkztggigm.supabase.co', key: 'sb_publishable_8kEj3zY3ebOMZDYutUBv5A_wbLELNIM' };
+const cloud = { sb: null, user: null, on: false, state: 'off', msg: '', org: null, orgs: [], role: '', members: [], pulled: 0 };
+const HOSTOK = HOSTOK0;
+const canEdit = () => !cloud.on || cloud.role !== 'leitor';
+const isAdmin = () => cloud.on && cloud.role === 'admin';
+const ROLE_NM = { admin: 'Administrador', editor: 'Editor', leitor: 'Leitor' };
+const ROLE_DS = { admin: 'Gerencia equipe e acessos; vê e registra tudo.', editor: 'Registra e edita; vê tudo que não é só de administradores.', leitor: 'Consulta e pergunta; não altera nada.' };
+function loadScript(src) { return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error('lib')); document.head.append(sc); }); }
+let pushT = null;
+function schedulePush() { if (!cloud.on || !canEdit()) return; clearTimeout(pushT); pushT = setTimeout(push, 900); }
+async function push() {
+  if (!cloud.on || !canEdit()) return;
+  try {
+    cloud.state = 'sync'; renderStatus();
+    const oid = cloud.org.id, now = new Date().toISOString(), dn = notes.filter(n => pending.has(n.id));
+    const rows = dn.map(n => ({ org_id: oid, id: n.id, cat: n.cat, title: n.title, body: n.body, why: n.why, steps: n.steps, date: n.date, time: n.time, reg: n.reg, parent: n.parent, owner: n.owner, rev: n.rev, revm: n.revm, vis: n.vis, updated_at: now }));
+    for (let i = 0; i < rows.length; i += 200) { const r = await cloud.sb.from('cbe_notes').upsert(rows.slice(i, i + 200), { onConflict: 'org_id,id' }); if (r.error) throw r.error; }
+    const seen = new Set(), lr = [];
+    dn.forEach(n => n.links.forEach((reason, id) => {
+      if (!noteById[id]) return;
+      const a = n.id < id ? n.id : id, b = n.id < id ? id : n.id, k = a + '|' + b;
+      if (seen.has(k)) return; seen.add(k); lr.push({ org_id: oid, a: a, b: b, reason: reason || '', updated_at: now });
+    }));
+    for (let i = 0; i < lr.length; i += 300) { const r = await cloud.sb.from('cbe_links').upsert(lr.slice(i, i + 300), { onConflict: 'org_id,a,b' }); if (r.error) throw r.error; }
+    dn.forEach(n => pending.delete(n.id));
+    cloud.state = 'ok';
+  } catch (e) { cloud.state = 'erro'; cloud.msg = (e && e.message) || ''; }
+  renderStatus();
+}
+async function pull() {
+  const oid = cloud.org.id, sb = cloud.sb;
+  const [n, l, m] = await Promise.all([sb.from('cbe_notes').select('*').eq('org_id', oid), sb.from('cbe_links').select('*').eq('org_id', oid), sb.from('cbe_members').select('*').eq('org_id', oid)]);
+  if (n.error) throw n.error; if (l.error) throw l.error;
+  cloud.members = m.data || [];
+  (n.data || []).forEach(o => {
+    if (pending.has(o.id)) return;
+    const x = noteById[o.id];
+    if (x) { x.title = o.title; x.body = o.body || ''; x.why = o.why || ''; x.steps = o.steps || []; x.date = o.date || ''; x.time = o.time || ''; x.owner = o.owner || ''; x.rev = o.rev || ''; x.revm = o.revm || 0; x.vis = o.vis || 'todos'; x.parent = o.parent || ''; index(x); }
+    else addNote({ id: o.id, cat: CATS[o.cat] ? o.cat : 'reg', title: o.title, body: o.body, why: o.why, steps: o.steps || [], date: o.date, time: o.time, reg: o.reg, parent: o.parent, owner: o.owner, rev: o.rev, revm: o.revm, vis: o.vis, user: true }, notes.length);
+    dirty.add(o.id);
+  });
+  (l.data || []).forEach(r => { if (noteById[r.a] && noteById[r.b]) link(noteById[r.a], noteById[r.b], r.reason); });
+  cloud.pulled = Date.now();
+}
+function applyRole() {
+  const ro = cloud.on && cloud.role === 'leitor';
+  document.body.classList.toggle('ro', ro);
+  if (ro && mode !== 'find') setMode('find');
+}
+async function cloudStart(user) {
+  cloud.user = user; ckKey = 'cerebroemp-checks-' + user.id; loadChecks();
+  const r = await cloud.sb.rpc('cbe_minhas');
+  if (r.error) { cloud.on = false; cloud.state = 'erro'; showGate('Não consegui abrir a sua empresa agora. Tente de novo em instantes.'); return; }
+  cloud.orgs = r.data || [];
+  if (!cloud.orgs.length) {
+    const ok = await cloud.sb.rpc('cb_ok');
+    cloud.on = false;
+    if (ok && ok.data) { hideGate(); renderStatus(); openCriarEmpresa(); return; }
+    cloud.state = 'denied';
+    showGate('O e-mail ' + (user.email || '') + ' ainda não foi convidado para nenhuma empresa. Peça ao administrador da sua empresa para adicionar este e-mail na equipe.');
+    return;
+  }
+  if (DEMO) { try { localStorage.setItem('cerebroemp-demo', '0'); localStorage.removeItem('cerebroemp-local'); } catch (e) { /* */ } location.reload(); return; }
+  let want = ''; try { want = localStorage.getItem('cerebroemp-org') || ''; } catch (e) { /* */ }
+  cloud.org = cloud.orgs.find(x => x.id === want) || cloud.orgs[0]; cloud.role = cloud.org.role;
+  cloud.on = true; cloud.state = 'sync'; hideGate(); applyRole(); renderStatus();
+  try { await pull(); cloud.state = 'ok'; } catch (e) { cloud.state = 'erro'; cloud.msg = (e && e.message) || ''; }
+  renderStatus();
+}
+async function cloudInit() {
+  if (!HOSTOK) return;
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
+    cloud.sb = window.supabase.createClient(CFG.url, CFG.key);
+    const { data } = await cloud.sb.auth.getSession();
+    if (data && data.session) await cloudStart(data.session.user);
+    else { renderStatus(); let lo = false; try { lo = localStorage.getItem('cerebroemp-local') === '1'; } catch (e) { /* */ } if (!lo) showGate(''); }
+  } catch (e) { cloud.sb = null; cloud.state = 'off'; renderStatus(); }
+}
+async function ai(action, payload) {
+  if (!cloud.on) throw new Error('sem conta');
+  const { data } = await cloud.sb.auth.getSession();
+  if (!data || !data.session) throw new Error('sessão expirada');
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 115000);
+  try {
+    const r = await fetch(CFG.url + '/functions/v1/cerebro-empresa-ia', { method: 'POST', signal: ctl.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + data.session.access_token, apikey: CFG.key }, body: JSON.stringify(Object.assign({ action: action, org: cloud.org.id, orgNome: cloud.org.nome }, payload)) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'falha da IA');
+    return j;
+  } catch (e) { throw new Error(e.name === 'AbortError' ? 'demorou demais' : e.message); } finally { clearTimeout(t); }
+}
+function showGate(msg) { $('g-err').textContent = msg || ''; $('gate').hidden = false; setTimeout(() => $('g-mail').focus(), 50); }
+function hideGate() { $('gate').hidden = true; }
+/* ---------- ferramentas: linha do tempo, caminho, revisão, Markdown ---------- */
+let tlTimer = null;
+function stopTl() { if (tlTimer) { clearInterval(tlTimer); tlTimer = null; } if (S.tlHide) { S.tlHide = null; } }
+function openTimeline() {
+  const list = notes.filter(n => n.date && !isHidden(n)).sort((a, b) => (rangeOf(a.date)[0] - rangeOf(b.date)[0]) || (a.time < b.time ? -1 : 1));
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Linha do tempo'), closeBtn(hidePanel));
+  if (list.length < 2) { showPanel([head, el('p', 'hint', 'Ainda há poucos registros com data para animar.')]); return; }
+  const big = el('div', 'tlbig'), sub = el('p', 'hint'), rg = el('input', 'rng');
+  rg.type = 'range'; rg.min = 1; rg.max = list.length; rg.value = list.length; rg.setAttribute('aria-label', 'Linha do tempo');
+  const play = el('button', 'pbtn', 'Reproduzir'); play.type = 'button';
+  const apply = k => {
+    S.tlHide = new Set(list.slice(k).map(n => n.id));
+    const cur = list[Math.max(0, k - 1)]; big.textContent = fmtWhen(cur.date, ''); sub.textContent = k + ' de ' + list.length + ' registros · ' + cur.title;
+  };
+  rg.addEventListener('input', () => { if (tlTimer) { clearInterval(tlTimer); tlTimer = null; play.textContent = 'Reproduzir'; } apply(+rg.value); });
+  play.addEventListener('click', () => {
+    if (tlTimer) { clearInterval(tlTimer); tlTimer = null; play.textContent = 'Reproduzir'; return; }
+    if (+rg.value >= list.length) { rg.value = 1; apply(1); }
+    play.textContent = 'Pausar';
+    tlTimer = setInterval(() => { const k = +rg.value + 1; if (k > list.length) { clearInterval(tlTimer); tlTimer = null; play.textContent = 'Reproduzir'; return; } rg.value = k; apply(k); }, RM ? 200 : 420);
+  });
+  const btns = el('div', 'btns'); btns.append(play);
+  showPanel([head, el('p', 'hint', 'Veja o cérebro crescer, registro por registro, na ordem em que aconteceram.'), big, sub, rg, btns], true);
+  S.sel = null; S.focus = null; S.matches = null; S.chain = null; apply(list.length);
+}
+function bfsPath(a, b) {
+  const prev = new Map([[a.id, null]]), q2 = [a];
+  while (q2.length) {
+    const n = q2.shift(); if (n === b) break;
+    n.links.forEach((_, id) => { const m = noteById[id]; if (m && !prev.has(id) && !isHidden(m)) { prev.set(id, n.id); q2.push(m); } });
+  }
+  if (!prev.has(b.id)) return null;
+  const path = []; for (let id = b.id; id; id = prev.get(id)) path.unshift(noteById[id]);
+  return path;
+}
+function noteSelect(label, id) {
+  const sel = el('select'); sel.id = id; sel.append(new Option('Escolher…', ''));
+  ORDER.forEach(k => { const og = document.createElement('optgroup'); og.label = CATS[k].name; notes.filter(m => m.cat === k && !isHidden(m)).forEach(m => og.append(new Option(m.title, m.id))); if (og.children.length) sel.append(og); });
+  const w = el('div', 'fld'), l = el('label', null, label); l.htmlFor = id; w.append(l, sel); return [w, sel];
+}
+function openPath() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Caminho entre registros'), closeBtn(hidePanel));
+  const [w1, s1] = noteSelect('De', 'pa-1'), [w2, s2] = noteSelect('Até', 'pa-2'), out = el('div');
+  const go = el('button', 'pbtn', 'Encontrar caminho'); go.type = 'button';
+  go.addEventListener('click', () => {
+    out.replaceChildren();
+    if (!s1.value || !s2.value) { out.append(el('p', 'hint', 'Escolha os dois registros.')); return; }
+    const a = noteById[s1.value], b = noteById[s2.value];
+    if (a === b) { out.append(el('p', 'hint', 'São o mesmo registro.')); return; }
+    const p = bfsPath(a, b);
+    if (!p) { out.append(el('p', 'hint', 'Não existe caminho: os dois estão em partes separadas do cérebro. Ligue um ao outro editando um deles.')); S.matches = null; S.chain = null; return; }
+    setMatches(p.map(n => n.id)); S.chain = null; S.sel = null; S.focus = null;
+    out.append(sec('Caminho', (p.length - 1) + (p.length === 2 ? ' passo' : ' passos')));
+    p.forEach((n, i) => {
+      const hb = el('button', 'hop'); hb.type = 'button'; hb.append(dotEl(n.cat), el('span', null, n.title)); hb.addEventListener('click', () => select(n)); out.append(hb);
+      if (i < p.length - 1) out.append(el('p', 'hopr', n.links.get(p[i + 1].id) || 'Ligados diretamente.'));
+    });
+    renderStatus();
+  });
+  const btns = el('div', 'btns'); btns.append(go);
+  showPanel([head, el('p', 'hint', 'Escolha dois registros e veja pela rota de ligações como um chega ao outro.'), w1, w2, btns, out]);
+}
+/* ---------- revisões, saúde, organograma, equipe ---------- */
+const MS_DAY = 864e5;
+function fullISO(d) { d = d || TODAY; return d.length === 4 ? d + '-01-01' : d.length === 7 ? d + '-01' : d.slice(0, 10); }
+function addMonths(iso, m) { const d = new Date(fullISO(iso) + 'T12:00:00'); d.setMonth(d.getMonth() + m); return isoOf(d); }
+function revInfo(n) {
+  if (CATS[n.cat].ent || !n.revm) return null;
+  const due = addMonths(n.rev || n.reg || n.date || TODAY, n.revm);
+  const days = Math.round((Date.parse(due + 'T12:00:00') - Date.parse(TODAY + 'T12:00:00')) / MS_DAY);
+  return { due: due, days: days, late: days < 0 };
+}
+function revLabel(ri) {
+  if (!ri) return '';
+  if (ri.late) return 'Revisão vencida há ' + (-ri.days) + (ri.days === -1 ? ' dia' : ' dias');
+  if (ri.days <= 30) return ri.days === 0 ? 'Revisar hoje' : 'Revisar em ' + ri.days + (ri.days === 1 ? ' dia' : ' dias');
+  return 'Em dia · próxima revisão ' + fmtWhen(ri.due, '');
+}
+function linkedOf(n, cat) { const out = []; n.links.forEach((_, id) => { const m = noteById[id]; if (m && m.cat === cat && !isHidden(m)) out.push(m); }); return out; }
+function localGuide(n) {
+  const out = [], ownN = norm(n.owner || '');
+  if (n.cat === 'set') {
+    linkedOf(n, 'pes').forEach(p => out.push({ tipo: 'pessoa', nome: p.title, motivo: n.links.get(p.id) || 'Faz parte deste setor.' }));
+    linkedOf(n, 'proc').forEach(p => out.push({ tipo: 'processo', nome: p.title, motivo: n.links.get(p.id) || 'Processo deste setor.' }));
+    return out.slice(0, 6);
+  }
+  if (n.cat === 'pes') {
+    linkedOf(n, 'set').forEach(s => out.push({ tipo: 'setor', nome: s.title, motivo: n.links.get(s.id) || 'Setor desta pessoa.' }));
+    linkedOf(n, 'proc').forEach(p => out.push({ tipo: 'processo', nome: p.title, motivo: n.links.get(p.id) || 'Processo sob sua responsabilidade.' }));
+    return out.slice(0, 6);
+  }
+  if (n.owner) out.push({ tipo: 'pessoa', nome: n.owner, motivo: 'Responsável por “' + n.title + '”.' });
+  linkedOf(n, 'set').forEach(s => out.push({ tipo: 'setor', nome: s.title, motivo: n.links.get(s.id) || 'Setor ligado.' }));
+  linkedOf(n, 'pes').forEach(p => { if (norm(p.title) !== ownN) out.push({ tipo: 'pessoa', nome: p.title, motivo: n.links.get(p.id) || 'Pessoa ligada.' }); });
+  return out.slice(0, 6);
+}
+const TIPO_CAT = { setor: 'set', pessoa: 'pes', processo: 'proc', norma: 'norma', sistema: 'sis', curso: 'curso' };
+function guideEl(g, i) {
+  const m = findByTitle(g.nome), b = el('button', 'gd'); b.type = 'button';
+  const tx = el('span', 'gt'); tx.append(el('b', null, g.nome), el('small', null, g.motivo || ''));
+  b.append(el('span', 'gn', String(i + 1)), dotEl(TIPO_CAT[g.tipo] || 'reg'), tx, el('span', 'gk', String(g.tipo || '').toUpperCase()));
+  if (m) b.addEventListener('click', () => select(m)); else b.disabled = true;
+  return b;
+}
+function aiExtras(box, A) {
+  if (A.fala) {
+    const sp = el('button', 'tbtn', 'OUVIR'); sp.type = 'button'; sp.addEventListener('click', () => { if (!VOICE.speak(A.fala)) toast('Seu navegador não tem voz disponível.'); });
+    sp.style.margin = '0 0 10px'; box.append(sp);
+  }
+  if (A.guia && A.guia.length) { box.append(sec('Caminho sugerido')); A.guia.slice(0, 6).forEach((g, i) => box.append(guideEl(g, i))); }
+}
+function markReviewed(n, meses) { n.rev = TODAY; if (meses && !n.revm) n.revm = meses; touch(n.id); save(); }
+function sugestoes(n, box) {
+  box.replaceChildren(el('p', 'hint', 'A IA está analisando este item e o que está ligado a ele…'));
+  const lig = []; n.links.forEach((r, id) => { const m = noteById[id]; if (m && !isHidden(m) && lig.length < 14) lig.push({ t: m.title, c: m.cat, m: r, b: (m.body || m.why || '').slice(0, 400) }); });
+  const item = { t: n.title, c: n.cat, b: n.body, w: n.why, p: n.steps.map(s => s.d ? s.t + ': ' + s.d : s.t), o: n.owner, s: linkedOf(n, 'set').map(s => s.title).join(', '), r: n.rev };
+  ai('review', { hoje: TODAY, item: item, ligadas: lig }).then(j => {
+    const r = j.result || {}; box.replaceChildren(); box.append(sec('Sugestões da IA'));
+    if (r.resumo) box.append(el('p', 'p-body', r.resumo));
+    (r.melhorias || []).forEach(m => {
+      const c = el('div', 'sug'), h = el('div', 'sh'), imp = String(m.impacto || 'baixo');
+      h.append(el('b', null, m.titulo), el('span', 'pill ' + imp, imp === 'alto' ? 'ALTO' : imp === 'medio' ? 'MÉDIO' : 'BAIXO'));
+      c.append(h, el('p', 'p-body', m.detalhe)); box.append(c);
+    });
+    if ((r.lacunas || []).length) { box.append(sec('O que falta registrar')); const ul = el('ul', 'miss'); r.lacunas.forEach(x => ul.append(el('li', null, x))); box.append(ul); }
+    if ((r.perguntas || []).length) { box.append(sec('Para a próxima revisão')); const ul = el('ul', 'miss'); r.perguntas.forEach(x => ul.append(el('li', null, x))); box.append(ul); }
+    if (!(r.melhorias || []).length && !(r.lacunas || []).length) box.append(el('p', 'hint', 'A IA não viu melhorias evidentes com o que está registrado.'));
+    const m = Math.max(0, Math.min(36, parseInt(r.revisar_em_meses, 10) || 0)), btns = el('div', 'btns stk');
+    const ok = el('button', 'pbtn', 'Marcar como revisado' + (m && !n.revm ? ' e revisar a cada ' + m + ' meses' : '')); ok.type = 'button';
+    ok.addEventListener('click', () => { markReviewed(n, m); renderNote(n); });
+    btns.append(ok); box.append(btns);
+  }).catch(e => { box.replaceChildren(el('p', 'hint', 'A IA não respondeu (' + (e.message || 'erro') + ').')); });
+}
+function issueList() {
+  const vis = notes.filter(n => !isHidden(n)), items = vis.filter(n => !CATS[n.cat].ent), L = [];
+  const add = (t, d, arr) => { if (arr.length) L.push({ t: t, d: d, a: arr }); };
+  add('Revisão vencida', 'Já passou do prazo que a empresa definiu.', items.filter(n => { const r = revInfo(n); return r && r.late; }));
+  add('Sem responsável', 'Ninguém responde por este item: quem procurar se algo der errado?', items.filter(n => ['proc', 'norma', 'proj', 'sis'].indexOf(n.cat) > -1 && !n.owner && !linkedOf(n, 'pes').length));
+  add('Processo sem passo a passo', 'Descreva as etapas para que ninguém erre.', items.filter(n => n.cat === 'proc' && !n.steps.length));
+  add('Sem setor ligado', 'Ligue ao setor que executa ou decide.', items.filter(n => n.cat !== 'reg' && !linkedOf(n, 'set').length));
+  add('Sem prazo de revisão', 'Defina de quanto em quanto tempo revisar.', items.filter(n => (n.cat === 'proc' || n.cat === 'norma') && !n.revm));
+  add('Setor sem pessoas', 'Cadastre quem trabalha neste setor.', vis.filter(n => n.cat === 'set' && !notes.some(p => p.cat === 'pes' && !isHidden(p) && (p.parent === n.id || p.links.has(n.id)))));
+  add('Pessoa sem setor', 'Ligue a pessoa ao setor em que atua.', vis.filter(n => n.cat === 'pes' && !linkedOf(n, 'set').length));
+  return L;
+}
+function openSaude() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Saúde do cérebro'), closeBtn(hidePanel));
+  const L = issueList(), total = notes.filter(n => !isHidden(n)).length;
+  const kids = [head, el('h2', 'p-title', L.length ? 'Pontos para melhorar' : 'Tudo em ordem')];
+  kids.push(el('p', 'hint', total ? total + ' registros analisados. ' + (L.length ? 'Toque em um item para abrir e corrigir.' : 'Nada pendente agora.') : 'O cérebro ainda está vazio.'));
+  L.forEach(g => { kids.push(sec(g.t, g.a.length), el('p', 'hint', g.d)); g.a.slice(0, 8).forEach(n => kids.push(rowBtn(n, ''))); if (g.a.length > 8) kids.push(el('p', 'hint', '… e mais ' + (g.a.length - 8) + '.')); });
+  showPanel(kids); S.sel = null; S.focus = null;
+}
+function openRevisoes() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Revisões'), closeBtn(hidePanel));
+  const items = notes.filter(n => !isHidden(n) && revInfo(n)).map(n => [n, revInfo(n)]).sort((a, b) => a[1].days - b[1].days);
+  const kids = [head, el('h2', 'p-title', 'Revisões por prazo'), el('p', 'hint', items.length ? 'Abra um item e use “Sugestões da IA” para renovar o processo.' : 'Nenhum item tem prazo de revisão. Defina em EDITAR → Revisão periódica.')];
+  items.slice(0, 40).forEach(x => kids.push(rowBtn(x[0], x[1].late ? 'VENCIDA' : x[1].days <= 30 ? x[1].days + ' d' : '')));
+  showPanel(kids); S.sel = null; S.focus = null;
+}
+function openOrg() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Organograma'), closeBtn(hidePanel));
+  const kids = [head, el('h2', 'p-title', cloud.org ? cloud.org.nome : 'Empresa'), el('p', 'hint', 'Setores e as pessoas de cada um. Toque para abrir.')];
+  const sets = notes.filter(n => n.cat === 'set' && !isHidden(n)), seenP = new Set();
+  const kidsOf = s => sets.filter(x => x.parent === s.id);
+  const peopleOf = s => notes.filter(p => p.cat === 'pes' && !isHidden(p) && (p.parent === s.id || p.links.has(s.id)));
+  const row = (n, depth, small) => { const b = el('button', 'hop'); b.type = 'button'; b.style.paddingLeft = (4 + depth * 16) + 'px'; b.append(dotEl(n.cat), el('span', null, n.title)); if (small) b.append(el('small', 'cd', small)); b.addEventListener('click', () => select(n)); return b; };
+  const walk = (s, depth, guard) => {
+    if (guard.has(s.id)) return; guard.add(s.id);
+    const procs = linkedOf(s, 'proc').length;
+    kids.push(row(s, depth, procs ? procs + (procs === 1 ? ' processo' : ' processos') : ''));
+    peopleOf(s).forEach(p => { seenP.add(p.id); kids.push(row(p, depth + 1, p.body && p.body !== p.title ? p.body.split('.')[0].slice(0, 40) : '')); });
+    kidsOf(s).forEach(c => walk(c, depth + 1, guard));
+  };
+  const guard = new Set();
+  sets.filter(s => !s.parent || !noteById[s.parent] || noteById[s.parent].cat !== 'set').forEach(s => walk(s, 0, guard));
+  sets.forEach(s => walk(s, 0, guard));
+  const solo = notes.filter(p => p.cat === 'pes' && !isHidden(p) && !seenP.has(p.id));
+  if (solo.length) { kids.push(sec('Pessoas sem setor', solo.length)); solo.forEach(p => kids.push(row(p, 0, ''))); }
+  if (!sets.length && !solo.length) kids.push(el('p', 'hint', 'Ainda não há setores nem pessoas. Registre, por exemplo: “O setor de Pós-vendas cuida de contratos. A Ana coordena.”'));
+  showPanel(kids); S.sel = null; S.focus = null;
+}
+async function loadMembers() { const r = await cloud.sb.from('cbe_members').select('*').eq('org_id', cloud.org.id).order('created_at'); if (r.error) throw r.error; cloud.members = r.data || []; }
+async function openEquipe() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Equipe e acessos'), closeBtn(hidePanel));
+  if (!cloud.on) { showPanel([head, el('p', 'hint', 'Entre na sua conta para ver a equipe.')]); return; }
+  showPanel([head, el('p', 'hint', 'Carregando…')]);
+  try { await loadMembers(); } catch (e) { showPanel([head, el('p', 'hint', 'Não consegui carregar a equipe.')]); return; }
+  const me = (cloud.user.email || '').toLowerCase(), kids = [head, el('h2', 'p-title', cloud.org.nome)];
+  kids.push(el('p', 'hint', cloud.members.length + (cloud.members.length === 1 ? ' pessoa' : ' pessoas') + ' com acesso. ' + (isAdmin() ? 'Cada pessoa cria a conta com o mesmo e-mail em ' + location.host + '/cerebroempresa/ e já entra na empresa.' : 'Só administradores alteram a equipe.')));
+  cloud.members.forEach(m => {
+    const row = el('div', 'lrow'), lh = el('div', 'lh'); lh.append(el('span', null, (m.nome ? m.nome + ' · ' : '') + m.email)); row.append(lh);
+    if (isAdmin()) {
+      const sel = el('select'); ['admin', 'editor', 'leitor'].forEach(r => sel.append(new Option(ROLE_NM[r], r))); sel.value = m.role; sel.disabled = m.email === me; sel.setAttribute('aria-label', 'Papel de ' + m.email);
+      sel.addEventListener('change', async () => { const r = await cloud.sb.from('cbe_members').update({ role: sel.value }).eq('org_id', cloud.org.id).eq('email', m.email); toast(r.error ? 'Não consegui alterar o papel.' : 'Papel alterado.'); openEquipe(); });
+      row.append(sel);
+      if (m.email !== me) {
+        const x = el('button', 'pbtn ghost', 'Remover acesso'); x.type = 'button'; let armed = false;
+        x.addEventListener('click', async () => { if (!armed) { armed = true; x.textContent = 'Toque de novo para confirmar'; return; } const r = await cloud.sb.from('cbe_members').delete().eq('org_id', cloud.org.id).eq('email', m.email); toast(r.error ? 'Não consegui remover.' : 'Acesso removido.'); openEquipe(); });
+        row.append(x);
+      }
+    } else row.append(el('p', 'hint', ROLE_NM[m.role] || m.role));
+    kids.push(row);
+  });
+  if (isAdmin()) {
+    kids.push(sec('Convidar pessoa'));
+    const em = el('input'), nm = el('input'), rs = el('select'), err = el('p', 'err'), add = el('button', 'pbtn', 'Dar acesso');
+    em.type = 'email'; em.placeholder = 'e-mail da pessoa'; em.autocapitalize = 'none'; em.setAttribute('aria-label', 'E-mail da pessoa');
+    nm.type = 'text'; nm.placeholder = 'nome (opcional)'; nm.setAttribute('aria-label', 'Nome da pessoa');
+    ['leitor', 'editor', 'admin'].forEach(r => rs.append(new Option(ROLE_NM[r] + ': ' + ROLE_DS[r], r))); rs.setAttribute('aria-label', 'Papel');
+    err.hidden = true; add.type = 'button';
+    const w1 = el('div', 'fld'); w1.append(em); const w2 = el('div', 'fld'); w2.append(nm); const w3 = el('div', 'fld'); w3.append(rs);
+    add.addEventListener('click', async () => {
+      const e = em.value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { err.textContent = 'Digite um e-mail válido.'; err.hidden = false; em.focus(); return; }
+      add.disabled = true; err.hidden = true;
+      const r = await cloud.sb.from('cbe_members').insert({ org_id: cloud.org.id, email: e, nome: nm.value.trim() || null, role: rs.value });
+      add.disabled = false;
+      if (r.error) { err.textContent = /duplicate|unique/i.test(r.error.message) ? 'Este e-mail já está na equipe.' : 'Não consegui adicionar agora.'; err.hidden = false; return; }
+      toast('Acesso dado a ' + e + '.'); openEquipe();
+    });
+    const btns = el('div', 'btns'); btns.append(add);
+    kids.push(w1, w2, w3, err, btns);
+  }
+  showPanel(kids);
+}
+function openTrocar() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Trocar de empresa'), closeBtn(hidePanel));
+  const kids = [head, el('p', 'hint', 'Você faz parte de mais de uma empresa. Cada uma tem o seu cérebro, separado.')];
+  cloud.orgs.forEach(o => kids.push(toolRow(o.nome, ROLE_NM[o.role] + (cloud.org && cloud.org.id === o.id ? ' · atual' : ''), () => { try { localStorage.setItem('cerebroemp-org', o.id); } catch (e) { /* */ } location.reload(); })));
+  showPanel(kids);
+}
+function openCriarEmpresa() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Nova empresa'));
+  const nm = el('input'), err = el('p', 'err'), go = el('button', 'pbtn', 'Criar empresa'), w = el('div', 'fld'), l = el('label', null, 'Nome da empresa');
+  nm.type = 'text'; nm.id = 'ce-nome'; nm.maxLength = 80; l.htmlFor = 'ce-nome'; w.append(l, nm); err.hidden = true; go.type = 'button';
+  go.addEventListener('click', async () => {
+    const v = nm.value.trim(); if (v.length < 2) { err.textContent = 'Digite o nome da empresa.'; err.hidden = false; nm.focus(); return; }
+    go.disabled = true; err.hidden = true;
+    const r = await cloud.sb.rpc('cbe_criar_org', { p_nome: v });
+    if (r.error) { go.disabled = false; err.textContent = 'Não consegui criar a empresa agora.'; err.hidden = false; return; }
+    hidePanel(); await cloudStart(cloud.user);
+  });
+  const btns = el('div', 'btns'); btns.append(go);
+  showPanel([head, el('h2', 'p-title', 'Crie o cérebro da sua empresa'), el('p', 'hint', 'Você será o administrador e depois convida a equipe. Os dados da empresa ficam separados de qualquer outra.'), w, err, btns]);
+}
+
+const safeName = t => t.replace(/[\\/:*?"<>|#^\[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'sem titulo';
+function noteToMd(n) {
+  const fm = ['---', 'categoria: ' + CATS[n.cat].name];
+  if (n.date) fm.push('data: ' + n.date); if (n.time) fm.push('hora: "' + n.time + '"'); if (n.reg) fm.push('registrado: ' + n.reg); if (n.owner) fm.push('responsavel: ' + n.owner); fm.push('---', '');
+  const out = fm.concat(['# ' + n.title, '']);
+  if (n.body) out.push(n.body, '');
+  if (n.why) out.push('## Para que serve', n.why, '');
+  if (n.steps.length) { out.push('## Passo a passo'); n.steps.forEach((s, i) => out.push((i + 1) + '. ' + s.t + (s.d ? ' | ' + s.d : ''))); out.push(''); }
+  const ls = Array.from(n.links.entries()).filter(e => noteById[e[0]]);
+  if (ls.length) { out.push('## Conexões'); ls.forEach(e => out.push('- [[' + safeName(noteById[e[0]].title) + ']]' + (e[1] ? ' — ' + e[1] : ''))); out.push(''); }
+  return out.join('\n');
+}
+async function exportMd() {
+  const mine = notes.filter(n => !isHidden(n));
+  if (!mine.length) { toast('Nada seu para exportar ainda: só há exemplos.'); return; }
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  const z = new window.JSZip(), used = new Set();
+  mine.forEach(n => { let nm = safeName(n.title), k = 2; while (used.has(nm.toLowerCase())) nm = safeName(n.title) + ' ' + k++; used.add(nm.toLowerCase()); z.file(nm + '.md', noteToMd(n)); });
+  const blob = await z.generateAsync({ type: 'blob' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'cerebro-empresa-obsidian.zip'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(mine.length + ' notas exportadas (abra a pasta no Obsidian).');
+}
+async function importMd(fl) {
+  const made = [], pend = [];
+  for (const f of Array.from(fl)) {
+    const txt = await f.text(); let body = txt, meta = {};
+    const m = txt.match(/^---\n([\s\S]*?)\n---\n?/);
+    if (m) { body = txt.slice(m[0].length); m[1].split('\n').forEach(l => { const k = l.indexOf(':'); if (k > 0) meta[l.slice(0, k).trim().toLowerCase()] = l.slice(k + 1).trim().replace(/^"|"$/g, ''); }); }
+    const h = body.match(/^#\s+(.+)$/m), title = (h ? h[1] : f.name.replace(/\.[^.]+$/, '')).trim();
+    if (findByTitle(title)) continue;
+    body = body.replace(/^#\s+.+\n?/m, '');
+    const sections = {}; let ctx = 'main'; sections.main = [];
+    body.split('\n').forEach(l => { const hh = l.match(/^##\s+(.+)$/); if (hh) { ctx = norm(hh[1]); sections[ctx] = []; } else sections[ctx].push(l); });
+    const get = k => (sections[k] || []).join('\n').trim();
+    const cat = ORDER.find(k => norm(CATS[k].name) === norm(meta.categoria || '')) || detectCat(title + ' ' + get('main'), []);
+    const w = parseWhen(meta.data ? toInput(meta.data, meta.hora || '') : '') || { date: '', time: '' };
+    const n = addNote({ id: 'u' + Date.now().toString(36) + Math.floor(Math.random() * 9999), cat: cat, title: title, body: get('main').slice(0, MAXCH), why: get('para que serve'), steps: parseSteps(get('passo a passo')), date: w.date, time: w.time || '', reg: TODAY, owner: meta.responsavel || '', user: true }, notes.length);
+    touch(n.id); made.push(n);
+    const links = []; (get('conexoes') + '\n' + get('main')).replace(/\[\[([^\]|#]+)[^\]]*\]\](?:\s*[—-]\s*(.*))?/g, (_, t, r) => { links.push([t.trim(), (r || '').trim()]); });
+    pend.push([n, links]);
+  }
+  pend.forEach(p => p[1].forEach(l => { const o = findByTitle(l[0]); if (o && o !== p[0]) link(p[0], o, l[1]); }));
+  made.forEach(n => flashes.push({ n: n, t: performance.now() })); save(); renderStatus();
+  toast(made.length ? made.length + ' notas importadas.' : 'Nada novo para importar.');
+}
+function toast(t) { S.previewText = t.toUpperCase(); renderStatus(); setTimeout(() => { if (S.previewText === t.toUpperCase()) { S.previewText = null; renderStatus(); } }, 5000); }
+function toolRow(t, d, fn) { const b = el('button', 'tool'); b.type = 'button'; b.append(el('b', null, t), el('span', null, d)); b.addEventListener('click', fn); return b; }
+function openMenu() {
+  const head = el('div', 'p-head'); head.append(el('span', 'tag', 'Menu'), closeBtn(hidePanel));
+  const kids = [head, el('h2', 'p-title', cloud.org ? cloud.org.nome : 'Cérebro Empresa')];
+  const st = cloud.on ? (cloud.state === 'erro' ? 'Conectado, mas houve erro ao salvar' : 'Conectado: salvo na nuvem da empresa') : (cloud.state === 'denied' ? 'Conta sem empresa' : 'Modo de exemplo: nada é salvo');
+  kids.push(el('p', 'p-meta', st + (cloud.user ? ' · ' + (cloud.user.email || '') : '') + (cloud.on ? ' · ' + (ROLE_NM[cloud.role] || '') + ' · IA ligada' : '')));
+  if (cloud.on) {
+    if (cloud.orgs.length > 1) kids.push(toolRow('Trocar de empresa', 'Você participa de mais de uma.', openTrocar));
+    kids.push(toolRow('Sair da conta', 'Os dados continuam na nuvem da empresa.', async () => { try { await cloud.sb.auth.signOut(); } catch (e) { /* */ } location.reload(); }));
+  } else if (cloud.sb) kids.push(toolRow('Entrar', 'Entre com seu e-mail para abrir o cérebro da sua empresa.', () => { hidePanel(); showGate(''); }));
+  kids.push(sec('Empresa'),
+    toolRow('Saúde do cérebro', 'O que está sem responsável, sem passo a passo, sem setor ou com revisão vencida.', openSaude),
+    toolRow('Revisões', 'Processos e normas por prazo de revisão.', openRevisoes),
+    toolRow('Organograma', 'Setores e as pessoas de cada um.', openOrg),
+    toolRow('Equipe e acessos', cloud.on ? 'Quem tem acesso e com qual papel.' : 'Disponível depois de entrar.', openEquipe));
+  kids.push(sec('Ferramentas'),
+    toolRow('Linha do tempo animada', 'Veja o cérebro crescer na ordem em que as coisas aconteceram.', openTimeline),
+    toolRow('Caminho entre dois registros', 'Descubra por quais ligações um item chega a outro.', openPath));
+  if (!cloud.on) kids.push(toolRow(DEMO ? 'Sair do exemplo' : 'Ver um exemplo', DEMO ? 'Volta ao cérebro vazio.' : 'Mostra uma empresa fictícia cheia, para você ver como fica.', () => { try { localStorage.setItem('cerebroemp-demo', DEMO ? '0' : '1'); } catch (e) { /* */ } location.reload(); }));
+  kids.push(toolRow('Exportar para Markdown', 'Baixa os registros em .md com [[ligações]], prontos para o Obsidian.', () => exportMd().catch(() => toast('Não consegui exportar.'))));
+  if (canEdit()) kids.push(toolRow('Importar Markdown', 'Traz notas .md (inclusive do Obsidian) e refaz as ligações [[assim]].', () => $('mdIn').click()));
+  kids.push(toolRow('Responder falando: ' + (VOICE.auto ? 'ligado' : 'desligado'), 'A IA lê a resposta em voz alta quando você pergunta.', () => { VOICE.auto = !VOICE.auto; setPref('voz', VOICE.auto); if (!VOICE.auto) VOICE.stop(); openMenu(); }));
+  kids.push(sec('Privacidade'), el('p', 'hint', 'Cada empresa só enxerga o próprio cérebro, e cada pessoa só vê o que o papel dela permite. O texto enviado à IA (organizar, perguntar, ler arquivos) vai à Anthropic apenas para gerar a resposta; a chave fica no servidor, nunca na página. Antes de usar dados reais, confirme com a direção da empresa.'));
+  showPanel(kids);
+}
+
+function related(text) {
+  const ts = new Set(toks(text).map(t => t.slice(0, 5)));
+  const res = [];
+  notes.forEach(n => {
+    if (CATS[n.cat].ent || isHidden(n)) return;
+    let s = 0;
+    ts.forEach(t => { if (n.tt.has(t)) s += 2; else if (n.tb.has(t)) s += 1; });
+    if (s >= 2) res.push([s, n]);
+  });
+  res.sort((a, b) => b[0] - a[0]);
+  return res.slice(0, 3).map(r => r[1]);
+}
+
+/* análise de uma anotação: região, data, pessoas e lugares */
+const NOTPERSON = new Set(['hoje', 'ontem', 'anteontem', 'domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'].concat(MONTH));
+function analyze(text, files, extra) {
+  extra = extra || '';
+  const nt = norm(text), nf = norm(text + ' ' + extra);
+  const ents = notes.filter(n => CATS[n.cat].ent && hasWord(nf, norm(n.title)));
+  const newEnts = [];
+  const re = /\b(?:com|e|para|falei com|conheci)\s+(?:o|a|os|as)\s+([A-ZÀ-Ý][a-zà-ÿ]{2,})/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const nm = m[1], k = norm(nm);
+    if (NOTPERSON.has(k) || findByTitle(nm) || GAZ.some(g => norm(g[0]) === k) || newEnts.some(e => norm(e.name) === k)) continue;
+    newEnts.push({ name: nm, cat: 'pes' });
+  }
+  const rs = /\b(?:setor|departamento|area|área)\s+(?:de\s+|do\s+|da\s+)?([A-ZÀ-Ý][A-Za-zÀ-ÿ-]{2,}(?:\s+[A-ZÀ-Ý][A-Za-zÀ-ÿ-]+)?)/g;
+  while ((m = rs.exec(text))) { const nm = m[1].trim(); if (!findByTitle(nm) && !newEnts.some(e => norm(e.name) === norm(nm))) newEnts.push({ name: nm, cat: 'set' }); }
+  const full = (text + ' ' + extra).slice(0, 8000);
+  return { cat: detectCat(full, files), when: detectWhen(text), ents: ents, rel: related(full).filter(n => ents.indexOf(n) < 0), newEnts: newEnts };
+}
+function makeEntity(spec) {
+  spec = spec || {};
+  let e = findByTitle(spec.name);
+  if (e) return e;
+  e = addNote({ id: 'e' + Date.now().toString(36) + Math.floor(Math.random() * 999), cat: spec.cat, title: spec.name, body: 'Criado automaticamente a partir de um registro. Edite para completar.', date: '', user: true }, notes.length);
+  touch(e.id); flashes.push({ n: e, t: performance.now() });
+  const pn = spec.parent;
+  if (pn && norm(pn) !== norm(spec.name)) {
+    const P = makeEntity({ name: pn, cat: 'set' });
+    if (P !== e) { e.parent = P.id; link(e, P, spec.cat === 'pes' ? e.title + ' atua em ' + P.title + '.' : e.title + ' faz parte de ' + P.title + '.'); touch(P.id); }
+  }
+  return e;
+}
+
+/* pergunta ao cérebro: data, pessoa, lugar e assunto */
+function ask(v) {
+  const nv = norm(v);
+  const dq = queryDate(nv);
+  const how = /\b(como|passo a passo|tutorial|procedimento|processo)\b/.test(nv);
+  const ents = notes.filter(n => CATS[n.cat].ent && hasWord(nv, norm(n.title)));
+  const qt = nv.split(/[^a-z0-9]+/).filter(t => t.length >= 3 && !STOP.has(t) && !QSTOP.has(t) && !MONTHSET.has(t) && !/^\d+$/.test(t));
+  const scope = new Set();
+  ents.forEach(e => { scope.add(e.id); descendants(e).forEach(d => scope.add(d.id)); });
+  const res = [];
+  if (dq || ents.length || qt.length) {
+    notes.forEach(n => {
+      if (isHidden(n)) return;
+      let s = 0;
+      if (dq) { if (!overlap(rangeOf(n.date), dq.r)) return; s += 5; }
+      if (ents.length) {
+        const hit = scope.has(n.id) ? 6 : (Array.from(n.links.keys()).some(id => scope.has(id)) ? 4 : 0);
+        if (!hit) return;
+        s += hit;
+      }
+      if (qt.length) {
+        const hay = norm([n.title, n.body, n.why, n.steps.map(x => x.t + ' ' + x.d).join(' '), CATS[n.cat].name].join(' ')), th = norm(n.title);
+        let mt = 0;
+        qt.forEach(t => { if (hay.includes(t) || (t.length > 5 && hay.includes(t.slice(0, t.length - 2)))) { mt++; s += th.includes(t) ? 3 : 2; } });
+        if (!dq && !ents.length && mt === 0) return;
+        if (mt === qt.length) s += 3;
+      }
+      if (how && n.steps.length) s += 2;
+      res.push({ n: n, s: s });
+    });
+  }
+  if (dq) res.sort((a, b) => (rangeOf(a.n.date)[0] - rangeOf(b.n.date)[0]) || (a.n.time < b.n.time ? -1 : a.n.time > b.n.time ? 1 : 0));
+  else res.sort((a, b) => b.s - a.s);
+  const when = /\b(que dia|quando|qual dia|qual a data|que data)\b/.test(nv);
+  return { res: res.slice(0, 30).map(r => r.n), dq: dq, how: how, when: when, ents: ents, qt: qt };
+}
+
+/* ---------- estado e câmera ---------- */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const S = {
+  yaw: 1.15, pitch: .3, ph: 0, sw: 0, zoom: 1, zt: 1, px: 0, py: 0, pause: 0, labels: true,
+  drag: false, sel: null, hover: null, filter: null, matches: null, chain: null, preview: null, previewText: null,
+  depth: 1, focus: null, tlHide: null, hideEx: false
+};
+try { S.hideEx = JSON.parse(localStorage.getItem('cerebroemp-prefs-v1') || '{}').hideEx === true; } catch (e) { /* */ }
+let W = 0, H = 0, DPR = 1, dockH = 110, baseH = 110, panelOH = 0;
+let CX = 0, CYB = 0, BASE = 1, CY = 1, SY = 0, CP = 1, SP = 0;
+const sxA = new Float32Array(4096), syA = new Float32Array(4096), pA = new Float32Array(4096), zA = new Float32Array(4096);
+const tmp = [0, 0, 0, 0], tmp2 = [0, 0, 0, 0];
+const pulses = [], flashes = [];
+let order = [];
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function pj(x, y, z, o) {
+  const x1 = x * CY + z * SY, z1 = -x * SY + z * CY;
+  const y1 = y * CP - z1 * SP, z2 = y * SP + z1 * CP;
+  const p = 4 / (4 - z2);
+  o[0] = CX + S.px + x1 * BASE * S.zoom * p;
+  o[1] = CYB + S.py - y1 * BASE * S.zoom * p;
+  o[2] = p; o[3] = z2;
+}
+const dfz = z => Math.max(.35, Math.min(1, .35 + .65 * (z + 1.1) / 2.2));
+
+function noteAlpha(n) {
+  if (isHidden(n) || (S.tlHide && S.tlHide.has(n.id))) return .04;
+  if (S.sel) {
+    if (n === S.sel) return 1;
+    const d = S.focus ? S.focus.get(n.id) : (S.sel.links.has(n.id) ? 1 : undefined);
+    return d === 1 ? 1 : d === 2 ? .62 : d === 3 ? .42 : .2;
+  }
+  if (S.matches) return S.matches.has(n.id) ? 1 : (S.chain && S.chain.has(n.id) ? .62 : .2);
+  if (S.filter) return n.cat === S.filter ? 1 : .18;
+  return 1;
+}
+
+function spawnPulse() {
+  let e, rgb;
+  if (S.sel && S.sel.edges.length && Math.random() < .8) {
+    e = S.sel.edges[(Math.random() * S.sel.edges.length) | 0]; rgb = CATS[S.sel.cat].rgb;
+  } else if (S.matches && S.matches.size && Math.random() < .8) {
+    const ids = Array.from(S.matches), nn = noteById[ids[(Math.random() * ids.length) | 0]];
+    if (nn && nn.edges.length) { e = nn.edges[(Math.random() * nn.edges.length) | 0]; rgb = CATS[nn.cat].rgb; }
+  }
+  if (!e) {
+    if (linkEdges.length && Math.random() < .55) { e = linkEdges[(Math.random() * linkEdges.length) | 0]; rgb = CATS[e.a.note.cat].rgb; }
+    else { e = ambEdges[(Math.random() * ambEdges.length) | 0]; rgb = ICE; }
+  }
+  pulses.push({ e: e, t: 0, v: .0005 + Math.random() * .0007, rev: Math.random() < .5, rgb: rgb });
+}
+
+function drawRings(now) {
+  const R = Math.min(BASE * .98, (H - baseH) * .4);
+  const boost = (S.sel || S.matches) ? 1.5 : 1;
+  ctx.save(); ctx.translate(CX, CYB);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(63,217,255,' + (.1 * boost) + ')';
+  ctx.beginPath(); ctx.arc(0, 0, R * 1.12, 0, TAU); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, R * .78, 0, TAU); ctx.strokeStyle = 'rgba(63,217,255,' + (.06 * boost) + ')'; ctx.stroke();
+  ctx.save(); ctx.rotate(now * .00003); ctx.setLineDash([1, 9]);
+  ctx.strokeStyle = 'rgba(63,217,255,.3)';
+  ctx.beginPath(); ctx.arc(0, 0, R * 1.2, 0, TAU); ctx.stroke(); ctx.restore();
+  ctx.save(); ctx.rotate(-now * .00002);
+  const minor = new Path2D(), major = new Path2D();
+  for (let k = 0; k < 120; k++) {
+    const a = k / 120 * TAU, big = k % 10 === 0, L = big ? 11 : (k % 5 === 0 ? 7 : 3);
+    const p = big ? major : minor, r0 = R * 1.28;
+    p.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); p.lineTo(Math.cos(a) * (r0 + L), Math.sin(a) * (r0 + L));
+  }
+  ctx.strokeStyle = 'rgba(63,217,255,.2)'; ctx.stroke(minor);
+  ctx.strokeStyle = 'rgba(63,217,255,.5)'; ctx.stroke(major);
+  ctx.restore();
+  ctx.save(); ctx.rotate(now * .00007); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(63,217,255,' + (.28 * boost) + ')';
+  for (let k = 0; k < 3; k++) { const a0 = k * TAU / 3; ctx.beginPath(); ctx.arc(0, 0, R * 1.12, a0, a0 + .5); ctx.stroke(); }
+  ctx.restore();
+  ctx.restore();
+}
+
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(60, now - last); last = now;
+  if (!S.sel && !S.drag && now > S.pause && !RM) S.ph += dt * .00028;
+  S.sw = RM ? 0 : .5 * Math.sin(S.ph);
+  S.zoom += (S.zt - S.zoom) * Math.min(1, dt * .009);
+  baseH += (dockH - baseH) * Math.min(1, dt * .01);
+  CX = W / 2; CYB = (H - baseH) / 2 + 6; BASE = Math.max(60, Math.min(W * .5, (H - baseH) * .5) * .9);
+  const yaw = S.yaw + S.sw;
+  CY = Math.cos(yaw); SY = Math.sin(yaw); CP = Math.cos(S.pitch); SP = Math.sin(S.pitch);
+
+  for (let k = 0; k < nodes.length; k++) {
+    const n = nodes[k]; pj(n.x, n.y, n.z, tmp);
+    sxA[n.i] = tmp[0]; syA[n.i] = tmp[1]; pA[n.i] = tmp[2]; zA[n.i] = tmp[3];
+  }
+  if (S.sel) {
+    const i = S.sel.node.i, offx = sxA[i] - CX - S.px, offy = syA[i] - CYB - S.py;
+    const side = W >= 980 && !panel.hidden;
+    const tx = side ? (468 + W) / 2 : CX;
+    const ty = (H - dockH - (!side && !panel.hidden ? panelOH + 10 : 0)) / 2;
+    S.px += ((tx - CX - offx) - S.px) * .12; S.py += ((ty - CYB - offy) - S.py) * .12;
+  } else { S.px *= .88; S.py *= .88; }
+
+  ctx.clearRect(0, 0, W, H);
+  drawRings(now);
+  const ambMul = (S.sel || S.matches) ? .5 : 1;
+  const scanX = RM ? -999 : CX + Math.sin(now * .00022) * BASE * 1.05;
+
+  if (!RM) {
+    const sg = ctx.createLinearGradient(scanX - 60, 0, scanX + 60, 0);
+    sg.addColorStop(0, 'rgba(63,217,255,0)'); sg.addColorStop(.5, 'rgba(63,217,255,.07)'); sg.addColorStop(1, 'rgba(63,217,255,0)');
+    ctx.fillStyle = sg; ctx.fillRect(scanX - 60, CYB - BASE * .95, 120, BASE * 1.9);
+  }
+
+  /* sinapses de fundo */
+  const bk = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
+  for (const e of ambEdges) {
+    const a = e.a.i, b = e.b.i, k = Math.min(3, (dfz((zA[a] + zA[b]) * .5) * 4) | 0);
+    bk[k].moveTo(sxA[a], syA[a]); bk[k].lineTo(sxA[b], syA[b]);
+  }
+  ctx.lineWidth = .7;
+  for (let k = 0; k < 4; k++) { ctx.strokeStyle = 'rgba(150,205,255,' + ((.05 + .04 * k) * ambMul).toFixed(3) + ')'; ctx.stroke(bk[k]); }
+
+  /* ligações entre registros */
+  for (const e of linkEdges) {
+    const a = e.a.i, b = e.b.i, na = e.a.note, nb = e.b.note;
+    let al = 1, hot = false;
+    if (S.sel) {
+      const fa = S.focus ? S.focus.get(na.id) : undefined, fb = S.focus ? S.focus.get(nb.id) : undefined;
+      const touch = na === S.sel || nb === S.sel, inF = fa !== undefined && fb !== undefined;
+      hot = inF && (touch || S.depth > 1);
+      const dm = Math.max(fa === undefined ? 9 : fa, fb === undefined ? 9 : fb);
+      al = hot ? (dm <= 1 ? 1 : dm === 2 ? .6 : .4) : .14;
+    }
+    else if (S.matches) {
+      const ma = S.matches.has(na.id), mb = S.matches.has(nb.id);
+      hot = ma || mb; al = (ma && mb) ? 1 : (hot ? .75 : .14);
+    }
+    else if (S.filter) { al = (na.cat === S.filter || nb.cat === S.filter) ? 1 : .1; }
+    if (isHidden(na) || isHidden(nb) || (S.tlHide && (S.tlHide.has(na.id) || S.tlHide.has(nb.id)))) { al = .04; hot = false; }
+    const df = dfz((zA[a] + zA[b]) * .5);
+    pj(e.c[0], e.c[1], e.c[2], tmp2);
+    const g = ctx.createLinearGradient(sxA[a], syA[a], sxA[b], syA[b]);
+    g.addColorStop(0, rgba(CATS[na.cat].rgb, (hot ? .95 : .55) * al * df));
+    g.addColorStop(1, rgba(CATS[nb.cat].rgb, (hot ? .95 : .55) * al * df));
+    ctx.strokeStyle = g; ctx.lineWidth = hot ? 1.8 : 1;
+    ctx.beginPath(); ctx.moveTo(sxA[a], syA[a]); ctx.quadraticCurveTo(tmp2[0], tmp2[1], sxA[b], syA[b]); ctx.stroke();
+  }
+
+  /* pulsos nas sinapses */
+  if (!RM && pulses.length < 40 && Math.random() < ((S.sel || S.matches) ? .4 : .08)) spawnPulse();
+  for (let k = pulses.length - 1; k >= 0; k--) {
+    const p = pulses[k]; p.t += dt * p.v;
+    if (p.t >= 1) { pulses.splice(k, 1); continue; }
+    const t = p.rev ? 1 - p.t : p.t, e = p.e, A = e.a, B = e.b;
+    let x, y, z;
+    if (e.link) { const u = 1 - t; x = u * u * A.x + 2 * u * t * e.c[0] + t * t * B.x; y = u * u * A.y + 2 * u * t * e.c[1] + t * t * B.y; z = u * u * A.z + 2 * u * t * e.c[2] + t * t * B.z; }
+    else { x = A.x + (B.x - A.x) * t; y = A.y + (B.y - A.y) * t; z = A.z + (B.z - A.z) * t; }
+    pj(x, y, z, tmp);
+    const f = Math.sin(Math.PI * p.t);
+    ctx.shadowColor = rgba(p.rgb, .9); ctx.shadowBlur = 9;
+    ctx.fillStyle = rgba(p.rgb, .95 * f * ((S.sel || S.matches) && !e.link ? .4 : 1));
+    ctx.beginPath(); ctx.arc(tmp[0], tmp[1], 1.9 * tmp[2], 0, TAU); ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+
+  /* neurônios */
+  order = nodes.map(n => n.i).sort((a, b) => zA[a] - zA[b]);
+  const zs = Math.sqrt(S.zoom), cand = [];
+  for (const i of order) {
+    const n = nodes[i], df = dfz(zA[i]), sx = sxA[i], sy = syA[i];
+    const sc = Math.max(0, 1 - Math.abs(sx - scanX) / 46);
+    if (!n.note) {
+      const r = (1 + .9 * df) * pA[i] * zs * (1 + sc * .5);
+      ctx.fillStyle = rgba(n.tint, ((.22 + .5 * df) + sc * .45) * ambMul);
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fill();
+      continue;
+    }
+    const note = n.note, al = noteAlpha(note), c = CATS[note.cat].rgb, ent = !!CATS[note.cat].ent;
+    const r = (3.4 + Math.min(note.links.size, 7) * .4) * pA[i] * Math.pow(S.zoom, .55);
+    ctx.shadowColor = rgba(c, .9 * al); ctx.shadowBlur = 14 + sc * 10;
+    ctx.fillStyle = rgba(c, (.55 + .45 * df) * al);
+    ctx.beginPath();
+    if (ent) { const R = r * 1.3; ctx.moveTo(sx, sy - R); ctx.lineTo(sx + R, sy); ctx.lineTo(sx, sy + R); ctx.lineTo(sx - R, sy); ctx.closePath(); }
+    else ctx.arc(sx, sy, r, 0, TAU);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,' + (.85 * al * df).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(sx, sy, r * .38, 0, TAU); ctx.fill();
+    if (note === S.sel) {
+      ctx.save(); ctx.strokeStyle = rgba(c, .95); ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]); ctx.lineDashOffset = -now * .02;
+      ctx.beginPath(); ctx.arc(sx, sy, r + 8, 0, TAU); ctx.stroke(); ctx.restore();
+    } else if (S.matches && S.matches.has(note.id)) {
+      ctx.strokeStyle = rgba(c, .9); ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(sx, sy, r + 6 + 2 * Math.sin(now * .006), 0, TAU); ctx.stroke();
+    } else if (S.preview && S.preview.has(note.id)) {
+      ctx.save(); ctx.strokeStyle = rgba(c, .9); ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.lineDashOffset = -now * .02;
+      ctx.beginPath(); ctx.arc(sx, sy, r + 7, 0, TAU); ctx.stroke(); ctx.restore();
+    }
+    let pri = 2;
+    if (note === S.sel || note === S.hover) pri = 0;
+    else if ((S.sel && S.sel.links.has(note.id)) || (S.matches && S.matches.has(note.id)) || (S.preview && S.preview.has(note.id))) pri = 1;
+    else if (S.matches && S.chain && S.chain.has(note.id)) pri = 1.5;
+    if (al > .1) cand.push({ note: note, sx: sx, sy: sy, r: r, z: zA[i], pri: pri, al: al, df: df });
+  }
+
+  /* rótulos */
+  const fs = W < 560 ? 10 : 11;
+  ctx.font = '500 ' + fs + 'px "IBM Plex Mono", ui-monospace, monospace';
+  ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  cand.sort((a, b) => (a.pri - b.pri) || (b.z - a.z));
+  const placed = [], maxAuto = Math.round((W < 560 ? 9 : 20) * Math.max(1, S.zoom));
+  let auto = 0;
+  for (const L of cand) {
+    if (L.pri === 2 && (!S.labels || auto >= maxAuto || L.al < .5 || L.z < -.35)) continue;
+    if (L.pri === 1.5 && placed.length > 18) continue;
+    const txt = L.note.title, w = ctx.measureText(txt).width, h = fs + 6;
+    const spots = [[L.sx + L.r + 8, 'left'], [L.sx - L.r - 8, 'right']];
+    let chosen = null;
+    for (const t of spots) {
+      const x1 = t[1] === 'left' ? t[0] - 3 : t[0] - w - 3, x2 = x1 + w + 6, y1 = L.sy - h / 2, y2 = L.sy + h / 2;
+      if (x1 < 4 || x2 > W - 4) continue;
+      if (L.pri > 0 && placed.some(p => x1 < p[2] && x2 > p[0] && y1 < p[3] && y2 > p[1])) continue;
+      chosen = { x: t[0], al: t[1], r: [x1, y1, x2, y2] }; break;
+    }
+    if (!chosen) { if (L.pri === 0) chosen = { x: L.sx + L.r + 8, al: 'left', r: [L.sx, L.sy - 8, L.sx + w, L.sy + 8] }; else continue; }
+    placed.push(chosen.r);
+    if (L.pri === 2) auto++;
+    ctx.textAlign = chosen.al;
+    const a = L.pri === 2 ? (.3 + .7 * L.df) * L.al : 1;
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(2,7,12,' + (.9 * a).toFixed(3) + ')'; ctx.strokeText(txt, chosen.x, L.sy);
+    ctx.fillStyle = L.note === S.sel ? rgbs(CATS[L.note.cat].rgb) : 'rgba(217,244,255,' + (.92 * a).toFixed(3) + ')';
+    ctx.fillText(txt, chosen.x, L.sy);
+  }
+
+  /* novos neurônios */
+  for (let k = flashes.length - 1; k >= 0; k--) {
+    const f = flashes[k], age = now - f.t;
+    if (age > 1500) { flashes.splice(k, 1); continue; }
+    const i = f.n.node.i, c = CATS[f.n.cat].rgb;
+    ctx.strokeStyle = rgba(c, 1 - age / 1500); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(sxA[i], syA[i], 8 + age * .06, 0, TAU); ctx.stroke();
+  }
+
+  /* leituras técnicas */
+  if (W > 1280) {
+    ctx.font = '400 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = 'rgba(109,146,166,.75)';
+    const deg = ((((yaw * 180 / Math.PI) % 360) + 360) % 360) | 0, y0 = CYB - 20, xr = W - 64;
+    ctx.fillText('YAW    ' + String(deg).padStart(3, '0') + '°', xr, y0);
+    ctx.fillText('PITCH  ' + String((S.pitch * 180 / Math.PI) | 0).padStart(3, '0') + '°', xr, y0 + 14);
+    ctx.fillText('ZOOM   ' + S.zoom.toFixed(2) + 'x', xr, y0 + 28);
+    ctx.fillText('SINAPSES ' + linkEdges.length, xr, y0 + 42);
+  }
+}
+
+/* ---------- interação do canvas ---------- */
+const ptrs = new Map();
+let down = null, pinch = null;
+function hit(x, y) {
+  let best = null, bd = 1e9;
+  for (const n of notes) {
+    if (isHidden(n) || (S.tlHide && S.tlHide.has(n.id))) continue;
+    const i = n.node.i, dx = sxA[i] - x, dy = syA[i] - y, r = Math.max(18, 8 * pA[i] * Math.sqrt(S.zoom)), d = dx * dx + dy * dy;
+    if (d < r * r && d < bd) { bd = d; best = n; }
+  }
+  return best;
+}
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 1) { down = { x: e.clientX, y: e.clientY, moved: 0 }; S.drag = true; cv.classList.add('grabbing'); }
+  else if (ptrs.size === 2) {
+    const a = Array.from(ptrs.values());
+    pinch = { d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), z: S.zt }; down = null;
+  }
+});
+cv.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId);
+  if (!p) {
+    if (e.pointerType === 'mouse') { const h = hit(e.clientX, e.clientY); S.hover = h; cv.classList.toggle('point', !!h); }
+    return;
+  }
+  const dx = e.clientX - p.x, dy = e.clientY - p.y;
+  p.x = e.clientX; p.y = e.clientY;
+  if (ptrs.size === 2 && pinch) {
+    const a = Array.from(ptrs.values()), d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+    S.zt = Math.max(.7, Math.min(4.5, pinch.z * d / Math.max(30, pinch.d)));
+  } else if (down) {
+    down.moved += Math.abs(dx) + Math.abs(dy);
+    S.yaw += dx * .006; S.pitch = Math.max(-1, Math.min(1.1, S.pitch + dy * .005));
+    S.pause = performance.now() + 3000;
+  }
+});
+function endPtr(e) {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (ptrs.size === 0) {
+    S.drag = false; cv.classList.remove('grabbing');
+    if (down && down.moved < 7 && e.type === 'pointerup') {
+      const n = hit(e.clientX, e.clientY);
+      if (n) select(n); else if (S.sel) deselect();
+    }
+    down = null;
+  }
+}
+cv.addEventListener('pointerup', endPtr);
+cv.addEventListener('pointercancel', endPtr);
+cv.addEventListener('pointerleave', () => { S.hover = null; cv.classList.remove('point'); });
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  S.zt = Math.max(.7, Math.min(4.5, S.zt * Math.exp(-e.deltaY * .0012)));
+}, { passive: false });
+
+/* ---------- interface ---------- */
+const $ = id => document.getElementById(id);
+const panel = $('panel'), pb = $('pb'), chips = $('chips'), stx = $('stx'), rail = $('rail'), form = $('form'),
+  q = $('q'), modeBtn = $('mode'), clip = $('clip'), fileIn = $('file'), dock = $('dock');
+let mode = 'note', files = [], editing = false;
+
+function el(t, c, txt) { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; }
+function dotEl(cat) {
+  const d = el('span', 'dot' + (CATS[cat].ent ? ' dia' : '')); const c = CATS[cat].rgb;
+  d.style.background = rgbs(c); d.style.boxShadow = '0 0 8px ' + rgbs(c); return d;
+}
+function showPanel(kids, keep) {
+  if (!keep) stopTl();
+  pb.replaceChildren.apply(pb, kids);
+  panel.hidden = false; pb.scrollTop = 0; document.body.classList.add('po');
+  requestAnimationFrame(() => panel.classList.add('in'));
+}
+function hidePanel() { stopTl(); editing = false; panel.classList.remove('in'); panel.hidden = true; pb.replaceChildren(); document.body.classList.remove('po'); }
+function closeBtn(fn) {
+  const b = el('button', 'close'); b.type = 'button'; b.setAttribute('aria-label', 'Fechar');
+  b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  b.addEventListener('click', fn); return b;
+}
+function sec(label, meta) {
+  const h = el('div', 'sec'); h.append(el('span', 'sl', label));
+  if (meta != null) h.append(el('span', 'sm', String(meta)));
+  return h;
+}
+function stepsBlock(n) {
+  const total = n.steps.length;
+  const cnt = () => n.steps.reduce((a, s, i) => a + (isDone(n, i) ? 1 : 0), 0);
+  const sm = el('span', 'sm', cnt() + '/' + total);
+  const h = el('div', 'sec'); h.append(el('span', 'sl', 'Passo a passo'), sm);
+  const bar = el('div', 'bar'), fill = el('i'); bar.append(fill); fill.style.width = (cnt() / total * 100) + '%';
+  const ol = el('ol', 'steps');
+  n.steps.forEach((s, i) => {
+    const li = el('li', 'step' + (isDone(n, i) ? ' done' : ''));
+    const b = el('button', 'sbox'); b.type = 'button'; b.setAttribute('role', 'checkbox');
+    b.setAttribute('aria-checked', String(isDone(n, i))); b.setAttribute('aria-label', 'Passo ' + (i + 1) + ': ' + s.t);
+    b.textContent = isDone(n, i) ? '✓' : String(i + 1);
+    b.addEventListener('click', () => {
+      toggleDone(n, i);
+      const d = isDone(n, i);
+      li.classList.toggle('done', d); b.setAttribute('aria-checked', String(d)); b.textContent = d ? '✓' : String(i + 1);
+      sm.textContent = cnt() + '/' + total; fill.style.width = (cnt() / total * 100) + '%';
+    });
+    const tx = el('div', 'stxt'); tx.append(el('div', 'st', s.t));
+    if (s.d) tx.append(el('div', 'sd', s.d));
+    li.append(b, tx); ol.append(li);
+  });
+  return [h, bar, ol];
+}
+
+function revSelect(v) {
+  const s = el('select'), opts = [[0, 'Sem revisão periódica'], [3, 'A cada 3 meses'], [6, 'A cada 6 meses'], [12, 'A cada 12 meses'], [24, 'A cada 24 meses']];
+  if (v && !opts.some(o => o[0] === v)) opts.push([v, 'A cada ' + v + ' meses']);
+  opts.forEach(o => s.append(new Option(o[1], String(o[0])))); s.value = String(v || 0); return s;
+}
+function visSelect(v) {
+  const s = el('select'); [['todos', 'Todos da empresa'], ['editores', 'Só editores e administradores'], ['admin', 'Só administradores']].forEach(o => s.append(new Option(o[1], o[0]))); s.value = v || 'todos'; return s;
+}
+const GROUP_ORDER = ['set', 'pes', 'proc', 'norma', 'sis', 'curso', 'proj', 'reg'];
+function renderNote(n) {
+  editing = false;
+  const ent = !!CATS[n.cat].ent, rw = canEdit();
+  const head = el('div', 'p-head');
+  head.append(dotEl(n.cat), el('span', 'tag', CATS[n.cat].name));
+  if (n.date) head.append(el('span', 'date', fmtWhen(n.date, n.time)));
+  if (rw) { const ed = el('button', 'tbtn', 'EDITAR'); ed.type = 'button'; ed.addEventListener('click', () => renderEdit(n)); head.append(ed); }
+  head.append(closeBtn(deselect));
+  const kids = [head, el('h2', 'p-title', n.title)];
+  const meta = [], ri = revInfo(n);
+  if (!ent && n.owner) meta.push('Responsável: ' + n.owner);
+  if (ri) meta.push(revLabel(ri));
+  if (n.vis && n.vis !== 'todos') meta.push(n.vis === 'admin' ? 'Restrito a administradores' : 'Restrito a editores');
+  if (meta.length) { const p = el('p', 'p-meta', meta.join(' · ')); if (ri && ri.late) p.style.color = '#ffb86b'; kids.push(p); }
+  if (n.reg && n.reg !== n.date) kids.push(el('p', 'p-meta', 'Registrado em ' + fmtWhen(n.reg, '')));
+  if (n.body && n.body !== n.title) kids.push(sec(ent ? 'Sobre' : 'Contexto'), el('p', 'p-body', n.body));
+  if (n.why) kids.push(sec('Para que serve'), el('p', 'p-body', n.why));
+  if (n.steps.length) kids.push.apply(kids, stepsBlock(n));
+  const miss = [];
+  if (rw && !ent && !n.why) miss.push(['+ Para que serve', 'ed-why']);
+  if (rw && !ent && !n.steps.length) miss.push(['+ Passo a passo', 'ed-steps']);
+  if (rw && !ent && !n.owner) miss.push(['+ Responsável', 'ed-owner']);
+  if (miss.length) {
+    const row = el('div', 'addrow');
+    miss.forEach(m => { const b = el('button', 'addbtn', m[0]); b.type = 'button'; b.addEventListener('click', () => renderEdit(n, m[1])); row.append(b); });
+    kids.push(row);
+  }
+  if (!ent) {
+    const g = localGuide(n);
+    if (g.length) { kids.push(sec('Quem procurar')); g.forEach((x, i) => kids.push(guideEl(x, i))); }
+  } else {
+    const g = localGuide(n);
+    if (g.length) { kids.push(sec(n.cat === 'set' ? 'Pessoas e processos' : 'Setor e processos')); g.forEach((x, i) => kids.push(guideEl(x, i))); }
+  }
+  const entries = Array.from(n.links.entries()).filter(e => noteById[e[0]] && !isHidden(noteById[e[0]]));
+  kids.push(sec('Todas as conexões', entries.length));
+  if (entries.length) {
+    const sg = el('div', 'seg'); sg.append(el('span', 'sl', 'Profundidade no mapa'));
+    [1, 2, 3].forEach(d => {
+      const b = el('button', null, String(d)); b.type = 'button'; b.setAttribute('aria-pressed', String(S.depth === d)); b.setAttribute('aria-label', d + ' grau de separação');
+      b.addEventListener('click', () => { S.depth = d; S.focus = focusMap(n, d); sg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(+x.textContent === d))); });
+      sg.append(b);
+    });
+    kids.push(sg);
+    GROUP_ORDER.forEach(k => {
+      const grp = entries.filter(e => noteById[e[0]].cat === k);
+      if (!grp.length) return;
+      kids.push(el('p', 'grp', CATS[k].name + ' · ' + grp.length));
+      grp.forEach(e => {
+        const m = noteById[e[0]], reason = e[1], b = el('button', 'conn'); b.type = 'button';
+        const top = el('span', 'ct'); top.append(dotEl(m.cat), el('span', null, m.title));
+        b.append(top); if (reason) b.append(el('span', 'cr', reason));
+        b.addEventListener('click', () => select(m)); kids.push(b);
+      });
+    });
+  } else kids.push(el('p', 'hint', rw ? 'Sem conexões ainda. Toque em EDITAR para ligar este item a um setor, pessoa ou processo e explicar o motivo.' : 'Sem conexões ainda.'));
+  if (!ent && rw) {
+    const box = el('div'), row = el('div', 'btns');
+    const rv = el('button', 'pbtn ghost', 'Marcar como revisado'); rv.type = 'button';
+    rv.addEventListener('click', () => { markReviewed(n, 0); renderNote(n); });
+    row.append(rv);
+    if (cloud.on) { const sg = el('button', 'pbtn', 'Sugestões da IA'); sg.type = 'button'; sg.addEventListener('click', () => { sg.disabled = true; sugestoes(n, box); }); row.append(sg); }
+    kids.push(sec('Manter atualizado'), row, box);
+  }
+  showPanel(kids);
+}
+
+function linkPicker(exclude, sugg, defReason) {
+  const sel = new Map();
+  sugg.forEach(m => sel.set(m.id, defReason(m)));
+  const sugIds = new Set(sugg.map(m => m.id));
+  const wrap = el('div', 'pick'), si = el('input', 'srch'), chosen = el('div', 'chosen'), list = el('div', 'cands');
+  si.type = 'text'; si.placeholder = 'Buscar registro, pessoa ou lugar para ligar…'; si.setAttribute('aria-label', 'Buscar registro para ligar');
+  function draw() {
+    S.preview = new Set(sel.keys());
+    chosen.replaceChildren();
+    sel.forEach((r, id) => {
+      const m = noteById[id]; if (!m) return;
+      const row = el('div', 'lrow'), lh = el('div', 'lh'), x = el('button', null, '×'), inp = el('input');
+      x.type = 'button'; x.setAttribute('aria-label', 'Remover ligação com ' + m.title);
+      x.addEventListener('click', () => { sel.delete(id); draw(); });
+      lh.append(dotEl(m.cat), el('span', null, m.title), x);
+      inp.type = 'text'; inp.value = r; inp.placeholder = 'Por que se ligam?'; inp.setAttribute('aria-label', 'Motivo da ligação com ' + m.title);
+      inp.addEventListener('input', () => sel.set(id, inp.value));
+      row.append(lh, inp); chosen.append(row);
+    });
+    list.replaceChildren();
+    const nq = norm(si.value.trim());
+    const c = notes.filter(m => !exclude.has(m.id) && !sel.has(m.id) && (!nq || norm(m.title).includes(nq) || norm(CATS[m.cat].name).includes(nq)));
+    c.sort((a, b) => (sugIds.has(b.id) - sugIds.has(a.id)) || (ORDER.indexOf(a.cat) - ORDER.indexOf(b.cat)));
+    c.slice(0, 40).forEach(m => {
+      const b = el('button', 'cand'); b.type = 'button';
+      b.append(el('span', 'pl', '+'), dotEl(m.cat), el('span', null, m.title), el('small', null, sugIds.has(m.id) ? 'sugerido' : CATS[m.cat].name));
+      b.addEventListener('click', () => { sel.set(m.id, ''); draw(); });
+      list.append(b);
+    });
+    if (!c.length) list.append(el('p', 'hint', nq ? 'Nada com esse nome.' : 'Todos os registros já estão ligados.'));
+  }
+  si.addEventListener('input', draw);
+  wrap.append(chosen, si, list); draw();
+  return { node: wrap, get: () => Array.from(sel.entries()).filter(e => noteById[e[0]]) };
+}
+
+/* rascunho: revisar e editar antes de entrar no cérebro */
+let drafts = [];
+function nextDraft() {
+  if (!drafts.length) { S.preview = null; return; }
+  renderDraft(drafts[0]);
+}
+function renderDraft(D) {
+  editing = true; S.sel = null;
+  const head = el('div', 'p-head');
+  head.append(dotEl(D.cat), el('span', 'tag', 'Revisar antes de salvar' + (drafts.length > 1 ? ' · ' + drafts.length + ' restantes' : '')), closeBtn(discard));
+  const fld = (label, id, node, hint) => { const w = el('div', 'fld'), l = el('label', null, label); l.htmlFor = id; node.id = id; w.append(l, node); if (hint) w.append(el('div', 'hint', hint)); return w; };
+  const cs = el('select'); ORDER.forEach(k => cs.append(new Option(CATS[k].name, k))); cs.value = D.cat;
+  const ti = el('input'); ti.type = 'text'; ti.value = D.title;
+  const dt = el('input'); dt.type = 'text'; dt.value = toInput(D.date, D.time); dt.placeholder = 'dd/mm/aaaa';
+  const dtErr = el('p', 'err'); dtErr.hidden = true; dtErr.textContent = 'Data inválida. Use 12/05/1990, 05/1990 ou 1990.';
+  const bo = el('textarea'); bo.rows = 6; bo.value = D.body;
+  const wy = el('textarea'); wy.rows = 2; wy.value = D.why; wy.placeholder = 'Para que serve? Qual problema isto resolve?';
+  const st = el('textarea'); st.rows = 6; st.value = stepsText(D.steps); st.placeholder = 'Um passo por linha.\nConferir documentos | RG e CPF';
+  const kids = [head, el('p', 'hint', D.ai ? 'Organizado pela IA. Confira, edite o que quiser e salve. Nada entra na rede até você salvar.' : (D.aiErr ? 'A IA não respondeu (' + D.aiErr + '). Usei a análise local; confira abaixo.' : 'Confira o que o cérebro entendeu. Nada entra na rede até você salvar.')),
+    fld('Tipo', 'dr-cat', cs), fld('Título', 'dr-title', ti, findByTitle(D.title) ? 'Já existe um registro com este título. Se for o mesmo assunto, descarte e edite o existente.' : '')];
+  const dw = fld('Data (fato, emissão ou vigência)', 'dr-date', dt, 'Pode ser no passado: 12/05/1990, 05/1990 ou só 1990.'); dw.append(dtErr);
+  kids.push(dw, fld('Contexto (sua mensagem)', 'dr-body', bo), fld('Para que serve', 'dr-why', wy), fld('Passo a passo', 'dr-steps', st, 'Um passo por linha. Use | para separar o passo do detalhe.'));
+  const dow = el('input'); dow.type = 'text'; dow.value = D.owner || ''; dow.placeholder = 'Quem responde por este item?';
+  const drm = revSelect(D.revm || ({ proc: 12, norma: 12 }[D.cat] || 0)), dvs = visSelect('todos');
+  kids.push(fld('Responsável', 'dr-owner', dow), fld('Revisão periódica', 'dr-revm', drm, 'O cérebro avisa quando o prazo vence.'));
+  if (isAdmin()) kids.push(fld('Quem pode ver', 'dr-vis', dvs));
+  const checks = [];
+  if (D.newEnts.length) {
+    kids.push(sec('Criar também'));
+    const box = el('div', 'ents');
+    D.newEnts.forEach(sp => { const l = el('label'), c = el('input'); c.type = 'checkbox'; c.checked = true; l.append(c, el('span', null, sp.name + ' · ' + (sp.cat === 'set' ? 'setor' : 'pessoa'))); box.append(l); checks.push([c, sp]); });
+    kids.push(box);
+  }
+  const pk = linkPicker(new Set(), D.sugg, m => (D.reasons && D.reasons.get(m.id)) || (CATS[m.cat].ent ? (m.cat === 'set' ? 'Setor responsável.' : 'Pessoa envolvida.') : 'Falam de assuntos parecidos.'));
+  kids.push(sec('Ligar com'), pk.node);
+  const btns = el('div', 'btns stk'), ok = el('button', 'pbtn', 'Salvar no cérebro'), no = el('button', 'pbtn ghost', 'Descartar');
+  ok.type = 'button'; no.type = 'button';
+  no.addEventListener('click', discard);
+  function discard() { drafts.shift(); S.preview = null; editing = false; if (D.text) { q.value = D.text; fit(); } hidePanel(); nextDraft(); renderStatus(); }
+  ok.addEventListener('click', () => {
+    const w = parseWhen(dt.value);
+    if (!w) { dtErr.hidden = false; dt.focus(); return; }
+    const n = addNote({ id: 'u' + Date.now().toString(36) + Math.floor(Math.random() * 99), cat: cs.value, title: ti.value.trim() || 'Sem título', body: bo.value.trim(), why: wy.value.trim(), steps: parseSteps(st.value), date: w.date, time: w.time, reg: TODAY, owner: dow.value.trim(), revm: +drm.value, rev: +drm.value ? TODAY : '', vis: isAdmin() ? dvs.value : 'todos', user: true }, notes.length);
+    pk.get().forEach(x => link(n, noteById[x[0]], x[1].trim()));
+    checks.forEach(c => { if (c[0].checked) { const e = makeEntity(c[1]); link(n, e, e.cat === 'set' ? 'Setor responsável.' : 'Pessoa envolvida.'); touch(e.id); } });
+    flashes.push({ n: n, t: performance.now() }); touch(n.id); save();
+    drafts.shift(); S.preview = null; editing = false;
+    if (drafts.length) { hidePanel(); nextDraft(); renderStatus(); } else select(n);
+  });
+  btns.append(ok, no); kids.push(btns);
+  showPanel(kids);
+}
+
+function renderEdit(n, focusId) {
+  editing = true;
+  const ent = !!CATS[n.cat].ent;
+  const head = el('div', 'p-head');
+  head.append(dotEl(n.cat), el('span', 'tag', 'Editando'), closeBtn(() => renderNote(n)));
+  const fld = (label, id, node, hint) => {
+    const w = el('div', 'fld'), l = el('label', null, label); l.htmlFor = id; node.id = id; w.append(l, node);
+    if (hint) w.append(el('div', 'hint', hint));
+    return w;
+  };
+  const ti = el('input'); ti.type = 'text'; ti.value = n.title;
+  const dt = el('input'); dt.type = 'text'; dt.value = toInput(n.date, n.time); dt.placeholder = 'dd/mm/aaaa';
+  const dtErr = el('p', 'err'); dtErr.hidden = true; dtErr.textContent = 'Data inválida. Use 12/05/1990, 05/1990 ou 1990.';
+  const bo = el('textarea'); bo.rows = 4; bo.value = n.body;
+  const wy = el('textarea'); wy.rows = 2; wy.value = n.why; wy.placeholder = 'Para que serve? Qual problema isto resolve?';
+  const st = el('textarea'); st.rows = 7; st.value = stepsText(n.steps);
+  st.placeholder = 'Um passo por linha.\nConferir documentos | RG, CPF e comprovante de residência';
+  const kids = [head, fld(ent ? 'Nome' : 'Título', 'ed-title', ti)];
+  if (!ent) {
+    const dw = fld('Data (fato, emissão ou vigência)', 'ed-date', dt, 'Pode ser no passado: 12/05/1990, 05/1990 ou só 1990. Para incluir a hora: 12/05/1990 14:30.');
+    dw.append(dtErr); kids.push(dw);
+  }
+  kids.push(fld(ent ? 'Sobre' : 'Contexto (sua mensagem)', 'ed-body', bo, ent ? '' : 'Escreva do seu jeito: como funciona e por que isso importa.'));
+  if (!ent) kids.push(fld('Para que serve', 'ed-why', wy), fld('Passo a passo', 'ed-steps', st, 'Um passo por linha. Use | para separar o passo do detalhe.'));
+  const ow = el('input'); ow.type = 'text'; ow.value = n.owner || ''; ow.placeholder = 'Quem responde por este item?';
+  const rm = revSelect(n.revm || 0), vs = visSelect(n.vis);
+  if (!ent) kids.push(fld('Responsável', 'ed-owner', ow), fld('Revisão periódica', 'ed-revm', rm, 'O cérebro avisa quando o prazo vence.'));
+  if (isAdmin()) kids.push(fld('Quem pode ver', 'ed-vis', vs));
+
+  const ids = Array.from(n.links.keys()).filter(id => noteById[id]);
+  if (ids.length) kids.push(sec('Por que estas ligações existem'));
+  ids.forEach(id => {
+    const m = noteById[id], row = el('div', 'lrow'), l = el('label', null, m.title), inp = el('input');
+    inp.type = 'text'; inp.id = 'ed-r-' + id; l.htmlFor = inp.id; inp.value = n.links.get(id) || '';
+    inp.placeholder = 'Por que estes dois registros se ligam?';
+    row.append(l, inp); kids.push(row);
+  });
+  const pk = linkPicker(new Set([n.id].concat(ids)), [], () => '');
+  kids.push(sec('Ligar com outros registros'), pk.node);
+
+  const btns = el('div', 'btns stk');
+  const ok = el('button', 'pbtn', 'Salvar'); ok.type = 'button';
+  const no = el('button', 'pbtn ghost', 'Cancelar'); no.type = 'button';
+  no.addEventListener('click', () => { S.preview = null; renderNote(n); });
+  ok.addEventListener('click', () => {
+    let w = { date: n.date, time: n.time };
+    if (!ent) {
+      w = parseWhen(dt.value);
+      if (!w) { dtErr.hidden = false; dt.focus(); return; }
+    }
+    n.title = ti.value.trim() || n.title; n.body = bo.value.trim();
+    if (!ent) {
+      n.why = wy.value.trim(); n.date = w.date; n.time = w.time; n.owner = ow.value.trim(); n.revm = +rm.value; if (+rm.value && !n.rev) n.rev = TODAY;
+      const ns = parseSteps(st.value);
+      if (JSON.stringify(ns) !== JSON.stringify(n.steps)) { n.steps = ns; delete checks[n.id]; saveChecks(); }
+    }
+    ids.forEach(id => { const inp = $('ed-r-' + id); if (inp) setReason(n, id, inp.value.trim()); });
+    pk.get().forEach(x => link(n, noteById[x[0]], x[1].trim()));
+    S.preview = null;
+    if (isAdmin()) n.vis = vs.value; index(n); touch(n.id); save(); renderNote(n); renderStatus();
+  });
+  btns.append(ok, no); kids.push(btns);
+  showPanel(kids);
+  if (focusId) requestAnimationFrame(() => { const f = $(focusId); if (f) { f.scrollIntoView({ block: 'nearest' }); f.focus(); } });
+}
+
+function rowBtn(n, dateTxt) {
+  const b = el('button', 'res'); b.type = 'button';
+  const rd = el('span', 'rd', dateTxt != null ? dateTxt : fmtWhen(n.date, n.time));
+  b.append(rd, dotEl(n.cat), el('b', null, n.title), el('span', 'sn', n.body || n.why));
+  b.addEventListener('click', () => select(n)); return b;
+}
+function renderAsk(r, v, A) {
+  const list = r.res;
+  const head = el('div', 'p-head');
+  head.append(el('span', 'tag', 'Pergunta'), closeBtn(() => { q.value = ''; fit(); runSearch(); }));
+  const kids = [head];
+  let sum = r.dq ? r.dq.label : '';
+  if (r.ents.length) sum += (sum ? ' · ' : '') + r.ents.map(e => e.title).join(', ');
+  kids.push(el('h2', 'p-title', list.length ? (sum || 'Resultados') : 'Nada encontrado'));
+  const cn = S.chain ? S.chain.size : 0;
+  kids.push(el('p', 'hint', list.length
+    ? list.length + (list.length === 1 ? ' resultado' : ' resultados') + ' · ' + cn + (cn === 1 ? ' conexão acesa' : ' conexões acesas')
+    : 'Nada encontrado para “' + v + '”. Tente o nome de um setor, de uma pessoa ou de um processo, ou outra palavra.'));
+  const aiOk = !!(A && A.state === 'ok');
+  if (A) {
+    kids.push(sec('Resposta da IA'));
+    const box = el('div', 'ans');
+    if (A.state === 'loading') box.append(el('p', 'hint', 'Pensando nas suas anotações…'));
+    else if (A.state === 'err') box.append(el('p', 'hint', 'A IA não respondeu (' + A.msg + '). Veja os resultados abaixo.'));
+    else {
+      box.append(el('p', 'p-body', A.answer)); aiExtras(box, A);
+      if (A.used.length) { const row = el('div', 'chips-row'); A.used.forEach(id => { const m = noteById[id]; const b = el('button', 'chip'); b.type = 'button'; b.append(dotEl(m.cat), el('span', null, m.title)); b.addEventListener('click', () => select(m)); row.append(b); }); box.append(row); }
+    }
+    kids.push(box);
+  }
+  let skip = null;
+  if (!aiOk && r.when && !r.dq && list.length && list[0].date) {
+    const top = list[0]; skip = top;
+    kids.push(sec('Resposta'));
+    const box = el('div', 'ans'), ah = el('div', 'ah'), op = el('button', 'tbtn', 'ABRIR'); op.type = 'button'; op.addEventListener('click', () => select(top));
+    ah.append(dotEl(top.cat), el('span', 'at', fmtWhen(top.date, top.time)), op); box.append(ah);
+    box.append(el('p', 'p-body', (top.body || top.title).slice(0, 180)));
+    kids.push(box);
+  }
+  if (!aiOk && r.how && list.length && list[0].steps.length) {
+    const top = list[0]; skip = top;
+    kids.push(sec('Melhor resposta'));
+    const box = el('div', 'ans'), ah = el('div', 'ah');
+    const op = el('button', 'tbtn', 'ABRIR'); op.type = 'button'; op.addEventListener('click', () => select(top));
+    ah.append(dotEl(top.cat), el('span', 'at', top.title), op);
+    box.append(ah);
+    if (top.why || top.body) box.append(el('p', 'p-body', top.why || top.body));
+    stepsBlock(top).forEach(x => box.append(x));
+    kids.push(box);
+  }
+  if (!aiOk && list.length) { const lg = localGuide(list[0]); if (lg.length) { kids.push(sec('Quem procurar', list[0].title)); lg.forEach((g, i) => kids.push(guideEl(g, i))); } }
+  const rest = list.filter(n => n !== skip);
+  if (rest.length) {
+    kids.push(sec(r.dq ? 'Linha do tempo' : 'Resultados', rest.length));
+    rest.slice(0, 12).forEach(n => kids.push(rowBtn(n, r.dq ? (n.time || fmtWhen(n.date, '').slice(0, 11)) : null)));
+  }
+  if (cn) {
+    kids.push(sec('Conexões acesas', cn));
+    const row = el('div', 'chips-row');
+    Array.from(S.chain).slice(0, 10).forEach(id => {
+      const m = noteById[id]; if (!m) return;
+      const b = el('button', 'chip'); b.type = 'button'; b.append(dotEl(m.cat), el('span', null, m.title));
+      b.addEventListener('click', () => select(m)); row.append(b);
+    });
+    kids.push(row);
+  }
+  showPanel(kids);
+}
+const EX_GEN = ['Como faço…?', 'Com quem falo sobre…?', 'Qual setor cuida de…?'];
+function showExamples() {
+  const head = el('div', 'p-head');
+  head.append(el('span', 'tag', 'Pergunte ao cérebro da empresa'), closeBtn(hidePanel));
+  const kids = [head, el('p', 'hint', 'Pergunte como fazer algo, com quem falar ou qual setor procurar. Os neurônios usados se acendem e o caminho aparece.'), sec('Experimente')];
+  const row = el('div', 'chips-row');
+  (DEMO ? EX : EX_GEN).forEach(t => {
+    const b = el('button', 'chip', t); b.type = 'button';
+    b.addEventListener('click', () => { q.value = t; fit(); runSearch(); if (cloud.on) askAI(t); });
+    row.append(b);
+  });
+  kids.push(row);
+  showPanel(kids);
+}
+
+function focusMap(n, d) {
+  const m = new Map([[n.id, 0]]); let fr = [n];
+  for (let k = 1; k <= d; k++) { const nx = []; fr.forEach(x => x.links.forEach((_, id) => { if (!m.has(id) && noteById[id]) { m.set(id, k); nx.push(noteById[id]); } })); fr = nx; }
+  return m;
+}
+function select(n) {
+  S.sel = n; S.zt = Math.max(S.zt, 1.8); S.focus = focusMap(n, S.depth);
+  if (mode === 'note') { S.matches = null; S.chain = null; }
+  renderNote(n); renderStatus();
+}
+function deselect() {
+  S.sel = null; S.focus = null; S.zt = 1;
+  if (mode === 'find') { if (q.value.trim()) runSearch(); else showExamples(); } else hidePanel();
+  renderStatus();
+}
+
+function renderStatus() {
+  renderRail();
+  $('empty').hidden = notes.length > 0;
+  stx.replaceChildren();
+  if (S.previewText) { stx.append(el('span', 't', S.previewText)); return; }
+  if (mode === 'find' && q.value.trim() && S.matches) {
+    const k = S.matches.size, c = S.chain ? S.chain.size : 0;
+    stx.append(el('span', 't', k + (k === 1 ? ' RESULTADO' : ' RESULTADOS') + ' · ' + c + ' CONEXÕES')); return;
+  }
+  if (S.filter) {
+    const k = notes.filter(n => n.cat === S.filter).length;
+    stx.append(el('span', 't', 'FILTRO · ' + CATS[S.filter].name.toUpperCase() + ' · ' + k)); return;
+  }
+  if (!notes.length) { stx.append(el('span', 't', 'CÉREBRO VAZIO' + (cloud.on ? ' · ' + (cloud.org ? cloud.org.nome.toUpperCase().slice(0, 18) : 'NUVEM') + ' · IA' : ''))); return; }
+  const mine = notes.some(n => n.user || (dirty.has(n.id) && !n.ex)), vis = notes.filter(n => !isHidden(n)).length;
+  const tl = cloud.on ? (cloud.state === 'erro' ? ' · ERRO AO SALVAR' : cloud.state === 'sync' ? ' · SINCRONIZANDO' : ' · ' + (cloud.org ? cloud.org.nome.toUpperCase().slice(0, 18) : 'NUVEM') + ' · IA') : (cloud.sb ? ' · EXEMPLO' : '');
+  stx.append(el('span', 't long', (mine ? '' : 'EXEMPLO · ') + vis + ' NEURÔNIOS · ' + linkEdges.length + ' SINAPSES' + tl),
+    el('span', 't short', (mine ? '' : 'EXEMPLO · ') + vis + ' NÓS' + tl));
+}
+
+/* régua de regiões: só aparecem as regiões que já têm registros */
+let railSig = '';
+function renderRail() {
+  const have = ORDER.filter(k => notes.some(n => n.cat === k && !isHidden(n)));
+  if (S.filter && have.indexOf(S.filter) < 0) S.filter = null;
+  const sig = have.join(',') + '|' + (S.filter || '');
+  if (sig === railSig) return; railSig = sig;
+  rail.replaceChildren(); rail.style.display = have.length ? '' : 'none';
+  if (!have.length) return;
+  const tg = el('button', 'rt', 'Aa'); tg.type = 'button'; tg.setAttribute('aria-pressed', String(S.labels)); tg.setAttribute('aria-label', 'Mostrar nomes dos neurônios');
+  tg.append(el('span', 'rn', 'Nomes'));
+  tg.addEventListener('click', () => { S.labels = !S.labels; tg.setAttribute('aria-pressed', String(S.labels)); });
+  rail.append(tg);
+  have.forEach(k => {
+    const b = el('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(S.filter === k));
+    b.setAttribute('aria-label', 'Filtrar ' + CATS[k].name);
+    const i = el('i', CATS[k].ent ? 'dia' : ''); i.style.background = rgbs(CATS[k].rgb); b.append(i, el('span', 'rn', CATS[k].name));
+    b.addEventListener('click', () => {
+      S.filter = S.filter === k ? null : k;
+      rail.querySelectorAll('button[data-k]').forEach(x => x.setAttribute('aria-pressed', String(S.filter === x.dataset.k)));
+      renderStatus();
+    });
+    b.dataset.k = k; rail.append(b);
+  });
+}
+
+function runSearch() {
+  const v = q.value.trim();
+  S.preview = null; S.previewText = null;
+  if (!v) {
+    S.matches = null; S.chain = null; S.sel = null; S.zt = 1;
+    if (mode === 'find') showExamples(); else hidePanel();
+    renderStatus(); return;
+  }
+  const r = ask(v);
+  setMatches(r.res.map(n => n.id));
+  S.sel = null; S.focus = null; S.zt = 1;
+  renderAsk(r, v); renderStatus();
+}
+function setMatches(ids) {
+  S.matches = new Set(ids); S.chain = new Set();
+  S.matches.forEach(id => { const n = noteById[id]; if (n) n.links.forEach((_, k) => { if (!S.matches.has(k)) S.chain.add(k); }); });
+}
+let askTok = 0;
+async function askAI(v) {
+  const r = ask(v), tok = ++askTok;
+  setMatches(r.res.map(n => n.id)); S.sel = null; S.focus = null; S.zt = 1; S.previewText = null;
+  renderAsk(r, v, { state: 'loading' }); renderStatus();
+  try {
+    const seen = new Set(), cand = [];
+    r.res.slice(0, 10).concat(related(v)).forEach(n => { if (!seen.has(n.id) && cand.length < 16) { seen.add(n.id); cand.push(n); } });
+    if (cand.length < 4) notes.filter(n => !isHidden(n) && n.date).sort((a, b) => (b.reg || b.date).localeCompare(a.reg || a.date)).slice(0, 6).forEach(n => { if (!seen.has(n.id)) { seen.add(n.id); cand.push(n); } });
+    const full = n => ({ id: n.id, t: n.title, c: n.cat, d: n.date, o: n.owner, ex: n.ex && !dirty.has(n.id), b: n.body, w: n.why, p: n.steps.map(s => s.d ? s.t + ': ' + s.d : s.t), l: Array.from(n.links.entries()).filter(e => noteById[e[0]] && !isHidden(noteById[e[0]])).slice(0, 10).map(e => noteById[e[0]].title + ' (' + CATS[noteById[e[0]].cat].name + ')' + (e[1] ? ': ' + e[1] : '')) });
+    const j = await ai('ask', { hoje: TODAY, pergunta: v, notas: cand.map(full), indice: notes.filter(n => !isHidden(n)).map(n => ({ id: n.id, c: n.cat, t: n.title })) });
+    if (tok !== askTok) return;
+    const res = j.result || {}, used = (res.used || []).filter(id => noteById[id]);
+    setMatches(r.res.map(n => n.id).concat(used));
+    const guia = (Array.isArray(res.guia) ? res.guia : []).filter(g => g && g.nome).slice(0, 6), fala = String(res.fala || '');
+    renderAsk(r, v, { state: 'ok', answer: String(res.answer || 'Sem resposta.'), used: used, guia: guia, fala: fala }); renderStatus();
+    if (VOICE.auto && fala) VOICE.speak(fala);
+  } catch (e) {
+    if (tok !== askTok) return;
+    renderAsk(r, v, { state: 'err', msg: e.message || 'erro' });
+  }
+}
+function runPreview() {
+  const v = q.value.trim();
+  if (v.length < 3 && !files.length) { S.preview = null; S.previewText = null; renderStatus(); return; }
+  if (v && !files.length && isQuestion(v)) { S.preview = null; S.previewText = 'PARECE UMA PERGUNTA · ENTER PARA PROCURAR NO CÉREBRO'; renderStatus(); return; }
+  const A = analyze(v, files, files.map(f => f.text || '').join(' ').slice(0, 8000));
+  S.preview = new Set(A.rel.concat(A.ents).map(n => n.id));
+  const parts = ['→ ' + CATS[A.cat].name.toUpperCase()];
+  if (A.when) parts.push(fmtWhen(A.when.date, A.when.time).toUpperCase());
+  const lk = A.ents.concat(A.rel).slice(0, 3).map(n => n.title);
+  parts.push(lk.length ? 'LIGA COM ' + lk.join(', ').toUpperCase() : 'SEM LIGAÇÕES AINDA');
+  if (A.newEnts.length) parts.push('NOVOS: ' + A.newEnts.map(e => e.name).join(', ').toUpperCase());
+  S.previewText = parts.join(' · ');
+  renderStatus();
+}
+function fit() { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 120) + 'px'; form.classList.toggle('ready', !!q.value.trim() || files.length > 0); }
+q.addEventListener('input', () => { fit(); if (mode === 'find') runSearch(); else runPreview(); });
+q.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); }
+});
+
+function setPh() {
+  const sm = innerWidth < 560;
+  q.placeholder = mode === 'find' ? (sm ? 'Pergunte: como faço…?' : 'Pergunte: como faço…? Com quem falo…?') : (sm ? 'Registre, anexe, pergunte…' : 'Registre um processo, anexe ou pergunte…');
+}
+addEventListener('resize', setPh);
+function setMode(m) {
+  mode = m;
+  const find = m === 'find';
+  $('modeL').textContent = find ? 'PERGUNTAR' : 'REGISTRAR'; modeBtn.dataset.m = mode;
+  modeBtn.setAttribute('aria-label', find ? 'Modo perguntar. Toque para trocar para registrar.' : 'Modo registrar. Toque para trocar para perguntar.');
+  setPh();
+  clip.setAttribute('aria-disabled', String(find));
+  S.matches = null; S.chain = null; S.preview = null; S.previewText = null;
+  if (find) { if (q.value.trim()) runSearch(); else if (!S.sel) showExamples(); }
+  else { if (!S.sel) hidePanel(); runPreview(); }
+  renderStatus();
+}
+modeBtn.addEventListener('click', () => { setMode(mode === 'note' ? 'find' : 'note'); q.focus(); });
+
+function renderChips() {
+  chips.replaceChildren(); form.classList.toggle('ready', !!q.value.trim() || files.length > 0);
+  files.forEach((f, i) => {
+    const c = el('div', 'file'); const b = el('button'); b.type = 'button'; b.setAttribute('aria-label', 'Remover ' + f.name); b.textContent = '×';
+    b.addEventListener('click', () => { files.splice(i, 1); renderChips(); if (mode === 'note') runPreview(); });
+    c.className = 'file ' + (f.state === 'ok' ? 'ok' : f.state === 'erro' || f.state === 'vazio' ? 'er' : '');
+    c.append(el('span', null, f.name), el('i', null, f.state === 'lendo' ? 'lendo…' : f.state === 'ok' ? f.text.length.toLocaleString('pt-BR') + ' car.' : f.state === 'vazio' ? 'sem texto' : f.state === 'erro' ? 'erro' : ''), b); chips.append(c);
+  });
+}
+clip.addEventListener('click', () => { if (mode === 'note') fileIn.click(); });
+/* leitura de arquivos no próprio navegador */
+const LIBS = {
+  pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  docx: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+  xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+};
+const libP = {};
+function loadLib(k) {
+  if (!libP[k]) libP[k] = new Promise((res, rej) => {
+    const sc = document.createElement('script'); sc.src = LIBS[k]; sc.onload = res; sc.onerror = () => { libP[k] = null; rej(new Error('lib')); }; document.head.append(sc);
+  });
+  return libP[k];
+}
+const MAXCH = 20000;
+async function extractText(f) {
+  const n = f.name.toLowerCase();
+  if (f.size > 15 * 1024 * 1024) throw new Error('grande');
+  if (/\.(txt|md|csv|json)$/.test(n)) return await f.text();
+  if (/\.(png|jpe?g|webp|gif)$/.test(n)) return await readByAI(f);
+  if (/\.pdf$/.test(n)) {
+    await loadLib('pdf');
+    const L = window.pdfjsLib; L.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const doc = await L.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise;
+    let out = '';
+    for (let p = 1; p <= doc.numPages && out.length < MAXCH; p++) {
+      const c = await (await doc.getPage(p)).getTextContent();
+      let y = null, line = '';
+      c.items.forEach(it => {
+        const yy = it.transform ? Math.round(it.transform[5]) : y;
+        if (y !== null && Math.abs(yy - y) > 2) { out += line.trim() + '\n'; line = ''; }
+        line += it.str + (it.hasEOL ? '\n' : ' '); y = yy;
+      });
+      out += line.trim() + '\n\n';
+    }
+    if (out.replace(/\s/g, '').length < 40) return await readByAI(f);
+    return out;
+  }
+  if (/\.docx$/.test(n)) {
+    await loadLib('docx');
+    return (await window.mammoth.extractRawText({ arrayBuffer: await f.arrayBuffer() })).value;
+  }
+  if (/\.xlsx?$/.test(n)) {
+    await loadLib('xlsx');
+    const wb = window.XLSX.read(await f.arrayBuffer(), { type: 'array' });
+    return wb.SheetNames.map(nm => 'Planilha ' + nm + '\n' + window.XLSX.utils.sheet_to_csv(wb.Sheets[nm]).split('\n').filter(r => r.replace(/[,;\s]/g, '')).slice(0, 300).join('\n')).join('\n\n');
+  }
+  return '';
+}
+function b64(blobOrFile) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(new Error('leitura')); r.readAsDataURL(blobOrFile); }); }
+async function readByAI(f) {
+  if (!cloud.on) throw new Error('Entre na sua conta para a IA ler imagens e PDFs escaneados.');
+  const n = f.name.toLowerCase();
+  if (/\.pdf$/.test(n)) {
+    if (f.size > 4.5 * 1024 * 1024) throw new Error('PDF escaneado grande demais (máx. 4,5 MB)');
+    return (await ai('read', { media_type: 'application/pdf', data: await b64(f) })).text || '';
+  }
+  const bmp = await createImageBitmap(f), sc = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .85));
+  return (await ai('read', { media_type: 'image/jpeg', data: await b64(blob) })).text || '';
+}
+function addFiles(list) {
+  Array.from(list).forEach(f => {
+    const it = { name: f.name, text: '', state: 'lendo' };
+    files.push(it);
+    extractText(f).then(t => {
+      it.text = (t || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, MAXCH);
+      it.state = it.text ? 'ok' : 'vazio';
+    }).catch(e => { it.state = 'erro'; it.msg = e && e.message; }).then(() => { renderChips(); if (mode === 'note') { runPreview(); if (!files.some(x => x.state === 'lendo')) showFilePanel(); } });
+  });
+  renderChips(); runPreview();
+  if (!files.length) return;
+  S.previewText = 'LENDO O ARQUIVO…'; renderStatus();
+}
+function showFilePanel() {
+  if (!files.length) return;
+  S.sel = null; S.zt = 1;
+  const ex = files.map(f => f.text).join('\n\n'), A = analyze(q.value.trim(), files, ex.slice(0, 8000));
+  const ok = files.filter(f => f.state === 'ok');
+  const head = el('div', 'p-head');
+  head.append(dotEl(A.cat), el('span', 'tag', ok.length ? 'Arquivo lido' : 'Arquivo anexado'), closeBtn(hidePanel));
+  const kids = [head, el('h2', 'p-title', files.length === 1 ? files[0].name : files.length + ' arquivos')];
+  const bad = files.filter(f => f.state !== 'ok');
+  if (ok.length) kids.push(el('p', 'hint', ex.length.toLocaleString('pt-BR') + ' caracteres lidos · vai para ' + CATS[A.cat].name.toUpperCase() + (stepsFrom(ex).length ? ' · ' + stepsFrom(ex).length + ' passos encontrados' : '')));
+  bad.forEach(f => kids.push(el('p', 'hint', f.name + ': ' + (f.state === 'vazio' ? 'não encontrei texto (imagem ou PDF escaneado). Será salvo só com o nome.' : 'não consegui ler este arquivo.'))));
+  if (ex) { kids.push(sec('Prévia'), el('p', 'p-body', ex.slice(0, 420) + (ex.length > 420 ? '…' : ''))); }
+  const lk = A.ents.concat(A.rel).slice(0, 5);
+  if (lk.length) { kids.push(sec('Vai se ligar com')); const row = el('div', 'chips-row'); lk.forEach(m => { const b = el('span', 'chip'); b.append(dotEl(m.cat), el('span', null, m.title)); row.append(b); }); kids.push(row); }
+  const btns = el('div', 'btns'), go = el('button', 'pbtn', 'Revisar e salvar'), no = el('button', 'pbtn ghost', 'Remover');
+  go.type = 'button'; no.type = 'button';
+  go.addEventListener('click', submitNote);
+  no.addEventListener('click', () => { files = []; renderChips(); hidePanel(); S.preview = null; S.previewText = null; renderStatus(); });
+  btns.append(go, no); kids.push(btns);
+  showPanel(kids);
+}
+fileIn.addEventListener('change', () => { addFiles(fileIn.files); fileIn.value = ''; });
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => { if (mode === 'note' && e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') > -1) { e.preventDefault(); document.body.classList.add('drag'); } }));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); document.body.classList.remove('drag'); if (ev === 'drop' && mode === 'note' && e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); }));
+
+function stepsFrom(t) {
+  const m = t.split('\n').map(l => l.trim()).filter(l => /^(passo\s*)?\d{1,2}\s*[.):\-–]\s+\S/i.test(l));
+  return m.length >= 3 ? m.slice(0, 20).map(l => ({ t: l.replace(/^(passo\s*)?\d{1,2}\s*[.):\-–]\s+/i, '').slice(0, 140), d: '' })) : [];
+}
+function makeDraft(text, fs) {
+  const extra = fs.map(f => f.text).join('\n\n');
+  const A = analyze(text, fs, extra);
+  const first = (text.split(/[.!?\n]/)[0] || '').trim();
+  const base = fs.length ? fs[0].name.replace(/\.[^.]+$/, '') : '';
+  const title = first ? (first.length > 48 ? first.slice(0, 46).trim() + '…' : first) : (base.length > 48 ? base.slice(0, 46) + '…' : base);
+  let body = text;
+  fs.forEach(f => { body += (body ? '\n\n' : '') + 'Arquivo: ' + f.name + (f.text ? '\n' + f.text : f.state === 'vazio' ? '\n(sem texto legível: se for escaneado ou imagem, a leitura por IA virá depois)' : ''); });
+  return { owner: '', revm: 0, files: fs, cat: A.cat, title: title, body: body.slice(0, MAXCH + 400), why: '', steps: stepsFrom(extra), date: A.when ? A.when.date : TODAY, time: A.when ? A.when.time : '', sugg: A.ents.concat(A.rel), newEnts: A.newEnts, text: text };
+}
+const isQuestion = v => /\?\s*$/.test(v) || /^(como|quando|que dia|qual|quais|onde|quem|o que|quanto|me mostre|mostre)\b/.test(norm(v));
+let busy = false;
+async function submitNote() {
+  if (busy) return;
+  const text = q.value.trim();
+  if (!text && !files.length) return;
+  if (!canEdit()) { setMode('find'); if (text && cloud.on) askAI(text); return; }
+  if (text && !files.length && isQuestion(text)) { setMode('find'); if (cloud.on) askAI(text); return; }
+  if (files.some(f => f.state === 'lendo')) { S.previewText = 'AGUARDE: LENDO O ARQUIVO…'; renderStatus(); return; }
+  const groups = (text || files.length === 1) ? [files.slice()] : files.map(f => [f]);
+  drafts = groups.map(g => makeDraft(text, g));
+  q.value = ''; fit(); files = []; renderChips();
+  S.previewText = null; S.matches = null; S.chain = null;
+  if (cloud.on) {
+    busy = true; S.previewText = 'IA ORGANIZANDO…'; renderStatus();
+    const head = el('div', 'p-head'); head.append(el('span', 'tag', 'IA'));
+    showPanel([head, el('h2', 'p-title', 'Lendo e organizando…'), el('p', 'hint', 'A IA está entendendo o registro, achando ligações e montando o passo a passo.')]);
+    for (const D of drafts) { try { await aiDraft(D); } catch (e) { D.aiErr = e.message || 'erro'; } }
+    busy = false; S.previewText = null;
+  }
+  nextDraft(); renderStatus();
+}
+async function aiDraft(D) {
+  const compact = n => ({ id: n.id, t: n.title, c: n.cat, d: n.date, s: (n.body || n.why || '').slice(0, 110) });
+  const j = await ai('analyze', { hoje: TODAY, texto: D.text, arquivos: (D.files || []).map(f => ({ nome: f.name, texto: f.text || '' })), notas: notes.filter(n => !isHidden(n)).map(compact) });
+  const r = j.result || {};
+  if (CATS[r.cat]) D.cat = r.cat;
+  if (r.title && String(r.title).trim()) D.title = String(r.title).trim().slice(0, 70);
+  if (r.why) D.why = String(r.why).trim();
+  if (Array.isArray(r.steps) && r.steps.length >= 2 && !D.steps.length) D.steps = r.steps.filter(x => x && x.t).slice(0, 25).map(x => ({ t: String(x.t).slice(0, 140), d: String(x.d || '').slice(0, 300) }));
+  if (/^\d{4}(-\d{2}(-\d{2})?)?$/.test(r.date || '') && parseWhen(toInput(r.date, ''))) D.date = r.date;
+  if (/^\d{2}:\d{2}$/.test(r.time || '')) D.time = r.time;
+  D.reasons = new Map(); const sg = [], seen = new Set();
+  (r.links || []).forEach(l => { const m = noteById[l && l.id]; if (m && !seen.has(m.id)) { seen.add(m.id); sg.push(m); D.reasons.set(m.id, String(l.reason || '').slice(0, 200)); } });
+  const nes = [];
+  (r.entities || []).forEach(e => {
+    if (!e || !e.name) return;
+    const ex = findByTitle(e.name), cat = e.kind === 'setor' ? 'set' : 'pes';
+    if (ex) { if (!seen.has(ex.id)) { seen.add(ex.id); sg.push(ex); D.reasons.set(ex.id, ex.cat === 'set' ? 'Setor responsável.' : 'Pessoa envolvida.'); } }
+    else if (!nes.some(x => norm(x.name) === norm(e.name))) nes.push({ name: String(e.name).slice(0, 60), cat: cat, parent: String(e.parent || '').slice(0, 60) });
+  });
+  const addEnt = (nm, cat, why, par) => { nm = String(nm || '').trim().slice(0, 60); if (!nm) return; const ex = findByTitle(nm); if (ex) { if (!seen.has(ex.id)) { seen.add(ex.id); sg.push(ex); D.reasons.set(ex.id, why); } } else if (!nes.some(x => norm(x.name) === norm(nm))) nes.push({ name: nm, cat: cat, parent: par || '' }); };
+  if (r.setor) addEnt(r.setor, 'set', 'Setor responsável por este assunto.', '');
+  if (r.owner) { D.owner = String(r.owner).trim().slice(0, 60); addEnt(D.owner, 'pes', 'Responsável por este item.', String(r.setor || '').trim().slice(0, 60)); }
+  if (Number.isInteger(r.revisao_meses) && r.revisao_meses > 0 && r.revisao_meses <= 36) D.revm = r.revisao_meses;
+  D.sugg = sg.length ? sg : D.sugg; D.newEnts = nes.length || (r.entities || []).length || r.setor || r.owner ? nes : D.newEnts; D.ai = true;
+}
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  if (mode === 'find') {
+    const v = q.value.trim(); if (!v) return;
+    if (cloud.on) { askAI(v); return; }
+    if (S.matches && S.matches.size) { const f = noteById[Array.from(S.matches)[0]]; if (f) select(f); }
+    return;
+  }
+  submitNote();
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (editing && S.sel) { renderNote(S.sel); return; }
+  if (q.value) { q.value = ''; fit(); if (mode === 'find') runSearch(); else runPreview(); }
+  else if (S.sel) deselect();
+});
+
+const ro = new ResizeObserver(() => {
+  dockH = dock.offsetHeight; panelOH = panel.hidden ? 0 : panel.offsetHeight;
+  document.documentElement.style.setProperty('--dock-h', dockH + 'px');
+});
+ro.observe(dock); ro.observe(panel);
+
+renderStatus(); setPh();
+function bindTools() {
+const setGateMode = m => {
+  const up = m === 'up'; $('gform').dataset.m = m;
+  $('g-t-in').setAttribute('aria-selected', String(!up)); $('g-t-up').setAttribute('aria-selected', String(up));
+  $('g-mail2').required = up; $('g-pass2').required = up; $('g-pass').minLength = up ? 8 : 6;
+  $('g-pass').autocomplete = up ? 'new-password' : 'current-password'; $('g-go').textContent = up ? 'Criar conta' : 'Entrar'; $('g-err').textContent = '';
+};
+$('g-t-in').addEventListener('click', () => setGateMode('in')); $('g-t-up').addEventListener('click', () => setGateMode('up'));
+$('gform').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!cloud.sb) { $('g-err').textContent = 'Sem conexão com a nuvem agora.'; return; }
+  const up = $('gform').dataset.m === 'up', mail = $('g-mail').value.trim(), pass = $('g-pass').value;
+  const err = t => { $('g-err').textContent = t; };
+  if (up) {
+    if (mail.toLowerCase() !== $('g-mail2').value.trim().toLowerCase()) { err('Os dois e-mails não são iguais. Confira a digitação.'); $('g-mail2').focus(); return; }
+    if (pass.length < 8) { err('A senha precisa ter pelo menos 8 caracteres.'); $('g-pass').focus(); return; }
+    if (pass !== $('g-pass2').value) { err('As duas senhas não são iguais. Confira a digitação.'); $('g-pass2').focus(); return; }
+  }
+  const go = $('g-go'); go.disabled = true; err('');
+  try {
+    if (up) {
+      const r = await cloud.sb.auth.signUp({ email: mail, password: pass, options: { emailRedirectTo: location.origin + '/cerebroempresa/' } });
+      if (r.error) { err(/registered|already/i.test(r.error.message) ? 'Este e-mail já tem conta. Use a aba Entrar.' : 'Não consegui criar a conta: ' + r.error.message); return; }
+      if (r.data && r.data.user && Array.isArray(r.data.user.identities) && !r.data.user.identities.length) { err('Este e-mail já tem conta. Use a aba Entrar.'); return; }
+      $('g-pass').value = ''; $('g-pass2').value = '';
+      if (r.data && r.data.session) { await cloudStart(r.data.user); return; }
+      setGateMode('in'); err('Conta criada. Confirme pelo e-mail que enviamos e depois entre aqui.'); return;
+    }
+    const r = await cloud.sb.auth.signInWithPassword({ email: mail, password: pass });
+    if (r.error) { err(/invalid/i.test(r.error.message) ? 'E-mail ou senha incorretos.' : /confirm/i.test(r.error.message) ? 'Confirme seu e-mail antes de entrar (veja a caixa de entrada).' : 'Não consegui entrar: ' + r.error.message); return; }
+    $('g-pass').value = '';
+    try { localStorage.removeItem('cerebroemp-local'); } catch (er) { /* */ }
+    await cloudStart(r.data.user);
+  } finally { go.disabled = false; }
+});
+$('g-local').addEventListener('click', () => { try { localStorage.setItem('cerebroemp-local', '1'); localStorage.setItem('cerebroemp-demo', '1'); } catch (e) { /* */ } location.reload(); });
+
+$('mdIn').addEventListener('change', () => { importMd($('mdIn').files).catch(() => toast('Não consegui importar.')); $('mdIn').value = ''; });
+}
+$('menuBtn').addEventListener('click', openMenu);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && cloud.on && Date.now() - cloud.pulled > 45000 && !editing && !pending.size) pull().then(() => { renderStatus(); }).catch(() => { /* */ }); });
+bindTools();
+requestAnimationFrame(frame);
+cloudInit();
+})();
+</script>
+
+</body>
+</html>
