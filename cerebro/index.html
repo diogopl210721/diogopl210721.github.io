@@ -254,6 +254,8 @@ body::after {
 }
 .short { display: none; }
 #stx .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+ #menuBtn { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; font: 500 11px/1 var(--mono); letter-spacing: .16em; color: var(--cyan); background: rgba(63,217,255,.1); border: 1px solid rgba(63,217,255,.5); border-radius: 2px; cursor: pointer; }
+#menuBtn:hover { background: rgba(63,217,255,.22); border-color: var(--cyan); }
 .kh { flex: none; display: flex; gap: 6px; color: rgba(109,146,166,.8); }
 .kh kbd { padding: 3px 5px; font: 500 9.5px/1 var(--mono); letter-spacing: .06em; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 2px; background: rgba(63,217,255,.05); }
 @keyframes blink { 50% { opacity: .35; } }
@@ -317,9 +319,18 @@ body::after {
 .ents label { display: flex; align-items: center; gap: 10px; min-height: 36px; font: 400 14px/1.3 var(--body); color: var(--ink-soft); cursor: pointer; }
 .ents input { width: 18px; height: 18px; accent-color: #3fd9ff; }
 .btns.stk { position: sticky; bottom: -18px; margin: 16px -16px -18px; padding: 10px 16px 14px; background: rgba(4,14,23,.97); border-top: 1px solid var(--line); }
+#empty { position: fixed; left: 50%; bottom: calc(var(--dock-h, 110px) + 26px); transform: translateX(-50%); width: min(300px, 78vw); text-align: center; pointer-events: none; z-index: 1; display: flex; flex-direction: column; gap: 8px; }
+#empty[hidden] { display: none; }
+#empty b { font: 600 13px/1.2 var(--mono); letter-spacing: .18em; color: var(--cyan); }
+#empty span { font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
 #gate { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(2,7,12,.88); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 #gate[hidden] { display: none; }
 #gate .card { width: min(380px, 100%); padding: 22px 20px 20px; box-sizing: border-box; }
+.gtabs { display: flex; gap: 6px; margin: 12px 0 2px; }
+.gtabs button { flex: 1; min-height: 38px; background: transparent; border: 1px solid var(--line); border-radius: 2px; color: var(--ink-soft); font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.gtabs button[aria-selected="true"] { color: var(--cyan); border-color: var(--cyan); background: rgba(63,217,255,.12); }
+#gform .up { display: none; }
+#gform[data-m="up"] .up { display: flex; }
 #gate h2 { margin: 0 0 4px; font: 600 26px/1.1 var(--display); letter-spacing: .06em; }
 #gate p { margin: 0 0 6px; color: var(--dim); font-size: 14px; line-height: 1.45; }
 #gate .err { color: #ff8c7a; min-height: 18px; margin-top: 10px; font-size: 13.5px; }
@@ -355,6 +366,7 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
 #form.ready #send { color: #022029; background: linear-gradient(135deg, #7ff0ff, #2bc4ee); border-color: transparent; box-shadow: 0 0 18px rgba(63,217,255,.7); }
 @media (max-height: 520px) { .kh { display: none; } .p-title { font-size: 19px; } }
 @media (max-width: 560px) {
+  #q::placeholder { font-size: 14.5px; }
   .kh { display: none; }
   .pr { display: none; }
   #mode .ml { display: none; }
@@ -386,7 +398,7 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
 
 <div id="dock">
   <div id="chips"></div>
-  <div id="status"><span id="stx"></span><span class="kh"><kbd>ENTER ↵</kbd><kbd>SHIFT + ENTER</kbd></span></div>
+  <div id="status"><span id="stx"></span><span class="kh"><kbd>ENTER ↵</kbd><kbd>SHIFT + ENTER</kbd></span><button type="button" id="menuBtn" aria-label="Abrir menu e ferramentas"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>MENU</span></button></div>
   <form id="form" autocomplete="off"><div class="cin">
       <i class="scan"></i>
       <button type="button" id="mode" data-m="note" aria-label="Modo anotar. Toque para trocar para perguntar.">
@@ -404,12 +416,16 @@ body.drag #form { filter: drop-shadow(0 0 26px rgba(63,217,255,.8)); }
       </button>
   </div></form>
 </div>
+<div id="empty" hidden><b>SEU CÉREBRO ESTÁ VAZIO</b><span>Escreva o primeiro pensamento lá embaixo. Cada registro acende um neurônio, e as ligações aparecem sozinhas.</span></div>
 <div id="gate" hidden role="dialog" aria-modal="true" aria-labelledby="gt">
   <form class="card hud" id="gform" autocomplete="on">
     <h2 id="gt">CÉREBRO</h2>
     <p>Entre com a conta DDS para guardar seu cérebro na nuvem e usar a IA.</p>
+    <div class="gtabs" role="tablist"><button type="button" id="g-t-in" role="tab" aria-selected="true">Entrar</button><button type="button" id="g-t-up" role="tab" aria-selected="false">Criar conta</button></div>
     <div class="fld"><label for="g-mail">E-mail</label><input id="g-mail" type="email" autocomplete="username" required></div>
-    <div class="fld"><label for="g-pass">Senha</label><input id="g-pass" type="password" autocomplete="current-password" required></div>
+    <div class="fld up"><label for="g-mail2">Confirme o e-mail</label><input id="g-mail2" type="email" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+    <div class="fld"><label for="g-pass">Senha</label><input id="g-pass" type="password" autocomplete="current-password" required minlength="6"></div>
+    <div class="fld up"><label for="g-pass2">Confirme a senha</label><input id="g-pass2" type="password" autocomplete="new-password"></div>
     <div class="err" id="g-err" role="alert"></div>
     <div class="btns"><button class="pbtn" type="submit" id="g-go">Entrar</button></div>
     <button type="button" class="lnk" id="g-local">Continuar sem entrar (só neste aparelho)</button>
@@ -865,10 +881,14 @@ function link(a, b, reason) {
   linkEdges.push(e); a.edges.push(e); b.edges.push(e);
 }
 DATA.forEach(d => EXIDS.add(d.id));
-const catCount = {};
-DATA.forEach(d => { catCount[d.cat] = catCount[d.cat] || 0; addNote(d, catCount[d.cat]++); });
-LINKS.forEach(l => link(noteById[l[0]], noteById[l[1]], l[2]));
-DATA.forEach(d => { if (d.parent) link(noteById[d.id], noteById[d.parent], d.title + ' fica em ' + noteById[d.parent].title + '.'); });
+let DEMO = false;
+try { DEMO = localStorage.getItem('cerebro-demo') === '1'; } catch (e) { /* */ }
+if (DEMO) {
+  const catCount = {};
+  DATA.forEach(d => { catCount[d.cat] = catCount[d.cat] || 0; addNote(d, catCount[d.cat]++); });
+  LINKS.forEach(l => link(noteById[l[0]], noteById[l[1]], l[2]));
+  DATA.forEach(d => { if (d.parent) link(noteById[d.id], noteById[d.parent], d.title + ' fica em ' + noteById[d.parent].title + '.'); });
+}
 
 const findByTitle = name => notes.find(n => norm(n.title) === norm(name));
 function descendants(n) {
@@ -957,7 +977,7 @@ async function pull() {
 }
 async function cloudStart(user) {
   const r = await cloud.sb.rpc('cb_ok');
-  if (r.error || !r.data) { cloud.user = user; cloud.on = false; cloud.state = 'denied'; showGate('A conta ' + (user.email || '') + ' não tem acesso ao Cérebro. Entre com outra conta.'); return; }
+  if (r.error || !r.data) { cloud.user = user; cloud.on = false; cloud.state = 'denied'; showGate('A conta ' + (user.email || '') + ' ainda não foi liberada para usar o Cérebro. Peça a liberação ao administrador ou entre com outra conta.'); return; }
   cloud.user = user; cloud.on = true; cloud.state = 'sync'; hideGate(); renderStatus();
   try { await pull(); save(); await push(); } catch (e) { cloud.state = 'erro'; cloud.msg = (e && e.message) || ''; }
   renderStatus();
@@ -1129,7 +1149,7 @@ function openMenu() {
     toolRow('Linha do tempo animada', 'Veja o cérebro crescer na ordem em que as coisas aconteceram.', openTimeline),
     toolRow('Caminho entre dois pensamentos', 'Descubra por quais ligações um pensamento chega a outro.', openPath),
     toolRow('Revisão do dia', 'Um pensamento seu para reforçar a memória, ou um passo a passo que ficou pela metade.', () => openReview()),
-    toolRow(S.hideEx ? 'Mostrar notas de exemplo' : 'Ocultar notas de exemplo', 'Deixa só o que é seu no mapa. As que você editou continuam aparecendo.', () => { S.hideEx = !S.hideEx; try { localStorage.setItem('cerebro-prefs-v1', JSON.stringify({ hideEx: S.hideEx })); } catch (e) { /* */ } renderStatus(); openMenu(); }),
+    toolRow(DEMO ? 'Sair do cérebro de exemplo' : 'Ver um cérebro de exemplo', DEMO ? 'Volta ao cérebro só com o que é seu.' : 'Mostra um cérebro de demonstração cheio, para você ver como fica. Dá para sair quando quiser.', () => { try { localStorage.setItem('cerebro-demo', DEMO ? '0' : '1'); } catch (e) { /* */ } location.reload(); }),
     toolRow('Exportar para Markdown', 'Baixa suas notas em .md com [[ligações]], prontas para o Obsidian.', () => exportMd().catch(() => toast('Não consegui exportar.'))),
     toolRow('Importar Markdown', 'Traz notas .md (inclusive do Obsidian) e refaz as ligações [[assim]].', () => $('mdIn').click()));
   kids.push(sec('Privacidade'), el('p', 'hint', 'Cada conta só enxerga o próprio cérebro. Com a conta ligada, o texto que você manda para a IA (organizar, perguntar, ler arquivos) é enviado à Anthropic só para gerar a resposta; a chave fica no servidor, nunca na página.'));
@@ -1857,12 +1877,13 @@ function renderAsk(r, v, A) {
   }
   showPanel(kids);
 }
+const EX_GEN = ['O que aconteceu ontem?', 'O que aconteceu esta semana?', 'O que aconteceu em ' + new Date().getFullYear() + '?'];
 function showExamples() {
   const head = el('div', 'p-head');
   head.append(el('span', 'tag', 'Pergunte ao seu cérebro'), closeBtn(hidePanel));
   const kids = [head, el('p', 'hint', 'Pergunte por data, pessoa, lugar ou assunto. Os neurônios usados se acendem e as conexões aparecem.'), sec('Experimente')];
   const row = el('div', 'chips-row');
-  EX.forEach(t => {
+  (DEMO ? EX : EX_GEN).forEach(t => {
     const b = el('button', 'chip', t); b.type = 'button';
     b.addEventListener('click', () => { q.value = t; fit(); runSearch(); if (cloud.on) askAI(t); });
     row.append(b);
@@ -1888,6 +1909,8 @@ function deselect() {
 }
 
 function renderStatus() {
+  renderRail();
+  $('empty').hidden = notes.length > 0;
   stx.replaceChildren();
   if (S.previewText) { stx.append(el('span', 't', S.previewText)); return; }
   if (mode === 'find' && q.value.trim() && S.matches) {
@@ -1898,21 +1921,28 @@ function renderStatus() {
     const k = notes.filter(n => n.cat === S.filter).length;
     stx.append(el('span', 't', 'FILTRO · ' + CATS[S.filter].name.toUpperCase() + ' · ' + k)); return;
   }
+  if (!notes.length) { stx.append(el('span', 't', 'CÉREBRO VAZIO' + (cloud.on ? ' · NUVEM · IA' : ''))); return; }
   const mine = notes.some(n => n.user || (dirty.has(n.id) && !n.ex)), vis = notes.filter(n => !isHidden(n)).length;
   const tl = cloud.on ? (cloud.state === 'erro' ? ' · ERRO AO SALVAR' : cloud.state === 'sync' ? ' · SINCRONIZANDO' : ' · NUVEM · IA') : (cloud.sb ? ' · LOCAL' : '');
   stx.append(el('span', 't long', (mine ? '' : 'EXEMPLO · ') + vis + ' NEURÔNIOS · ' + linkEdges.length + ' SINAPSES' + tl),
     el('span', 't short', (mine ? '' : 'EXEMPLO · ') + vis + ' NÓS' + tl));
 }
 
-/* régua de regiões e rótulos */
-(function () {
-  const tg = el('button', 'rt', 'Aa'); tg.type = 'button'; tg.setAttribute('aria-pressed', 'true'); tg.setAttribute('aria-label', 'Mostrar nomes dos neurônios');
+/* régua de regiões: só aparecem as regiões que já têm pensamentos */
+let railSig = '';
+function renderRail() {
+  const have = ORDER.filter(k => notes.some(n => n.cat === k && !isHidden(n)));
+  if (S.filter && have.indexOf(S.filter) < 0) S.filter = null;
+  const sig = have.join(',') + '|' + (S.filter || '');
+  if (sig === railSig) return; railSig = sig;
+  rail.replaceChildren(); rail.style.display = have.length ? '' : 'none';
+  if (!have.length) return;
+  const tg = el('button', 'rt', 'Aa'); tg.type = 'button'; tg.setAttribute('aria-pressed', String(S.labels)); tg.setAttribute('aria-label', 'Mostrar nomes dos neurônios');
   tg.append(el('span', 'rn', 'Nomes'));
   tg.addEventListener('click', () => { S.labels = !S.labels; tg.setAttribute('aria-pressed', String(S.labels)); });
-  const mb = el('button', 'rt', '☰'); mb.type = 'button'; mb.setAttribute('aria-label', 'Menu e ferramentas'); mb.addEventListener('click', openMenu);
-  rail.append(mb, tg);
-  ORDER.forEach(k => {
-    const b = el('button'); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
+  rail.append(tg);
+  have.forEach(k => {
+    const b = el('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(S.filter === k));
     b.setAttribute('aria-label', 'Filtrar ' + CATS[k].name);
     const i = el('i', CATS[k].ent ? 'dia' : ''); i.style.background = rgbs(CATS[k].rgb); b.append(i, el('span', 'rn', CATS[k].name));
     b.addEventListener('click', () => {
@@ -1920,10 +1950,9 @@ function renderStatus() {
       rail.querySelectorAll('button[data-k]').forEach(x => x.setAttribute('aria-pressed', String(S.filter === x.dataset.k)));
       renderStatus();
     });
-    b.dataset.k = k;
-    rail.append(b);
+    b.dataset.k = k; rail.append(b);
   });
-})();
+}
 
 function runSearch() {
   const v = q.value.trim();
@@ -2192,21 +2221,45 @@ ro.observe(dock); ro.observe(panel);
 
 renderStatus(); setPh();
 function bindTools() {
+const setGateMode = m => {
+  const up = m === 'up'; $('gform').dataset.m = m;
+  $('g-t-in').setAttribute('aria-selected', String(!up)); $('g-t-up').setAttribute('aria-selected', String(up));
+  $('g-mail2').required = up; $('g-pass2').required = up; $('g-pass').minLength = up ? 8 : 6;
+  $('g-pass').autocomplete = up ? 'new-password' : 'current-password'; $('g-go').textContent = up ? 'Criar conta' : 'Entrar'; $('g-err').textContent = '';
+};
+$('g-t-in').addEventListener('click', () => setGateMode('in')); $('g-t-up').addEventListener('click', () => setGateMode('up'));
 $('gform').addEventListener('submit', async e => {
   e.preventDefault();
   if (!cloud.sb) { $('g-err').textContent = 'Sem conexão com a nuvem agora.'; return; }
-  const go = $('g-go'); go.disabled = true; $('g-err').textContent = '';
-  const r = await cloud.sb.auth.signInWithPassword({ email: $('g-mail').value.trim(), password: $('g-pass').value });
-  go.disabled = false;
-  if (r.error) { $('g-err').textContent = /invalid/i.test(r.error.message) ? 'E-mail ou senha incorretos.' : 'Não consegui entrar: ' + r.error.message; return; }
-  $('g-pass').value = '';
-  try { localStorage.removeItem('cerebro-local'); } catch (er) { /* */ }
-  await cloudStart(r.data.user);
+  const up = $('gform').dataset.m === 'up', mail = $('g-mail').value.trim(), pass = $('g-pass').value;
+  const err = t => { $('g-err').textContent = t; };
+  if (up) {
+    if (mail.toLowerCase() !== $('g-mail2').value.trim().toLowerCase()) { err('Os dois e-mails não são iguais. Confira a digitação.'); $('g-mail2').focus(); return; }
+    if (pass.length < 8) { err('A senha precisa ter pelo menos 8 caracteres.'); $('g-pass').focus(); return; }
+    if (pass !== $('g-pass2').value) { err('As duas senhas não são iguais. Confira a digitação.'); $('g-pass2').focus(); return; }
+  }
+  const go = $('g-go'); go.disabled = true; err('');
+  try {
+    if (up) {
+      const r = await cloud.sb.auth.signUp({ email: mail, password: pass, options: { emailRedirectTo: location.origin + '/cerebro/' } });
+      if (r.error) { err(/registered|already/i.test(r.error.message) ? 'Este e-mail já tem conta. Use a aba Entrar.' : 'Não consegui criar a conta: ' + r.error.message); return; }
+      if (r.data && r.data.user && Array.isArray(r.data.user.identities) && !r.data.user.identities.length) { err('Este e-mail já tem conta. Use a aba Entrar.'); return; }
+      $('g-pass').value = ''; $('g-pass2').value = '';
+      if (r.data && r.data.session) { await cloudStart(r.data.user); return; }
+      setGateMode('in'); err('Conta criada. Confirme pelo e-mail que enviamos e depois entre aqui.'); return;
+    }
+    const r = await cloud.sb.auth.signInWithPassword({ email: mail, password: pass });
+    if (r.error) { err(/invalid/i.test(r.error.message) ? 'E-mail ou senha incorretos.' : /confirm/i.test(r.error.message) ? 'Confirme seu e-mail antes de entrar (veja a caixa de entrada).' : 'Não consegui entrar: ' + r.error.message); return; }
+    $('g-pass').value = '';
+    try { localStorage.removeItem('cerebro-local'); } catch (er) { /* */ }
+    await cloudStart(r.data.user);
+  } finally { go.disabled = false; }
 });
 $('g-local').addEventListener('click', () => { try { localStorage.setItem('cerebro-local', '1'); } catch (e) { /* */ } hideGate(); });
 
 $('mdIn').addEventListener('change', () => { importMd($('mdIn').files).catch(() => toast('Não consegui importar.')); $('mdIn').value = ''; });
 }
+$('menuBtn').addEventListener('click', openMenu);
 bindTools();
 requestAnimationFrame(frame);
 cloudInit();
