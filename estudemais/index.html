@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=13">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -380,8 +380,10 @@
           <button class="ghost-btn" onclick="$('input-camera').click()"><svg class="ico"><use href="#i-foto"/></svg>Câmera</button>
           <button class="ghost-btn" onclick="$('input-galeria').click()"><svg class="ico"><use href="#i-upload"/></svg>Escolher da galeria</button>
         </div>
+        <div class="fotos-lista" id="fotos-lista" hidden></div>
+        <p class="small muted fotos-dica">matéria grande? tira uma foto de cada página, até 10, e gera tudo de uma vez</p>
         <input type="file" id="input-camera" accept="image/*" capture="environment" hidden onchange="fotoSelecionada(event)">
-        <input type="file" id="input-galeria" accept="image/*" hidden onchange="fotoSelecionada(event)">
+        <input type="file" id="input-galeria" accept="image/*" multiple hidden onchange="fotoSelecionada(event)">
       </div>
       <div class="source-panel" id="src-pdf">
         <div class="file-box" id="pdf-caixa" onclick="$('input-pdf').click()" role="button" tabindex="0"><img class="adesivo" id="pdf-icone" src="adesivos/pagina.webp" alt=""><span id="pdf-status">toque pra escolher um PDF (até 15 MB)</span></div>
@@ -1025,15 +1027,15 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=12"></script>
-<script src="efeitos.js?v=12"></script>
-<script src="app.js?v=12"></script>
-<script src="voz.js?v=12"></script>
-<script src="biblioteca.js?v=12"></script>
-<script src="tutor.js?v=12"></script>
-<script src="comunidade.js?v=12"></script>
-<script src="criador.js?v=12"></script>
-<script src="vitrine.js?v=12"></script>
-<script src="escolas.js?v=12"></script>
+<script src="config.js?v=13"></script>
+<script src="efeitos.js?v=13"></script>
+<script src="app.js?v=13"></script>
+<script src="voz.js?v=13"></script>
+<script src="biblioteca.js?v=13"></script>
+<script src="tutor.js?v=13"></script>
+<script src="comunidade.js?v=13"></script>
+<script src="criador.js?v=13"></script>
+<script src="vitrine.js?v=13"></script>
+<script src="escolas.js?v=13"></script>
 </body>
 </html>

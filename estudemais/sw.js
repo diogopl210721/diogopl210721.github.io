@@ -1,6 +1,6 @@
 // EstudeUp — cache simples do app (rede primeiro, cache se estiver offline). Nunca guarda chamadas ao Supabase.
-const VERSAO = 'estudeup-v12';
-const ARQUIVOS = ['./', 'index.html', 'styles.css?v=12', 'efeitos.js?v=12', 'app.js?v=12', 'voz.js?v=12', 'biblioteca.js?v=12', 'tutor.js?v=12', 'comunidade.js?v=12', 'criador.js?v=12', 'config.js?v=12', 'vitrine.js?v=12', 'escolas.js?v=12',
+const VERSAO = 'estudeup-v13';
+const ARQUIVOS = ['./', 'index.html', 'styles.css?v=13', 'efeitos.js?v=13', 'app.js?v=13', 'voz.js?v=13', 'biblioteca.js?v=13', 'tutor.js?v=13', 'comunidade.js?v=13', 'criador.js?v=13', 'config.js?v=13', 'vitrine.js?v=13', 'escolas.js?v=13',
   'fontes/unbounded.woff2', 'fontes/atkinson-next.woff2', 'fontes/atkinson-next-italic.woff2', 'adesivos/fogo.webp', 'adesivos/caderno.webp', 'adesivos/fichas.webp', 'adesivos/capelo.webp', 'adesivos/lapis.webp', 'adesivos/trofeu.webp', 'adesivos/escola.webp', 'adesivos/camera.webp', 'adesivos/medalha3.webp',
   'favicon.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'marca/simbolo-256.webp', 'manifest.webmanifest'];
 

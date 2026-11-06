@@ -27,7 +27,7 @@ const estado = {
   tarefaAtual: null,
   materiaId: null,
   detalhe: null,
-  upload: { fonte: 'foto', foto: null, pdf: null, grupoId: null, grupoNome: null, materiaAlvo: null },
+  upload: { fonte: 'foto', fotos: [], pdf: null, grupoId: null, grupoNome: null, materiaAlvo: null },
   quiz: null,
   cards: null,
   enem: { area: '', qtd: 10, idioma: 'ingles' },
@@ -909,14 +909,11 @@ function novaMateria(opts = {}) {
   u.grupoId = opts.grupoId || null;
   u.grupoNome = opts.grupoNome || null;
   u.materiaAlvo = opts.materiaId || null;
-  u.foto = null; u.pdf = null;
+  u.fotos = []; u.pdf = null;
   ['input-materia', 'input-data-prova', 'input-youtube', 'input-youtube-transcricao', 'input-link', 'input-texto'].forEach((id) => { $(id).value = ''; });
   $('yt-dica').open = false;
   $('input-data-prova').min = hojeISO();
-  $('foto-placeholder').style.display = 'flex';
-  $('foto-preview').style.display = 'none';
-  $('foto-moldura').classList.remove('com-foto');
-  $('foto-status').textContent = 'toque pra tirar a foto';
+  pintarFotos();
   $('pdf-caixa').classList.remove('pronto');
   $('pdf-status').textContent = 'toque pra escolher um PDF (até 15 MB)';
   $('upload-passos-materia').hidden = !!u.materiaAlvo;
@@ -946,28 +943,46 @@ function setSource(fonte) {
   document.querySelectorAll('.source-panel').forEach((p) => p.classList.toggle('on', p.id === 'src-' + fonte));
 }
 
-function fotoSelecionada(ev) {
-  const file = ev.target.files[0];
-  if (!file) return;
-  const img = new Image();
-  const reader = new FileReader();
-  reader.onload = (e) => { img.src = e.target.result; };
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    const escala = Math.min(1, 1600 / Math.max(img.width, img.height));
-    canvas.width = img.width * escala;
-    canvas.height = img.height * escala;
-    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    estado.upload.foto = dataUrl.split(',')[1];
-    $('foto-placeholder').style.display = 'none';
-    $('foto-preview').src = dataUrl;
-    $('foto-preview').style.display = 'block';
-    const moldura = $('foto-moldura');
-    moldura.classList.remove('com-foto'); void moldura.offsetWidth; moldura.classList.add('com-foto');
-    $('foto-status').textContent = 'foto pronta, toque pra trocar';
-  };
-  reader.readAsDataURL(file);
+// várias fotos do mesmo material (matéria grande = várias páginas); vão todas juntas numa geração só
+const MAX_FOTOS = 10;
+async function fotoSelecionada(ev) {
+  const arquivos = [...(ev.target.files || [])];
+  ev.target.value = ''; // deixa tirar/escolher de novo
+  if (!arquivos.length) return;
+  const u = estado.upload;
+  const cabem = MAX_FOTOS - u.fotos.length;
+  if (cabem <= 0) return avisar(`Dá pra mandar até ${MAX_FOTOS} fotos de uma vez.`);
+  if (arquivos.length > cabem) avisar(`Entraram só ${cabem}: o limite é ${MAX_FOTOS} fotos por vez.`);
+  for (const f of arquivos.slice(0, cabem)) {
+    try {
+      const { dataUrl, base64 } = await lerImagemComprimida(f, 1600, 0.78);
+      u.fotos.push({ dataUrl, base64 });
+    } catch (err) { avisar(err.message); }
+  }
+  pintarFotos(true);
+}
+
+function tirarFoto(i) {
+  estado.upload.fotos.splice(i, 1);
+  pintarFotos();
+}
+
+function pintarFotos(animar) {
+  const fotos = estado.upload.fotos;
+  const ultima = fotos[fotos.length - 1];
+  $('foto-placeholder').style.display = ultima ? 'none' : 'flex';
+  $('foto-preview').style.display = ultima ? 'block' : 'none';
+  if (ultima) $('foto-preview').src = ultima.dataUrl;
+  const moldura = $('foto-moldura');
+  moldura.classList.remove('com-foto');
+  if (ultima && animar) { void moldura.offsetWidth; moldura.classList.add('com-foto'); }
+  $('foto-status').textContent = !fotos.length ? 'toque pra tirar a foto'
+    : fotos.length >= MAX_FOTOS ? `${fotos.length} fotos (limite)` : `${fotos.length} ${fotos.length === 1 ? 'foto' : 'fotos'} · toque pra tirar mais`;
+  const lista = $('fotos-lista');
+  lista.hidden = !fotos.length;
+  lista.innerHTML = fotos.map((f, i) => `<div class="foto-mini"><img src="${f.dataUrl}" alt="foto ${i + 1}"><span>${i + 1}</span>
+      <button onclick="tirarFoto(${i})" aria-label="tirar a foto ${i + 1}">✕</button></div>`).join('')
+    + (fotos.length < MAX_FOTOS ? `<button class="foto-mini mais" onclick="$('input-camera').click()" aria-label="tirar mais uma foto">+</button>` : '');
 }
 
 function pdfSelecionado(ev) {
@@ -987,7 +1002,7 @@ function pdfSelecionado(ev) {
 
 function payloadDaFonte() {
   const u = estado.upload;
-  if (u.fonte === 'foto') { if (!u.foto) throw new Error('tira ou escolhe uma foto do material primeiro'); return { tipo_fonte: 'foto', imagem_base64: u.foto }; }
+  if (u.fonte === 'foto') { if (!u.fotos.length) throw new Error('tira ou escolhe uma foto do material primeiro'); return { tipo_fonte: 'foto', imagens_base64: u.fotos.map((f) => f.base64) }; }
   if (u.fonte === 'pdf') { if (!u.pdf) throw new Error('escolhe um PDF primeiro'); return { tipo_fonte: 'pdf', pdf_base64: u.pdf }; }
   if (u.fonte === 'texto') {
     const t = $('input-texto').value.trim();
@@ -1028,7 +1043,7 @@ async function criarJornada() {
   }
 
   const pronto = ocupado($('btn-criar-jornada'), 'Gerando...');
-  Fx.gerandoInicio(u.fonte === 'foto' && u.foto ? $('foto-preview').src : null);
+  Fx.gerandoInicio(u.fonte === 'foto' && u.fotos.length ? u.fotos[0].dataUrl : null);
   try {
     if (!materiaId) {
       const linha = u.grupoId ? { grupo_id: u.grupoId, nome, data_prova: dataProva } : { usuario_id: estado.usuarioId, nome, data_prova: dataProva };
