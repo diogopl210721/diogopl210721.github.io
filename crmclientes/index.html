@@ -1002,7 +1002,7 @@
       color: var(--primary);
     }
 
-    .note-text {
+    .note-text { white-space: pre-line;
       color: var(--text-main);
       margin-top: 0.15rem;
     }
@@ -1742,6 +1742,10 @@
       display: flex;
       gap: 0.4rem;
     }
+    .form-group input.pdf-preenchido, .form-group select.pdf-preenchido { background: #ecfdf5; border-color: #34d399; }
+    .form-group input.pdf-faltando, .form-group select.pdf-faltando { background: #fffbeb; border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.15); }
+    .pdf-import-box { border: 2px dashed var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; background: #f8fafc; }
+    .pdf-import-box .pdf-import-text { flex: 1; min-width: 220px; font-size: 0.88rem; color: var(--text-muted, #475569); }
   </style>
 </head>
 <body>
@@ -2117,6 +2121,15 @@
           <i class="fa-solid fa-user-plus" style="color: var(--primary);"></i> Iniciar Novo Processo de Cliente
         </div>
         <form id="clientForm">
+          <div class="pdf-import-box">
+            <div class="pdf-import-text">
+              <strong style="color: var(--primary);"><i class="fa-solid fa-file-pdf"></i> Importar ficha do cliente (PDF)</strong><br>
+              Os campos encontrados na ficha ficam em verde. O que a ficha não tiver fica em amarelo para preencher à mão.
+              <div id="pdfImportStatus" style="margin-top: 0.5rem; line-height: 1.5;"></div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('pdfFichaInput').click()"><i class="fa-solid fa-upload"></i> Escolher PDF</button>
+            <input type="file" id="pdfFichaInput" accept="application/pdf,.pdf" style="display:none" onchange="importarFichaPDF(event)">
+          </div>
           
           <div class="form-section-title">
             <i class="fa-solid fa-address-card"></i> 1. Dados do Cliente e Processo
@@ -2971,6 +2984,220 @@
       }
     }
 
+    /* ================= IMPORTAR FICHA PDF (Consigaz/Gasball) ================= */
+    var pdfNotaImportacao = null;
+
+    function fichaTitulo(txt) {
+      const minusculas = ['de', 'da', 'do', 'das', 'dos', 'e'];
+      return (txt || '').toLowerCase().split(/\s+/).filter(Boolean).map((p, i) =>
+        (i > 0 && minusculas.includes(p)) ? p : p.charAt(0).toUpperCase() + p.slice(1)
+      ).join(' ');
+    }
+
+    function fichaNumeroBr(txt) {
+      if (!txt) return null;
+      const n = parseFloat(String(txt).replace(/\./g, '').replace(',', '.'));
+      return isNaN(n) ? null : n;
+    }
+
+    function interpretarFichaConsigaz(texto) {
+      const t = texto.replace(/\s+/g, ' ');
+      const r = { contratos: [] };
+      let m;
+
+      m = t.match(/Cliente:\s*(\d+)\s*-\s*(.+?)\s*CNPJ\/CPF/);
+      if (m) { r.codigo = m[1].trim(); r.razaoSocial = m[2].trim(); }
+
+      m = t.match(/CNPJ\/CPF:\s*([\d.\/-]+)/);
+      if (m) r.cnpj = m[1];
+
+      m = t.match(/Canal de venda:\s*(.+?)\s*Cond\. pagto/);
+      if (m) r.canalVenda = m[1].replace(/^\d+\s*-\s*/, '').trim();
+
+      m = t.match(/Cond\. pagto:\s*(.+?)\s*Ramo ativ/);
+      if (m) r.condPagto = m[1].trim();
+
+      m = t.match(/Endereço Padrão:\s*(.+?)\s*CEP:/);
+      if (m) r.enderecoPadrao = m[1].trim();
+
+      m = t.match(/Bairro:\s*(.*?)\s*Cidade:\s*(.+?)\s*UF:\s*([A-Z]{2})/);
+      if (m) { r.bairro = m[1].trim(); r.cidade = m[2].trim(); r.uf = m[3]; }
+
+      const blocos = t.split(/Contrato\s*\(\d+\)\s*:/).slice(1);
+      blocos.forEach(b => {
+        const c = {};
+        let x;
+        x = b.match(/^\s*(\S+)/); if (x) c.numero = x[1];
+        x = b.match(/Vigência:\s*(\d{2}\/\d{2}\/\d{4})\s*até\s*(\d{2}\/\d{2}\/\d{4})/);
+        if (x) { c.inicio = x[1]; c.fim = x[2].endsWith('9999') ? null : x[2]; }
+        x = b.match(/Situação:\s*(.+?)\s*Eqptos/); if (x) c.situacao = x[1].trim();
+        x = b.match(/Entrega:\s*(?:ENTREGA\s*\d*\s*-\s*)?(.+?)\s*CEP:/); if (x) c.entrega = x[1].trim();
+        x = b.match(/Item Recipiente\s*Qtde\s*(.+?)\s+(\d+)\s*Item Consumo/);
+        if (x) {
+          c.recipiente = x[1].trim();
+          c.qtde = parseInt(x[2], 10);
+          const tq = c.recipiente.match(/\b([BP])\s*-?\s*(\d{2,4})\b/i);
+          if (tq) c.tanque = tq[1].toUpperCase() + '-' + tq[2];
+        }
+        x = b.match(/R\$\s*([\d.,]+)\s+([\d.,]+)\s*(Kg|Un)\s+([\d.,]+)\s+([\d.,]+)\s*(?:Kg|Un)\s+([\d.,]+)\s*(.*?)\s*Evolução de Preço/i);
+        if (x) {
+          c.preco = fichaNumeroBr(x[1]);
+          c.media6m = fichaNumeroBr(x[2]);
+          c.unidade = x[3];
+          c.media1a = fichaNumeroBr(x[5]);
+          const freq = x[7].replace(/\s*\\\s*/g, ', ').trim();
+          c.frequencia = freq ? fichaTitulo(freq) : null;
+        }
+        c.evolucao = [];
+        x = b.match(/Evolução de Preço:\s*Item\s*Data\s*Preço\s*(.*)$/);
+        if (x) {
+          const re = /(\w+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.,]+)/g;
+          let l;
+          while ((l = re.exec(x[1])) !== null) c.evolucao.push({ data: l[2], preco: fichaNumeroBr(l[3]) });
+        }
+        r.contratos.push(c);
+      });
+
+      // Contrato principal: vigente a granel (Kg), senão vigente, senão o primeiro
+      const vig = r.contratos.filter(c => /vigente/i.test(c.situacao || ''));
+      r.principal = vig.find(c => c.unidade === 'Kg') || vig[0] || r.contratos[0] || null;
+      return r;
+    }
+
+    function fichaSegmento(canal) {
+      const c = (canal || '').toLowerCase();
+      if (c.includes('conta sim')) return 'Condomínio (Conta Sim)';
+      if (c.includes('condom')) return 'Condomínio (Coletivo)';
+      if (c.includes('edif')) return 'Edifício';
+      if (c.includes('industr')) return 'Indústria';
+      if (c.includes('residenc') || c.includes('pessoa f') || c.includes('domicil')) return 'Pessoa Física';
+      if (c.includes('comerc') || c.includes('restaur') || c.includes('padar') || c.includes('hotel') || c.includes('varej') || c.includes('servi')) return 'Comércio';
+      return null;
+    }
+
+    function carregarPdfJs() {
+      if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload = () => {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          resolve(window.pdfjsLib);
+        };
+        s.onerror = () => reject(new Error('Não foi possível carregar o leitor de PDF. Verifique a internet.'));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function extrairTextoFichaPDF(arquivo) {
+      const pdfjs = await carregarPdfJs();
+      const pdf = await pdfjs.getDocument({ data: await arquivo.arrayBuffer() }).promise;
+      let texto = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const pg = await pdf.getPage(i);
+        const conteudo = await pg.getTextContent();
+        texto += conteudo.items.map(it => it.str).join(' ') + '\n';
+      }
+      return texto;
+    }
+
+    function fichaPreencher(id, valor) {
+      const el = document.getElementById(id);
+      if (!el || valor === null || valor === undefined || valor === '') return false;
+      if (el.tagName === 'SELECT') {
+        const existe = Array.from(el.options).some(o => o.value === valor);
+        if (!existe) return false;
+      }
+      el.value = valor;
+      el.classList.add('pdf-preenchido');
+      return true;
+    }
+
+    async function importarFichaPDF(event) {
+      const arquivo = event.target.files[0];
+      event.target.value = '';
+      if (!arquivo) return;
+      const status = document.getElementById('pdfImportStatus');
+      status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lendo a ficha...';
+
+      try {
+        const texto = await extrairTextoFichaPDF(arquivo);
+        const f = interpretarFichaConsigaz(texto);
+        if (!f.codigo && !f.razaoSocial) {
+          status.innerHTML = '<span style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Não reconheci essa ficha. Confira se é a ficha do cliente Consigaz/Gasball.</span>';
+          return;
+        }
+
+        document.querySelectorAll('#clientForm .pdf-preenchido, #clientForm .pdf-faltando').forEach(el => el.classList.remove('pdf-preenchido', 'pdf-faltando'));
+
+        const c = f.principal || {};
+        let endereco = c.entrega || f.enderecoPadrao || '';
+        if (c.entrega && f.cidade) {
+          const corte = c.entrega.toUpperCase().lastIndexOf(' - ' + f.cidade.toUpperCase());
+          if (corte > 0) endereco = c.entrega.substring(0, corte);
+        } else if (!c.entrega && f.bairro) {
+          endereco = f.enderecoPadrao + ' - ' + f.bairro;
+        }
+
+        fichaPreencher('idCliente', f.codigo);
+        fichaPreencher('cliente', f.razaoSocial);
+        fichaPreencher('segmento', fichaSegmento(f.canalVenda));
+        fichaPreencher('tipoTanque', c.tanque);
+        fichaPreencher('qtdTanques', c.qtde);
+        if (c.unidade === 'Kg') {
+          fichaPreencher('consumoMedio', c.media6m !== null ? Math.round(c.media6m) : null);
+          fichaPreencher('precoGas', c.preco !== null ? c.preco.toFixed(2) : null);
+        }
+        fichaPreencher('frequencia', c.frequencia);
+        fichaPreencher('endereco', fichaTitulo(endereco));
+        if (f.cidade) fichaPreencher('cidade', fichaTitulo(f.cidade) + (f.uf ? ' - ' + f.uf : ''));
+        fichaPreencher('dataInicioContrato', c.inicio);
+        fichaPreencher('dataFimContrato', c.fim);
+        updateCalculatedMonths('cadastro');
+
+        // Campos obrigatórios que a ficha não trouxe: destacar para preencher à mão
+        const faltando = [];
+        document.querySelectorAll('#clientForm [required]').forEach(el => {
+          const grupo = el.closest('.form-group');
+          if (grupo && grupo.style.display === 'none') return;
+          if (!el.value) {
+            el.classList.add('pdf-faltando');
+            const label = el.closest('.form-group')?.querySelector('label');
+            faltando.push(label ? label.textContent.trim().replace(/\s*\(.*\)\s*$/, '') : el.id);
+          }
+        });
+        document.querySelectorAll('#clientForm input, #clientForm select').forEach(el => {
+          el.addEventListener('input', () => el.classList.remove('pdf-faltando'), { once: true });
+          el.addEventListener('change', () => el.classList.remove('pdf-faltando'), { once: true });
+        });
+
+        // Dados extras da ficha que não têm campo no formulário: viram a primeira anotação do processo
+        const linhas = ['Dados importados da ficha do cliente (PDF):'];
+        if (f.cnpj) linhas.push('CNPJ/CPF: ' + f.cnpj);
+        if (f.canalVenda) linhas.push('Canal de venda: ' + f.canalVenda);
+        if (f.condPagto) linhas.push('Cond. pagamento: ' + f.condPagto);
+        f.contratos.forEach(ct => {
+          let l = 'Contrato ' + (ct.numero || '?') + ' (' + (ct.situacao || 'sem situação') + ')';
+          if (ct.recipiente) l += ' - ' + ct.qtde + 'x ' + ct.recipiente;
+          if (ct.preco !== undefined && ct.preco !== null) l += ' - R$ ' + ct.preco.toFixed(4).replace('.', ',') + (ct.unidade === 'Un' ? '/un' : '/kg');
+          if (ct.media6m !== undefined && ct.media6m !== null) l += ' - Média 6M: ' + ct.media6m.toLocaleString('pt-BR') + ' ' + ct.unidade + ', Média 1A: ' + ct.media1a.toLocaleString('pt-BR') + ' ' + ct.unidade;
+          if (ct.evolucao && ct.evolucao.length) l += ' - Evolução de preço: ' + ct.evolucao.map(e => e.data + ' R$ ' + e.preco.toFixed(4).replace('.', ',')).join('; ');
+          linhas.push(l);
+        });
+        pdfNotaImportacao = linhas.join('\n');
+
+        let html = '<span style="color:var(--success)"><i class="fa-solid fa-circle-check"></i> Ficha de <strong>' + f.razaoSocial + '</strong> importada.</span>';
+        if (f.contratos.length > 1 && c.numero) html += '<br>A ficha tem ' + f.contratos.length + ' contratos. Usei o <strong>' + c.numero + '</strong> (' + (c.situacao || '') + (c.unidade === 'Kg' ? ', granel' : '') + '). Os outros ficam registrados nas anotações do processo.';
+        if (faltando.length) html += '<br><span style="color:#b45309"><i class="fa-solid fa-pen"></i> Preencha à mão: ' + faltando.join(', ') + '.</span>';
+        status.innerHTML = html;
+        const primeiro = document.querySelector('#clientForm .pdf-faltando');
+        if (primeiro) primeiro.focus();
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = '<span style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Erro ao ler o PDF: ' + err.message + '</span>';
+      }
+    }
+
     /* ================= ATENDIMENTOS (NOTAS DIÁRIAS) ================= */
 
     async function carregarAtendimentos() {
@@ -3630,7 +3857,7 @@
         dataCriacao: new Date().toISOString(),
         dataConclusao: null,
         currentStepIndex: 0,
-        stepNotes: {},
+        stepNotes: pdfNotaImportacao ? { "0": [{ time: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}), text: pdfNotaImportacao }] } : {},
         documentosChecked: [],
         orcamentoStatus: "Em Negociação",
         orcamentoValor: 0,
@@ -3655,6 +3882,9 @@
       clientes.unshift(novoCliente);
       saveToLocalStorage();
       form.reset();
+      pdfNotaImportacao = null;
+      document.getElementById('pdfImportStatus').innerHTML = '';
+      document.querySelectorAll('#clientForm .pdf-preenchido, #clientForm .pdf-faltando').forEach(el => el.classList.remove('pdf-preenchido', 'pdf-faltando'));
       
       document.getElementById('qtdTanques').value = 1;
       document.getElementById('cadastro-prazo-calculado').innerText = '0 meses';
