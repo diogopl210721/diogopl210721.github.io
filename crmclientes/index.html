@@ -2715,8 +2715,8 @@
     var ATEND_DIAS_URGENTE = 5;
 
     // Credenciais Consigaz
-    const SUPABASE_URL = 'https://hkaqsrqxvvdzniaeklzd.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_ny4SJfsVgWEh8PD-Pbf_gg_35p9Lhmv';
+    const SUPABASE_URL = 'https://arffptuclrrzuzdrcmuc.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_XCY3BoeUR_jzDSRrtlibyg_Os7lIrVi';
 
     if (SUPABASE_URL && SUPABASE_KEY) {
       try {
@@ -2884,7 +2884,7 @@
         
         try {
           const { data, error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .select('id')
             .limit(1);
 
@@ -2926,7 +2926,7 @@
       if (usandoSupabase) {
         try {
           const { data, error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .select('*')
             .order('dataCriacao', { ascending: false });
 
@@ -2977,7 +2977,7 @@
       if (usandoSupabase) {
         try {
           const { data, error } = await supabaseClient
-            .from('atendimentos')
+            .from('crmc_atendimentos')
             .select('*')
             .order('dataCriacao', { ascending: false });
 
@@ -3079,7 +3079,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('atendimentos')
+            .from('crmc_atendimentos')
             .insert([novoAtendimento]);
 
           if (error) throw error;
@@ -3123,7 +3123,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('atendimentos')
+            .from('crmc_atendimentos')
             .update({ solucoes: novaLista })
             .eq('id', item.id);
 
@@ -3170,7 +3170,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('atendimentos')
+            .from('crmc_atendimentos')
             .update(atualizacao)
             .eq('id', item.id);
 
@@ -3230,7 +3230,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('atendimentos')
+            .from('crmc_atendimentos')
             .update(atualizacao)
             .eq('id', item.id);
 
@@ -3270,7 +3270,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('atendimentos')
+            .from('crmc_atendimentos')
             .delete()
             .eq('id', item.id);
 
@@ -3641,7 +3641,7 @@
         showToast("Salvando dados na nuvem...", "warning");
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .insert([novoCliente]);
           
           if (error) throw error;
@@ -4466,7 +4466,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .update({ documentosChecked: listaAtual })
             .eq('id', item.id);
 
@@ -4529,7 +4529,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .update({ stepNotes: stepNotesAtual })
             .eq('id', item.id);
 
@@ -4580,7 +4580,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .update(atualizacao)
             .eq('id', item.id);
 
@@ -4620,7 +4620,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .update({ orcamentoValor: valor })
             .eq('id', item.id);
 
@@ -4651,7 +4651,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .update({ orcamentoStatus: novoStatus })
             .eq('id', item.id);
 
@@ -4712,7 +4712,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .update({ orcamentoNotas: notasAtual })
             .eq('id', item.id);
 
@@ -4747,7 +4747,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .update({ 
               status: "Finalizado", 
               currentStepIndex: 3,
@@ -4788,7 +4788,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .delete()
             .eq('id', clientes[index].id);
 
@@ -4931,7 +4931,7 @@
       if (usandoSupabase) {
         try {
           const { error } = await supabaseClient
-            .from('processos')
+            .from('crmc_processos')
             .update(itemAtualizado)
             .eq('id', originalItem.id);
 
@@ -4993,8 +4993,8 @@
                 showToast("Sincronizando com a nuvem...", "warning");
                 const confirmacaoNuvem = await customConfirm("Limpar Banco Online?", "Isso irá resetar o banco de dados online para receber os novos dados do backup. Confirmar?");
                 if (confirmacaoNuvem) {
-                  await supabaseClient.from('processos').delete().neq('id', 'NADA');
-                  const { error } = await supabaseClient.from('processos').insert(importData);
+                  await supabaseClient.from('crmc_processos').delete().neq('id', 'NADA');
+                  const { error } = await supabaseClient.from('crmc_processos').insert(importData);
                   if (error) throw error;
                 }
               }
