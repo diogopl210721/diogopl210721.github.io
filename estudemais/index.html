@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=14">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -314,7 +314,7 @@
   <!-- ============ MATÉRIA ============ -->
   <section class="screen" id="screen-materia">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="voltarDaMateria()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="mat-titulo">Matéria</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(voltarDaMateria)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="mat-titulo">Matéria</h2></div>
       <div class="meta-line" id="mat-meta"></div>
 
       <div class="inline-form" id="form-data-prova">
@@ -351,7 +351,7 @@
   <!-- ============ NOVA MATÉRIA / UPLOAD ============ -->
   <section class="screen" id="screen-upload">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="voltarDoUpload()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="upload-titulo">Nova matéria</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(voltarDoUpload)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="upload-titulo">Nova matéria</h2></div>
       <div class="hand muted" id="upload-grupo"></div>
 
       <div id="upload-passos-materia">
@@ -431,6 +431,13 @@
   </section>
 
   <!-- ============ QUIZ ============ -->
+  <section class="screen" id="screen-estudo">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="voltar(voltarDoEstudo)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2 id="estudo-titulo">Tópico</h2><span class="hand muted small" id="estudo-materia"></span></div></div>
+      <div id="estudo-conteudo"></div>
+    </div>
+  </section>
+
   <section class="screen" id="screen-quiz">
     <div class="sheet">
       <div class="topbar"><button class="back-btn" onclick="sairDoQuiz()" aria-label="sair do quiz"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="quiz-titulo">Quiz</h2></div>
@@ -529,7 +536,7 @@
   <section class="screen chat-tela" id="screen-tutor-chat">
     <div class="sheet">
       <div class="topbar">
-        <button class="back-btn" onclick="verTutor()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
+        <button class="back-btn" onclick="voltar(verTutor)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
         <div class="titulos"><h2 id="tchat-titulo">Tutor</h2><span class="sub" id="tchat-sub">explica passo a passo</span></div>
         <button class="icone-btn" id="tchat-apagar" onclick="apagarConversaAtual()" aria-label="apagar conversa"><svg class="ico"><use href="#i-lixo"/></svg></button>
       </div>
@@ -562,7 +569,7 @@
     <div class="sheet">
       <div class="resumo-hero" id="res-hero">
         <div class="topbar">
-          <button class="back-btn" onclick="voltarDoResumo()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
+          <button class="back-btn" onclick="voltar(voltarDoResumo)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
           <div style="flex:1"></div>
         </div>
         <span class="mat" id="res-materia"></span>
@@ -587,7 +594,7 @@
 
   <section class="screen" id="screen-publicar">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="voltarDoPublicar()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Publicar resumo</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(voltarDoPublicar)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Publicar resumo</h2></div>
       <p class="hand">Seu resumo fica na biblioteca pra alunos do Brasil todo. Antes de aparecer, a IA confere se está tudo certo.</p>
       <div class="field"><label for="pub-origem">começar de uma matéria minha <span class="opt">(opcional)</span></label><select id="pub-origem" onchange="importarDaMateria()"><option value="">escrever do zero</option></select></div>
       <div class="previa-capa" id="pub-previa"></div>
@@ -610,7 +617,7 @@
 
   <section class="screen" id="screen-autor">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="voltarDoAutor()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Perfil</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(voltarDoAutor)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Perfil</h2></div>
       <div id="autor-conteudo"><div class="loading">carregando...</div></div>
     </div>
   </section>
@@ -627,7 +634,7 @@
   <section class="screen chat-tela" id="screen-sala">
     <div class="sheet">
       <div class="topbar">
-        <button class="back-btn" onclick="verComunidade()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
+        <button class="back-btn" onclick="voltar(verComunidade)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button>
         <div class="titulos"><h2 id="sala-titulo">Sala</h2><span class="sub" id="sala-sub"></span></div>
       </div>
       <div class="mensagens" id="sala-mensagens"></div>
@@ -637,7 +644,7 @@
   <!-- ============ ENEM ============ -->
   <section class="screen" id="screen-enem">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verHoje()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>ENEM</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verHoje)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>ENEM</h2></div>
       <div class="card enem-card">
         <div class="card-head"><h3>Simulado com questões oficiais</h3><span class="hand">2009 a 2023</span></div>
         <div class="area-grid" id="enem-areas">
@@ -696,7 +703,7 @@
   <!-- ============ RESULTADO DO SIMULADO ============ -->
   <section class="screen" id="screen-simulado-fim">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verEnem()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Resultado</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verEnem)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Resultado</h2></div>
       <div class="nota-hero"><div class="score-big" id="simfim-score">0/10</div><p class="hand muted" id="simfim-sub"></p></div>
       <div class="card"><h3>Por área</h3><div id="simfim-areas"></div></div>
       <div class="card"><h3>Correção</h3><p class="small muted">toque numa questão pra rever com o gabarito</p><div class="qgrid" id="simfim-grid"></div></div>
@@ -707,7 +714,7 @@
   <!-- ============ REDAÇÃO ============ -->
   <section class="screen" id="screen-redacao">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verEnem()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Redação</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verEnem)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Redação</h2></div>
       <div id="redacao-form">
         <div class="field"><label for="redacao-tema">tema</label><select id="redacao-tema" onchange="temaMudou()"></select></div>
         <div class="field" id="redacao-tema-outro-wrap" hidden><label for="redacao-tema-outro">escreve o tema</label><input type="text" id="redacao-tema-outro" placeholder="ex: Caminhos para combater a evasão escolar no Brasil"></div>
@@ -722,7 +729,7 @@
   <!-- ============ LIGA ============ -->
   <section class="screen" id="screen-liga">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verHoje()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Liga da semana</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verHoje)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Liga da semana</h2></div>
       <div id="liga-conteudo"><div class="loading">carregando...</div></div>
       <div class="card como-xp">
         <h3>Como ganhar XP</h3>
@@ -744,7 +751,7 @@
   <!-- ============ GRUPOS ============ -->
   <section class="screen" id="screen-grupos">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verHoje()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Turmas e grupos</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verHoje)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Turmas e grupos</h2></div>
       <div id="lista-grupos"><div class="loading">carregando...</div></div>
       <div class="new-group-row">
         <button class="ghost-btn" onclick="toggleForm('criar')"><svg class="ico"><use href="#i-mais"/></svg>criar grupo</button>
@@ -778,7 +785,7 @@
   <!-- ============ PAINEL DA TURMA ============ -->
   <section class="screen" id="screen-painel">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verGrupos()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2 id="painel-nome">Painel</h2><span class="hand muted small" id="painel-meta"></span></div></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verGrupos)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2 id="painel-nome">Painel</h2><span class="hand muted small" id="painel-meta"></span></div></div>
       <div id="painel-alerta"></div>
       <div class="card"><div class="card-head"><h3>Matérias da turma</h3><button class="link-btn" onclick="novaMateria({grupoId: estado.grupoId, grupoNome: estado.grupoNome})">+ nova</button></div><div id="painel-materias"></div></div>
       <div class="card"><div class="card-head"><h3>Onde a turma está fraca</h3><span class="hand">domínio médio por tópico</span></div><div id="painel-topicos"></div></div>
@@ -789,7 +796,7 @@
   <!-- ============ ESCOLAS E OPORTUNIDADES (mural das escolas parceiras) ============ -->
   <section class="screen" id="screen-oportunidades">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verHoje()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Escolas e oportunidades</h2><span class="hand muted small">bolsas, cursos, matrículas e eventos das escolas parceiras</span></div></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verHoje)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Escolas e oportunidades</h2><span class="hand muted small">bolsas, cursos, matrículas e eventos das escolas parceiras</span></div></div>
       <p class="aviso-vitrine"><svg class="ico"><use href="#i-info"/></svg><span>Espaço das escolas parceiras. As ofertas são das escolas, conferidas pela equipe do EstudeUp antes de entrar. O tutor e o seu plano de estudo nunca mostram propaganda, e o EstudeUp não passa seus dados pra nenhuma escola.</span></p>
       <div class="filtros-vitrine">
         <div class="busca"><svg class="ico"><use href="#i-busca"/></svg><input type="search" id="op-busca" placeholder="buscar bolsa, curso, escola..." oninput="buscarMuralDepois()" aria-label="buscar oportunidades"></div>
@@ -810,7 +817,7 @@
   <!-- ============ PÁGINA DA ESCOLA (dentro do app) ============ -->
   <section class="screen" id="screen-escola">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="voltarDaEscola()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="escola-titulo">Escola</h2>
+      <div class="topbar"><button class="back-btn" onclick="voltar(voltarDaEscola)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="escola-titulo">Escola</h2>
         <div class="acoes"><button class="back-btn" onclick="compartilharEscola()" aria-label="compartilhar o link da escola"><svg class="ico"><use href="#i-compartilhar"/></svg></button></div></div>
       <div id="escola-conteudo"><div class="loading">carregando...</div></div>
     </div>
@@ -819,7 +826,7 @@
   <!-- ============ MINHA ESCOLA (gestor e professores) ============ -->
   <section class="screen" id="screen-minha-escola">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="voltarDaMinhaEscola()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2 id="me-nome">Minha escola</h2><span class="hand muted small" id="me-meta"></span></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(voltarDaMinhaEscola)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2 id="me-nome">Minha escola</h2><span class="hand muted small" id="me-meta"></span></div>
         <div class="acoes"><button class="back-btn" onclick="verPaginaDaMinhaEscola()" aria-label="ver a página da escola"><svg class="ico"><use href="#i-olho"/></svg></button></div></div>
       <div id="me-escolhe"></div>
       <div class="chips-rolam abas-escola" id="me-abas" role="tablist" aria-label="partes do painel da escola"></div>
@@ -830,7 +837,7 @@
   <!-- ============ ÁREA COMERCIAL (conta do criador) ============ -->
   <section class="screen" id="screen-comercial">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verCriador()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Área comercial</h2><span class="hand muted small">escolas, mural, contatos e planos</span></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verCriador)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Área comercial</h2><span class="hand muted small">escolas, mural, contatos e planos</span></div>
         <div class="acoes"><button class="back-btn" onclick="verComercial()" aria-label="atualizar"><svg class="ico"><use href="#i-refazer"/></svg></button></div></div>
       <div class="chips-rolam abas-escola" id="com-abas" role="tablist" aria-label="partes da área comercial"></div>
       <div id="com-conteudo"><div class="loading">carregando...</div></div>
@@ -840,7 +847,7 @@
   <!-- ============ PAINEL DO CRIADOR ============ -->
   <section class="screen" id="screen-criador">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verPerfil()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Painel do criador</h2><span class="hand muted small">só a sua conta vê essa tela</span></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verPerfil)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Painel do criador</h2><span class="hand muted small">só a sua conta vê essa tela</span></div>
         <div class="acoes"><button class="back-btn" onclick="verCriador()" aria-label="atualizar"><svg class="ico"><use href="#i-refazer"/></svg></button></div></div>
       <div class="criador-hero">
         <img class="adesivo" src="adesivos/coroa.webp" alt="">
@@ -872,7 +879,7 @@
   <!-- ============ PERFIL ============ -->
   <section class="screen" id="screen-perfil">
     <div class="sheet">
-      <div class="topbar"><button class="back-btn" onclick="verHoje()" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Meu perfil</h2></div>
+      <div class="topbar"><button class="back-btn" onclick="voltar(verHoje)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><h2>Meu perfil</h2></div>
       <div class="profile-head cracha">
         <div class="big-avatar" id="perfil-avatar">?</div>
         <div><h1 id="perfil-nome">carregando...</h1><span class="hand" id="perfil-meta">—</span></div>
@@ -1027,15 +1034,15 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=13"></script>
-<script src="efeitos.js?v=13"></script>
-<script src="app.js?v=13"></script>
-<script src="voz.js?v=13"></script>
-<script src="biblioteca.js?v=13"></script>
-<script src="tutor.js?v=13"></script>
-<script src="comunidade.js?v=13"></script>
-<script src="criador.js?v=13"></script>
-<script src="vitrine.js?v=13"></script>
-<script src="escolas.js?v=13"></script>
+<script src="config.js?v=14"></script>
+<script src="efeitos.js?v=14"></script>
+<script src="app.js?v=14"></script>
+<script src="voz.js?v=14"></script>
+<script src="biblioteca.js?v=14"></script>
+<script src="tutor.js?v=14"></script>
+<script src="comunidade.js?v=14"></script>
+<script src="criador.js?v=14"></script>
+<script src="vitrine.js?v=14"></script>
+<script src="escolas.js?v=14"></script>
 </body>
 </html>

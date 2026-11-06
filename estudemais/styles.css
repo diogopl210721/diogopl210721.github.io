@@ -1409,3 +1409,10 @@ p { margin: 0 0 10px; }
 .foto-mini button { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(0,0,0,.6); color: #fff; font-size: 12px; cursor: pointer; padding: 0; }
 .foto-mini.mais { display: grid; place-items: center; font-size: 28px; font-weight: 800; color: var(--marca); border-style: dashed; cursor: pointer; }
 .fotos-dica { text-align: center; margin: 8px 0 0; }
+/* aula de um tópico */
+#estudo-conteudo .aula { margin-bottom: 12px; }
+#estudo-conteudo .aula h3 { margin: 0 0 6px; font-size: 16px; }
+#estudo-conteudo .aula p { margin: 0 0 8px; line-height: 1.6; }
+#estudo-conteudo .aula ul { margin: 0; padding-left: 20px; line-height: 1.6; }
+#estudo-conteudo .aula.exemplo { border-left: 4px solid var(--marca); }
+#estudo-conteudo .aula.macete { border-left: 4px solid var(--amarelo); }

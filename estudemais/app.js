@@ -55,7 +55,7 @@ function somaDias(iso, n) {
 }
 
 function diasEntre(deIso, ateIso) {
-  return Math.round((new Date(ateIso + 'T12:00:00') - new Date(deIso + 'T12:00:00')) / 86400000);
+  return Math.round((new Date(String(ateIso).slice(0, 10) + 'T12:00:00') - new Date(String(deIso).slice(0, 10) + 'T12:00:00')) / 86400000);
 }
 
 function fmtData(iso) {
@@ -133,7 +133,7 @@ function ocupado(btn, texto) {
 const NAV_DE = {
   home: 'home', cards: 'home', 'cards-fim': 'home', liga: 'home', perfil: 'home',
   enem: 'home', simulado: 'home', 'simulado-fim': 'home', redacao: 'home',
-  materias: 'materias', materia: 'materias', upload: 'materias', pronto: 'materias', quiz: 'materias', 'quiz-fim': 'materias',
+  materias: 'materias', materia: 'materias', estudo: 'materias', upload: 'materias', pronto: 'materias', quiz: 'materias', 'quiz-fim': 'materias',
   tutor: 'tutor', 'tutor-chat': 'tutor',
   biblioteca: 'biblioteca', resumo: 'biblioteca', publicar: 'biblioteca', autor: 'biblioteca',
   comunidade: 'comunidade', sala: 'comunidade', grupos: 'comunidade', painel: 'comunidade', criador: 'home',
@@ -154,6 +154,7 @@ function telaAtual() {
 
 // profundidade de cada tela: entrar mais fundo desliza da direita, voltar desliza da esquerda, trocar de aba só funde
 const NIVEL_TELA = {
+  estudo: 2,
   login: 0, cadastro: 1, recuperar: 1, codigo: 2,
   home: 0, materias: 0, tutor: 0, biblioteca: 0, comunidade: 0,
   enem: 1, liga: 1, grupos: 1, perfil: 1, criador: 2, materia: 1, 'tutor-chat': 1, resumo: 1, sala: 1,
@@ -162,9 +163,33 @@ const NIVEL_TELA = {
   oportunidades: 1, escola: 2, 'minha-escola': 1, comercial: 3,
 };
 
+// histórico de telas: o "voltar" volta UM passo (a tela de onde a pessoa veio), não pro início
+const ABAS = ['home', 'materias', 'tutor', 'biblioteca', 'comunidade'];
+const TELAS_DE_PASSAGEM = ['upload', 'pronto', 'quiz', 'quiz-fim', 'cards', 'cards-fim', 'simulado', 'simulado-fim', 'publicar'];
+const pilha = [];
+function lembrarTela(de, nome, opts) {
+  if (opts.voltando || !de || de === nome) return;
+  if (SEM_NAV.includes(nome)) { pilha.length = 0; return; }
+  if (ABAS.includes(nome) && !opts.manterHistorico) { pilha.length = 0; return; }
+  // saiu de uma tela de passagem (fim do quiz, upload...) pra tela de onde tinha vindo: não duplica no histórico
+  if (TELAS_DE_PASSAGEM.includes(de) && pilha[pilha.length - 1] === nome) { pilha.pop(); return; }
+  if (!TELAS_DE_PASSAGEM.includes(de) && !SEM_NAV.includes(de)) pilha.push(de);
+  if (pilha.length > 30) pilha.shift();
+}
+
+// volta pra tela anterior (com os dados atualizados); sem histórico, usa o caminho padrão daquela tela
+function voltar(padrao) {
+  if (telaAtual() === 'materia' || telaAtual() === 'estudo') estado.tarefaAtual = null;
+  const anterior = pilha.pop();
+  if (!anterior) return padrao ? padrao() : verHoje();
+  go(anterior, { voltando: true });
+  recarregarTelaAtual();
+}
+
 function go(nome, opts = {}) {
   const de = telaAtual();
   estado.telaAnterior = de;
+  lembrarTela(de, nome, opts);
   document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active', 'vai', 'volta', 'aba'));
   const tela = $('screen-' + nome);
   const a = NIVEL_TELA[de] ?? 0, b = NIVEL_TELA[nome] ?? 1;
@@ -564,8 +589,18 @@ async function alternarTarefa(id) {
 function recarregarTelaAtual() {
   const ativa = document.querySelector('.screen.active');
   if (!ativa) return;
-  if (ativa.id === 'screen-home') carregarHoje();
-  if (ativa.id === 'screen-materia') abrirMateria(estado.materiaId, abaAtual);
+  const t = ativa.id.replace('screen-', '');
+  const recarrega = {
+    home: () => carregarHoje(), materia: () => abrirMateria(estado.materiaId, abaAtual), materias: () => carregarMaterias(),
+    grupos: () => typeof verGrupos === 'function' && verGrupos(), perfil: () => typeof verPerfil === 'function' && verPerfil(),
+    enem: () => typeof verEnem === 'function' && verEnem(), biblioteca: () => typeof verBiblioteca === 'function' && verBiblioteca(true),
+    sala: () => com.salaId && abrirSala(com.salaId), painel: () => estado.grupoId && abrirPainel(estado.grupoId),
+    criador: () => verCriador(), 'minha-escola': () => verMinhaEscola(), comercial: () => verComercial(),
+    estudo: () => estado.estudoTopico && abrirEstudoTopico(estado.estudoTopico.id),
+    tutor: () => typeof verTutor === 'function' && verTutor(), comunidade: () => typeof verComunidade === 'function' && verComunidade(),
+    oportunidades: () => typeof verOportunidades === 'function' && verOportunidades(),
+  };
+  if (recarrega[t]) recarrega[t]();
 }
 
 async function concluirTarefaAtual() {
@@ -583,11 +618,85 @@ function fazerTarefa(id) {
   const t = estado.tarefas[id];
   if (!t) return;
   estado.tarefaAtual = t;
+  if (t.tipo === 'estudar' && t.topico_id) return abrirEstudoTopico(t.topico_id);
+  if (t.tipo === 'quiz' && t.topico_id) return iniciarQuizTopico(t.topico_id);
   if (t.tipo === 'estudar') return abrirMateria(t.materia_id, 'resumo');
   if (t.tipo === 'revisao_geral') return abrirMateria(t.materia_id, 'mapa');
   if (t.tipo === 'quiz') return iniciarQuizMateria(t.materia_id, 'quiz', t.topico_id);
   if (t.tipo === 'prova') return iniciarQuizMateria(t.materia_id, 'prova');
   if (t.tipo === 'cards') return abrirRevisaoCards(t.materia_id);
+}
+
+/* ===================== AULA DE UM TÓPICO ===================== */
+// cada tópico tem aula, quiz e flashcards próprios; a primeira pessoa que abre gera, as outras reaproveitam
+async function carregarTopico(topicoId, aviso) {
+  let r = await rpc('be_topico_estudo', { p_topico: topicoId });
+  if (r.pronto && r.quiz.length) return r;
+  if (aviso) aviso(r.topico.nome);
+  const g = await chamarFuncao('estude-gerar-conteudo', { acao: 'estudar_topico', topico_id: topicoId });
+  if (g && g.error) throw new Error(g.error);
+  r = await rpc('be_topico_estudo', { p_topico: topicoId });
+  if (!r.pronto) throw new Error('não consegui preparar a aula desse tópico agora, tenta de novo');
+  return r;
+}
+
+async function abrirEstudoTopico(topicoId) {
+  go('estudo');
+  const box = $('estudo-conteudo');
+  $('estudo-titulo').textContent = 'carregando...';
+  $('estudo-materia').textContent = '';
+  box.innerHTML = '<div class="loading">carregando...</div>';
+  let r;
+  try {
+    r = await carregarTopico(topicoId, (nome) => {
+      $('estudo-titulo').textContent = nome;
+      box.innerHTML = `<div class="empty">preparando a aula de <b>${esc(nome)}</b>…<br><span class="small muted">só na primeira vez, leva uns 20 segundos</span></div>`;
+    });
+  } catch (err) {
+    box.innerHTML = `<div class="empty">${esc(err.message)}</div><button class="btn full" style="margin-top:10px;" onclick="abrirEstudoTopico('${topicoId}')">tentar de novo</button>`;
+    return;
+  }
+  if (telaAtual() !== 'estudo') return; // a pessoa saiu enquanto carregava
+  const a = r.aula || {};
+  estado.materiaId = r.topico.materia_id;
+  estado.estudoTopico = r.topico;
+  $('estudo-titulo').textContent = r.topico.nome;
+  $('estudo-materia').textContent = r.topico.materia_nome;
+  const t = estado.tarefaAtual;
+  const daTarefa = t && t.tipo === 'estudar' && t.topico_id === topicoId && !t.feita;
+  box.innerHTML = `
+    <div class="card aula">${paragrafos(a.introducao)}</div>
+    ${(a.partes || []).map((p) => `<div class="card aula"><h3>${esc(p.titulo)}</h3>${paragrafos(p.texto)}</div>`).join('')}
+    ${a.exemplo ? `<div class="card aula exemplo"><h3>Exemplo</h3>${paragrafos(a.exemplo)}</div>` : ''}
+    ${a.macete ? `<div class="card aula macete"><h3>Macete de prova</h3>${paragrafos(a.macete)}</div>` : ''}
+    ${(a.para_lembrar || []).length ? `<div class="card aula"><h3>Pra lembrar</h3><ul>${a.para_lembrar.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    ${daTarefa ? `<button class="btn coral full" style="margin-bottom:10px;" onclick="concluirEstudoTopico()">Estudei, marcar tarefa como feita</button>` : ''}
+    <button class="btn full" style="margin-bottom:22px;" onclick="iniciarQuizTopico('${topicoId}')">Fazer o quiz deste tópico (${r.quiz.length} perguntas)</button>`;
+}
+
+async function concluirEstudoTopico() {
+  await concluirTarefaAtual();
+  voltar(verHoje);
+}
+
+function voltarDoEstudo() {
+  estado.tarefaAtual = null;
+  if (estado.estudoTopico) return abrirMateria(estado.estudoTopico.materia_id, 'plano');
+  verHoje();
+}
+
+async function iniciarQuizTopico(topicoId) {
+  let r;
+  try {
+    r = await carregarTopico(topicoId, (nome) => toast(`Preparando as perguntas de ${nome}…`));
+  } catch (err) {
+    return falhou(err);
+  }
+  estado.materiaId = r.topico.materia_id;
+  estado.quiz = { tipo: 'quiz', perguntas: r.quiz.slice(), i: 0, xp: 0, acertos: 0, erros: [], titulo: r.topico.materia_nome + ' · ' + r.topico.nome, topicoId, porTopico: true, inicio: 0 };
+  $('quiz-titulo').textContent = estado.quiz.titulo;
+  go('quiz');
+  renderPergunta();
 }
 
 /* ===================== MATÉRIAS ===================== */
@@ -879,13 +988,13 @@ function renderQuizMateria(d, tipo) {
   const lista = d[tipo] || [];
   const alvo = $('mat-' + tipo);
   if (!lista.length) { alvo.innerHTML = '<div class="card"><div class="empty">ainda não tem perguntas — adicione um material</div></div>'; return; }
-  const topicosComPerguntas = d.topicos.filter((t) => lista.filter((p) => p.topico_id === t.id).length >= 1);
+  const topicosComPerguntas = d.topicos; // cada tópico tem quiz próprio (gerado na primeira vez)
   alvo.innerHTML = `<div class="card center">
     <div class="score-big">${lista.length}</div>
     <p class="hand muted" style="margin:6px 0 14px;">${tipo === 'quiz' ? 'perguntas rápidas de prática' : 'perguntas simulando a prova de verdade'}</p>
     <button class="btn coral full" onclick="iniciarQuizMateria('${d.materia.id}', '${tipo}')">${tipo === 'quiz' ? 'Jogar o quiz' : 'Fazer a prova'}</button>
     ${tipo === 'quiz' && topicosComPerguntas.length > 1 ? `<div class="step-label" style="margin-top:16px;">ou só um tópico</div>
-      <div class="chip-toggle" style="justify-content:center;">${topicosComPerguntas.map((t) => `<div class="chip small" onclick="iniciarQuizMateria('${d.materia.id}', 'quiz', '${t.id}')">${esc(t.nome)}</div>`).join('')}</div>` : ''}
+      <div class="chip-toggle" style="justify-content:center;">${topicosComPerguntas.map((t) => `<div class="chip small" onclick="iniciarQuizTopico('${t.id}')">${esc(t.nome)}</div>`).join('')}</div>` : ''}
   </div>`;
 }
 
@@ -1189,12 +1298,13 @@ async function fimQuiz() {
 
 function refazerQuiz() {
   const q = estado.quiz;
+  if (q.porTopico) return iniciarQuizTopico(q.topicoId);
   iniciarQuizMateria(estado.materiaId, q.tipo, q.topicoId);
 }
 
 async function sairDoQuiz() {
   if (estado.quiz && estado.quiz.i > 0 && !(await confirmar('Sair do quiz?\nAs respostas que você já deu ficam salvas.', { sim: 'Sair' }))) return;
-  abrirMateria(estado.materiaId, abaAtual);
+  voltar(() => abrirMateria(estado.materiaId, abaAtual));
 }
 
 /* ===================== FLASHCARDS ===================== */
@@ -1273,7 +1383,7 @@ async function fimCards() {
 
 async function sairDosCards() {
   if (estado.cards && estado.cards.feitos && !(await confirmar('Parar a revisão?\nO que você já revisou fica salvo.', { sim: 'Parar' }))) return;
-  verHoje();
+  voltar(verHoje);
 }
 
 /* ===================== ENEM ===================== */
@@ -1468,7 +1578,7 @@ async function sairDoSimulado() {
   const s = estado.sim;
   if (s && s.revisao) return go('simulado-fim');
   if (s && !(await confirmar('Sair do simulado?\nEle fica incompleto e não conta pontos.', { sim: 'Sair' }))) return;
-  verEnem();
+  voltar(verEnem);
 }
 
 /* ===================== REDAÇÃO ===================== */
