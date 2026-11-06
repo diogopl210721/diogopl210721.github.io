@@ -1741,11 +1741,63 @@
     .atend-card-actions {
       display: flex;
       gap: 0.4rem;
+      flex-wrap: wrap;
     }
     .form-group input.pdf-preenchido, .form-group select.pdf-preenchido { background: #ecfdf5; border-color: #34d399; }
     .form-group input.pdf-faltando, .form-group select.pdf-faltando { background: #fffbeb; border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.15); }
     .pdf-import-box { border: 2px dashed var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; background: #f8fafc; }
     .pdf-import-box .pdf-import-text { flex: 1; min-width: 220px; font-size: 0.88rem; color: var(--text-muted, #475569); }
+    .btn-zap { background-color: #25d366 !important; color: #fff !important; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; }
+    .btn-zap:hover { background-color: #1ebe5b !important; }
+    .zap-secao { margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+    .zap-secao-titulo { font-weight: 700; color: #128c7e; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; }
+    .zap-secao-titulo i { font-size: 1.2rem; }
+    .zap-secao-acoes { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; font-size: 0.82rem; color: var(--text-muted); }
+    .zap-secao-acoes span { flex: 1; }
+    .zap-vazio { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 1rem; background: #f8fafc; border: 1px dashed var(--border); border-radius: 10px; }
+    .zap-vazio p { margin-bottom: 0.6rem; }
+    .zap-ajuda { font-size: 0.8rem; }
+    .zap-escolha { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 0.9rem; font-weight: 600; font-size: 0.9rem; }
+    .zap-escolha div { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+    .zap-chat { background: #efeae2; border-radius: 10px; padding: 0.75rem; max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.35rem; }
+    .zap-chat-grande { flex: 1; max-height: none; min-height: 260px; border-radius: 0; }
+    .zap-dia { text-align: center; margin: 0.4rem 0; }
+    .zap-dia span { background: #fff; color: #54656f; font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.06); }
+    .zap-bolha { max-width: 78%; padding: 0.4rem 0.6rem 0.25rem; border-radius: 8px; font-size: 0.86rem; box-shadow: 0 1px 1px rgba(0,0,0,0.08); color: #111b21; }
+    .zap-meu { align-self: flex-end; background: #d9fdd3; }
+    .zap-dele { align-self: flex-start; background: #fff; }
+    .zap-autor { font-size: 0.72rem; font-weight: 700; color: #128c7e; margin-bottom: 0.1rem; }
+    .zap-texto { white-space: pre-wrap; word-break: break-word; }
+    .zap-hora { font-size: 0.66rem; color: #667781; text-align: right; margin-top: 0.1rem; }
+    .zap-banner { background: #e7f8ee; border: 1px solid #a7e9c3; color: #0f5132; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.85rem; margin-bottom: 1rem; }
+    .zap-layout { display: grid; grid-template-columns: 340px 1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: #fff; height: 640px; }
+    .zap-lista { border-right: 1px solid var(--border); overflow-y: auto; }
+    .zap-item { display: flex; gap: 0.7rem; padding: 0.75rem 0.9rem; border-bottom: 1px solid #f0f2f5; cursor: pointer; align-items: center; }
+    .zap-item:hover { background: #f5f6f6; }
+    .zap-item.ativo { background: #f0f2f5; }
+    .zap-avatar { width: 42px; height: 42px; border-radius: 50%; background: #dfe5e7; color: #54656f; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+    .zap-item-info { flex: 1; min-width: 0; }
+    .zap-item-topo { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.9rem; }
+    .zap-item-topo span { font-size: 0.72rem; color: #667781; }
+    .zap-item-cliente { font-size: 0.74rem; color: #128c7e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .zap-item-msg { font-size: 0.8rem; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .zap-nao-lidas { background: #25d366; color: #fff; font-size: 0.7rem; font-weight: 700; min-width: 20px; height: 20px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .zap-conversa { display: flex; flex-direction: column; min-width: 0; }
+    .zap-painel-topo { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1rem; background: #f0f2f5; border-bottom: 1px solid var(--border); }
+    .zap-painel-acoes { display: flex; gap: 0.5rem; flex-wrap: wrap; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+    .zap-voltar { display: none; }
+    .zap-responder { display: flex; gap: 0.5rem; padding: 0.6rem 0.8rem; background: #f0f2f5; }
+    .zap-responder input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.8rem; font-size: 0.9rem; outline: none; }
+    .zap-painel-vazio { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #667781; text-align: center; padding: 2rem; background: #f8f9fa; }
+    .zap-painel-vazio i { font-size: 3rem; color: #25d366; margin-bottom: 0.8rem; }
+    @media (max-width: 768px) {
+      .zap-layout { grid-template-columns: 1fr; height: 75vh; }
+      #zap-view .zap-conversa { display: none; }
+      #zap-view.zap-com-conversa .zap-conversa { display: flex; }
+      #zap-view.zap-com-conversa .zap-lista { display: none; }
+      .zap-voltar { display: inline-flex; }
+      .zap-bolha { max-width: 88%; }
+    }
   </style>
 </head>
 <body>
@@ -1784,6 +1836,10 @@
       <button class="tab-btn" id="atendimentos-tab-btn" onclick="switchTab('atendimentos-view', this)">
         <i class="fa-solid fa-headset"></i> <span>Atendimentos</span>
         <span class="tab-badge" id="atendUrgenteBadge" style="display:none;">0</span>
+      </button>
+      <button class="tab-btn" id="zap-tab-btn" onclick="switchTab('zap-view', this)">
+        <i class="fa-brands fa-whatsapp"></i> <span>WhatsApp</span>
+        <span class="tab-badge" id="zapBadge" style="display:none; background-color:#25d366;">0</span>
       </button>
       <button id="tab-dossier-btn" class="tab-btn" onclick="switchTab('dossier-view', this)" style="display: none;">
         <i class="fa-solid fa-folder-open"></i> <span id="tab-dossier-label">Dossiê</span>
@@ -2072,6 +2128,19 @@
 
     </div>
 
+    <div id="zap-view" class="view-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="color: var(--primary); font-size: 1.3rem; font-weight: 700;"><i class="fa-brands fa-whatsapp" style="color:#25d366"></i> Conversas do WhatsApp</h2>
+      </div>
+      <div class="zap-banner">
+        <strong><i class="fa-solid fa-flask"></i> Simulação.</strong> É assim que fica com a API oficial do WhatsApp: as mensagens chegam sozinhas no CRM e cada número é ligado ao cliente e ao consultor. Daqui dá para criar o atendimento com a conversa anexada.
+      </div>
+      <div class="zap-layout">
+        <div class="zap-lista" id="zapLista"></div>
+        <div class="zap-conversa" id="zapConversa"></div>
+      </div>
+    </div>
+
     <div id="atendimento-detalhe-view" class="view-panel">
       <div class="atend-detail-header">
         <h2 style="color: var(--primary); font-size: 1.3rem; font-weight: 700;"><i class="fa-solid fa-headset"></i> Detalhe do Atendimento</h2>
@@ -2090,7 +2159,7 @@
         <div class="grid-form">
           <div class="form-group">
             <label>Código do Cliente</label>
-            <input type="text" id="at-idCliente" placeholder="Ex: CLI-001">
+            <input type="text" id="at-idCliente" placeholder="Ex: CLI-001" onblur="zapSugerirNumero()">
           </div>
           <div class="form-group">
             <label>Nome do Cliente</label>
@@ -2099,6 +2168,10 @@
           <div class="form-group">
             <label>Consultor</label>
             <input type="text" id="at-consultor" placeholder="Seu nome">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp do Cliente</label>
+            <input type="tel" id="at-whatsapp" placeholder="(41) 99999-8888" oninput="zapMascara(this)">
           </div>
           <div class="form-group">
             <label>Assunto</label>
@@ -2693,6 +2766,10 @@
             <label>Consultor</label>
             <input type="text" id="edit-at-consultor" required>
           </div>
+          <div class="form-group">
+            <label>WhatsApp do Cliente</label>
+            <input type="tel" id="edit-at-whatsapp" placeholder="(41) 99999-8888" oninput="zapMascara(this)">
+          </div>
         </div>
         <div class="form-group" style="margin-bottom: 1.25rem;">
           <label>Assunto</label>
@@ -2932,6 +3009,7 @@
 
       carregarDadosDoBanco();
       carregarAtendimentos();
+      carregarZapConversas();
       populateDateFilters();
     }
 
@@ -3198,6 +3276,397 @@
       }
     }
 
+    /* ================= WHATSAPP: LINK, CONVERSA IMPORTADA E CAIXA SIMULADA ================= */
+    var zapConversas = [];
+    var zapConversaAtivaId = null;
+    var zapSimTimer = null;
+    var zapSimFila = [];
+    var zapEscolhaPendente = null;
+
+    function escHTML(txt) {
+      return String(txt ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function zapDigitos(numero) {
+      let d = String(numero || '').replace(/\D/g, '');
+      if (d.length === 10 || d.length === 11) d = '55' + d;
+      return d.length >= 12 ? d : '';
+    }
+
+    function zapMascara(input) {
+      let v = input.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length > 6) v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4}).*/, (m, a, b, c) => v.length === 11 ? `(${a}) ${v.slice(2, 7)}-${v.slice(7)}` : `(${a}) ${b}-${c}`);
+      else if (v.length > 2) v = v.replace(/^(\d{2})(\d*)/, '($1) $2');
+      input.value = v;
+    }
+
+    function zapLink(numero, consultor, assunto) {
+      const d = zapDigitos(numero);
+      if (!d) return '';
+      let msg = 'Olá! Aqui é ' + (consultor || 'o consultor') + ', da Consigaz.';
+      if (assunto) msg += ' Estou entrando em contato sobre: ' + assunto + '.';
+      return 'https://wa.me/' + d + '?text=' + encodeURIComponent(msg);
+    }
+
+    // Preenche o WhatsApp do novo atendimento se o mesmo cliente já tiver um número registrado
+    function zapSugerirNumero() {
+      const cod = document.getElementById('at-idCliente').value.trim();
+      const campo = document.getElementById('at-whatsapp');
+      if (!cod || campo.value) return;
+      const anterior = atendimentos.find(a => a.idCliente === cod && a.whatsapp);
+      const conversa = zapConversas.find(c => c.idCliente === cod && c.whatsapp);
+      const numero = (anterior && anterior.whatsapp) || (conversa && conversa.whatsapp);
+      if (numero) campo.value = numero;
+    }
+
+    /* ---------- Importar conversa exportada do WhatsApp (.txt ou .zip) ---------- */
+
+    function carregarScript(src, globalName) {
+      if (window[globalName]) return Promise.resolve(window[globalName]);
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = () => resolve(window[globalName]);
+        s.onerror = () => reject(new Error('Não foi possível carregar um componente. Verifique a internet.'));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function zapLerArquivo(arquivo) {
+      if (/\.zip$/i.test(arquivo.name)) {
+        const JSZip = await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'JSZip');
+        const zip = await JSZip.loadAsync(arquivo);
+        const txt = Object.values(zip.files).find(f => !f.dir && /\.txt$/i.test(f.name));
+        if (!txt) throw new Error('Não achei o arquivo de texto da conversa dentro do .zip.');
+        return await txt.async('string');
+      }
+      return await arquivo.text();
+    }
+
+    // Formatos: Android "06/11/2026 14:02 - Nome: msg" e iPhone "[06/11/2026, 14:02:33] Nome: msg"
+    function zapInterpretarExportacao(texto) {
+      const linhas = texto.replace(/\r/g, '').replace(/[‎‏‪-‮]/g, '').split('\n');
+      const reAndroid = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2})(?::\d{2})?\s*-\s*(.*)$/;
+      const reIos = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2})(?::\d{2})?\]\s*(.*)$/;
+      const msgs = [];
+      linhas.forEach(linha => {
+        const m = linha.match(reAndroid) || linha.match(reIos);
+        if (m) {
+          const resto = m[3];
+          const sep = resto.indexOf(': ');
+          if (sep <= 0) return; // aviso do sistema (criptografia, etc.)
+          let data = m[1];
+          const p = data.split('/');
+          if (p[2] && p[2].length === 2) data = p[0] + '/' + p[1] + '/20' + p[2];
+          msgs.push({ data: data, hora: m[2], autor: resto.slice(0, sep).trim(), texto: resto.slice(sep + 2) });
+        } else if (msgs.length && linha.trim()) {
+          msgs[msgs.length - 1].texto += '\n' + linha;
+        }
+      });
+      return msgs.slice(-2000);
+    }
+
+    function zapAdivinharMeuNome(autores, item) {
+      const primeiro = (item.consultor || '').split(' ')[0].toLowerCase();
+      if (primeiro) {
+        const meu = autores.find(a => a.toLowerCase().includes(primeiro));
+        if (meu) return meu;
+      }
+      if (autores.length === 2) {
+        const palavrasCliente = (item.cliente || '').toLowerCase().split(/\s+/).filter(w => w.length > 3);
+        const doCliente = autores.find(a => palavrasCliente.some(w => a.toLowerCase().includes(w)));
+        if (doCliente) return autores.find(a => a !== doCliente);
+      }
+      return null;
+    }
+
+    async function zapImportarConversa(event, idAtendimento) {
+      const arquivo = event.target.files[0];
+      event.target.value = '';
+      if (!arquivo) return;
+      const item = atendimentos.find(a => a.id === idAtendimento);
+      if (!item) return;
+      try {
+        const msgs = zapInterpretarExportacao(await zapLerArquivo(arquivo));
+        if (!msgs.length) {
+          showToast('Não encontrei mensagens nesse arquivo. Use "Exportar conversa" do WhatsApp.', 'warning');
+          return;
+        }
+        const autores = [...new Set(msgs.map(x => x.autor))];
+        const meu = zapAdivinharMeuNome(autores, item);
+        if (meu || autores.length === 1) {
+          await zapSalvarConversa(item, msgs, meu || '');
+        } else {
+          zapEscolhaPendente = { id: item.id, msgs: msgs, autores: autores };
+          renderAtendimentoDetalhe();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao ler a conversa: ' + err.message, 'danger');
+      }
+    }
+
+    async function zapEscolherMeuNome(indice) {
+      const p = zapEscolhaPendente;
+      if (!p) return;
+      const item = atendimentos.find(a => a.id === p.id);
+      zapEscolhaPendente = null;
+      if (item) await zapSalvarConversa(item, p.msgs, p.autores[indice]);
+    }
+
+    async function zapSalvarConversa(item, msgs, meuNome) {
+      const conversa = msgs.map(x => ({ data: x.data, hora: x.hora, autor: x.autor, texto: x.texto, meu: x.autor === meuNome }));
+      if (usandoSupabase) {
+        const { error } = await supabaseClient.from('crmc_atendimentos').update({ conversa: conversa }).eq('id', item.id);
+        if (error) { showToast('Erro ao salvar a conversa na nuvem: ' + error.message, 'danger'); return; }
+      }
+      item.conversa = conversa;
+      saveAtendimentosToLocalStorage();
+      renderAtendimentoDetalhe();
+      showToast(conversa.length + ' mensagens importadas para o atendimento!');
+    }
+
+    async function zapRemoverConversa(idAtendimento) {
+      const item = atendimentos.find(a => a.id === idAtendimento);
+      if (!item) return;
+      const ok = await customConfirm('Remover conversa', 'Remover a conversa do WhatsApp deste atendimento? O atendimento continua.', true);
+      if (!ok) return;
+      if (usandoSupabase) {
+        const { error } = await supabaseClient.from('crmc_atendimentos').update({ conversa: [] }).eq('id', item.id);
+        if (error) { showToast('Erro ao remover na nuvem: ' + error.message, 'danger'); return; }
+      }
+      item.conversa = [];
+      saveAtendimentosToLocalStorage();
+      renderAtendimentoDetalhe();
+    }
+
+    function zapBolhasHTML(mensagens) {
+      let html = '';
+      let ultimaData = '';
+      mensagens.forEach(x => {
+        if (x.data !== ultimaData) {
+          html += `<div class="zap-dia"><span>${escHTML(x.data)}</span></div>`;
+          ultimaData = x.data;
+        }
+        html += `<div class="zap-bolha ${x.meu ? 'zap-meu' : 'zap-dele'}">
+            ${x.meu ? '' : `<div class="zap-autor">${escHTML(x.autor)}</div>`}
+            <div class="zap-texto">${escHTML(x.texto)}</div>
+            <div class="zap-hora">${escHTML(x.hora)}</div>
+          </div>`;
+      });
+      return html;
+    }
+
+    function zapSecaoAtendimentoHTML(item) {
+      const lista = item.conversa || [];
+      let html = `<div class="zap-secao">
+        <div class="zap-secao-titulo"><i class="fa-brands fa-whatsapp"></i> Conversa do WhatsApp</div>`;
+
+      if (zapEscolhaPendente && zapEscolhaPendente.id === item.id) {
+        html += `<div class="zap-escolha">Quem é você nessa conversa?<div>` +
+          zapEscolhaPendente.autores.map((a, i) => `<button class="btn btn-secondary btn-small" onclick="zapEscolherMeuNome(${i})">${escHTML(a)}</button>`).join(' ') +
+          `</div></div>`;
+      } else if (lista.length) {
+        html += `<div class="zap-chat">${zapBolhasHTML(lista)}</div>
+          <div class="zap-secao-acoes">
+            <span>${lista.length} mensagens importadas</span>
+            <button class="btn btn-secondary btn-small" onclick="document.getElementById('zapArq-${item.id}').click()"><i class="fa-solid fa-rotate"></i> Importar outra</button>
+            <button class="btn btn-secondary btn-small" onclick="zapRemoverConversa('${item.id}')"><i class="fa-solid fa-trash-can"></i> Remover</button>
+          </div>`;
+      } else {
+        html += `<div class="zap-vazio">
+            <p>Traga a conversa com o cliente para este atendimento.</p>
+            <p class="zap-ajuda">No WhatsApp: abra a conversa › menu (⋮ ou nome do contato) › <strong>Exportar conversa</strong> › <strong>Sem mídia</strong>. Depois escolha aqui o arquivo .txt ou .zip.</p>
+            <button class="btn btn-small" onclick="document.getElementById('zapArq-${item.id}').click()"><i class="fa-solid fa-file-import"></i> Importar conversa exportada</button>
+          </div>`;
+      }
+      html += `<input type="file" id="zapArq-${item.id}" accept=".txt,.zip,text/plain,application/zip" style="display:none" onchange="zapImportarConversa(event, '${item.id}')">
+        </div>`;
+      return html;
+    }
+
+    function zapBotaoAtendimentoHTML(item) {
+      const link = zapLink(item.whatsapp, item.consultor, item.assunto);
+      if (link) {
+        return `<a class="btn btn-small btn-zap" href="${link}" target="_blank" rel="noopener" title="Abrir conversa no WhatsApp"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>`;
+      }
+      return `<button class="btn btn-secondary btn-small" onclick="abrirModalEditarAtendimento('${item.id}'); setTimeout(() => document.getElementById('edit-at-whatsapp').focus(), 50);" title="Cadastrar o WhatsApp do cliente"><i class="fa-brands fa-whatsapp"></i> Adicionar WhatsApp</button>`;
+    }
+
+    /* ---------- Caixa de entrada do WhatsApp (SIMULAÇÃO da integração automática) ---------- */
+
+    async function carregarZapConversas() {
+      if (usandoSupabase) {
+        try {
+          const { data, error } = await supabaseClient.from('crmc_zap_conversas').select('*').order('atualizadoEm', { ascending: false });
+          if (error) throw error;
+          zapConversas = data || [];
+        } catch (e) {
+          console.warn('Caixa do WhatsApp indisponível:', e);
+          zapConversas = [];
+        }
+      }
+      zapAtualizarBadge();
+      if (document.getElementById('zap-view').classList.contains('active')) renderZap();
+    }
+
+    function zapAtualizarBadge() {
+      const total = zapConversas.reduce((s, c) => s + (c.naoLidas || 0), 0);
+      const badge = document.getElementById('zapBadge');
+      badge.style.display = total ? 'inline-flex' : 'none';
+      badge.innerText = total;
+    }
+
+    function zapUltima(c) {
+      const m = c.mensagens || [];
+      return m.length ? m[m.length - 1] : null;
+    }
+
+    function renderZap() {
+      const lista = document.getElementById('zapLista');
+      const ordenadas = [...zapConversas].sort((a, b) => new Date(b.atualizadoEm) - new Date(a.atualizadoEm));
+      if (!ordenadas.length) {
+        lista.innerHTML = '<div class="zap-vazio" style="padding:2rem">Nenhuma conversa.</div>';
+      } else {
+        lista.innerHTML = ordenadas.map(c => {
+          const u = zapUltima(c);
+          const iniciais = (c.nomeContato || c.cliente || '?').split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+          return `<div class="zap-item ${c.id === zapConversaAtivaId ? 'ativo' : ''}" onclick="zapAbrirConversa('${c.id}')">
+              <div class="zap-avatar">${escHTML(iniciais)}</div>
+              <div class="zap-item-info">
+                <div class="zap-item-topo"><strong>${escHTML(c.nomeContato)}</strong><span>${u ? escHTML(u.hora) : ''}</span></div>
+                <div class="zap-item-cliente">${c.idCliente ? '<i class="fa-solid fa-link"></i> ' + escHTML(c.cliente) : '<i class="fa-solid fa-circle-question"></i> Número sem cliente'}</div>
+                <div class="zap-item-msg">${u ? escHTML((u.meu ? 'Você: ' : '') + u.texto) : ''}</div>
+              </div>
+              ${c.naoLidas ? `<span class="zap-nao-lidas">${c.naoLidas}</span>` : ''}
+            </div>`;
+        }).join('');
+      }
+      renderZapConversa();
+    }
+
+    function zapAbrirConversa(id) {
+      zapConversaAtivaId = id;
+      const c = zapConversas.find(x => x.id === id);
+      if (c && c.naoLidas) {
+        c.naoLidas = 0;
+        zapAtualizarBadge();
+        if (usandoSupabase) supabaseClient.from('crmc_zap_conversas').update({ naoLidas: 0 }).eq('id', id).then(() => {});
+      }
+      document.getElementById('zap-view').classList.add('zap-com-conversa');
+      renderZap();
+    }
+
+    function zapVoltarLista() {
+      zapConversaAtivaId = null;
+      document.getElementById('zap-view').classList.remove('zap-com-conversa');
+      renderZap();
+    }
+
+    function renderZapConversa() {
+      const painel = document.getElementById('zapConversa');
+      const c = zapConversas.find(x => x.id === zapConversaAtivaId);
+      if (!c) {
+        painel.innerHTML = `<div class="zap-painel-vazio"><i class="fa-brands fa-whatsapp"></i><p>Escolha uma conversa.<br>Cada número é ligado sozinho ao cliente do CRM.</p></div>`;
+        return;
+      }
+      const processo = c.idCliente ? buscarProcessoPorIdCliente(c.idCliente) : null;
+      const atendAberto = atendimentos.find(a => a.idCliente === c.idCliente && a.status === 'Aberto');
+      painel.innerHTML = `
+        <div class="zap-painel-topo">
+          <button class="btn btn-secondary btn-small zap-voltar" onclick="zapVoltarLista()"><i class="fa-solid fa-arrow-left"></i></button>
+          <div style="flex:1; min-width:0">
+            <strong>${escHTML(c.nomeContato)}</strong>
+            <div class="zap-item-cliente">${escHTML(c.whatsapp || '')}${c.idCliente ? ' · ' + escHTML(c.idCliente) + ' · ' + escHTML(c.cliente) + ' · ' + escHTML(c.consultor || '') : ''}</div>
+          </div>
+        </div>
+        <div class="zap-painel-acoes">
+          ${atendAberto ? `<button class="btn btn-secondary btn-small" onclick="abrirDetalheAtendimento('${atendAberto.id}')"><i class="fa-solid fa-headset"></i> Ver atendimento aberto</button>`
+                        : `<button class="btn btn-small" onclick="zapCriarAtendimento('${c.id}')"><i class="fa-solid fa-plus"></i> Criar atendimento</button>`}
+          ${processo ? `<button class="btn btn-secondary btn-small" onclick="openDossier('${processo.id}')"><i class="fa-solid fa-folder-open"></i> Ver processo</button>` : ''}
+          <a class="btn btn-small btn-zap" href="${zapLink(c.whatsapp, c.consultor, '')}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Abrir no WhatsApp</a>
+        </div>
+        <div class="zap-chat zap-chat-grande" id="zapChatArea">${zapBolhasHTML(c.mensagens || [])}</div>
+        <div class="zap-responder">
+          <input type="text" id="zapResposta" placeholder="Responder (simulação: não envia de verdade)" onkeydown="if(event.key==='Enter') zapResponder()">
+          <button class="btn btn-small btn-zap" onclick="zapResponder()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>`;
+      const area = document.getElementById('zapChatArea');
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function zapAgora() {
+      const d = new Date();
+      return { data: d.toLocaleDateString('pt-BR'), hora: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) };
+    }
+
+    function zapResponder() {
+      const campo = document.getElementById('zapResposta');
+      const texto = campo.value.trim();
+      const c = zapConversas.find(x => x.id === zapConversaAtivaId);
+      if (!texto || !c) return;
+      const agora = zapAgora();
+      c.mensagens = [...(c.mensagens || []), { data: agora.data, hora: agora.hora, autor: c.consultor || 'Você', texto: texto, meu: true }];
+      c.atualizadoEm = new Date().toISOString();
+      renderZap();
+      showToast('Simulação: com a API oficial, esta resposta sairia pelo número da empresa.', 'warning');
+    }
+
+    async function zapCriarAtendimento(idConversa) {
+      const c = zapConversas.find(x => x.id === idConversa);
+      if (!c) return;
+      const ultimasDoCliente = (c.mensagens || []).filter(m => !m.meu).slice(-3).map(m => m.texto).join('\n');
+      const novo = {
+        id: gerarProximoId(atendimentos, 'AT'),
+        idCliente: c.idCliente || 'SEM-CADASTRO',
+        cliente: c.cliente || c.nomeContato,
+        consultor: c.consultor || '',
+        assunto: 'Contato pelo WhatsApp',
+        descricao: 'Mensagem recebida pelo WhatsApp:\n' + (ultimasDoCliente || '-'),
+        solucoes: [],
+        status: 'Aberto',
+        dataCriacao: new Date().toISOString(),
+        dataResolucao: null,
+        whatsapp: c.whatsapp,
+        conversa: (c.mensagens || []).map(m => ({ ...m }))
+      };
+      if (usandoSupabase) {
+        const { error } = await supabaseClient.from('crmc_atendimentos').insert([novo]);
+        if (error) { showToast('Erro ao criar atendimento na nuvem: ' + error.message, 'danger'); return; }
+      }
+      atendimentos.unshift(novo);
+      saveAtendimentosToLocalStorage();
+      populateAtendConsultorFilter();
+      atualizarAtendUrgenteBadge();
+      showToast('Atendimento criado com a conversa anexada!');
+      abrirDetalheAtendimento(novo.id);
+    }
+
+    // Mensagens que "chegam" durante a apresentação (só na tela, não grava no banco)
+    function zapIniciarSimulacao() {
+      if (zapSimTimer) return;
+      zapSimFila = [
+        { id: 'ZAP-001', texto: 'Oi, o caminhão chegou agora. Obrigado pela agilidade!' },
+        { id: 'ZAP-007', texto: 'Bom dia! Confirmando a retirada dos cilindros amanhã às 9h, ok?' },
+        { id: 'ZAP-003', texto: 'O engenheiro pode vir na quinta à tarde para a visita técnica?' },
+        { id: 'ZAP-009', texto: 'Olá, vocês atendem em Fazenda Rio Grande? Tenho uma padaria e uso 4 P-45 por semana.' }
+      ];
+      zapSimTimer = setInterval(() => {
+        const prox = zapSimFila.shift();
+        if (!prox) { clearInterval(zapSimTimer); return; }
+        const c = zapConversas.find(x => x.id === prox.id);
+        if (!c) return;
+        const agora = zapAgora();
+        c.mensagens = [...(c.mensagens || []), { data: agora.data, hora: agora.hora, autor: c.nomeContato, texto: prox.texto, meu: false }];
+        c.atualizadoEm = new Date().toISOString();
+        if (c.id !== zapConversaAtivaId || !document.getElementById('zap-view').classList.contains('active')) c.naoLidas = (c.naoLidas || 0) + 1;
+        zapAtualizarBadge();
+        showToast('<i class="fa-brands fa-whatsapp"></i> Nova mensagem de ' + escHTML(c.nomeContato) + (c.idCliente ? ' (' + escHTML(c.cliente) + ')' : ''), 'success');
+        if (document.getElementById('zap-view').classList.contains('active')) renderZap();
+      }, 40000);
+    }
+
+
     /* ================= ATENDIMENTOS (NOTAS DIÁRIAS) ================= */
 
     async function carregarAtendimentos() {
@@ -3274,6 +3743,7 @@
       document.getElementById('at-consultor').value = '';
       document.getElementById('at-assunto').value = '';
       document.getElementById('at-descricao').value = '';
+      document.getElementById('at-whatsapp').value = '';
 
       switchTab('atendimento-novo-view', null);
     }
@@ -3300,7 +3770,9 @@
         solucoes: [],
         status: "Aberto",
         dataCriacao: new Date().toISOString(),
-        dataResolucao: null
+        dataResolucao: null,
+        whatsapp: document.getElementById('at-whatsapp').value.trim() || null,
+        conversa: []
       };
 
       if (usandoSupabase) {
@@ -3428,6 +3900,7 @@
       document.getElementById('edit-at-consultor').value = item.consultor || '';
       document.getElementById('edit-at-assunto').value = item.assunto || '';
       document.getElementById('edit-at-descricao').value = item.descricao || '';
+      document.getElementById('edit-at-whatsapp').value = item.whatsapp || '';
 
       document.getElementById('editAtendModalOverlay').className = "custom-modal-overlay active";
     }
@@ -3452,7 +3925,8 @@
         return;
       }
 
-      const atualizacao = { idCliente, cliente, consultor, assunto, descricao };
+      const whatsapp = document.getElementById('edit-at-whatsapp').value.trim() || null;
+      const atualizacao = { idCliente, cliente, consultor, assunto, descricao, whatsapp };
 
       if (usandoSupabase) {
         try {
@@ -3473,6 +3947,7 @@
       item.consultor = consultor;
       item.assunto = assunto;
       item.descricao = descricao;
+      item.whatsapp = whatsapp;
 
       saveAtendimentosToLocalStorage();
       fecharModalEditarAtendimento();
@@ -3703,6 +4178,7 @@
               ${linkProcessoHTML}
             </div>
             <div class="atend-card-actions">
+              ${zapBotaoAtendimentoHTML(item)}
               <button class="btn btn-secondary btn-small" onclick="abrirModalEditarAtendimento('${item.id}')" title="Alterar" style="padding: 0.45rem 0.65rem;">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
@@ -3712,6 +4188,7 @@
             </div>
           </div>
           ${corpoHTML}
+          ${zapSecaoAtendimentoHTML(item)}
         </div>
       `;
     }
@@ -3793,6 +4270,10 @@
 
       if (tabId === 'dashboard-view') {
         calculateMetrics();
+      }
+      if (tabId === 'zap-view') {
+        renderZap();
+        zapIniciarSimulacao();
       }
     }
 
