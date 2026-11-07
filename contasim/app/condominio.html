@@ -26,7 +26,7 @@
     <div id="contadorNaoMorador" style="display:none; margin-bottom:16px;">
       <div class="card" style="background:#FEF2F2; border:1px solid #FCA5A5; padding:14px 16px; display:flex; align-items:center; gap:12px;">
         <span style="font-size:22px;">⚠️</span>
-        <span style="font-weight:700; color:#B91C1C; font-size:14px;"><span id="qtdNaoMorador">0</span> aviso(s) de "não sou morador" recebido(s) — pode ser sinal de que a planilha do síndico está desatualizada.</span>
+        <span style="font-weight:700; color:#B91C1C; font-size:14px;"><span id="qtdNaoMorador">0</span> aviso(s) de "não moro mais na unidade" recebido(s) — pode ser sinal de que a planilha do síndico está desatualizada.</span>
       </div>
     </div>
 
@@ -165,8 +165,11 @@ async function carregarContadorNaoMorador() {
   const { count } = await sb.from('csd_avisos_nao_morador')
     .select('*', { count: 'exact', head: true })
     .eq('condominio_id', condominioId);
+  const { count: semUnidade } = await sb.from('csd_avisos_nao_morador')
+    .select('*', { count: 'exact', head: true })
+    .eq('condominio_id', condominioId).is('unidade_id', null);
   if (count && count > 0) {
-    document.getElementById('qtdNaoMorador').textContent = count;
+    document.getElementById('qtdNaoMorador').textContent = count + (semUnidade ? ` (${semUnidade} sem unidade identificada)` : '');
     document.getElementById('contadorNaoMorador').style.display = 'block';
   }
 }
@@ -335,7 +338,53 @@ async function detectarMapeamentoComIA(cabecalhos, amostras) {
   }
 }
 
+
+// ---------- Datas de nascimento: detecta o formato da coluna e converte pra DD/MM/AAAA ----------
+function dividirData(v) {
+  if (v instanceof Date && !isNaN(v)) return { a: v.getUTCDate(), b: v.getUTCMonth() + 1, y: v.getUTCFullYear(), fixo: true };
+  if (typeof v === 'number' && v > 1000 && v < 80000) { // número de série do Excel
+    const d = new Date(Math.round((v - 25569) * 86400000));
+    return { a: d.getUTCDate(), b: d.getUTCMonth() + 1, y: d.getUTCFullYear(), fixo: true };
+  }
+  const s = String(v == null ? '' : v).trim();
+  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);          // AAAA-MM-DD
+  if (m) return { a: +m[3], b: +m[2], y: +m[1], fixo: true };
+  m = s.match(/^(\d{4})(\d{2})(\d{2})$/);                             // AAAAMMDD
+  if (m) return { a: +m[3], b: +m[2], y: +m[1], fixo: true };
+  m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);            // XX/XX/AAAA (ambíguo)
+  if (m) { let y = +m[3]; if (y < 100) y += y > 30 ? 1900 : 2000; return { a: +m[1], b: +m[2], y, fixo: false }; }
+  return null;
+}
+
+// Decide se a coluna inteira é dia/mês (padrão BR) ou mês/dia (inglês)
+function detectarFormatoData(valores, cabecalho) {
+  let temPrimeiroMaior12 = false, temSegundoMaior12 = false;
+  for (const v of valores) {
+    const p = dividirData(v);
+    if (!p || p.fixo) continue;
+    if (p.a > 12) temPrimeiroMaior12 = true;
+    if (p.b > 12) temSegundoMaior12 = true;
+  }
+  if (temPrimeiroMaior12 && !temSegundoMaior12) return 'dmy';
+  if (temSegundoMaior12 && !temPrimeiroMaior12) return 'mdy';
+  // Empate (todas as datas cabem nos dois formatos): usa o título da coluna como pista
+  if (/birth|dob|born/i.test(cabecalho || '')) return 'mdy';
+  return 'dmy';
+}
+
+function formatarNascimentoPlanilha(v, formato) {
+  const p = dividirData(v);
+  if (!p) return String(v == null ? '' : v).trim();
+  let dia = p.a, mes = p.b;
+  if (!p.fixo && formato === 'mdy') { dia = p.b; mes = p.a; }
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return String(v).trim();
+  return `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${p.y}`;
+}
+
 async function importarPlanilha(mapeamento) {
+  const formatoNasc = mapeamento.nascimento
+    ? detectarFormatoData(planilhaLinhas.map(l => l[mapeamento.nascimento]), mapeamento.nascimento)
+    : 'dmy';
   let importadas = 0, erros = 0, cpfsInvalidos = 0;
 
   for (const linha of planilhaLinhas) {
@@ -345,7 +394,7 @@ async function importarPlanilha(mapeamento) {
     if (!apto) continue;
 
     const nome = mapeamento.nome ? String(linha[mapeamento.nome] || '').trim() : '';
-    const nascimento = mapeamento.nascimento ? String(linha[mapeamento.nascimento] || '').trim() : '';
+    const nascimento = mapeamento.nascimento ? formatarNascimentoPlanilha(linha[mapeamento.nascimento], formatoNasc) : '';
     const cpf = mapeamento.cpf ? String(linha[mapeamento.cpf] || '').trim() : '';
     const rg = mapeamento.rg ? String(linha[mapeamento.rg] || '').trim() : '';
     const email = mapeamento.email ? String(linha[mapeamento.email] || '').trim() : '';

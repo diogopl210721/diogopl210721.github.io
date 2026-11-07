@@ -64,8 +64,9 @@
 
         <button type="button" class="btn btn-block" onclick="reportarNaoMorador()" id="btnNaoMorador"
           style="margin-top:12px; background:var(--danger); border-color:var(--danger); color:#fff;">
-          🚪 Não sou morador deste edifício
+          🚪 Não moro mais nesta unidade
         </button>
+        <p id="dicaNaoMorador" class="muted" style="display:none; font-size:13px; margin-top:8px;"></p>
       </div>
     </div>
 
@@ -89,7 +90,7 @@
 
       <button type="button" class="btn btn-block" onclick="reportarNaoMoradorUnidade()" id="btnNaoMoradorCpf"
         style="margin-top:12px; background:var(--danger); border-color:var(--danger); color:#fff;">
-        🚪 Não sou morador deste edifício
+        🚪 Não moro mais nesta unidade
       </button>
     </div>
 
@@ -338,12 +339,30 @@ async function confirmarUnidade() {
   mostrarEtapa('cpf', 1);
 }
 
+let naoMoradorConfirmouSemUnidade = false;
+
 async function reportarNaoMorador() {
   const btn = document.getElementById('btnNaoMorador');
+  const torre = document.getElementById('inputTorre').value.trim();
+  const bloco = document.getElementById('inputBloco').value.trim();
+  const apto = document.getElementById('inputApto').value.trim();
+  const dica = document.getElementById('dicaNaoMorador');
+
+  // Sem apto informado: pede pra informar (ajuda o síndico a saber qual unidade é).
+  // Se a pessoa insistir (segundo toque), envia mesmo assim, sem identificar a unidade.
+  if (!apto && !naoMoradorConfirmouSemUnidade) {
+    naoMoradorConfirmouSemUnidade = true;
+    dica.style.display = 'block';
+    dica.textContent = 'Informe seu bloco e apto acima para o síndico saber qual unidade atualizar. Se preferir não informar, toque no botão de novo para enviar o aviso mesmo assim.';
+    return;
+  }
+
   btn.disabled = true;
   btn.style.opacity = '0.6';
 
-  const { error } = await sb.rpc('csd_rpc_reportar_nao_morador', { p_condominio_id: condominioId });
+  const { error } = await sb.rpc('csd_rpc_reportar_nao_morador_endereco', {
+    p_condominio_id: condominioId, p_torre: torre || null, p_bloco: bloco || null, p_apto: apto || null
+  });
   if (error) {
     toast('Erro ao enviar aviso. Tente novamente.', 'error');
     btn.disabled = false;
