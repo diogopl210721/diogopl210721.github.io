@@ -25,7 +25,7 @@ nav a{text-decoration:none;color:var(--mut);transition:.2s}nav a:hover{color:#ff
 .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:999px;font:700 16px Poppins;text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--or),var(--or2));box-shadow:0 12px 34px rgba(255,90,54,.35);transition:transform .2s,box-shadow .2s;border:0;cursor:pointer}
 .btn:hover{box-shadow:0 16px 44px rgba(255,90,54,.5)}
 .btn.ghost{background:transparent;border:1.5px solid var(--line);box-shadow:none}.btn.ghost:hover{border-color:var(--or)}
-.btn.sm{padding:9px 18px;font:600 14px Inter;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);box-shadow:none;color:#fff;backdrop-filter:blur(6px)}.btn.sm:hover{background:var(--or);border-color:var(--or);box-shadow:none}
+.vbtn{background:#fff;color:#0b2947;box-shadow:0 12px 34px rgba(0,0,0,.35)}.vbtn:hover{background:#eaf1fb}.pl{width:28px;height:28px;border-radius:50%;background:var(--or);color:#fff;font-size:11px;display:grid;place-items:center;padding-left:2px;animation:pp 2s infinite}@keyframes pp{0%{box-shadow:0 0 0 0 rgba(255,90,54,.6)}100%{box-shadow:0 0 0 14px rgba(255,90,54,0)}}.fv{position:fixed;right:18px;bottom:18px;z-index:55;opacity:0;pointer-events:none;transform:translateY(16px);transition:.3s;padding:12px 20px}.fv.show{opacity:1;pointer-events:auto;transform:none}.btn.sm{padding:9px 18px;font:600 14px Inter;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);box-shadow:none;color:#fff;backdrop-filter:blur(6px)}.btn.sm:hover{background:var(--or);border-color:var(--or);box-shadow:none}
 @media(max-width:860px){nav a:not(.btn){display:none}}
 /* HERO */
 .hero{height:320vh;position:relative}
@@ -68,7 +68,7 @@ h1 .ch{display:inline-block;opacity:0;transform:translateY(40px) rotate(6deg);fi
 .cap{margin-top:30px;text-align:center;font:600 14px Poppins;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);min-height:22px}
 .cap b{color:#fff}
 .prog{height:4px;background:#12304f;border-radius:9px;margin:12px auto 0;max-width:420px;overflow:hidden}.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--or),#5fe0ff)}
-@media(max-width:900px){.hero{height:300vh}.stage{grid-template-columns:1fr;gap:16px;padding-top:84px;align-content:start}h1{margin:10px 0 10px;font-size:clamp(36px,11vw,52px)}.type{min-height:2.6em;font-size:16px}.cta{margin:12px 0 6px}.cta .ghost{display:none}.hint{display:none}.cap{margin-top:16px}.beamlab{top:-26px}.chip{font-size:11px;padding:6px 10px}}
+@media(max-width:900px){.hero{height:300vh}.stage{grid-template-columns:1fr;gap:16px;padding-top:84px;align-content:start}h1{margin:10px 0 10px;font-size:clamp(36px,11vw,52px)}.type{min-height:2.6em;font-size:16px}.cta{margin:12px 0 6px}.hint{display:none}.cap{margin-top:16px}.beamlab{top:-26px}.chip{font-size:11px;padding:6px 10px}}
 /* TICKER */
 .tick{border-block:1px solid var(--line);background:#071f39;overflow:hidden;padding:18px 0}
 .tk{display:flex;gap:56px;white-space:nowrap;width:max-content;animation:tk 34s linear infinite;font:700 clamp(20px,3vw,32px) Poppins}
@@ -143,10 +143,10 @@ footer a{color:#fff;text-decoration:none;border-bottom:1px solid var(--or)}
 </style>
 </head>
 <body>
-<div class="bar" id="bar"></div><div class="glow" id="glow"></div>
+<div class="bar" id="bar"></div><div class="glow" id="glow"></div><a class="btn vbtn fv" id="fv" href="#video"><span class="pl">▶</span> Ver o vídeo</a>
 <header><div class="wrap">
   <a href="#top" aria-label="Consigaz"><img class="logo" src="img/consigaz-branca.png" alt="Consigaz"></a>
-  <nav><a href="#como">Como funciona</a><a href="#dicas">Dicas</a><a href="#video">Vídeo</a><a href="#quem">Para quem</a><a class="btn sm" href="app/">Acessar o sistema</a></nav>
+  <nav><a href="#como">Como funciona</a><a href="#dicas">Dicas</a><a href="#video">Vídeo</a><a href="#quem">Para quem</a></nav>
 </div></header>
 
 <main id="top">
@@ -155,7 +155,7 @@ footer a{color:#fff;text-decoration:none;border-bottom:1px solid var(--or)}
     <span class="kick">Conta Sim Digital · Pós-Vendas</span>
     <h1 id="h1" aria-label="Do papel ao digital."></h1>
     <p class="type" id="type"></p>
-    <div class="cta"><a class="btn" href="app/">Abrir o sistema ↗</a><a class="btn ghost" href="#video">▶ Ver em 90 segundos</a></div>
+    <div class="cta"><a class="btn" href="app/">Abrir o sistema ↗</a><a class="btn vbtn" href="#video"><span class="pl">▶</span> Ver o vídeo · 90 s</a></div>
     <div class="hint"><span>↓</span> Role a página e veja o papel virar dado</div>
   </div>
   <div class="scanwrap">
@@ -320,7 +320,7 @@ function frame(){
  pg.style.width=(e*100)+'%';
  cap.innerHTML=e<.04?'Planilha e formulário de <b>papel</b>':e<.96?'Papel virando <b>dado digital</b>':'Tudo no <b>banco da empresa</b> ✓';
 }
-addEventListener('scroll',frame,{passive:true});addEventListener('resize',frame);frame();
+const fv=$('#fv'),vs=$('#video');function fvf(){const r=vs.getBoundingClientRect();fv.classList.toggle('show',scrollY>innerHeight*.9&&!(r.top<innerHeight*.6&&r.bottom>0))}addEventListener('scroll',fvf,{passive:true});fvf();addEventListener('scroll',frame,{passive:true});addEventListener('resize',frame);frame();
 // video chapters
 $$('.chs button').forEach(b=>b.onclick=()=>{const v=$('#vid');v.currentTime=+b.dataset.t;v.play()});
 })();
