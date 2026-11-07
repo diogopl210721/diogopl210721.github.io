@@ -993,12 +993,13 @@ async function exportarExcel(btn) {
     views: [{ state: 'frozen', ySplit: 7 }],
   });
 
-  const colunas = ['Torre', 'Bloco', 'Apto', 'Morador', 'CPF', 'Data de Nascimento', 'E-mail', 'Telefone', 'Nº Série Medidor', 'Leitura (m³)', 'Status Medidor', 'Status Validação', 'Aviso', 'Marca do Medidor', 'Vazão (m³/h)', 'Ano de Fabricação', 'Validade do Medidor'];
+  const colunas = ['Torre', 'Bloco', 'Apto', 'Morador', 'CPF', 'Data de Nascimento', 'E-mail', 'Telefone', 'Nº Série Medidor', 'Leitura (m³)', 'Status Medidor', 'Status Validação', 'Aviso', 'Marca do Medidor', 'Vazão (m³/h)', 'Ano de Fabricação', 'Validade do Medidor', 'Data da Captura'];
   sheet.columns = colunas.map(c => ({ width: Math.max(14, c.length + 4) }));
   sheet.columns[3].width = 26; // Morador
   sheet.columns[6].width = 26; // E-mail
   sheet.columns[12].width = 30; // Aviso
   sheet.columns[16].width = 26; // Validade do medidor
+  sheet.columns[17].width = 20; // Data da captura
 
   // Faixa de topo com a cor da marca
   sheet.mergeCells('A1:M1');
@@ -1081,6 +1082,7 @@ async function exportarExcel(btn) {
       validadoOk ? 'Validado' : (morador?.dados_confirmados ? 'Em andamento' : 'Aguardando'),
       u.aviso_nao_morador_em ? `⚠️ Não é mais morador (${new Date(u.aviso_nao_morador_em).toLocaleDateString('pt-BR')})` : '',
       infoSerie?.marca || '', infoSerie?.vazao || '', infoSerie?.anoFab || '', infoSerie ? window.textoValidadeMedidor(infoSerie) : (medidor ? 'Série não reconhecida' : ''),
+      (medidor?.capturado_em || medidor?.criado_em) ? new Date(medidor.capturado_em || medidor.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '',
     ]);
     if (infoSerie?.status === 'vencido') totalVencidos++;
     if (infoSerie?.status === 'vence_este_ano') totalVencemAno++;
@@ -1110,6 +1112,7 @@ async function exportarExcel(btn) {
         cell.font.color = { argb: corTxt };
         cell.font.bold = true;
       }
+      if (colNumber === 18) cell.alignment.horizontal = 'center';
       if (colNumber === 17 && infoSerie && infoSerie.status !== 'ok') {
         cell.alignment.horizontal = 'center';
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: infoSerie.status === 'vencido' ? 'FFFEE2E2' : WARNING } };
@@ -1125,7 +1128,7 @@ async function exportarExcel(btn) {
     });
   }
 
-  sheet.autoFilter = { from: 'A7', to: `Q${7 + (unidades || []).length}` };
+  sheet.autoFilter = { from: 'A7', to: `R${7 + (unidades || []).length}` };
 
   // ---------- Aba Resumo (layout tipo dashboard) ----------
   const totalUnidades = (unidades || []).length;
