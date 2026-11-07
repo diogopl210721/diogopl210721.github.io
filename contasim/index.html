@@ -2,352 +2,327 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#070d1a">
-<title>Conta Sim Digital – o cadastro de medidores sem papel</title>
-<meta name="description" content="Sistema web que registra apartamentos e casas de condomínios horizontais, confirma o morador por selfie e documento e lê o medidor por foto, com IA.">
-<link rel="icon" href="../favicon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conta Sim Digital · Do papel ao digital | Consigaz</title>
+<meta name="description" content="Conta Sim Digital: cadastro de moradores e leitura de medidores da Consigaz, sem papel. Busca no banco, QR Code, confirmação por celular, IA e Excel.">
+<meta name="theme-color" content="#061a30">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#070d1a;--panel:#101b30;--ink:#f1f6ff;--muted:#a7b7d1;--accent:#399cff;--accent2:#63dfff;--line:#243552;--green:#22c07a;--flame:#ff5630}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:90px}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',Arial,sans-serif;font-size:16px;line-height:1.65;overflow-x:hidden}
-::selection{background:var(--accent);color:var(--bg)}
-a{color:inherit;text-decoration:none}
-button{font:inherit;cursor:pointer}
-:focus-visible{outline:3px solid var(--accent);outline-offset:5px;border-radius:8px}
-h1,h2,h3,p{margin:0}
-h1,h2,h3{font-family:Manrope,Arial,sans-serif;line-height:1.08;letter-spacing:-.05em}
-h2{font-size:clamp(34px,4.3vw,60px);font-weight:500}
-.serif{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-style:italic;letter-spacing:-.03em}
-.wrap{max-width:1320px;padding:0 48px;margin:auto}
-.eyebrow{font-size:11px;letter-spacing:.15em;font-weight:700;color:var(--accent2);margin-bottom:22px;text-transform:uppercase}
-.lead{color:var(--muted);font-size:clamp(16px,1.5vw,19px);max-width:52ch}
-.glow{position:fixed;width:520px;height:520px;left:0;top:0;margin:-260px 0 0 -260px;border-radius:50%;background:radial-gradient(circle,rgba(57,156,255,.16),transparent 62%);pointer-events:none;z-index:1;transition:opacity .4s;mix-blend-mode:screen}
-
-/* header */
-.header{position:fixed;z-index:40;inset:0 0 auto 0;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 48px;border-bottom:1px solid transparent;transition:background .3s,border-color .3s,padding .3s}
-.header.solid{background:rgba(7,13,26,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-color:#29477370;padding:12px 48px}
-.brand-full{display:block;width:140px;height:auto}
-.header nav{display:flex;gap:30px;font-size:13px;align-items:center}
-.header nav a{color:#c5d3ea;transition:color .2s}
-.header nav a:hover{color:var(--accent)}
-.header nav a.cta,.btn{color:#061325;background:linear-gradient(105deg,#3b95ff,#63dfff);padding:9px 18px;border-radius:999px;box-shadow:0 6px 20px #238cff44;font-weight:600;transition:transform .2s,box-shadow .2s}
-.header nav a.cta:hover,.btn:hover{color:#061325;transform:translateY(-2px);box-shadow:0 12px 30px #238cff77}
-.btn{display:inline-flex;align-items:center;gap:12px;padding:15px 26px;font-size:15px;border:0}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid #6b86b0;box-shadow:none}
-.btn.ghost:hover{color:var(--ink);border-color:var(--accent2);box-shadow:none}
-
-/* experience */
-.experience{position:relative;height:560vh}
-.stage{position:sticky;top:0;height:100vh;overflow:hidden;background:radial-gradient(900px 640px at 78% 46%,#0f2a52 0,transparent 70%),radial-gradient(700px 500px at 5% 100%,#10203d,transparent 70%),var(--bg)}
-#gl{position:absolute;inset:0}
-#gl canvas{width:100%;height:100%;display:block}
-.vignette{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(7,13,26,.85) 0,rgba(7,13,26,.35) 38%,transparent 60%),radial-gradient(ellipse at center,transparent 55%,rgba(7,13,26,.7) 100%)}
-.scene-panel{position:absolute;left:max(48px,calc((100vw - 1320px)/2 + 48px));top:50%;width:min(560px,42vw);transform:translateY(-46%);opacity:0;pointer-events:none;transition:opacity .6s,transform .8s cubic-bezier(.2,.8,.2,1)}
-.scene-panel.active{opacity:1;transform:translateY(-50%);pointer-events:auto}
-.scene-panel h1{font-size:clamp(42px,5.6vw,84px);font-weight:500;margin-bottom:26px}
-.scene-panel h2{font-size:clamp(32px,3.9vw,56px);margin-bottom:22px}
-.scene-panel p.lead{margin-bottom:30px}
-.row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-.chip{display:inline-flex;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(16,27,48,.7);border-radius:999px;padding:8px 14px;font-size:12px;color:var(--muted)}
-.chip b{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
-.hint{margin-top:44px;font-size:12px;letter-spacing:.14em;color:var(--muted);display:flex;gap:14px;align-items:center}
-.hint i{display:block;width:1px;height:44px;background:linear-gradient(var(--accent2),transparent);animation:drip 2s infinite}
-@keyframes drip{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
-.scene-dots{position:absolute;right:48px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:flex-end;z-index:5}
-.scene-dots button{width:12px;height:12px;border-radius:50%;border:1.5px solid #6b86b0;background:transparent;padding:0;transition:.3s}
-.scene-dots button.on{background:var(--accent2);border-color:var(--accent2);box-shadow:0 0 14px var(--accent2);transform:scale(1.25)}
-.scene-meter{position:absolute;right:48px;bottom:38px;font:600 12px Manrope;letter-spacing:.14em;color:var(--muted);z-index:5}
-.motion-toggle{position:absolute;left:max(48px,calc((100vw - 1320px)/2 + 48px));bottom:34px;z-index:6;background:rgba(16,27,48,.7);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 16px;font-size:12px}
-.motion-toggle:hover{color:var(--ink);border-color:var(--accent)}
-/* static fallback */
-body.motion-off .experience,body.no-gl .experience{height:auto}
-body.motion-off .stage,body.no-gl .stage{position:relative;height:auto;padding:150px 0 40px;display:block}
-body.motion-off #gl,body.no-gl #gl,body.motion-off .scene-dots,body.no-gl .scene-dots,body.motion-off .scene-meter,body.no-gl .scene-meter,body.no-gl .motion-toggle{display:none}
-body.motion-off .vignette,body.no-gl .vignette{display:none}
-body.motion-off .scene-panel,body.no-gl .scene-panel{position:relative;left:auto;top:auto;transform:none;opacity:1;pointer-events:auto;width:min(760px,100% - 96px);margin:0 auto 90px}
-body.motion-off .motion-toggle{position:fixed;bottom:20px;left:20px}
-
+:root{--bg:#061a30;--bg2:#0b2947;--card:#0e2a49;--line:#1d3f66;--tx:#eaf1fb;--mut:#9db3cf;--or:#ff5a36;--or2:#ff8a4c;--gr:#22c07a;--paper:#fbf6e6;--ink:#1f3a8a}
+*{box-sizing:border-box;margin:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font:400 17px/1.6 Inter,system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body:before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(900px 600px at 80% -5%,#143a66 0,transparent 60%),radial-gradient(700px 500px at 0 40%,rgba(255,90,54,.10),transparent 60%),repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 48px),repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 48px)}
+img{max-width:100%;display:block}a{color:inherit}
+h2,h3{text-wrap:balance}h1,h2,h3{font-family:Poppins,Inter,sans-serif;line-height:1.08;letter-spacing:-.02em}
+.wrap{width:min(1180px,100% - 40px);margin:auto}
+.bar{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--or),var(--or2));z-index:60}
+header{position:fixed;inset:0 0 auto;z-index:50;background:linear-gradient(#061a30ee,#061a3000);backdrop-filter:blur(8px)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:72px}
+.logo{height:30px;width:auto}
+nav{display:flex;gap:26px;align-items:center;font:500 15px Inter}
+nav a{text-decoration:none;color:var(--mut);transition:.2s}nav a:hover{color:#fff}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:999px;font:700 16px Poppins;text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--or),var(--or2));box-shadow:0 12px 34px rgba(255,90,54,.35);transition:transform .2s,box-shadow .2s;border:0;cursor:pointer}
+.btn:hover{box-shadow:0 16px 44px rgba(255,90,54,.5)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);box-shadow:none}.btn.ghost:hover{border-color:var(--or)}
+.btn.sm{padding:10px 20px;font-size:14px}
+@media(max-width:860px){nav a:not(.btn){display:none}}
+/* HERO */
+.hero{height:320vh;position:relative}
+.stage{position:sticky;top:0;height:100vh;height:100svh;display:grid;grid-template-columns:.95fr 1.15fr;gap:40px;align-items:center;padding:90px max(20px,calc((100vw - 1180px)/2)) 30px}
+.kick{display:inline-flex;gap:10px;align-items:center;font:700 13px Poppins;letter-spacing:.16em;text-transform:uppercase;color:var(--or2)}
+.kick:before{content:"";width:28px;height:2px;background:var(--or)}
+h1{font-size:clamp(40px,6.2vw,84px);font-weight:800;margin:18px 0 20px}
+h1 .ch{display:inline-block;opacity:0;transform:translateY(40px) rotate(6deg);filter:blur(8px);animation:chIn .7s cubic-bezier(.2,.9,.3,1) forwards}
+@keyframes chIn{to{opacity:1;transform:none;filter:none}}
+.strike{position:relative;color:#7f93ad;display:inline-block}
+.strike:after{content:"";position:absolute;left:-4%;right:-4%;top:54%;height:.1em;background:var(--or);border-radius:4px;transform:scaleX(0);transform-origin:left;animation:stk .6s .9s cubic-bezier(.7,0,.2,1) forwards;transform:rotate(-2deg) scaleX(0)}
+@keyframes stk{to{transform:rotate(-2deg) scaleX(1)}}
+.shine .ch{color:var(--or2);text-shadow:0 0 30px rgba(255,138,76,.55)}.shine{animation:pulse 2.6s 1.8s ease-in-out infinite}@keyframes pulse{50%{filter:brightness(1.35) drop-shadow(0 0 14px rgba(255,138,76,.6))}}
+.type{font:500 clamp(17px,1.7vw,21px) Inter;color:var(--mut);min-height:2.8em}
+.type b{color:#fff;font-weight:600}.type i{display:inline-block;width:2px;height:1.1em;background:var(--or);vertical-align:-3px;margin-left:3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.cta{display:flex;gap:14px;flex-wrap:wrap;margin:26px 0 20px}
+.hint{font:600 13px Inter;color:var(--mut);display:flex;gap:10px;align-items:center}
+.hint span{display:inline-block;animation:bob 1.6s infinite}@keyframes bob{50%{transform:translateY(5px)}}
+/* scan stage */
+.scanwrap{position:relative}
+.scan{--t:0%;position:relative;aspect-ratio:1060/615;border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 0 6px #10233b,0 0 0 7px #25476f;background:#f5f7fa;overflow:hidden}
+.scan>img.dig{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.paper{position:absolute;inset:0;clip-path:inset(var(--t) 0 0 0);background:var(--paper);font-family:Caveat,'Segoe Print','Bradley Hand',cursive;color:var(--ink);overflow:hidden}
+.paper:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(transparent 0 37px,#c9d6ee 37px 38px);background-position:0 64px}
+.paper:after{content:"";position:absolute;left:62px;top:0;bottom:0;width:2px;background:#f1a3a3}
+.paper h4{position:absolute;left:84px;top:22px;font:700 clamp(18px,2.6vw,32px) Caveat,cursive;transform:rotate(-1deg)}
+.pr{position:absolute;left:84px;right:24px;font-weight:600;font-size:clamp(15px,2.15vw,27px);display:flex;gap:4%;white-space:nowrap}
+.pr b{width:22%;font-weight:700}.pr em{font-style:normal;width:36%}.pr s{margin-left:auto;text-decoration:none}
+.pr.r1{top:30%}.pr.r2{top:41%}.pr.r3{top:52%}.pr.r4{top:63%}.pr.r5{top:74%}.pr.r6{top:85%}
+.circ{outline:2.5px solid #d6402a;border-radius:50%/60%;padding:0 8px}
+.cut{text-decoration:line-through;text-decoration-color:#d6402a;text-decoration-thickness:2px}
+.stamp{position:absolute;right:5%;top:12%;font:800 clamp(16px,2.5vw,30px) Poppins;color:#d6402a;border:3px solid #d6402a;padding:2px 14px;border-radius:8px;transform:rotate(-9deg);opacity:.75;letter-spacing:.08em}
+.post{position:absolute;right:3%;bottom:6%;width:23%;aspect-ratio:1;background:#ffe27a;box-shadow:2px 8px 14px rgba(0,0,0,.25);transform:rotate(5deg);padding:8% 7%;font:700 clamp(13px,1.8vw,22px)/1.05 Caveat,cursive;color:#4a3b00}
+.ring{position:absolute;left:46%;bottom:-6%;width:30%;aspect-ratio:1;border-radius:50%;border:8px solid rgba(140,90,40,.16);filter:blur(1px)}
+.beam{position:absolute;left:-2%;right:-2%;top:var(--t);height:3px;background:linear-gradient(90deg,transparent,#5fe0ff,#fff,#5fe0ff,transparent);box-shadow:0 0 18px 4px rgba(95,224,255,.7),0 -30px 60px 10px rgba(95,224,255,.18);z-index:4;opacity:0;pointer-events:none}
+.beamlab{position:absolute;right:12px;top:-30px;font:700 12px Poppins;letter-spacing:.1em;color:#05283a;background:#5fe0ff;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.chip{position:absolute;z-index:5;background:#fff;color:#0b2947;font:700 14px Poppins;padding:9px 16px;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.35);opacity:0;transform:translateY(10px) scale(.9);transition:opacity .35s,transform .35s;white-space:nowrap}
+.chip.on{opacity:1;transform:none}.chip i{font-style:normal;color:var(--gr);margin-right:6px}
+.cap{margin-top:30px;text-align:center;font:600 14px Poppins;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);min-height:22px}
+.cap b{color:#fff}
+.prog{height:4px;background:#12304f;border-radius:9px;margin:12px auto 0;max-width:420px;overflow:hidden}.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--or),#5fe0ff)}
+@media(max-width:900px){.hero{height:300vh}.stage{grid-template-columns:1fr;gap:16px;padding-top:84px;align-content:start}h1{margin:10px 0 10px;font-size:clamp(36px,11vw,52px)}.type{min-height:2.6em;font-size:16px}.cta{margin:12px 0 6px}.cta .ghost{display:none}.hint{display:none}.cap{margin-top:16px}.beamlab{top:-26px}.chip{font-size:11px;padding:6px 10px}}
+/* TICKER */
+.tick{border-block:1px solid var(--line);background:#071f39;overflow:hidden;padding:18px 0}
+.tk{display:flex;gap:56px;white-space:nowrap;width:max-content;animation:tk 34s linear infinite;font:700 clamp(20px,3vw,32px) Poppins}
+@keyframes tk{to{transform:translateX(-50%)}}
+.tk span{color:#6f87a6;position:relative}.tk span:after{content:"";position:absolute;left:-2%;right:-2%;top:56%;height:3px;background:var(--or);transform:rotate(-2deg)}
+.tk em{font-style:normal;color:var(--gr)}
 /* sections */
-.section{position:relative;padding:120px 0}
-.band{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0a1427;overflow:hidden;padding:20px 0}
-.ticker{display:flex;gap:48px;white-space:nowrap;width:max-content;animation:tick 38s linear infinite;font:500 clamp(22px,2.6vw,34px) Manrope;letter-spacing:-.04em;color:#5d7396}
-.ticker span.on{color:var(--ink)}
-.ticker em{font-family:Georgia,serif;color:var(--accent2)}
-@keyframes tick{to{transform:translateX(-50%)}}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:end;margin-bottom:64px}
-.pairs{border-top:1px solid var(--line)}
-.pair{display:grid;grid-template-columns:1fr 90px 1.3fr;gap:24px;align-items:center;padding:34px 0;border-bottom:1px solid var(--line);position:relative}
-.pair::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:0;background:linear-gradient(90deg,var(--accent2),transparent);transition:width 1.2s .2s}
-.pair.in::after{width:100%}
-.was{font:600 clamp(20px,2.3vw,30px) Manrope;letter-spacing:-.04em;color:#6c7f9f;position:relative;width:max-content;max-width:100%}
-.was::after{content:"";position:absolute;left:0;right:100%;top:55%;height:2px;background:var(--flame);transition:right .8s .3s}
-.pair.in .was::after{right:0}
-.arrow{height:2px;background:linear-gradient(90deg,var(--accent),transparent);position:relative;transform-origin:left;transform:scaleX(0);transition:transform .8s .5s}
-.pair.in .arrow{transform:scaleX(1)}
-.arrow::after{content:"";position:absolute;right:0;top:-5px;width:10px;height:10px;border-top:2px solid var(--accent2);border-right:2px solid var(--accent2);transform:rotate(45deg)}
-.now{font-size:clamp(16px,1.6vw,20px);color:#d6e2f5;opacity:0;transform:translateY(14px);transition:all .8s .7s}
-.pair.in .now{opacity:1;transform:none}
-.now b{color:#fff;font-family:Manrope;font-weight:700;letter-spacing:-.02em}
-
-.video-wrap{display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start}
-@property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
-.vframe{position:relative;border-radius:24px;padding:2px;background:conic-gradient(from var(--ang),#399cff,#63dfff,#22c07a,#399cff 50%,#10203d,#399cff);animation:spin 8s linear infinite;box-shadow:0 40px 120px #238cff33}
-@keyframes spin{to{--ang:360deg}}
-.vframe video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:22px}
-.vnote{font-size:12px;color:var(--muted);margin-top:16px}
-.chap{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}
-.chap button{width:100%;display:flex;gap:16px;text-align:left;background:none;border:0;border-left:2px solid transparent;margin-left:-1px;padding:16px 20px;color:var(--muted);transition:.25s}
-.chap button:hover{background:rgba(57,156,255,.06);color:var(--ink)}
-.chap button.on{border-left-color:var(--accent2);background:linear-gradient(90deg,rgba(57,156,255,.16),transparent);color:var(--ink)}
-.chap time{font:600 12px Manrope;color:var(--accent2);min-width:34px;padding-top:4px;letter-spacing:.06em}
-.chap strong{display:block;font:600 18px Manrope;letter-spacing:-.03em;color:var(--ink)}
-.chap small{display:block;font-size:13.5px;line-height:1.4;margin-top:3px}
-
-.aud{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:60px}
-.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:30px 26px;overflow:hidden;transition:transform .3s,border-color .3s}
-.card::before{content:"";position:absolute;inset:0;background:radial-gradient(360px circle at var(--mx,50%) var(--my,0%),rgba(99,223,255,.16),transparent 60%);opacity:0;transition:opacity .3s}
-.card:hover{transform:translateY(-6px);border-color:#3b6aa8}
-.card:hover::before{opacity:1}
-.card>*{position:relative}
-.card h3{font-size:25px;font-weight:600;margin-bottom:4px}
-.card .role{color:var(--accent2);font-size:13px;font-weight:600;margin-bottom:18px}
-.card ul{list-style:none;padding:0;margin:0;color:var(--muted);font-size:15px}
-.card li{padding:11px 0 11px 22px;border-top:1px solid #1d2d49;position:relative}
-.card li::before{content:"";position:absolute;left:0;top:20px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px #22c07a99}
-
-.sgrid{display:grid;grid-template-columns:.9fr 1.3fr;gap:70px}
-.dl{border-top:1px solid var(--line);margin:0}
-.dl div{display:grid;grid-template-columns:200px 1fr;gap:20px;padding:18px 0;border-bottom:1px solid var(--line)}
-.dl dt{font:700 16px Manrope;letter-spacing:-.02em}
-.dl dd{margin:0;color:var(--muted);font-size:15.5px}
-.road{margin-top:84px;display:grid;grid-template-columns:repeat(3,1fr);position:relative}
-.road::before{content:"";position:absolute;left:0;right:0;top:11px;height:2px;background:linear-gradient(90deg,var(--green) 0 33%,var(--accent) 33% 66%,#2a3d5e 66%)}
-.rs{position:relative;padding:46px 28px 0 0}
-.rs::before{content:"";position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--bg);border:3px solid var(--green)}
-.rs:nth-child(2)::before{border-color:var(--accent);box-shadow:0 0 18px #399cff88}
-.rs:nth-child(3)::before{border-color:#3a4f73}
-.rs h3{font-size:22px;font-weight:600;margin-bottom:8px}
-.rs p{color:var(--muted);font-size:15.5px}
-
-.final{text-align:center;padding:150px 0;background:radial-gradient(700px 380px at 50% 100%,#12386d,transparent 70%)}
-.final h2{max-width:14ch;margin:0 auto 22px}
-.final p{color:var(--muted);max-width:48ch;margin:0 auto 36px}
-footer{border-top:1px solid var(--line);padding:40px 48px 46px;max-width:1440px;margin:auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;font-size:12px;color:var(--muted)}
-footer a{color:var(--ink);border-bottom:1px solid var(--accent);padding-bottom:1px}
-footer a:hover{color:var(--accent2)}
-
-@media(max-width:1100px){
-  .video-wrap,.sgrid,.split{grid-template-columns:1fr;gap:36px}
-  .aud{grid-template-columns:1fr 1fr}
-  .scene-panel{width:min(520px,52vw)}
-}
-@media(max-width:820px){
-  .wrap{padding:0 22px}
-  .header{padding:14px 20px}.header.solid{padding:10px 20px}
-  .header nav a:not(.cta){display:none}
-  .brand-full{width:104px}
-  .vignette{background:linear-gradient(0deg,rgba(7,13,26,.95) 0,rgba(7,13,26,.7) 42%,transparent 72%)}
-  .scene-panel{left:22px;right:22px;width:auto;top:auto;bottom:70px;transform:translateY(16px)}
-  .scene-panel.active{transform:none}
-  .scene-panel h1{font-size:clamp(34px,10vw,48px);margin-bottom:14px}
-  .scene-panel h2{font-size:clamp(26px,7.6vw,36px);margin-bottom:12px}
-  .scene-panel p.lead{font-size:15px;margin-bottom:18px}
-  .hint{display:none}
-  .scene-dots{right:14px;gap:10px}.scene-meter{display:none}
-  .motion-toggle{left:22px;bottom:22px}
-  .section{padding:80px 0}
-  .pair{grid-template-columns:1fr;gap:10px}.arrow{display:none}
-  .aud{grid-template-columns:1fr}
-  .dl div{grid-template-columns:1fr;gap:4px}
-  .road{grid-template-columns:1fr;gap:34px}.road::before{display:none}
-  footer{padding:30px 22px}
-  body.motion-off .scene-panel,body.no-gl .scene-panel{width:auto;margin:0 22px 70px}
-}
-@media(prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
-  .ticker,.vframe,.hint i{animation:none}
-  .btn,.card,.scene-panel{transition:none}
-  .glow{display:none}
-}
+section{padding:110px 0}
+.sh{max-width:760px;margin-bottom:60px}
+h2{font-size:clamp(32px,4.6vw,56px);font-weight:800;margin-top:14px}
+.sh p{color:var(--mut);margin-top:16px;font-size:19px}
+.w{display:inline-block;opacity:0;transform:translateY(26px);filter:blur(6px);transition:opacity .6s,transform .6s,filter .6s}
+.in .w{opacity:1;transform:none;filter:none}
+.hl{position:relative;color:#fff;white-space:nowrap}.hl:after{content:"";position:absolute;left:0;right:0;bottom:-.08em;height:.14em;border-radius:4px;background:linear-gradient(90deg,var(--or),var(--or2));transform:scaleX(0);transform-origin:left;transition:transform .8s .5s cubic-bezier(.7,0,.2,1)}
+.in .hl:after,.hl.in:after{transform:scaleX(1)}
+.rv{opacity:0;transform:translateY(34px);transition:opacity .7s,transform .7s}.rv.in{opacity:1;transform:none}
+/* steps */
+.step{display:grid;grid-template-columns:1fr 1.1fr;gap:70px;align-items:center;margin-bottom:130px}
+.step:nth-child(even) .txt{order:2}
+.num{font:800 15px Poppins;letter-spacing:.2em;color:var(--or2)}
+.step h3{font-size:clamp(28px,3.6vw,44px);margin:12px 0 18px;font-weight:800}
+.step p.lead{color:var(--mut);margin-bottom:18px}
+.ck{list-style:none;padding:0;display:grid;gap:11px;margin-bottom:24px}
+.ck li{display:flex;gap:12px;align-items:flex-start;opacity:0;transform:translateX(-18px);transition:.5s}.ck.in li{opacity:1;transform:none}
+.ck li:before{content:"✓";flex:none;width:24px;height:24px;border-radius:50%;background:var(--gr);color:#fff;font:700 13px/24px Poppins;text-align:center;margin-top:2px}
+.tip{display:inline-block;max-width:420px;background:#ffe27a;color:#3d3000;border-radius:4px 4px 14px 4px;padding:14px 20px 14px 18px;transform:rotate(-1.6deg);box-shadow:3px 10px 24px rgba(0,0,0,.35);font:700 23px/1.15 Caveat,'Segoe Print',cursive;position:relative}
+.tip small{display:block;font:800 11px Poppins;letter-spacing:.16em;color:#9a5a00;margin-bottom:3px}
+.vis{position:relative;display:flex;justify-content:center;perspective:1200px}
+.tilt{transition:transform .25s ease-out;transform-style:preserve-3d;will-change:transform}
+.lap{border-radius:16px;box-shadow:0 40px 80px rgba(0,0,0,.5),0 0 0 6px #10233b,0 0 0 7px #25476f;width:100%}
+.ph{height:min(470px,62vw);width:auto;-webkit-mask:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent),linear-gradient(0deg,transparent,#000 8%,#000 92%,transparent);-webkit-mask-composite:source-in;mask:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent),linear-gradient(0deg,transparent,#000 8%,#000 92%,transparent);mask-composite:intersect}
+.duo{display:flex;gap:0;align-items:center}.duo .ph:last-child{margin-left:-40px}
+.float{position:absolute;background:#fff;color:#0b2947;font:700 14px Poppins;padding:10px 16px;border-radius:12px;box-shadow:0 16px 36px rgba(0,0,0,.4);animation:fl 4s ease-in-out infinite;white-space:nowrap}
+.float i{font-style:normal;color:var(--gr);margin-right:6px}
+@keyframes fl{50%{transform:translateY(-10px)}}
+@media(max-width:900px){.step{grid-template-columns:1fr;gap:30px;margin-bottom:90px}.step:nth-child(even) .txt{order:0}.float{font-size:12px;padding:7px 12px}}
+/* tips */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:18px}
+.tc{position:relative;padding:26px;border-radius:20px;background:linear-gradient(160deg,#0f2f52,#0a2342);border:1px solid var(--line);overflow:hidden;transition:transform .3s,border-color .3s}
+.tc:hover{transform:translateY(-6px);border-color:var(--or)}
+.tc:before{content:"";position:absolute;inset:0;background:radial-gradient(260px 160px at var(--mx,50%) var(--my,0),rgba(255,90,54,.18),transparent 70%);opacity:0;transition:.3s}.tc:hover:before{opacity:1}
+.tag{display:inline-block;font:800 11px Poppins;letter-spacing:.14em;padding:4px 10px;border-radius:99px;background:#ffe27a;color:#4a3b00}.tag.f{background:#1b6b4a;color:#d6ffe9}
+.ic{font-size:30px;margin:14px 0 8px;display:block}
+.tc h3{font-size:20px;margin-bottom:8px;position:relative}.tc p{color:var(--mut);font-size:15.5px;position:relative}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2px;background:var(--line);border-radius:22px;overflow:hidden;border:1px solid var(--line)}
+.st{background:#0a2342;padding:36px 24px;text-align:center}
+.st b{display:block;font:800 clamp(44px,6vw,72px) Poppins;line-height:1;background:linear-gradient(135deg,var(--or),var(--or2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.st span{display:block;margin-top:10px;color:var(--mut);font-size:15px}
+/* video */
+.vbox{position:relative;border-radius:22px;padding:3px;background:conic-gradient(from var(--ang,0deg),var(--or),#5fe0ff,var(--or2),var(--or));animation:ang 6s linear infinite;box-shadow:0 40px 100px rgba(0,0,0,.5)}
+@property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}@keyframes ang{to{--ang:360deg}}
+.vbox video{width:100%;border-radius:20px;display:block;background:#000}
+.chs{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.chs button{font:600 14px Inter;color:var(--tx);background:#0f2f52;border:1px solid var(--line);border-radius:99px;padding:9px 16px;cursor:pointer;transition:.2s}.chs button:hover{background:var(--or);border-color:var(--or)}
+/* roles + sec */
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+.rl{padding:28px;border-radius:20px;background:#0a2342;border:1px solid var(--line)}
+.rl small{color:var(--or2);font:700 12px Poppins;letter-spacing:.14em;text-transform:uppercase}.rl h3{font-size:24px;margin:8px 0 10px}.rl p{color:var(--mut);font-size:15.5px}
+.sec{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:10px}
+.sec div{padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:#09213d;font-size:15px;color:var(--mut)}.sec b{display:block;color:#fff;font:700 15px Poppins}
+.note{margin-top:16px;color:var(--mut);font-size:14px}
+/* final */
+.fin{text-align:center;padding:130px 0;background:radial-gradient(700px 400px at 50% 0,rgba(255,90,54,.22),transparent 70%)}
+.fin h2{font-size:clamp(36px,6vw,76px)}.fin p{color:var(--mut);margin:18px auto 34px;max-width:600px;font-size:19px}
+footer{border-top:1px solid var(--line);padding:34px 0 46px;color:var(--mut);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:14px 30px;align-items:center;justify-content:space-between}
+footer a{color:#fff;text-decoration:none;border-bottom:1px solid var(--or)}
+.glow{position:fixed;width:420px;height:420px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(255,90,54,.10),transparent 65%);transform:translate(-50%,-50%);z-index:-1;left:-999px;top:0}
+.motion-off *{animation:none!important;transition:none!important}.motion-off .w,.motion-off .rv,.motion-off .ck li,.motion-off h1 .ch{opacity:1!important;transform:none!important;filter:none!important}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}.w,.rv,.ck li,h1 .ch{opacity:1!important;transform:none!important;filter:none!important}.strike:after{transform:rotate(-2deg) scaleX(1)}}
 </style>
 </head>
 <body>
-<div class="glow" id="glow" aria-hidden="true"></div>
+<div class="bar" id="bar"></div><div class="glow" id="glow"></div>
+<header><div class="wrap">
+  <a href="#top" aria-label="Consigaz"><img class="logo" src="img/consigaz-branca.png" alt="Consigaz"></a>
+  <nav><a href="#como">Como funciona</a><a href="#dicas">Dicas</a><a href="#video">Vídeo</a><a href="#quem">Para quem</a><a class="btn sm" href="app/">Abrir o sistema ↗</a></nav>
+</div></header>
 
-<header class="header" id="hd">
-  <a href="https://www.ddsinovacao.com.br/" aria-label="DDS Sites & Sistemas"><img class="brand-full" src="../logo-branca.png" width="2000" height="1125" alt="DDS Sites & Sistemas"></a>
-  <nav aria-label="Principal">
-    <a href="#serve">Para que serve</a><a href="#video">Vídeo</a><a href="#quem">Para quem</a><a href="#seguranca">Segurança</a>
-    <a class="cta" href="app/">Abrir o sistema ↗</a>
-  </nav>
-</header>
-
-<main>
-<section class="experience" id="experience" aria-label="Apresentação do Conta Sim Digital">
-  <div class="stage">
-    <div id="gl" aria-hidden="true"></div>
-    <div class="vignette"></div>
-
-    <article class="scene-panel active">
-      <div class="eyebrow">Conta Sim Digital</div>
-      <h1>O cadastro de medidores sai do <span class="serif">papel.</span></h1>
-      <p class="lead">Um sistema web que registra apartamentos e casas de condomínios horizontais, confirma o morador por selfie e documento e lê o medidor por foto, com inteligência artificial.</p>
-      <div class="row"><a class="btn" href="app/">Abrir o sistema <span>↗</span></a><a class="btn ghost" href="#video">Ver em 90 segundos</a></div>
-      <div class="hint"><i></i>ROLE PARA VER COMO FUNCIONA</div>
-    </article>
-
-    <article class="scene-panel">
-      <div class="eyebrow">01 · Busca no banco da empresa</div>
-      <h2>Digite as primeiras letras. O banco da empresa <span class="serif">responde.</span></h2>
-      <p class="lead">O consultor busca por nome, código ou endereço. O sistema puxa o condomínio e preenche o cadastro. O que for captado volta para o mesmo banco.</p>
-      <span class="chip"><b></b>Simulação · integração com o banco da Consigaz</span>
-    </article>
-
-    <article class="scene-panel">
-      <div class="eyebrow">02 · Condomínio e moradores</div>
-      <h2>Cada casa e cada apartamento, <span class="serif">validados</span> um a um.</h2>
-      <p class="lead">Um QR Code impresso na portaria ou um link enviado ao síndico. O morador confirma os dados pelo celular, e a IA confere selfie e documento.</p>
-      <span class="chip"><b></b>Quem mudou de casa avisa com um toque</span>
-    </article>
-
-    <article class="scene-panel">
-      <div class="eyebrow">03 · Medidor</div>
-      <h2>Uma foto. A IA lê a série e a <span class="serif">leitura.</span></h2>
-      <p class="lead">O consultor fotografa o medidor em campo. O número de série e o mostrador viram dados, sem digitar.</p>
-      <span class="chip"><b></b>Funciona no celular, sem instalar app</span>
-    </article>
-
-    <article class="scene-panel">
-      <div class="eyebrow">04 · Segurança</div>
-      <h2>Dados de clientes, blindados em <span class="serif">todas as camadas.</span></h2>
-      <p class="lead">Criptografia em trânsito e em repouso, acesso individual e isolamento por consultor direto no banco. Tudo exportável em Excel.</p>
-      <div class="row"><a class="btn" href="app/">Abrir o sistema <span>↗</span></a><a class="btn ghost" href="#video">Ver o vídeo</a></div>
-    </article>
-
-    <div class="scene-dots" role="tablist" aria-label="Cenas">
-      <button type="button" data-p="0" aria-label="Abertura"></button><button type="button" data-p=".25" aria-label="Busca"></button><button type="button" data-p=".5" aria-label="Condomínio"></button><button type="button" data-p=".75" aria-label="Medidor"></button><button type="button" data-p="1" aria-label="Segurança"></button>
-    </div>
-    <div class="scene-meter" id="scene-meter">01 / 05</div>
-    <button class="motion-toggle" id="motion-toggle" type="button" hidden aria-pressed="false">Reduzir movimento</button>
+<main id="top">
+<div class="hero" id="hero"><div class="stage">
+  <div>
+    <span class="kick">Conta Sim Digital · Pós-Vendas</span>
+    <h1 id="h1" aria-label="Do papel ao digital."></h1>
+    <p class="type" id="type"></p>
+    <div class="cta"><a class="btn" href="app/">Abrir o sistema ↗</a><a class="btn ghost" href="#video">▶ Ver em 90 segundos</a></div>
+    <div class="hint"><span>↓</span> Role a página e veja o papel virar dado</div>
   </div>
-</section>
-
-<div class="band" aria-hidden="true">
-  <div class="ticker">
-    <span>Ficha de papel</span><em>→</em><span class="on">Registro no banco</span><em>→</em><span>Confirmação do morador</span><em>→</em><span class="on">Leitura por IA</span><em>→</em><span>Excel exportado</span><em>→</em>
-    <span>Ficha de papel</span><em>→</em><span class="on">Registro no banco</span><em>→</em><span>Confirmação do morador</span><em>→</em><span class="on">Leitura por IA</span><em>→</em><span>Excel exportado</span><em>→</em>
-  </div>
-</div>
-
-<section class="section" id="serve">
-  <div class="wrap">
-    <div class="split">
-      <div><div class="eyebrow">Para que serve</div><h2>Hoje o dado nasce no papel e é digitado <span class="serif">depois.</span></h2></div>
-      <p class="lead">O Conta Sim Digital digitaliza exatamente o que já era feito em papel: cadastro do condomínio, confirmação do morador e leitura do medidor. O processo é o mesmo. Muda o suporte.</p>
-    </div>
-    <div class="pairs">
-      <div class="pair"><div class="was">Ficha preenchida à mão</div><div class="arrow"></div><div class="now"><b>O consultor digita as primeiras letras</b> e o sistema busca o condomínio no banco da empresa e preenche o resto.</div></div>
-      <div class="pair"><div class="was">Morador sem confirmar</div><div class="arrow"></div><div class="now"><b>O morador confirma pelo celular</b>, com selfie e foto do documento, e a IA confere nome, CPF e RG.</div></div>
-      <div class="pair"><div class="was">Leitura anotada no medidor</div><div class="arrow"></div><div class="now"><b>Uma foto basta.</b> A IA lê o número de série e a leitura do mostrador.</div></div>
-      <div class="pair"><div class="was">Planilha montada no fim</div><div class="arrow"></div><div class="now"><b>Excel pronto a qualquer momento</b>, com o status de cada unidade e o aviso de quem já não mora mais lá.</div></div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="video" style="background:linear-gradient(#070d1a,#0a1427 40%,#070d1a)">
-  <div class="wrap">
-    <div class="eyebrow">Passo a passo</div>
-    <h2 style="margin-bottom:56px;max-width:18ch">Veja como usar em <span class="serif">90 segundos.</span></h2>
-    <div class="video-wrap">
-      <div>
-        <div class="vframe"><video id="vid" controls playsinline preload="metadata" poster="poster.jpg"><source src="conta-sim-digital.mp4" type="video/mp4">Seu navegador não reproduz este vídeo.</video></div>
-        <p class="vnote">Simulação com dados fictícios. A integração com o banco de dados da empresa é demonstrativa.</p>
+  <div class="scanwrap">
+    <div class="scan" id="scan">
+      <img class="dig" src="img/excel.jpg" alt="Tela do Conta Sim Digital com o status de cada unidade">
+      <div class="paper" aria-hidden="true">
+        <h4>Cadastro de medidores – Res. Jd. das Araucárias</h4>
+        <div class="pr r1"><b>Casa 01</b><em>Carlos Menez.</em><s>série ?</s></div>
+        <div class="pr r2"><b>Casa 02</b><em>Ana Lima</em><s class="circ">falta CPF</s></div>
+        <div class="pr r3"><b>Casa 03</b><em class="cut">Roberto A.</em><s>mudou?</s></div>
+        <div class="pr r4"><b>Casa 04</b><em>— vazia? —</em><s>ligar</s></div>
+        <div class="pr r5"><b>Casa 05</b><em>Paula R.</em><s class="circ">foto borrada</s></div>
+        <div class="pr r6"><b>Casa 07</b><em>Mariana S.</em><s>?? tel.</s></div>
+        <div class="stamp">PENDENTE</div><div class="ring"></div>
+        <div class="post">ligar p/ síndico<br>antes de sexta!</div>
       </div>
-      <ol class="chap" id="chap">
-        <li><button type="button" data-t="10"><time>0:10</time><span><strong>Buscar o condomínio</strong><small>Primeiras letras e o banco preenche.</small></span></button></li>
-        <li><button type="button" data-t="24"><time>0:24</time><span><strong>Enviar link ou QR Code</strong><small>Impresso na portaria ou pelo síndico.</small></span></button></li>
-        <li><button type="button" data-t="33"><time>0:33</time><span><strong>O morador confirma</strong><small>Dados, documento e selfie.</small></span></button></li>
-        <li><button type="button" data-t="55"><time>0:55</time><span><strong>A IA lê o medidor</strong><small>Série e leitura por foto.</small></span></button></li>
-        <li><button type="button" data-t="65"><time>1:05</time><span><strong>Tudo em Excel</strong><small>Gravado no banco, pronto para exportar.</small></span></button></li>
-      </ol>
+      <div class="beam" id="beam"><span class="beamlab" id="beamlab">DIGITALIZANDO</span></div>
+      <div class="chip" style="left:4%;top:-5%" data-at=".35"><i>✓</i>Casa 01 validada</div>
+      <div class="chip" style="right:3%;top:22%" data-at=".55"><i>✓</i>IA conferiu CPF e RG</div>
+      <div class="chip" style="left:8%;bottom:-6%" data-at=".75"><i>✓</i>Série lida pela IA</div>
+      <div class="chip" style="right:6%;bottom:-5%" data-at=".92"><i>⬇</i>Exportar Excel</div>
     </div>
+    <div class="cap" id="cap">Planilha e formulário de <b>papel</b></div>
+    <div class="prog"><i id="prog"></i></div>
   </div>
-</section>
+</div></div>
 
-<section class="section" id="quem">
-  <div class="wrap">
-    <div class="eyebrow">Para quem</div>
-    <h2 style="max-width:18ch">Cada área enxerga o que importa <span class="serif">para ela.</span></h2>
-    <div class="aud">
-      <div class="card"><h3>Diretoria</h3><p class="role">Padrão e controle</p><ul><li>Um único processo para todos os condomínios</li><li>O dado nasce digital, no banco da empresa</li><li>Menos papel para guardar e conferir</li></ul></div>
-      <div class="card"><h3>Gerência</h3><p class="role">Acompanhamento</p><ul><li>Quantas unidades já foram validadas, por condomínio</li><li>Quem avisou que mudou de casa</li><li>Cada consultor com a sua carteira</li></ul></div>
-      <div class="card"><h3>Analistas e consultores</h3><p class="role">Dia a dia</p><ul><li>Digita as primeiras letras e o sistema preenche</li><li>Envia um link ou imprime o QR Code</li><li>Exporta o Excel sem montar planilha</li></ul></div>
-      <div class="card"><h3>TI</h3><p class="role">Arquitetura</p><ul><li>Aplicação web, sem instalar aplicativo</li><li>Hoje em teste, pronta para migrar à infraestrutura da empresa</li><li>Integração prevista com o banco da Consigaz</li></ul></div>
-    </div>
-  </div>
-</section>
+<div class="tick" aria-hidden="true"><div class="tk" id="tk"></div></div>
 
-<section class="section" id="seguranca" style="background:linear-gradient(#070d1a,#0b1a33)">
-  <div class="wrap">
-    <div class="sgrid">
-      <div>
-        <div class="eyebrow">Segurança</div>
-        <h2 style="margin-bottom:24px">Controles em cada <span class="serif">camada.</span></h2>
-        <p class="lead">Documentos, selfies e leituras são dados pessoais. O sistema foi desenhado com defesas em cada camada, e o tratamento segue a LGPD.</p>
-      </div>
-      <dl class="dl">
-        <div><dt>Em trânsito</dt><dd>Tráfego sempre criptografado, TLS 1.2/1.3.</dd></div>
-        <div><dt>Em repouso</dt><dd>AES-256 no banco de dados e no storage.</dd></div>
-        <div><dt>Acesso</dt><dd>Login individual por consultor, tokens JWT com expiração e senhas com hash bcrypt.</dd></div>
-        <div><dt>Isolamento</dt><dd>Row Level Security no banco: cada consultor vê e grava só nos próprios condomínios.</dd></div>
-        <div><dt>Documentos e selfies</dt><dd>Bucket privado, URLs não adivinháveis, sem acesso público direto.</dd></div>
-        <div><dt>Força bruta</dt><dd>Limite de tentativas e bloqueio progressivo no login e no CPF.</dd></div>
-        <div><dt>Auditoria</dt><dd>Histórico completo das ações.</dd></div>
-      </dl>
-    </div>
-    <div class="road">
-      <div class="rs"><h3>Hoje</h3><p>Protótipo funcional em ambiente de teste, com dados de demonstração.</p></div>
-      <div class="rs"><h3>Próximo</h3><p>Migração para a infraestrutura e o domínio da empresa, com validação da TI.</p></div>
-      <div class="rs"><h3>Depois</h3><p>Integração com o banco da Consigaz: busca por nome ou código e gravação dos dados captados.</p></div>
-    </div>
-  </div>
-</section>
+<section id="como"><div class="wrap">
+  <div class="sh" data-split><span class="kick">Como funciona</span>
+    <h2>Seis passos. <span class="hl">Nenhuma folha.</span></h2>
+    <p>As telas abaixo são as do próprio sistema, as mesmas do vídeo.</p></div>
 
-<section class="final">
-  <div class="wrap">
-    <h2>Experimente o sistema <span class="serif">agora.</span></h2>
-    <p>Abra o app, entre e percorra o fluxo do consultor: do cadastro do condomínio à exportação em Excel.</p>
-    <a class="btn" href="app/">Abrir o sistema <span>↗</span></a>
+  <article class="step"><div class="txt rv"><span class="num">PASSO 1</span><h3 data-split>Busque no <span class="hl">banco da empresa</span></h3>
+    <p class="lead">O consultor digita as primeiras letras e o condomínio aparece.</p>
+    <ul class="ck"><li>Entra com e-mail e senha</li><li>Clica em + Novo</li><li>Digita as primeiras letras</li><li>Endereço e síndico preenchidos sozinhos</li></ul>
+    <div class="tip"><small>DICA</small>Três letras do nome, código ou endereço já bastam.</div></div>
+    <div class="vis rv"><div class="tilt"><img class="lap" src="img/busca.jpg" alt="Novo condomínio preenchido automaticamente" loading="lazy"></div><div class="float" style="right:-2%;top:6%"><i>✓</i>Preenchido automaticamente</div></div></article>
+
+  <article class="step"><div class="txt rv"><span class="num">PASSO 2</span><h3 data-split>Envie o <span class="hl">link</span> ou imprima o QR Code</h3>
+    <p class="lead">Duas formas de avisar os moradores. Escolha a que for mais fácil.</p>
+    <ul class="ck"><li>Unidades já vêm do banco</li><li>QR Code impresso na portaria</li><li>Ou link enviado ao síndico, que repassa aos moradores</li></ul>
+    <div class="tip"><small>FACILIDADE</small>Sem tempo para ir ao prédio? Mande o link ao síndico.</div></div>
+    <div class="vis rv"><div class="tilt"><img class="lap" src="img/qr.jpg" alt="Janela Como avisar os moradores, com QR Code e link" loading="lazy"></div><div class="float" style="left:-2%;bottom:6%"><i>✓</i>QR na portaria + link ao síndico</div></div></article>
+
+  <article class="step"><div class="txt rv"><span class="num">PASSO 3</span><h3 data-split>O morador <span class="hl">confirma</span> pelo celular</h3>
+    <p class="lead">Sem instalar nada. Ele abre o link, confere os dados e envia as fotos.</p>
+    <ul class="ck"><li>Confirma os dados da unidade</li><li>Foto do documento e selfie</li><li>A IA confere nome, CPF e RG</li></ul>
+    <div class="tip"><small>SEGURANÇA</small>Só avança se tudo bater com o documento.</div></div>
+    <div class="vis rv"><div class="tilt duo"><img class="ph" src="img/morador.jpg" alt="Celular pedindo a foto do documento" loading="lazy"><img class="ph" src="img/ia.jpg" alt="IA conferindo nome, CPF e RG" loading="lazy"></div></div></article>
+
+  <article class="step"><div class="txt rv"><span class="num">MUDOU DE CASA?</span><h3 data-split>Um toque <span class="hl">avisa</span></h3>
+    <p class="lead">Quem abriu o link e não mora mais na unidade avisa na hora.</p>
+    <ul class="ck"><li>Toca em “Não sou morador”</li><li>O aviso cai na unidade certa</li><li>O consultor vê no painel</li></ul>
+    <div class="tip"><small>DICA</small>Acabou a ligação para descobrir quem se mudou.</div></div>
+    <div class="vis rv"><div class="tilt"><img class="ph" style="height:min(440px,70vw)" src="img/aviso.jpg" alt="Celular com agradecimento e aviso no painel do consultor" loading="lazy"></div></div></article>
+
+  <article class="step"><div class="txt rv"><span class="num">PASSO 4</span><h3 data-split>A IA <span class="hl">lê o medidor</span></h3>
+    <p class="lead">Uma foto do medidor e o sistema lê série e leitura.</p>
+    <ul class="ck"><li>Fotografa o medidor</li><li>IA lê o número de série e o consumo</li><li>Consultor só confirma</li></ul>
+    <div class="tip"><small>FACILIDADE</small>Nada de digitar número de série à mão.</div></div>
+    <div class="vis rv"><div class="tilt"><img class="ph" src="img/medidor.jpg" alt="Foto do medidor com leitura pela IA" loading="lazy"></div><div class="float" style="right:6%;top:40%"><i>✓</i>Série 0840217 · 00482 m³</div></div></article>
+
+  <article class="step" style="margin-bottom:0"><div class="txt rv"><span class="num">PASSO 5</span><h3 data-split>Tudo no banco, <span class="hl">em Excel</span></h3>
+    <p class="lead">O status de cada unidade, sempre atualizado, e a planilha sai sozinha.</p>
+    <ul class="ck"><li>Gravado no banco da empresa</li><li>Exporta em Excel com um clique</li><li>Dados protegidos</li></ul>
+    <div class="tip"><small>DICA</small>Veja de relance quem já validou e quem falta.</div></div>
+    <div class="vis rv"><div class="tilt"><img class="lap" src="img/excel.jpg" alt="Status por unidade e botão Exportar Excel" loading="lazy"></div><div class="float" style="left:-2%;top:8%"><i>✓</i>9 de 12 validadas</div></div></article>
+</div></section>
+
+<section id="dicas" style="background:#071f39;border-block:1px solid var(--line)"><div class="wrap">
+  <div class="sh" data-split><span class="kick">Dicas e facilidades</span><h2>Feito para <span class="hl">facilitar</span> o dia a dia</h2></div>
+  <div class="grid" id="tips"></div>
+</div></section>
+
+<section><div class="wrap"><div class="stats rv" id="stats">
+  <div class="st"><b data-n="0">0</b><span>folhas de papel no processo</span></div>
+  <div class="st"><b data-n="3">0</b><span>letras para preencher o condomínio</span></div>
+  <div class="st"><b data-n="1">0</b><span>toque para avisar que mudou</span></div>
+  <div class="st"><b data-n="1">0</b><span>clique para exportar o Excel</span></div>
+</div></div></section>
+
+<section id="video" style="padding-top:20px"><div class="wrap">
+  <div class="sh" data-split><span class="kick">Vídeo · 90 segundos</span><h2>Veja tudo <span class="hl">em ação</span></h2></div>
+  <div class="vbox rv"><video id="vid" controls playsinline preload="metadata" poster="poster.jpg"><source src="conta-sim-digital.mp4" type="video/mp4"></video></div>
+  <div class="chs"><button data-t="0">Início</button><button data-t="10">1 · Buscar</button><button data-t="24">2 · Enviar</button><button data-t="33">3 · Morador</button><button data-t="55">4 · Medidor</button><button data-t="65">5 · Excel</button></div>
+</div></section>
+
+<section id="quem" style="background:#071f39;border-block:1px solid var(--line)"><div class="wrap">
+  <div class="sh" data-split><span class="kick">Para quem</span><h2>Cada área vê o que <span class="hl">importa</span></h2></div>
+  <div class="roles">
+    <div class="rl rv"><small>Diretoria</small><h3>Padrão e controle</h3><p>Um único processo para todos os condomínios, com o dado nascendo digital no banco da empresa.</p></div>
+    <div class="rl rv"><small>Gerência</small><h3>Acompanhamento</h3><p>Quantas unidades já foram validadas, por condomínio e por consultor.</p></div>
+    <div class="rl rv"><small>Analistas e consultores</small><h3>Dia a dia</h3><p>Busca rápida, QR Code ou link ao síndico e exportação em Excel sem montar planilha.</p></div>
+    <div class="rl rv"><small>TI</small><h3>Arquitetura</h3><p>Aplicação web, sem instalar. Hoje em teste, pronta para migrar à infraestrutura da empresa.</p></div>
   </div>
-</section>
+  <h3 style="margin:60px 0 6px;font-size:26px">Segurança desde o começo</h3>
+  <div class="sec"><div><b>Criptografia</b>TLS em trânsito e AES-256 em repouso</div><div><b>Acesso individual</b>Login por usuário, cada um vê a sua carteira</div><div><b>Arquivos privados</b>Fotos em armazenamento restrito</div><div><b>Registro de acessos</b>Trilha de auditoria</div></div>
+  <p class="note">Protótipo web em ambiente de teste. A integração com o banco da Consigaz é uma simulação nesta fase.</p>
+</div></section>
+
+<section class="fin"><div class="wrap"><h2 data-split>Seguro. Rápido. <span class="hl">Sem papel.</span></h2><p>Entre no sistema e veja o Conta Sim Digital funcionando.</p><a class="btn" href="app/">Abrir o sistema ↗</a></div></section>
 </main>
-
-<footer>
-  <span>© 2026 <a href="https://www.ddsinovacao.com.br/" rel="noopener">DDS Inovação</a>. Todos os direitos reservados.</span>
-  <span>Conta Sim Digital · protótipo web em ambiente de teste. Feito com curiosidade, criatividade e tecnologia. ✳</span>
-</footer>
+<footer><div class="wrap"><img class="logo" style="height:24px;opacity:.9" src="img/consigaz-branca.png" alt="Consigaz"><span>Conta Sim Digital · Setor de Pós-Vendas</span><span>© 2026 <a href="https://www.ddsinovacao.com.br/">DDS Inovação</a></span></div></footer>
 
 <script>
-(function(){
-  var hd=document.getElementById('hd');
-  function sc(){hd.classList.toggle('solid',scrollY>40);}
-  addEventListener('scroll',sc,{passive:true});sc();
-  var g=document.getElementById('glow');
-  addEventListener('pointermove',function(e){g.style.transform='translate('+e.clientX+'px,'+e.clientY+'px)';},{passive:true});
-  document.querySelectorAll('.card').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px');});});
-  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.35});
-  document.querySelectorAll('.pair').forEach(function(p){io.observe(p);});
-  var vid=document.getElementById('vid'),btns=[].slice.call(document.querySelectorAll('#chap button')),marks=btns.map(function(b){return +b.dataset.t;});
-  btns.forEach(function(b){b.addEventListener('click',function(){vid.currentTime=+b.dataset.t;vid.play();});});
-  vid.addEventListener('timeupdate',function(){var t=vid.currentTime,i=-1;marks.forEach(function(m,k){if(t>=m-.2)i=k;});btns.forEach(function(b,k){b.classList.toggle('on',k===i);});});
+(()=>{
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+// h1 letters
+const h=$('#h1');let d=0;
+function put(t,cls){[...t].forEach(c=>{const s=document.createElement('span');s.className='ch';s.style.animationDelay=(d+=.035)+'s';s.textContent=c===' '?' ':c;cls.appendChild(s)})}
+const l1=document.createElement('span');l1.style.whiteSpace='nowrap';put('Do ',l1);h.appendChild(l1);
+const st=document.createElement('span');st.className='strike';put('papel',st);h.appendChild(st);h.append(' ');
+const l2=document.createElement('div');l2.style.whiteSpace='nowrap';put('ao ',l2);const sh=document.createElement('span');sh.className='shine';put('digital.',sh);l2.appendChild(sh);h.appendChild(l2);
+// typewriter
+const phr=['cadastro por <b>QR Code</b> ou link ao síndico','morador confirma pelo <b>celular</b>','<b>IA</b> confere documento e lê o medidor','tudo no banco, exportado em <b>Excel</b>'];
+const ty=$('#type');let pi=0,ci=0,del=false;
+function tick(){const raw=phr[pi],plain=raw.replace(/<[^>]+>/g,'');
+ if(rm){ty.innerHTML=raw;return}
+ ci+=del?-1:1;let n=0,out='',inTag=false,open='';
+ for(const c of raw){if(c==='<')inTag=true;if(inTag){out+=c;if(c==='>')inTag=false;continue}if(n<ci){out+=c;n++}}
+ // close open <b>
+ if((out.match(/<b>/g)||[]).length>(out.match(/<\/b>/g)||[]).length)out+='</b>';
+ ty.innerHTML=out+'<i></i>';
+ let wait=del?22:42;
+ if(!del&&ci>=plain.length){del=true;wait=1700}else if(del&&ci<=0){del=false;pi=(pi+1)%phr.length;wait=350}
+ setTimeout(tick,wait)}
+setTimeout(tick,1500);
+// ticker
+const w=['Planilha perdida','Foto ilegível','Folha rasurada','Morador que mudou','Ligar de novo','Série digitada errado'];
+let tk='';for(let r=0;r<2;r++)tk+=w.map(x=>`<span>${x}</span><em>→</em>`).join('')+'<b style="color:var(--gr)">Conta Sim Digital ✓</b>';
+$('#tk').innerHTML=tk+tk;
+// tips
+const tips=[['DICA','📲','Link ao síndico','Sem ir ao prédio: o síndico repassa o link a todos os moradores.'],['FACILIDADE','🔎','Busca por 3 letras','Nome, código ou endereço. O cadastro se preenche sozinho.'],['DICA','🖨️','QR na portaria','Imprima uma vez e deixe na portaria. O morador aponta a câmera.'],['FACILIDADE','🤳','Sem instalar app','O morador usa o celular que já tem, direto no navegador.'],['SEGURANÇA','🛡️','Só avança se bater','A IA compara nome, CPF e RG com o documento antes de aceitar.'],['FACILIDADE','👆','Mudou? Um toque','“Não sou morador” avisa o consultor na unidade certa.'],['FACILIDADE','📷','Leitura por foto','A IA lê série e consumo. Você só confirma.'],['DICA','📊','Excel em 1 clique','Status por unidade e planilha pronta, sem montar nada.']];
+$('#tips').innerHTML=tips.map(t=>`<div class="tc rv"><span class="tag ${t[0]=='DICA'?'':'f'}">${t[0]}</span><span class="ic">${t[1]}</span><h3>${t[2]}</h3><p>${t[3]}</p></div>`).join('');
+$$('.tc').forEach(c=>c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();c.style.setProperty('--mx',e.clientX-r.left+'px');c.style.setProperty('--my',e.clientY-r.top+'px')}));
+// split words
+$$('[data-split]').forEach(el=>{const walk=n=>{[...n.childNodes].forEach(c=>{if(c.nodeType===3){const f=document.createDocumentFragment();c.textContent.split(/(\s+)/).forEach(p=>{if(!p.trim()){f.append(p);return}const s=document.createElement('span');s.className='w';s.textContent=p;f.append(s)});c.replaceWith(f)}else if(c.nodeType===1&&!c.classList.contains('kick'))walk(c)})};walk(el);
+ el.querySelectorAll('.w').forEach((s,i)=>s.style.transitionDelay=i*.06+'s')});
+// reveal
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');e.target.querySelectorAll('.ck').forEach(u=>u.classList.add('in'));io.unobserve(e.target)}}),{threshold:.2});
+$$('[data-split],.rv').forEach(e=>io.observe(e));
+$$('.ck').forEach((u,i)=>{[...u.children].forEach((li,j)=>li.style.transitionDelay=(.25+j*.12)+'s')});
+// count up
+const so=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;so.disconnect();$$('#stats b').forEach(b=>{const n=+b.dataset.n;if(!n||rm){b.textContent=n;return}let k=0;const iv=setInterval(()=>{b.textContent=Math.min(++k,n);if(k>=n)clearInterval(iv)},260)})}),{threshold:.4});so.observe($('#stats'));
+// tilt
+$$('.tilt').forEach(t=>{const v=t.parentElement;v.addEventListener('pointermove',e=>{if(rm)return;const r=v.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;t.style.transform=`rotateY(${x*12}deg) rotateX(${-y*10}deg)`});v.addEventListener('pointerleave',()=>t.style.transform='')});
+// glow + progress bar
+const g=$('#glow');addEventListener('pointermove',e=>{g.style.left=e.clientX+'px';g.style.top=e.clientY+'px'});
+// hero scrub
+const hero=$('#hero'),scan=$('#scan'),beam=$('#beam'),bl=$('#beamlab'),cap=$('#cap'),pg=$('#prog'),chips=$$('.chip');
+const cl=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+function frame(){
+ const sc=scrollY,max=document.documentElement.scrollHeight-innerHeight;$('#bar').style.width=(sc/max*100)+'%';
+ const r=hero.getBoundingClientRect(),p=cl(-r.top/(hero.offsetHeight-innerHeight));
+ const a=cl((p-.08)/.8),e=a*a*(3-2*a);
+ scan.style.setProperty('--t',(e*100)+'%');
+ beam.style.opacity=(a>0.005&&a<.995)?1:0;bl.textContent='DIGITALIZANDO '+Math.round(e*100)+'%';
+ chips.forEach(c=>c.classList.toggle('on',e>=+c.dataset.at));
+ pg.style.width=(e*100)+'%';
+ cap.innerHTML=e<.04?'Planilha e formulário de <b>papel</b>':e<.96?'Papel virando <b>dado digital</b>':'Tudo no <b>banco da empresa</b> ✓';
+}
+addEventListener('scroll',frame,{passive:true});addEventListener('resize',frame);frame();
+// video chapters
+$$('.chs button').forEach(b=>b.onclick=()=>{const v=$('#vid');v.currentTime=+b.dataset.t;v.play()});
 })();
 </script>
-<script type="module" src="experience.js"></script>
-</body>
-</html>
+</body></html>
