@@ -770,7 +770,8 @@ async function continuarAposDocumento() {
   } else if (!v.numero_encontrado) {
     erroDoc = 'Não consegui ler o número (CPF ou RG) no documento. Refaça a foto com o documento reto, sem reflexo e com o número bem visível.';
   } else if (v.numero_confere !== true) {
-    erroDoc = 'O número do documento não confere com o CPF/RG cadastrado. Refaça a foto ou volte para conferir seus dados.';
+    const qual = (v.divergentes && v.divergentes.length) ? v.divergentes.join(' e ') : 'CPF/RG';
+    erroDoc = `O ${qual} do documento não confere com o que foi cadastrado. Volte e corrija o dado digitado, ou refaça a foto se a leitura estiver errada.`;
   } else if (v.nome_extraido && v.nome_confere === false) {
     erroDoc = 'O nome no documento não confere com o nome cadastrado. Refaça a foto ou volte para conferir seus dados.';
   }
