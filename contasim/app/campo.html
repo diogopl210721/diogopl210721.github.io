@@ -32,6 +32,14 @@
       </div>
       <img id="previewFoto" style="display:none;">
     </div>
+    <div id="painelAjuste" style="display:none; margin:-4px 0 16px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:18px;">🔍</span>
+        <input type="range" id="zoomFoto" min="0" max="100" value="0" style="flex:1;" aria-label="Aproximar ou afastar a foto">
+        <button type="button" class="btn btn-outline" id="btnRestaurarFoto" style="padding:6px 12px; font-size:13px; min-height:0;">Restaurar</button>
+      </div>
+      <div class="hint" style="margin-top:6px;">Arraste a foto com o dedo e use o controle (ou pinça) para encaixar o medidor no quadro.</div>
+    </div>
     <input type="file" id="inputFoto" accept="image/*" capture="environment" style="display:none;">
     <input type="file" id="inputFotoGaleria" accept="image/*" style="display:none;">
     <div style="display:flex; gap:10px; margin-bottom:16px;">
@@ -117,21 +125,142 @@ function escapeHtml(str) {
 document.getElementById('inputFoto').addEventListener('change', (e) => processarFoto(e));
 document.getElementById('inputFotoGaleria').addEventListener('change', (e) => processarFoto(e));
 
+// ---------- Ajuste da foto dentro do quadro (arrastar + zoom) ----------
+const aj = { img: null, nw: 0, nh: 0, fw: 0, fh: 0, scale: 1, min: 1, max: 1, x: 0, y: 0, ptrs: new Map(), pinch0: null };
+
+function ajLimitar() {
+  // Mantém a foto cobrindo o quadro quando possível; se estiver menor que o quadro, centraliza
+  const w = aj.nw * aj.scale, h = aj.nh * aj.scale;
+  aj.x = w <= aj.fw ? (aj.fw - w) / 2 : Math.min(0, Math.max(aj.fw - w, aj.x));
+  aj.y = h <= aj.fh ? (aj.fh - h) / 2 : Math.min(0, Math.max(aj.fh - h, aj.y));
+}
+
+function ajRender() {
+  ajLimitar();
+  const el = document.getElementById('previewFoto');
+  el.style.transform = `translate(${aj.x}px, ${aj.y}px) scale(${aj.scale})`;
+  const z = document.getElementById('zoomFoto');
+  z.value = String(Math.round((Math.log(aj.scale / aj.min) / Math.log(aj.max / aj.min)) * 100) || 0);
+}
+
+function ajZoomPara(novaEscala, cx, cy) {
+  novaEscala = Math.min(aj.max, Math.max(aj.min, novaEscala));
+  const k = novaEscala / aj.scale;
+  aj.x = cx - (cx - aj.x) * k;
+  aj.y = cy - (cy - aj.y) * k;
+  aj.scale = novaEscala;
+  ajRender();
+}
+
+function ajReiniciar() {
+  const frame = document.getElementById('molduraFoto');
+  aj.fw = frame.clientWidth; aj.fh = frame.clientHeight;
+  const cover = Math.max(aj.fw / aj.nw, aj.fh / aj.nh);
+  const contain = Math.min(aj.fw / aj.nw, aj.fh / aj.nh);
+  aj.min = contain;                 // dá pra afastar até ver a foto inteira
+  aj.max = Math.max(cover * 4, contain * 1.5);
+  aj.scale = cover;
+  aj.x = (aj.fw - aj.nw * aj.scale) / 2;
+  aj.y = (aj.fh - aj.nh * aj.scale) / 2;
+  ajRender();
+  ajAplicar();
+}
+
+// Recorta exatamente o que está dentro do quadro e usa como foto a enviar/ler
+function ajAplicar() {
+  if (!aj.img) return;
+  const visW = aj.fw / aj.scale;
+  const outW = Math.min(1600, Math.max(400, Math.round(visW)));
+  const outH = Math.round(outW * aj.fh / aj.fw);
+  const cv = document.createElement('canvas');
+  cv.width = outW; cv.height = outH;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0a2744';
+  ctx.fillRect(0, 0, outW, outH);
+  const k = outW / aj.fw;
+  ctx.drawImage(aj.img, aj.x * k, aj.y * k, aj.nw * aj.scale * k, aj.nh * aj.scale * k);
+  const dataUrl = cv.toDataURL('image/jpeg', 0.9);
+  fotoBase64 = dataUrl.split(',')[1];
+  fotoMediaType = 'image/jpeg';
+}
+
+(function iniciarAjuste() {
+  const frame = document.getElementById('molduraFoto');
+  const el = document.getElementById('previewFoto');
+  frame.style.touchAction = 'none';
+
+  frame.addEventListener('pointerdown', (e) => {
+    if (!aj.img) return;
+    frame.setPointerCapture(e.pointerId);
+    aj.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (aj.ptrs.size === 2) {
+      const [p, q] = [...aj.ptrs.values()];
+      aj.pinch0 = { d: Math.hypot(p.x - q.x, p.y - q.y), s: aj.scale };
+    }
+  });
+  frame.addEventListener('pointermove', (e) => {
+    if (!aj.img || !aj.ptrs.has(e.pointerId)) return;
+    const ant = aj.ptrs.get(e.pointerId);
+    aj.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (aj.ptrs.size === 1) {
+      aj.x += e.clientX - ant.x; aj.y += e.clientY - ant.y;
+      ajRender();
+    } else if (aj.ptrs.size === 2 && aj.pinch0) {
+      const [p, q] = [...aj.ptrs.values()];
+      const r = frame.getBoundingClientRect();
+      const d = Math.hypot(p.x - q.x, p.y - q.y);
+      ajZoomPara(aj.pinch0.s * d / aj.pinch0.d, (p.x + q.x) / 2 - r.left, (p.y + q.y) / 2 - r.top);
+    }
+  });
+  const fim = (e) => {
+    if (!aj.ptrs.has(e.pointerId)) return;
+    aj.ptrs.delete(e.pointerId);
+    if (aj.ptrs.size < 2) aj.pinch0 = null;
+    if (aj.ptrs.size === 0) ajAplicar();
+  };
+  frame.addEventListener('pointerup', fim);
+  frame.addEventListener('pointercancel', fim);
+  frame.addEventListener('wheel', (e) => {
+    if (!aj.img) return;
+    e.preventDefault();
+    const r = frame.getBoundingClientRect();
+    ajZoomPara(aj.scale * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX - r.left, e.clientY - r.top);
+    ajAplicar();
+  }, { passive: false });
+
+  document.getElementById('zoomFoto').addEventListener('input', (e) => {
+    if (!aj.img) return;
+    const nova = aj.min * Math.pow(aj.max / aj.min, e.target.value / 100);
+    ajZoomPara(nova, aj.fw / 2, aj.fh / 2);
+  });
+  document.getElementById('zoomFoto').addEventListener('change', ajAplicar);
+  document.getElementById('btnRestaurarFoto').addEventListener('click', ajReiniciar);
+})();
+
 function processarFoto(e) {
   const file = e.target.files[0];
   if (!file) return;
-  fotoMediaType = file.type;
 
   const reader = new FileReader();
   reader.onload = () => {
     const dataUrl = reader.result;
-    fotoBase64 = dataUrl.split(',')[1];
-    document.getElementById('previewFoto').src = dataUrl;
-    document.getElementById('previewFoto').style.display = 'block';
-    document.getElementById('placeholderFoto').style.display = 'none';
-    document.getElementById('btnExtrair').style.display = 'flex';
+    const img = new Image();
+    img.onload = () => {
+      aj.img = img; aj.nw = img.naturalWidth; aj.nh = img.naturalHeight;
+      const el = document.getElementById('previewFoto');
+      // Mostra a imagem em tamanho natural; o ajuste é feito por transform (arrastar/zoom)
+      el.style.cssText = `display:block; position:absolute; left:0; top:0; width:${aj.nw}px; height:${aj.nh}px; max-width:none; object-fit:fill; transform-origin:0 0; touch-action:none; user-select:none; -webkit-user-drag:none;`;
+      el.draggable = false;
+      el.src = dataUrl;
+      document.getElementById('placeholderFoto').style.display = 'none';
+      document.getElementById('painelAjuste').style.display = 'block';
+      document.getElementById('btnExtrair').style.display = 'flex';
+      ajReiniciar();
+    };
+    img.src = dataUrl;
   };
   reader.readAsDataURL(file);
+  e.target.value = ''; // permite escolher a mesma foto de novo
 }
 
 async function extrairComIA() {
