@@ -4,293 +4,302 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#06182B">
+<meta name="theme-color" content="#070d1a">
 <title>Conta Sim Digital – o cadastro de medidores sem papel</title>
 <meta name="description" content="Sistema web que registra apartamentos e casas de condomínios horizontais, confirma o morador por selfie e documento e lê o medidor por foto, com IA.">
-<link rel="icon" href="app/assets/img/icone-consigaz.png">
+<link rel="icon" href="../favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --deep:#06182B; --navy:#0B2947; --navy2:#123A5E; --flame:#FF5630; --flame-soft:#FFB3A1;
-  --paper:#EFE8D8; --pen:#1F3FA0; --green:#22C07A; --mist:#A9BAD0; --line:rgba(255,255,255,.13);
-  --display:'Bricolage Grotesque',system-ui,sans-serif; --body:'Instrument Sans',system-ui,sans-serif;
-  --wrap:1180px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--deep);color:#fff;font-family:var(--body);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:inherit}
-:focus-visible{outline:3px solid var(--flame);outline-offset:3px;border-radius:6px}
-.wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
-h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:-.025em;line-height:1.02}
-h2{font-size:clamp(32px,4.6vw,56px);max-width:15ch}
-.lead{color:var(--mist);max-width:56ch}
-section{position:relative;padding:112px 0}
-.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:72px 72px;mask-image:radial-gradient(ellipse at 70% 30%,#000 0,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at 70% 30%,#000 0,transparent 70%);pointer-events:none}
+:root{--bg:#070d1a;--panel:#101b30;--ink:#f1f6ff;--muted:#a7b7d1;--accent:#399cff;--accent2:#63dfff;--line:#243552;--green:#22c07a;--flame:#ff5630}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',Arial,sans-serif;font-size:16px;line-height:1.65;overflow-x:hidden}
+::selection{background:var(--accent);color:var(--bg)}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:5px;border-radius:8px}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{font-family:Manrope,Arial,sans-serif;line-height:1.08;letter-spacing:-.05em}
+h2{font-size:clamp(34px,4.3vw,60px);font-weight:500}
+.serif{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-style:italic;letter-spacing:-.03em}
+.wrap{max-width:1320px;padding:0 48px;margin:auto}
+.eyebrow{font-size:11px;letter-spacing:.15em;font-weight:700;color:var(--accent2);margin-bottom:22px;text-transform:uppercase}
+.lead{color:var(--muted);font-size:clamp(16px,1.5vw,19px);max-width:52ch}
+.glow{position:fixed;width:520px;height:520px;left:0;top:0;margin:-260px 0 0 -260px;border-radius:50%;background:radial-gradient(circle,rgba(57,156,255,.16),transparent 62%);pointer-events:none;z-index:1;transition:opacity .4s;mix-blend-mode:screen}
 
-/* nav */
-nav{position:fixed;inset:0 0 auto 0;z-index:50;background:rgba(6,24,43,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px}
-.brand{display:flex;align-items:center;gap:10px;font:800 20px var(--display);letter-spacing:-.02em;text-decoration:none}
-.brand i{display:block;width:12px;height:12px;border-radius:50%;background:var(--flame);box-shadow:0 0 0 4px rgba(255,86,48,.25)}
-.links{display:flex;gap:28px;align-items:center;font-size:15px;font-weight:500}
-.links a{text-decoration:none;color:var(--mist);transition:color .2s}
-.links a:hover{color:#fff}
-.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:999px;background:var(--flame);color:#fff;font:600 17px var(--body);text-decoration:none;border:0;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 10px 30px rgba(255,86,48,.35)}
-.btn:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(255,86,48,.45)}
-.btn.sm{padding:10px 20px;font-size:15px}
-.btn.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.3);box-shadow:none}
-.btn.ghost:hover{border-color:#fff;box-shadow:none}
+/* header */
+.header{position:fixed;z-index:40;inset:0 0 auto 0;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 48px;border-bottom:1px solid transparent;transition:background .3s,border-color .3s,padding .3s}
+.header.solid{background:rgba(7,13,26,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-color:#29477370;padding:12px 48px}
+.brand-full{display:block;width:140px;height:auto}
+.header nav{display:flex;gap:30px;font-size:13px;align-items:center}
+.header nav a{color:#c5d3ea;transition:color .2s}
+.header nav a:hover{color:var(--accent)}
+.header nav a.cta,.btn{color:#061325;background:linear-gradient(105deg,#3b95ff,#63dfff);padding:9px 18px;border-radius:999px;box-shadow:0 6px 20px #238cff44;font-weight:600;transition:transform .2s,box-shadow .2s}
+.header nav a.cta:hover,.btn:hover{color:#061325;transform:translateY(-2px);box-shadow:0 12px 30px #238cff77}
+.btn{display:inline-flex;align-items:center;gap:12px;padding:15px 26px;font-size:15px;border:0}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid #6b86b0;box-shadow:none}
+.btn.ghost:hover{color:var(--ink);border-color:var(--accent2);box-shadow:none}
 
-/* hero */
-.hero{padding:150px 0 90px;min-height:100vh;display:flex;align-items:center;background:radial-gradient(900px 600px at 80% 20%,rgba(46,134,222,.22),transparent 60%),radial-gradient(700px 500px at 10% 100%,rgba(255,86,48,.12),transparent 60%),var(--deep)}
-.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) 610px;gap:40px;align-items:center;position:relative}
-.hero h1{font-size:clamp(42px,5.2vw,70px);margin-bottom:26px}
-.hero h1 span{display:block;color:var(--flame-soft)}
-.hero .lead{font-size:clamp(18px,2vw,21px);margin-bottom:34px}
-.cta-row{display:flex;gap:14px;flex-wrap:wrap}
-.facts{display:flex;gap:10px 22px;flex-wrap:wrap;margin-top:36px;color:var(--mist);font-size:15px}
-.facts b{color:#fff;font-weight:600}
+/* experience */
+.experience{position:relative;height:560vh}
+.stage{position:sticky;top:0;height:100vh;overflow:hidden;background:radial-gradient(900px 640px at 78% 46%,#0f2a52 0,transparent 70%),radial-gradient(700px 500px at 5% 100%,#10203d,transparent 70%),var(--bg)}
+#gl{position:absolute;inset:0}
+#gl canvas{width:100%;height:100%;display:block}
+.vignette{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(7,13,26,.85) 0,rgba(7,13,26,.35) 38%,transparent 60%),radial-gradient(ellipse at center,transparent 55%,rgba(7,13,26,.7) 100%)}
+.scene-panel{position:absolute;left:max(48px,calc((100vw - 1320px)/2 + 48px));top:50%;width:min(560px,42vw);transform:translateY(-46%);opacity:0;pointer-events:none;transition:opacity .6s,transform .8s cubic-bezier(.2,.8,.2,1)}
+.scene-panel.active{opacity:1;transform:translateY(-50%);pointer-events:auto}
+.scene-panel h1{font-size:clamp(42px,5.6vw,84px);font-weight:500;margin-bottom:26px}
+.scene-panel h2{font-size:clamp(32px,3.9vw,56px);margin-bottom:22px}
+.scene-panel p.lead{margin-bottom:30px}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(16,27,48,.7);border-radius:999px;padding:8px 14px;font-size:12px;color:var(--muted)}
+.chip b{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+.hint{margin-top:44px;font-size:12px;letter-spacing:.14em;color:var(--muted);display:flex;gap:14px;align-items:center}
+.hint i{display:block;width:1px;height:44px;background:linear-gradient(var(--accent2),transparent);animation:drip 2s infinite}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+.scene-dots{position:absolute;right:48px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:flex-end;z-index:5}
+.scene-dots button{width:12px;height:12px;border-radius:50%;border:1.5px solid #6b86b0;background:transparent;padding:0;transition:.3s}
+.scene-dots button.on{background:var(--accent2);border-color:var(--accent2);box-shadow:0 0 14px var(--accent2);transform:scale(1.25)}
+.scene-meter{position:absolute;right:48px;bottom:38px;font:600 12px Manrope;letter-spacing:.14em;color:var(--muted);z-index:5}
+.motion-toggle{position:absolute;left:max(48px,calc((100vw - 1320px)/2 + 48px));bottom:34px;z-index:6;background:rgba(16,27,48,.7);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 16px;font-size:12px}
+.motion-toggle:hover{color:var(--ink);border-color:var(--accent)}
+/* static fallback */
+body.motion-off .experience,body.no-gl .experience{height:auto}
+body.motion-off .stage,body.no-gl .stage{position:relative;height:auto;padding:150px 0 40px;display:block}
+body.motion-off #gl,body.no-gl #gl,body.motion-off .scene-dots,body.no-gl .scene-dots,body.motion-off .scene-meter,body.no-gl .scene-meter,body.no-gl .motion-toggle{display:none}
+body.motion-off .vignette,body.no-gl .vignette{display:none}
+body.motion-off .scene-panel,body.no-gl .scene-panel{position:relative;left:auto;top:auto;transform:none;opacity:1;pointer-events:auto;width:min(760px,100% - 96px);margin:0 auto 90px}
+body.motion-off .motion-toggle{position:fixed;bottom:20px;left:20px}
 
-/* paper -> digital stage */
-.stage-wrap{--k:1;height:calc(540px*var(--k));width:calc(610px*var(--k))}
-.stage{position:relative;width:610px;height:540px;transform:scale(var(--k));transform-origin:top left}
-.paper{position:absolute;left:0;top:34px;width:330px;height:476px;background:var(--paper);border-radius:6px;padding:26px 26px;transform:rotate(-3.5deg);box-shadow:0 30px 60px rgba(0,0,0,.45),inset 0 0 60px rgba(120,95,40,.12);color:#2a2a2a;
-  background-image:repeating-linear-gradient(transparent 0 33px,rgba(60,90,160,.16) 33px 34px)}
-.paper::before{content:"";position:absolute;left:0;top:0;bottom:0;width:34px;background:radial-gradient(circle at 17px 30px,rgba(0,0,0,.35) 0 5px,transparent 6px) 0 0/34px 76px repeat-y}
-.paper h4{font:600 11.5px var(--body);letter-spacing:.14em;margin:2px 0 14px 18px;color:#4a4638}
-.prow{margin-left:18px;height:67px;position:relative}
-.prow small{display:block;font:500 11px var(--body);color:#6b6552;letter-spacing:.04em}
-.pv{display:block;font:600 27px/1.1 'Caveat',cursive;color:var(--pen);margin-top:4px;transform:rotate(-1deg);white-space:nowrap}
-.stamp{position:absolute;left:44px;bottom:12px;border:3.5px solid var(--flame);color:var(--flame);font:800 22px var(--display);letter-spacing:.06em;padding:6px 14px;border-radius:8px;transform:rotate(-12deg);background:rgba(239,232,216,.85);opacity:0}
-.beam{position:absolute;left:-14px;right:-14px;top:36px;height:3px;background:var(--flame);box-shadow:0 0 22px 7px rgba(255,86,48,.65);opacity:0;z-index:3;border-radius:3px}
-.panel{position:absolute;right:0;top:0;width:306px;background:#0E3156;border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:18px 20px 12px;box-shadow:0 40px 80px rgba(0,0,0,.55);z-index:2}
-.phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font:700 16px var(--display)}
-.pill{padding:5px 12px;border-radius:999px;background:rgba(34,192,122,.16);color:#7FE3B2;font:600 13px var(--body);border:1px solid rgba(34,192,122,.5)}
-.drow{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid rgba(255,255,255,.1);height:67px}
-.drow div{flex:1;min-width:0}
-.drow small{display:block;font:500 11.5px var(--body);color:var(--mist)}
-.drow b{display:block;font:700 18px var(--display);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ck{flex:none;width:26px;height:26px;border-radius:50%;background:var(--green);color:#04210F;display:grid;place-items:center;font:800 14px var(--body)}
-.replay{position:absolute;left:0;bottom:-6px;z-index:5;background:none;border:1px solid var(--line);color:var(--mist);border-radius:999px;padding:7px 16px;font:500 14px var(--body);cursor:pointer;transition:.2s}
-.replay:hover{color:#fff;border-color:#fff}
-/* play animations */
-.stage.play .beam{animation:beam 3.1s .7s linear both}
-.stage.play .pv{animation:ink .5s both;animation-delay:calc(.8s + var(--i)*.5s)}
-.stage.play .drow{animation:rowin .55s both;animation-delay:calc(.85s + var(--i)*.5s)}
-.stage.play .drow .ck{animation:pop .35s both;animation-delay:calc(1.15s + var(--i)*.5s)}
-.stage.play .pill{animation:pop .4s 4.1s both}
-.stage.play .stamp{animation:stamp .4s 4.4s cubic-bezier(.2,1.6,.4,1) both}
-.stamp{opacity:1}
-@keyframes beam{0%{top:36px;opacity:0}6%{opacity:1}94%{opacity:1}100%{top:466px;opacity:0}}
-@keyframes ink{from{opacity:1}to{opacity:.32}}
-@keyframes rowin{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
-@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
-@keyframes stamp{from{opacity:0;transform:rotate(-12deg) scale(2.2)}to{opacity:1;transform:rotate(-12deg) scale(1)}}
-.stage:not(.play) .pv{opacity:.32}
-
-/* serve */
-.serve{background:linear-gradient(var(--deep),var(--navy))}
-.serve .head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:56px}
+/* sections */
+.section{position:relative;padding:120px 0}
+.band{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0a1427;overflow:hidden;padding:20px 0}
+.ticker{display:flex;gap:48px;white-space:nowrap;width:max-content;animation:tick 38s linear infinite;font:500 clamp(22px,2.6vw,34px) Manrope;letter-spacing:-.04em;color:#5d7396}
+.ticker span.on{color:var(--ink)}
+.ticker em{font-family:Georgia,serif;color:var(--accent2)}
+@keyframes tick{to{transform:translateX(-50%)}}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:end;margin-bottom:64px}
 .pairs{border-top:1px solid var(--line)}
-.pair{display:grid;grid-template-columns:1fr 64px 1.25fr;gap:24px;align-items:center;padding:30px 0;border-bottom:1px solid var(--line)}
-.pair .was{font:600 clamp(20px,2.4vw,28px) var(--display);color:var(--mist);text-decoration:line-through;text-decoration-color:rgba(255,86,48,.7);text-decoration-thickness:2px}
-.pair .arr{height:2px;background:linear-gradient(90deg,var(--flame),rgba(255,86,48,0));position:relative}
-.pair .arr::after{content:"";position:absolute;right:0;top:-5px;width:10px;height:10px;border-top:2px solid var(--flame);border-right:2px solid var(--flame);transform:rotate(45deg)}
-.pair .now{font-size:clamp(17px,1.9vw,21px)}
-.pair .now b{font-family:var(--display);font-weight:700}
+.pair{display:grid;grid-template-columns:1fr 90px 1.3fr;gap:24px;align-items:center;padding:34px 0;border-bottom:1px solid var(--line);position:relative}
+.pair::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:0;background:linear-gradient(90deg,var(--accent2),transparent);transition:width 1.2s .2s}
+.pair.in::after{width:100%}
+.was{font:600 clamp(20px,2.3vw,30px) Manrope;letter-spacing:-.04em;color:#6c7f9f;position:relative;width:max-content;max-width:100%}
+.was::after{content:"";position:absolute;left:0;right:100%;top:55%;height:2px;background:var(--flame);transition:right .8s .3s}
+.pair.in .was::after{right:0}
+.arrow{height:2px;background:linear-gradient(90deg,var(--accent),transparent);position:relative;transform-origin:left;transform:scaleX(0);transition:transform .8s .5s}
+.pair.in .arrow{transform:scaleX(1)}
+.arrow::after{content:"";position:absolute;right:0;top:-5px;width:10px;height:10px;border-top:2px solid var(--accent2);border-right:2px solid var(--accent2);transform:rotate(45deg)}
+.now{font-size:clamp(16px,1.6vw,20px);color:#d6e2f5;opacity:0;transform:translateY(14px);transition:all .8s .7s}
+.pair.in .now{opacity:1;transform:none}
+.now b{color:#fff;font-family:Manrope;font-weight:700;letter-spacing:-.02em}
 
-/* video */
-.video{background:var(--navy)}
-.video .head{margin-bottom:44px}
-.vgrid{display:grid;grid-template-columns:1fr 330px;gap:28px;align-items:start}
-.vframe{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 40px 90px rgba(0,0,0,.5);background:#000}
-.vframe video{display:block;width:100%;aspect-ratio:16/9;background:#000}
-.chap{list-style:none;border-left:2px solid var(--line)}
-.chap li{margin-left:-2px}
-.chap button{width:100%;text-align:left;background:none;border:0;border-left:2px solid transparent;color:var(--mist);padding:14px 18px;cursor:pointer;font:500 17px var(--body);display:flex;gap:14px;align-items:baseline;transition:.2s}
-.chap button:hover{color:#fff;background:rgba(255,255,255,.04)}
-.chap button.on{color:#fff;border-left-color:var(--flame);background:rgba(255,86,48,.08)}
-.chap time{font:600 14px var(--body);color:var(--flame-soft);min-width:38px;font-variant-numeric:tabular-nums}
-.chap strong{display:block;font:700 18px var(--display);color:#fff;letter-spacing:-.01em}
-.chap span span{display:block;font-size:14.5px;color:var(--mist);line-height:1.4;margin-top:2px}
-.vnote{margin-top:16px;color:var(--mist);font-size:14.5px}
+.video-wrap{display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start}
+@property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
+.vframe{position:relative;border-radius:24px;padding:2px;background:conic-gradient(from var(--ang),#399cff,#63dfff,#22c07a,#399cff 50%,#10203d,#399cff);animation:spin 8s linear infinite;box-shadow:0 40px 120px #238cff33}
+@keyframes spin{to{--ang:360deg}}
+.vframe video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:22px}
+.vnote{font-size:12px;color:var(--muted);margin-top:16px}
+.chap{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}
+.chap button{width:100%;display:flex;gap:16px;text-align:left;background:none;border:0;border-left:2px solid transparent;margin-left:-1px;padding:16px 20px;color:var(--muted);transition:.25s}
+.chap button:hover{background:rgba(57,156,255,.06);color:var(--ink)}
+.chap button.on{border-left-color:var(--accent2);background:linear-gradient(90deg,rgba(57,156,255,.16),transparent);color:var(--ink)}
+.chap time{font:600 12px Manrope;color:var(--accent2);min-width:34px;padding-top:4px;letter-spacing:.06em}
+.chap strong{display:block;font:600 18px Manrope;letter-spacing:-.03em;color:var(--ink)}
+.chap small{display:block;font-size:13.5px;line-height:1.4;margin-top:3px}
 
-/* audiences */
-.who{background:var(--deep)}
-.who h2{margin-bottom:56px}
-.cols{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}
-.col{padding:30px 26px 10px 0;margin-right:26px;border-right:1px solid var(--line)}
-.col:last-child{border-right:0;margin-right:0}
-.col h3{font-size:26px;margin-bottom:6px}
-.col .role{color:var(--flame-soft);font-weight:600;font-size:15px;margin-bottom:16px}
-.col ul{list-style:none;color:var(--mist);font-size:16.5px}
-.col li{padding:10px 0 10px 22px;position:relative;border-top:1px solid rgba(255,255,255,.07)}
-.col li::before{content:"";position:absolute;left:0;top:19px;width:9px;height:9px;border-radius:50%;background:var(--green)}
+.aud{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:60px}
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:30px 26px;overflow:hidden;transition:transform .3s,border-color .3s}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(360px circle at var(--mx,50%) var(--my,0%),rgba(99,223,255,.16),transparent 60%);opacity:0;transition:opacity .3s}
+.card:hover{transform:translateY(-6px);border-color:#3b6aa8}
+.card:hover::before{opacity:1}
+.card>*{position:relative}
+.card h3{font-size:25px;font-weight:600;margin-bottom:4px}
+.card .role{color:var(--accent2);font-size:13px;font-weight:600;margin-bottom:18px}
+.card ul{list-style:none;padding:0;margin:0;color:var(--muted);font-size:15px}
+.card li{padding:11px 0 11px 22px;border-top:1px solid #1d2d49;position:relative}
+.card li::before{content:"";position:absolute;left:0;top:20px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px #22c07a99}
 
-/* security */
-.sec{background:linear-gradient(var(--deep),var(--navy2) 140%)}
-.sgrid{display:grid;grid-template-columns:.9fr 1.3fr;gap:64px}
-.sec h2{margin-bottom:22px}
-.dl{border-top:1px solid var(--line)}
-.dl div{display:grid;grid-template-columns:190px 1fr;gap:20px;padding:17px 0;border-bottom:1px solid var(--line)}
-.dl dt{font:700 17px var(--display);color:#fff}
-.dl dd{color:var(--mist);font-size:16.5px}
-.road{margin-top:72px;display:grid;grid-template-columns:repeat(3,1fr);gap:0;position:relative}
-.road::before{content:"";position:absolute;left:0;right:0;top:11px;height:2px;background:linear-gradient(90deg,var(--green) 0 33%,var(--flame) 33% 66%,rgba(255,255,255,.2) 66%)}
-.rs{position:relative;padding:44px 28px 0 0}
-.rs::before{content:"";position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--deep);border:3px solid var(--green)}
-.rs:nth-child(2)::before{border-color:var(--flame)}
-.rs:nth-child(3)::before{border-color:rgba(255,255,255,.35)}
-.rs h3{font-size:22px;margin-bottom:8px}
-.rs p{color:var(--mist);font-size:16px}
+.sgrid{display:grid;grid-template-columns:.9fr 1.3fr;gap:70px}
+.dl{border-top:1px solid var(--line);margin:0}
+.dl div{display:grid;grid-template-columns:200px 1fr;gap:20px;padding:18px 0;border-bottom:1px solid var(--line)}
+.dl dt{font:700 16px Manrope;letter-spacing:-.02em}
+.dl dd{margin:0;color:var(--muted);font-size:15.5px}
+.road{margin-top:84px;display:grid;grid-template-columns:repeat(3,1fr);position:relative}
+.road::before{content:"";position:absolute;left:0;right:0;top:11px;height:2px;background:linear-gradient(90deg,var(--green) 0 33%,var(--accent) 33% 66%,#2a3d5e 66%)}
+.rs{position:relative;padding:46px 28px 0 0}
+.rs::before{content:"";position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--bg);border:3px solid var(--green)}
+.rs:nth-child(2)::before{border-color:var(--accent);box-shadow:0 0 18px #399cff88}
+.rs:nth-child(3)::before{border-color:#3a4f73}
+.rs h3{font-size:22px;font-weight:600;margin-bottom:8px}
+.rs p{color:var(--muted);font-size:15.5px}
 
-/* cta */
-.final{text-align:center;background:radial-gradient(800px 420px at 50% 100%,rgba(255,86,48,.25),transparent 65%),var(--navy);padding:120px 0}
-.final h2{margin:0 auto 18px;max-width:16ch}
-.final p{color:var(--mist);margin:0 auto 34px;max-width:50ch}
-footer{background:var(--deep);border-top:1px solid var(--line);padding:30px 0;font-size:15px;color:var(--mist)}
-footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
-footer a{color:#fff;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.35)}
-footer a:hover{border-color:var(--flame)}
+.final{text-align:center;padding:150px 0;background:radial-gradient(700px 380px at 50% 100%,#12386d,transparent 70%)}
+.final h2{max-width:14ch;margin:0 auto 22px}
+.final p{color:var(--muted);max-width:48ch;margin:0 auto 36px}
+footer{border-top:1px solid var(--line);padding:40px 48px 46px;max-width:1440px;margin:auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;font-size:12px;color:var(--muted)}
+footer a{color:var(--ink);border-bottom:1px solid var(--accent);padding-bottom:1px}
+footer a:hover{color:var(--accent2)}
 
-@media (max-width:1100px){
-  .hero .wrap{grid-template-columns:1fr}
-  .stage-wrap{--k:.9;margin:0 auto}
-  .cols{grid-template-columns:1fr 1fr}
-  .col:nth-child(2){border-right:0;margin-right:0}
-  .vgrid{grid-template-columns:1fr}
-  .sgrid{grid-template-columns:1fr;gap:40px}
+@media(max-width:1100px){
+  .video-wrap,.sgrid,.split{grid-template-columns:1fr;gap:36px}
+  .aud{grid-template-columns:1fr 1fr}
+  .scene-panel{width:min(520px,52vw)}
 }
-@media (max-width:720px){
-  body{font-size:17px}
-  section{padding:80px 0}
-  .links a{display:none}
-  .links a.btn{display:inline-flex}
-  .hero{padding-top:110px;min-height:0}
-  .stage-wrap{--k:.52}
-  .serve .head{grid-template-columns:1fr}
-  .pair{grid-template-columns:1fr;gap:10px}
-  .pair .arr{width:40px;transform:rotate(90deg);transform-origin:left center;margin:6px 0 14px 4px}
-  .cols{grid-template-columns:1fr}
-  .col{border-right:0;margin-right:0;padding-right:0}
+@media(max-width:820px){
+  .wrap{padding:0 22px}
+  .header{padding:14px 20px}.header.solid{padding:10px 20px}
+  .header nav a:not(.cta){display:none}
+  .brand-full{width:104px}
+  .vignette{background:linear-gradient(0deg,rgba(7,13,26,.95) 0,rgba(7,13,26,.7) 42%,transparent 72%)}
+  .scene-panel{left:22px;right:22px;width:auto;top:auto;bottom:70px;transform:translateY(16px)}
+  .scene-panel.active{transform:none}
+  .scene-panel h1{font-size:clamp(34px,10vw,48px);margin-bottom:14px}
+  .scene-panel h2{font-size:clamp(26px,7.6vw,36px);margin-bottom:12px}
+  .scene-panel p.lead{font-size:15px;margin-bottom:18px}
+  .hint{display:none}
+  .scene-dots{right:14px;gap:10px}.scene-meter{display:none}
+  .motion-toggle{left:22px;bottom:22px}
+  .section{padding:80px 0}
+  .pair{grid-template-columns:1fr;gap:10px}.arrow{display:none}
+  .aud{grid-template-columns:1fr}
   .dl div{grid-template-columns:1fr;gap:4px}
-  .road{grid-template-columns:1fr;gap:34px}
-  .road::before{display:none}
-  .rs{padding-top:38px}
+  .road{grid-template-columns:1fr;gap:34px}.road::before{display:none}
+  footer{padding:30px 22px}
+  body.motion-off .scene-panel,body.no-gl .scene-panel{width:auto;margin:0 22px 70px}
 }
-@media (prefers-reduced-motion:reduce){
+@media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .stage.play *{animation:none!important}
-  .btn,.btn:hover{transition:none;transform:none}
+  .ticker,.vframe,.hint i{animation:none}
+  .btn,.card,.scene-panel{transition:none}
+  .glow{display:none}
 }
 </style>
 </head>
 <body>
-<nav>
-  <div class="wrap">
-    <a class="brand" href="#topo"><i></i>Conta Sim Digital</a>
-    <div class="links">
-      <a href="#serve">Para que serve</a><a href="#video">Vídeo</a><a href="#quem">Para quem</a><a href="#seguranca">Segurança</a>
-      <a class="btn sm" href="app/">Abrir o sistema</a>
-    </div>
-  </div>
-</nav>
+<div class="glow" id="glow" aria-hidden="true"></div>
 
-<header class="hero" id="topo">
-  <div class="grid-bg"></div>
-  <div class="wrap">
-    <div>
-      <h1>O cadastro de medidores <span>sai do papel.</span></h1>
-      <p class="lead">Conta Sim Digital é um sistema web que registra apartamentos e casas de condomínios horizontais, confirma o morador por selfie e documento e lê o medidor por foto, com inteligência artificial.</p>
-      <div class="cta-row">
-        <a class="btn" href="app/">Abrir o sistema</a>
-        <a class="btn ghost" href="#video">Ver em 90 segundos</a>
-      </div>
-      <p class="facts"><span><b>100% web</b> · nada a instalar</span><span><b>Apartamentos e casas</b></span><span><b>Dados do banco da empresa</b> (simulado)</span></p>
-    </div>
-    <div class="stage-wrap">
-      <div class="stage play" id="stage" aria-label="Ficha de papel sendo digitalizada em um registro do sistema">
-        <div class="paper" aria-hidden="true">
-          <h4>FICHA DE CADASTRO DE MEDIDOR</h4>
-          <div class="prow" style="--i:0"><small>Condomínio</small><span class="pv" style="--i:0">Jd. das Araucárias</span></div>
-          <div class="prow"><small>Unidade</small><span class="pv" style="--i:1">Casa 07</span></div>
-          <div class="prow"><small>Morador</small><span class="pv" style="--i:2">Mariana Souza</span></div>
-          <div class="prow"><small>CPF</small><span class="pv" style="--i:3">000.000.000-00</span></div>
-          <div class="prow"><small>Nº de série</small><span class="pv" style="--i:4">0840217</span></div>
-          <div class="prow"><small>Leitura</small><span class="pv" style="--i:5">00482 m³</span></div>
-          <div class="stamp">DIGITALIZADO</div>
-          <div class="beam"></div>
-        </div>
-        <div class="panel">
-          <div class="phead"><span>Casa 07</span><span class="pill">Validada</span></div>
-          <div class="drow" style="--i:0"><div><small>Condomínio</small><b>Jd. das Araucárias</b></div><span class="ck">✓</span></div>
-          <div class="drow" style="--i:1"><div><small>Unidade</small><b>Casa 07</b></div><span class="ck">✓</span></div>
-          <div class="drow" style="--i:2"><div><small>Morador</small><b>Mariana Souza</b></div><span class="ck">✓</span></div>
-          <div class="drow" style="--i:3"><div><small>CPF</small><b>conferido pela IA</b></div><span class="ck">✓</span></div>
-          <div class="drow" style="--i:4"><div><small>Nº de série</small><b>0840217</b></div><span class="ck">✓</span></div>
-          <div class="drow" style="--i:5"><div><small>Leitura</small><b>00482 m³</b></div><span class="ck">✓</span></div>
-        </div>
-        <button class="replay" type="button" id="replay">Ver de novo</button>
-      </div>
-    </div>
-  </div>
+<header class="header" id="hd">
+  <a href="https://www.ddsinovacao.com.br/" aria-label="DDS Sites & Sistemas"><img class="brand-full" src="../logo-branca.png" width="2000" height="1125" alt="DDS Sites & Sistemas"></a>
+  <nav aria-label="Principal">
+    <a href="#serve">Para que serve</a><a href="#video">Vídeo</a><a href="#quem">Para quem</a><a href="#seguranca">Segurança</a>
+    <a class="cta" href="app/">Abrir o sistema ↗</a>
+  </nav>
 </header>
 
-<section class="serve" id="serve">
+<main>
+<section class="experience" id="experience" aria-label="Apresentação do Conta Sim Digital">
+  <div class="stage">
+    <div id="gl" aria-hidden="true"></div>
+    <div class="vignette"></div>
+
+    <article class="scene-panel active">
+      <div class="eyebrow">Conta Sim Digital</div>
+      <h1>O cadastro de medidores sai do <span class="serif">papel.</span></h1>
+      <p class="lead">Um sistema web que registra apartamentos e casas de condomínios horizontais, confirma o morador por selfie e documento e lê o medidor por foto, com inteligência artificial.</p>
+      <div class="row"><a class="btn" href="app/">Abrir o sistema <span>↗</span></a><a class="btn ghost" href="#video">Ver em 90 segundos</a></div>
+      <div class="hint"><i></i>ROLE PARA VER COMO FUNCIONA</div>
+    </article>
+
+    <article class="scene-panel">
+      <div class="eyebrow">01 · Busca no banco da empresa</div>
+      <h2>Digite as primeiras letras. O banco da empresa <span class="serif">responde.</span></h2>
+      <p class="lead">O consultor busca por nome, código ou endereço. O sistema puxa o condomínio e preenche o cadastro. O que for captado volta para o mesmo banco.</p>
+      <span class="chip"><b></b>Simulação · integração com o banco da Consigaz</span>
+    </article>
+
+    <article class="scene-panel">
+      <div class="eyebrow">02 · Condomínio e moradores</div>
+      <h2>Cada casa e cada apartamento, <span class="serif">validados</span> um a um.</h2>
+      <p class="lead">Um QR Code impresso na portaria ou um link enviado ao síndico. O morador confirma os dados pelo celular, e a IA confere selfie e documento.</p>
+      <span class="chip"><b></b>Quem mudou de casa avisa com um toque</span>
+    </article>
+
+    <article class="scene-panel">
+      <div class="eyebrow">03 · Medidor</div>
+      <h2>Uma foto. A IA lê a série e a <span class="serif">leitura.</span></h2>
+      <p class="lead">O consultor fotografa o medidor em campo. O número de série e o mostrador viram dados, sem digitar.</p>
+      <span class="chip"><b></b>Funciona no celular, sem instalar app</span>
+    </article>
+
+    <article class="scene-panel">
+      <div class="eyebrow">04 · Segurança</div>
+      <h2>Dados de clientes, blindados em <span class="serif">todas as camadas.</span></h2>
+      <p class="lead">Criptografia em trânsito e em repouso, acesso individual e isolamento por consultor direto no banco. Tudo exportável em Excel.</p>
+      <div class="row"><a class="btn" href="app/">Abrir o sistema <span>↗</span></a><a class="btn ghost" href="#video">Ver o vídeo</a></div>
+    </article>
+
+    <div class="scene-dots" role="tablist" aria-label="Cenas">
+      <button type="button" data-p="0" aria-label="Abertura"></button><button type="button" data-p=".25" aria-label="Busca"></button><button type="button" data-p=".5" aria-label="Condomínio"></button><button type="button" data-p=".75" aria-label="Medidor"></button><button type="button" data-p="1" aria-label="Segurança"></button>
+    </div>
+    <div class="scene-meter" id="scene-meter">01 / 05</div>
+    <button class="motion-toggle" id="motion-toggle" type="button" hidden aria-pressed="false">Reduzir movimento</button>
+  </div>
+</section>
+
+<div class="band" aria-hidden="true">
+  <div class="ticker">
+    <span>Ficha de papel</span><em>→</em><span class="on">Registro no banco</span><em>→</em><span>Confirmação do morador</span><em>→</em><span class="on">Leitura por IA</span><em>→</em><span>Excel exportado</span><em>→</em>
+    <span>Ficha de papel</span><em>→</em><span class="on">Registro no banco</span><em>→</em><span>Confirmação do morador</span><em>→</em><span class="on">Leitura por IA</span><em>→</em><span>Excel exportado</span><em>→</em>
+  </div>
+</div>
+
+<section class="section" id="serve">
   <div class="wrap">
-    <div class="head">
-      <h2>Hoje o dado nasce no papel e é digitado depois.</h2>
-      <p class="lead">O Conta Sim Digital digitaliza exatamente o que já era feito em papel: cadastro do condomínio, confirmação do morador e leitura do medidor. Sem mudar o processo, só o suporte.</p>
+    <div class="split">
+      <div><div class="eyebrow">Para que serve</div><h2>Hoje o dado nasce no papel e é digitado <span class="serif">depois.</span></h2></div>
+      <p class="lead">O Conta Sim Digital digitaliza exatamente o que já era feito em papel: cadastro do condomínio, confirmação do morador e leitura do medidor. O processo é o mesmo. Muda o suporte.</p>
     </div>
     <div class="pairs">
-      <div class="pair"><div class="was">Ficha preenchida à mão</div><div class="arr"></div><div class="now"><b>O consultor digita as primeiras letras</b> e o sistema busca o condomínio no banco da empresa e preenche o resto.</div></div>
-      <div class="pair"><div class="was">Morador sem confirmar</div><div class="arr"></div><div class="now"><b>O morador confirma pelo celular</b>, com selfie e foto do documento, e a IA confere nome, CPF e RG.</div></div>
-      <div class="pair"><div class="was">Leitura anotada no medidor</div><div class="arr"></div><div class="now"><b>Uma foto basta.</b> A IA lê o número de série e a leitura do mostrador.</div></div>
-      <div class="pair"><div class="was">Planilha montada no fim</div><div class="arr"></div><div class="now"><b>Excel pronto a qualquer momento</b>, com o status de cada unidade e o aviso de quem já não mora mais lá.</div></div>
+      <div class="pair"><div class="was">Ficha preenchida à mão</div><div class="arrow"></div><div class="now"><b>O consultor digita as primeiras letras</b> e o sistema busca o condomínio no banco da empresa e preenche o resto.</div></div>
+      <div class="pair"><div class="was">Morador sem confirmar</div><div class="arrow"></div><div class="now"><b>O morador confirma pelo celular</b>, com selfie e foto do documento, e a IA confere nome, CPF e RG.</div></div>
+      <div class="pair"><div class="was">Leitura anotada no medidor</div><div class="arrow"></div><div class="now"><b>Uma foto basta.</b> A IA lê o número de série e a leitura do mostrador.</div></div>
+      <div class="pair"><div class="was">Planilha montada no fim</div><div class="arrow"></div><div class="now"><b>Excel pronto a qualquer momento</b>, com o status de cada unidade e o aviso de quem já não mora mais lá.</div></div>
     </div>
   </div>
 </section>
 
-<section class="video" id="video">
+<section class="section" id="video" style="background:linear-gradient(#070d1a,#0a1427 40%,#070d1a)">
   <div class="wrap">
-    <div class="head"><h2>Veja o passo a passo em 90 segundos.</h2></div>
-    <div class="vgrid">
+    <div class="eyebrow">Passo a passo</div>
+    <h2 style="margin-bottom:56px;max-width:18ch">Veja como usar em <span class="serif">90 segundos.</span></h2>
+    <div class="video-wrap">
       <div>
         <div class="vframe"><video id="vid" controls playsinline preload="metadata" poster="poster.jpg"><source src="conta-sim-digital.mp4" type="video/mp4">Seu navegador não reproduz este vídeo.</video></div>
         <p class="vnote">Simulação com dados fictícios. A integração com o banco de dados da empresa é demonstrativa.</p>
       </div>
       <ol class="chap" id="chap">
-        <li><button type="button" data-t="10"><time>0:10</time><span><strong>Buscar o condomínio</strong><span>Primeiras letras e o banco preenche.</span></span></button></li>
-        <li><button type="button" data-t="24"><time>0:24</time><span><strong>Enviar link ou QR Code</strong><span>Impresso na portaria ou pelo síndico.</span></span></button></li>
-        <li><button type="button" data-t="33"><time>0:33</time><span><strong>O morador confirma</strong><span>Dados, documento e selfie.</span></span></button></li>
-        <li><button type="button" data-t="55"><time>0:55</time><span><strong>A IA lê o medidor</strong><span>Série e leitura por foto.</span></span></button></li>
-        <li><button type="button" data-t="65"><time>1:05</time><span><strong>Tudo em Excel</strong><span>Gravado no banco, pronto para exportar.</span></span></button></li>
+        <li><button type="button" data-t="10"><time>0:10</time><span><strong>Buscar o condomínio</strong><small>Primeiras letras e o banco preenche.</small></span></button></li>
+        <li><button type="button" data-t="24"><time>0:24</time><span><strong>Enviar link ou QR Code</strong><small>Impresso na portaria ou pelo síndico.</small></span></button></li>
+        <li><button type="button" data-t="33"><time>0:33</time><span><strong>O morador confirma</strong><small>Dados, documento e selfie.</small></span></button></li>
+        <li><button type="button" data-t="55"><time>0:55</time><span><strong>A IA lê o medidor</strong><small>Série e leitura por foto.</small></span></button></li>
+        <li><button type="button" data-t="65"><time>1:05</time><span><strong>Tudo em Excel</strong><small>Gravado no banco, pronto para exportar.</small></span></button></li>
       </ol>
     </div>
   </div>
 </section>
 
-<section class="who" id="quem">
+<section class="section" id="quem">
   <div class="wrap">
-    <h2>Cada área enxerga o que importa para ela.</h2>
-    <div class="cols">
-      <div class="col"><h3>Diretoria</h3><p class="role">Padrão e controle</p><ul><li>Um único processo para todos os condomínios</li><li>Dado nasce digital, no banco da empresa</li><li>Menos papel para guardar e conferir</li></ul></div>
-      <div class="col"><h3>Gerência</h3><p class="role">Acompanhamento</p><ul><li>Quantas unidades já foram validadas, por condomínio</li><li>Quem avisou que mudou de casa</li><li>Cada consultor com a sua carteira</li></ul></div>
-      <div class="col"><h3>Analistas e consultores</h3><p class="role">Dia a dia</p><ul><li>Digita as primeiras letras e o sistema preenche</li><li>Envia um link ou imprime o QR Code</li><li>Exporta o Excel sem montar planilha</li></ul></div>
-      <div class="col"><h3>TI</h3><p class="role">Arquitetura</p><ul><li>Aplicação web, sem instalar aplicativo</li><li>Hoje em teste; pronta para migrar à infraestrutura da empresa</li><li>Integração prevista com o banco da Consigaz</li></ul></div>
+    <div class="eyebrow">Para quem</div>
+    <h2 style="max-width:18ch">Cada área enxerga o que importa <span class="serif">para ela.</span></h2>
+    <div class="aud">
+      <div class="card"><h3>Diretoria</h3><p class="role">Padrão e controle</p><ul><li>Um único processo para todos os condomínios</li><li>O dado nasce digital, no banco da empresa</li><li>Menos papel para guardar e conferir</li></ul></div>
+      <div class="card"><h3>Gerência</h3><p class="role">Acompanhamento</p><ul><li>Quantas unidades já foram validadas, por condomínio</li><li>Quem avisou que mudou de casa</li><li>Cada consultor com a sua carteira</li></ul></div>
+      <div class="card"><h3>Analistas e consultores</h3><p class="role">Dia a dia</p><ul><li>Digita as primeiras letras e o sistema preenche</li><li>Envia um link ou imprime o QR Code</li><li>Exporta o Excel sem montar planilha</li></ul></div>
+      <div class="card"><h3>TI</h3><p class="role">Arquitetura</p><ul><li>Aplicação web, sem instalar aplicativo</li><li>Hoje em teste, pronta para migrar à infraestrutura da empresa</li><li>Integração prevista com o banco da Consigaz</li></ul></div>
     </div>
   </div>
 </section>
 
-<section class="sec" id="seguranca">
+<section class="section" id="seguranca" style="background:linear-gradient(#070d1a,#0b1a33)">
   <div class="wrap">
     <div class="sgrid">
       <div>
-        <h2>Dados de clientes pedem blindagem em todas as camadas.</h2>
-        <p class="lead">Documentos, selfies e leituras são dados pessoais. O sistema foi desenhado com controles em cada camada, e o tratamento segue a LGPD.</p>
+        <div class="eyebrow">Segurança</div>
+        <h2 style="margin-bottom:24px">Controles em cada <span class="serif">camada.</span></h2>
+        <p class="lead">Documentos, selfies e leituras são dados pessoais. O sistema foi desenhado com defesas em cada camada, e o tratamento segue a LGPD.</p>
       </div>
       <dl class="dl">
         <div><dt>Em trânsito</dt><dd>Tráfego sempre criptografado, TLS 1.2/1.3.</dd></div>
@@ -312,35 +321,33 @@ footer a:hover{border-color:var(--flame)}
 
 <section class="final">
   <div class="wrap">
-    <h2>Experimente o sistema agora.</h2>
+    <h2>Experimente o sistema <span class="serif">agora.</span></h2>
     <p>Abra o app, entre e percorra o fluxo do consultor: do cadastro do condomínio à exportação em Excel.</p>
-    <a class="btn" href="app/">Abrir o sistema</a>
+    <a class="btn" href="app/">Abrir o sistema <span>↗</span></a>
   </div>
 </section>
+</main>
 
 <footer>
-  <div class="wrap">
-    <span>© 2026 <a href="https://www.ddsinovacao.com.br/" rel="noopener">DDS Inovação</a>. Todos os direitos reservados.</span>
-    <span>Conta Sim Digital · protótipo web em ambiente de teste</span>
-  </div>
+  <span>© 2026 <a href="https://www.ddsinovacao.com.br/" rel="noopener">DDS Inovação</a>. Todos os direitos reservados.</span>
+  <span>Conta Sim Digital · protótipo web em ambiente de teste. Feito com curiosidade, criatividade e tecnologia. ✳</span>
 </footer>
 
 <script>
 (function(){
-  var stage=document.getElementById('stage'),btn=document.getElementById('replay');
-  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduce){stage.classList.remove('play');btn.style.display='none';}
-  btn.addEventListener('click',function(){stage.classList.remove('play');void stage.offsetWidth;stage.classList.add('play');});
-  // replay when hero scrolls back into view after being away
-  var vid=document.getElementById('vid'),chap=document.getElementById('chap');
-  var btns=[].slice.call(chap.querySelectorAll('button'));
+  var hd=document.getElementById('hd');
+  function sc(){hd.classList.toggle('solid',scrollY>40);}
+  addEventListener('scroll',sc,{passive:true});sc();
+  var g=document.getElementById('glow');
+  addEventListener('pointermove',function(e){g.style.transform='translate('+e.clientX+'px,'+e.clientY+'px)';},{passive:true});
+  document.querySelectorAll('.card').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px');});});
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.35});
+  document.querySelectorAll('.pair').forEach(function(p){io.observe(p);});
+  var vid=document.getElementById('vid'),btns=[].slice.call(document.querySelectorAll('#chap button')),marks=btns.map(function(b){return +b.dataset.t;});
   btns.forEach(function(b){b.addEventListener('click',function(){vid.currentTime=+b.dataset.t;vid.play();});});
-  var marks=btns.map(function(b){return +b.dataset.t;});
-  vid.addEventListener('timeupdate',function(){
-    var t=vid.currentTime,idx=-1;marks.forEach(function(m,i){if(t>=m-0.2)idx=i;});
-    btns.forEach(function(b,i){b.classList.toggle('on',i===idx);});
-  });
+  vid.addEventListener('timeupdate',function(){var t=vid.currentTime,i=-1;marks.forEach(function(m,k){if(t>=m-.2)i=k;});btns.forEach(function(b,k){b.classList.toggle('on',k===i);});});
 })();
 </script>
+<script type="module" src="experience.js"></script>
 </body>
 </html>
