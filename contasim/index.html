@@ -25,7 +25,7 @@ nav a{text-decoration:none;color:var(--mut);transition:.2s}nav a:hover{color:#ff
 .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:999px;font:700 16px Poppins;text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--or),var(--or2));box-shadow:0 12px 34px rgba(255,90,54,.35);transition:transform .2s,box-shadow .2s;border:0;cursor:pointer}
 .btn:hover{box-shadow:0 16px 44px rgba(255,90,54,.5)}
 .btn.ghost{background:transparent;border:1.5px solid var(--line);box-shadow:none}.btn.ghost:hover{border-color:var(--or)}
-.vbtn{background:#fff;color:#0b2947;box-shadow:0 12px 34px rgba(0,0,0,.35)}.vbtn:hover{background:#eaf1fb}.pl{width:28px;height:28px;border-radius:50%;background:var(--or);color:#fff;font-size:11px;display:grid;place-items:center;padding-left:2px;animation:pp 2s infinite}@keyframes pp{0%{box-shadow:0 0 0 0 rgba(255,90,54,.6)}100%{box-shadow:0 0 0 14px rgba(255,90,54,0)}}.fv{position:fixed;right:18px;bottom:18px;z-index:55;opacity:0;pointer-events:none;transform:translateY(16px);transition:.3s;padding:12px 20px}.fv.show{opacity:1;pointer-events:auto;transform:none}.btn.sm{padding:9px 18px;font:600 14px Inter;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);box-shadow:none;color:#fff;backdrop-filter:blur(6px)}.btn.sm:hover{background:var(--or);border-color:var(--or);box-shadow:none}
+.cta .vbtn{background:rgba(255,255,255,.08);color:#fff;border:1.5px solid rgba(255,255,255,.28);box-shadow:none;backdrop-filter:blur(8px)}.cta .vbtn:hover{background:rgba(255,255,255,.16)}.fv.vbtn{background:#fff;color:#0b2947;box-shadow:0 12px 34px rgba(0,0,0,.4)}.pl{flex:none;width:28px;height:28px;border-radius:50%;background:var(--or);color:#fff;font-size:11px;display:grid;place-items:center;padding-left:2px;animation:pp 2s infinite}@keyframes pp{0%{box-shadow:0 0 0 0 rgba(255,90,54,.6)}100%{box-shadow:0 0 0 14px rgba(255,90,54,0)}}.fv{position:fixed;right:18px;bottom:18px;z-index:55;opacity:0;pointer-events:none;transform:translateY(16px);transition:.3s;padding:12px 20px}.fv.show{opacity:1;pointer-events:auto;transform:none}.btn.sm{padding:9px 18px;font:600 14px Inter;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);box-shadow:none;color:#fff;backdrop-filter:blur(6px)}.btn.sm:hover{background:var(--or);border-color:var(--or);box-shadow:none}
 @media(max-width:860px){nav a:not(.btn){display:none}}
 /* HERO */
 .hero{height:320vh;position:relative}
@@ -68,7 +68,7 @@ h1 .ch{display:inline-block;opacity:0;transform:translateY(40px) rotate(6deg);fi
 .cap{margin-top:30px;text-align:center;font:600 14px Poppins;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);min-height:22px}
 .cap b{color:#fff}
 .prog{height:4px;background:#12304f;border-radius:9px;margin:12px auto 0;max-width:420px;overflow:hidden}.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--or),#5fe0ff)}
-@media(max-width:900px){.hero{height:300vh}.stage{grid-template-columns:1fr;gap:16px;padding-top:84px;align-content:start}h1{margin:10px 0 10px;font-size:clamp(36px,11vw,52px)}.type{min-height:2.6em;font-size:16px}.cta{margin:12px 0 6px}.hint{display:none}.cap{margin-top:16px}.beamlab{top:-26px}.chip{font-size:11px;padding:6px 10px}}
+@media(max-width:900px){.cta{flex-direction:column;gap:10px}.cta .btn{justify-content:center;width:100%;padding:14px 20px;font-size:15px}.paper h4{font-size:15px;top:14px;white-space:nowrap}.stamp{top:8%}.hero{height:300vh}.stage{grid-template-columns:1fr;gap:16px;padding-top:84px;align-content:start}h1{margin:10px 0 10px;font-size:clamp(36px,11vw,52px)}.type{min-height:2.6em;font-size:16px}.cta{margin:12px 0 6px}.hint{display:none}.cap{margin-top:16px}.beamlab{top:-26px}.chip{font-size:11px;padding:6px 10px}}
 /* TICKER */
 .tick{border-block:1px solid var(--line);background:#071f39;overflow:hidden;padding:18px 0}
 .tk{display:flex;gap:56px;white-space:nowrap;width:max-content;animation:tk 34s linear infinite;font:700 clamp(20px,3vw,32px) Poppins}
@@ -143,7 +143,7 @@ footer a{color:#fff;text-decoration:none;border-bottom:1px solid var(--or)}
 </style>
 </head>
 <body>
-<div class="bar" id="bar"></div><div class="glow" id="glow"></div><a class="btn vbtn fv" id="fv" href="#video"><span class="pl">▶</span> Ver o vídeo</a>
+<div class="bar" id="bar"></div><div class="glow" id="glow"></div><a class="btn vbtn fv" id="fv" href="#video"><span class="pl">▶</span> Vídeo explicativo</a>
 <header><div class="wrap">
   <a href="#top" aria-label="Consigaz"><img class="logo" src="img/consigaz-branca.png" alt="Consigaz"></a>
   <nav><a href="#como">Como funciona</a><a href="#dicas">Dicas</a><a href="#video">Vídeo</a><a href="#quem">Para quem</a></nav>
@@ -155,14 +155,14 @@ footer a{color:#fff;text-decoration:none;border-bottom:1px solid var(--or)}
     <span class="kick">Conta Sim Digital · Pós-Vendas</span>
     <h1 id="h1" aria-label="Do papel ao digital."></h1>
     <p class="type" id="type"></p>
-    <div class="cta"><a class="btn" href="app/">Abrir o sistema ↗</a><a class="btn vbtn" href="#video"><span class="pl">▶</span> Ver o vídeo · 90 s</a></div>
+    <div class="cta"><a class="btn" href="app/">Abrir o sistema →</a><a class="btn vbtn" href="#video"><span class="pl">▶</span> Acesse o vídeo explicativo</a></div>
     <div class="hint"><span>↓</span> Role a página e veja o papel virar dado</div>
   </div>
   <div class="scanwrap">
     <div class="scan" id="scan">
       <img class="dig" src="img/excel.jpg" alt="Tela do Conta Sim Digital com o status de cada unidade">
       <div class="paper" aria-hidden="true">
-        <h4>Cadastro de medidores – Res. Jd. das Araucárias</h4>
+        <h4>Cadastro de medidores</h4>
         <div class="pr r1"><b>Casa 01</b><em>Carlos Menez.</em><s>série ?</s></div>
         <div class="pr r2"><b>Casa 02</b><em>Ana Lima</em><s class="circ">falta CPF</s></div>
         <div class="pr r3"><b>Casa 03</b><em class="cut">Roberto A.</em><s>mudou?</s></div>
@@ -258,7 +258,7 @@ footer a{color:#fff;text-decoration:none;border-bottom:1px solid var(--or)}
   <p class="note">Protótipo web em ambiente de teste. A integração com o banco da Consigaz é uma simulação nesta fase.</p>
 </div></section>
 
-<section class="fin"><div class="wrap"><h2 data-split>Seguro. Rápido. <span class="hl">Sem papel.</span></h2><p>Entre no sistema e veja o Conta Sim Digital funcionando.</p><a class="btn" href="app/">Abrir o sistema ↗</a></div></section>
+<section class="fin"><div class="wrap"><h2 data-split>Seguro. Rápido. <span class="hl">Sem papel.</span></h2><p>Entre no sistema e veja o Conta Sim Digital funcionando.</p><a class="btn" href="app/">Abrir o sistema →</a></div></section>
 </main>
 <footer><div class="wrap"><img class="logo" style="height:24px;opacity:.9" src="img/consigaz-branca.png" alt="Consigaz"><span>Conta Sim Digital · Setor de Pós-Vendas</span><span>© 2026 <a href="https://www.ddsinovacao.com.br/">DDS Inovação</a></span></div></footer>
 
