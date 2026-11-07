@@ -58,7 +58,8 @@
     <div id="camposLeitura" style="display:none;">
       <div class="field">
         <label for="numeroSerie">Nº de série do medidor</label>
-        <input type="text" id="numeroSerie" class="mono">
+        <input type="text" id="numeroSerie" class="mono" oninput="mostrarInfoSerie()">
+        <div id="infoSerie" style="display:none; margin-top:8px; padding:10px 12px; border-radius:10px; font-size:13.5px; line-height:1.5;"></div>
       </div>
       <div class="field">
         <label for="leituraM3">Leitura (m³)</label>
@@ -77,6 +78,7 @@
 </div>
 
 <script src="assets/js/supabase-client.js?v=78"></script>
+<script src="assets/js/medidor-serie.js?v=1"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
 let unidadeId = params.get('unidade');
@@ -263,6 +265,24 @@ function processarFoto(e) {
   e.target.value = ''; // permite escolher a mesma foto de novo
 }
 
+// Mostra fabricação, marca, vazão e validade a partir do número de série
+function mostrarInfoSerie() {
+  const box = document.getElementById('infoSerie');
+  const serie = document.getElementById('numeroSerie').value.trim();
+  const d = window.decodificarSerie(serie);
+  if (!serie) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  if (!d) {
+    box.style.cssText += 'background:#F0F1F4; color:#4B5875;';
+    box.textContent = 'Não reconheci o padrão deste número de série (esperado algo como C19L0001630D). Confira a digitação.';
+    return;
+  }
+  const cores = { ok: ['#E7F7EC', '#16A34A'], vence_este_ano: ['#FEF3DA', '#92660A'], vencido: ['#FEE2E2', '#B91C1C'] }[d.status];
+  box.style.background = cores[0]; box.style.color = cores[1];
+  const icone = d.status === 'vencido' ? '⚠️' : d.status === 'vence_este_ano' ? '⏳' : '✅';
+  box.innerHTML = `<strong>${icone} ${window.textoValidadeMedidor(d)}</strong><br>Fabricado em ${d.anoFab} · Marca ${d.marca} · Vazão ${d.vazao} m³/h`;
+}
+
 async function extrairComIA() {
   const btn = document.getElementById('btnExtrair');
   setBtnLoading(btn, true);
@@ -274,6 +294,7 @@ async function extrairComIA() {
     if (error || extraido?.erro) throw error || new Error(extraido.erro);
 
     document.getElementById('numeroSerie').value = extraido.numero_serie || '';
+    mostrarInfoSerie();
     document.getElementById('leituraM3').value = extraido.leitura_m3 || '';
     document.getElementById('camposLeitura').style.display = 'block';
     document.getElementById('btnSalvar').disabled = false;

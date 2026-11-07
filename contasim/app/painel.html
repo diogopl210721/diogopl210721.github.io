@@ -194,6 +194,7 @@
 </div>
 
 <script src="assets/js/supabase-client.js?v=78"></script>
+<script src="assets/js/medidor-serie.js?v=1"></script>
 <script>
 let perfilAtual = null;
 
@@ -281,6 +282,7 @@ async function carregarCondominios() {
         <div class="area-clicavel" style="cursor:pointer; flex:1; min-width:0;">
           <h3 style="margin:0;">${escapeHtml(c.nome)}</h3>
           ${c.codigo_edificio ? `<p class="muted" style="margin:2px 0 0; font-size:13px;">Código: ${escapeHtml(c.codigo_edificio)}</p>` : ''}
+          <div id="venc-${c.id}"></div>
         </div>
         <div id="pct-${c.id}" style="flex-shrink:0;"></div>
         <div style="display:flex; gap:4px; flex-shrink:0;">
@@ -323,7 +325,7 @@ async function carregarPercentualConcluido(condominioId) {
   if (!container) return;
 
   const { data: unidades } = await sb.from('csd_unidades')
-    .select('id, csd_medidores(id), csd_moradores(id, csd_validacoes(status))')
+    .select('id, csd_medidores(id, numero_serie, criado_em), csd_moradores(id, csd_validacoes(status))')
     .eq('condominio_id', condominioId);
 
   const total = (unidades || []).length;
@@ -337,6 +339,22 @@ async function carregarPercentualConcluido(condominioId) {
     const temValidacao = (u.csd_moradores || []).some(m => (m.csd_validacoes || []).some(v => v.status === 'validado'));
     return temMedidor && temValidacao;
   }).length;
+
+  // Medidores vencidos / vencendo (usa a leitura mais recente de cada unidade)
+  let vencidos = 0, vencemAno = 0;
+  for (const u of unidades) {
+    const ms = (u.csd_medidores || []).slice().sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+    const d = window.decodificarSerie(ms[0]?.numero_serie);
+    if (d?.status === 'vencido') vencidos++;
+    else if (d?.status === 'vence_este_ano') vencemAno++;
+  }
+  const boxVenc = document.getElementById('venc-' + condominioId);
+  if (boxVenc && (vencidos || vencemAno)) {
+    boxVenc.innerHTML = vencidos
+      ? `<span style="display:inline-block; margin-top:6px; background:#FEE2E2; color:#B91C1C; font-weight:700; font-size:12px; padding:2px 8px; border-radius:6px;">⚠️ ${vencidos} medidor(es) vencido(s)</span>`
+      : '';
+    if (vencemAno) boxVenc.innerHTML += `<span style="display:inline-block; margin:6px 0 0 ${vencidos ? 6 : 0}px; background:#FEF3DA; color:#92660A; font-weight:700; font-size:12px; padding:2px 8px; border-radius:6px;">⏳ ${vencemAno} vencem este ano</span>`;
+  }
 
   const pct = Math.round((completas / total) * 100);
   container.innerHTML = circuloProgresso(pct);

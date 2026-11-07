@@ -129,6 +129,7 @@
 </div>
 
 <script src="assets/js/supabase-client.js?v=78"></script>
+<script src="assets/js/medidor-serie.js?v=1"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
 const condominioId = params.get('id');
@@ -471,9 +472,13 @@ async function carregarUnidades() {
     const validacao = maisRecente(morador?.csd_validacoes);
     const medidor = maisRecente(u.csd_medidores);
 
-    const statusMedidor = medidor
+    const infoSerie = window.decodificarSerie(medidor?.numero_serie);
+    const tagValidade = (infoSerie && infoSerie.status !== 'ok')
+      ? `<div style="margin-top:4px;"><span style="display:inline-block; background:${infoSerie.status === 'vencido' ? '#FEE2E2' : '#FEF3DA'}; color:${infoSerie.status === 'vencido' ? '#B91C1C' : '#92660A'}; font-weight:700; font-size:11.5px; padding:2px 8px; border-radius:6px;" title="Fabricado em ${infoSerie.anoFab} (${infoSerie.marca})">${infoSerie.status === 'vencido' ? '⚠️ ' : '⏳ '}${window.textoValidadeMedidor(infoSerie)}</span></div>`
+      : '';
+    const statusMedidor = (medidor
       ? `<span class="badge badge-success">Capturado</span>`
-      : `<span class="badge badge-warning">Não capturado</span>`;
+      : `<span class="badge badge-warning">Não capturado</span>`) + tagValidade;
 
     // "Validado" só quando o morador completou TODO o fluxo (dados + doc + selfie),
     // não apenas a etapa de confirmação de dados. Se o consultor liberou nova
@@ -973,11 +978,12 @@ async function exportarExcel(btn) {
     views: [{ state: 'frozen', ySplit: 7 }],
   });
 
-  const colunas = ['Torre', 'Bloco', 'Apto', 'Morador', 'CPF', 'Data de Nascimento', 'E-mail', 'Telefone', 'Nº Série Medidor', 'Leitura (m³)', 'Status Medidor', 'Status Validação', 'Aviso'];
+  const colunas = ['Torre', 'Bloco', 'Apto', 'Morador', 'CPF', 'Data de Nascimento', 'E-mail', 'Telefone', 'Nº Série Medidor', 'Leitura (m³)', 'Status Medidor', 'Status Validação', 'Aviso', 'Marca do Medidor', 'Vazão (m³/h)', 'Ano de Fabricação', 'Validade do Medidor'];
   sheet.columns = colunas.map(c => ({ width: Math.max(14, c.length + 4) }));
   sheet.columns[3].width = 26; // Morador
   sheet.columns[6].width = 26; // E-mail
   sheet.columns[12].width = 30; // Aviso
+  sheet.columns[16].width = 26; // Validade do medidor
 
   // Faixa de topo com a cor da marca
   sheet.mergeCells('A1:M1');
@@ -1040,12 +1046,13 @@ async function exportarExcel(btn) {
   });
 
   // Linhas de dados
-  let totalCapturados = 0, totalValidados = 0, totalCompletas = 0;
+  let totalCapturados = 0, totalValidados = 0, totalCompletas = 0, totalVencidos = 0, totalVencemAno = 0;
   for (const u of (unidades || [])) {
     const morador = moradorAtual(u.csd_moradores);
     const validacao = maisRecente(morador?.csd_validacoes);
     const medidor = maisRecente(u.csd_medidores);
     const medidorOk = !!medidor;
+    const infoSerie = window.decodificarSerie(medidor?.numero_serie);
     const validadoOk = validacao?.status === 'validado';
     if (medidorOk) totalCapturados++;
     if (validadoOk) totalValidados++;
@@ -1058,7 +1065,10 @@ async function exportarExcel(btn) {
       medidorOk ? 'Capturado' : 'Pendente',
       validadoOk ? 'Validado' : (morador?.dados_confirmados ? 'Em andamento' : 'Aguardando'),
       u.aviso_nao_morador_em ? `⚠️ Não é mais morador (${new Date(u.aviso_nao_morador_em).toLocaleDateString('pt-BR')})` : '',
+      infoSerie?.marca || '', infoSerie?.vazao || '', infoSerie?.anoFab || '', infoSerie ? window.textoValidadeMedidor(infoSerie) : (medidor ? 'Série não reconhecida' : ''),
     ]);
+    if (infoSerie?.status === 'vencido') totalVencidos++;
+    if (infoSerie?.status === 'vence_este_ano') totalVencemAno++;
     row.height = 20;
     row.eachCell((cell, colNumber) => {
       cell.font = { name: 'Calibri', size: 10.5, color: { argb: 'FF14213D' } };
@@ -1085,6 +1095,12 @@ async function exportarExcel(btn) {
         cell.font.color = { argb: corTxt };
         cell.font.bold = true;
       }
+      if (colNumber === 17 && infoSerie && infoSerie.status !== 'ok') {
+        cell.alignment.horizontal = 'center';
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: infoSerie.status === 'vencido' ? 'FFFEE2E2' : WARNING } };
+        cell.font.color = { argb: infoSerie.status === 'vencido' ? 'FFB91C1C' : WARNING_TXT };
+        cell.font.bold = true;
+      }
       if (colNumber === 13 && u.aviso_nao_morador_em) {
         cell.alignment.horizontal = 'center';
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
@@ -1094,7 +1110,7 @@ async function exportarExcel(btn) {
     });
   }
 
-  sheet.autoFilter = { from: 'A7', to: `M${7 + (unidades || []).length}` };
+  sheet.autoFilter = { from: 'A7', to: `Q${7 + (unidades || []).length}` };
 
   // ---------- Aba Resumo (layout tipo dashboard) ----------
   const totalUnidades = (unidades || []).length;
@@ -1161,6 +1177,11 @@ async function exportarExcel(btn) {
   resumo.getRow(7).height = 8;
   resumo.getRow(8).height = 30;
   resumo.getRow(9).height = 10;
+
+  resumo.mergeCells('B10:F10');
+  resumo.getCell('B10').value = `Medidores vencidos: ${totalVencidos}  ·  Vencem este ano: ${totalVencemAno}`;
+  resumo.getCell('B10').font = { name: 'Calibri', size: 11, bold: true, color: { argb: totalVencidos ? 'FFB91C1C' : (totalVencemAno ? WARNING_TXT : SUCCESS_TXT) } };
+  resumo.getCell('B10').alignment = { horizontal: 'center' };
 
   // Rodapé
   resumo.mergeCells('B11:F11');
