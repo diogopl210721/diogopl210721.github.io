@@ -717,18 +717,26 @@ async function continuarAposDocumento() {
     verificacaoNome = {};
   }
 
-  // Bloqueia se a IA leu o nome OU o CPF do documento e algum dos dois não bate
-  // com o que foi cadastrado. Exige conferência 100% fiel — não aceita parcial.
-  // Se não conseguiu ler nada (foto ruim, documento diferente), deixa seguir
-  // para não travar morador legítimo por causa de OCR falho.
-  const nomeFalhou = verificacaoNome.nome_extraido && verificacaoNome.nome_confere === false;
-  const cpfFalhou = verificacaoNome.cpf_extraido && verificacaoNome.cpf_confere === false;
-  if (nomeFalhou || cpfFalhou) {
+  // Validação estrita: precisa ser documento, ter número legível e o CPF
+  // impresso precisa ser igual ao cadastrado. Sem isso, não avança.
+  const aviso = document.getElementById('avisoNomeDoc');
+  const v = verificacaoNome || {};
+  let erroDoc = null;
+  if (v.erro || v.leitura_falhou || v.eh_documento === undefined) {
+    erroDoc = 'Não foi possível analisar a foto agora. Verifique sua conexão e tente novamente.';
+  } else if (!v.eh_documento) {
+    erroDoc = 'Essa foto não parece ser um documento de identidade (RG, CNH ou CPF). Fotografe o documento aberto, inteiro e bem iluminado.';
+  } else if (!v.numero_encontrado || !v.cpf_extraido) {
+    erroDoc = 'Não consegui ler o número do CPF no documento. Refaça a foto com o documento reto, sem reflexo e com o número bem visível.';
+  } else if (v.cpf_confere !== true) {
+    erroDoc = 'O número do documento não confere com o CPF cadastrado. Refaça a foto ou volte para conferir seus dados.';
+  } else if (v.nome_extraido && v.nome_confere === false) {
+    erroDoc = 'O nome no documento não confere com o nome cadastrado. Refaça a foto ou volte para conferir seus dados.';
+  }
+  if (erroDoc) {
     setBtnLoading(btn, false, 'Continuar');
-    const campos = [nomeFalhou ? 'nome' : null, cpfFalhou ? 'CPF' : null].filter(Boolean).join(' e ');
-    document.getElementById('avisoNomeDoc').style.display = 'block';
-    document.getElementById('avisoNomeDoc').textContent =
-      `Documento não confere com o ${campos} cadastrado(s). Refazer a captura ou voltar para conferir os dados.`;
+    aviso.style.display = 'block';
+    aviso.textContent = erroDoc;
     return;
   }
 
@@ -749,11 +757,7 @@ async function continuarAposDocumento() {
 
   // Mostra confirmação visual e espera a pessoa tocar pra seguir — não avança sozinho
   const textoConfirmacao = document.getElementById('textoConfirmacaoDoc');
-  if (verificacaoNome.nome_extraido && verificacaoNome.nome_confere) {
-    textoConfirmacao.textContent = `✓ Documento validado — nome "${verificacaoNome.nome_extraido}" confere com o cadastro`;
-  } else {
-    textoConfirmacao.textContent = '✓ Documento recebido — pronto para continuar';
-  }
+  textoConfirmacao.textContent = '✓ Documento validado — o número confere com o cadastro';
   document.getElementById('confirmacaoDocOk').style.display = 'block';
   document.getElementById('btnContinuarDoc').style.display = 'none';
 }
