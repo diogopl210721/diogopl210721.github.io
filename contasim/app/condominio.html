@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Condomínio — Conta Sim Digital</title>
+<link rel="stylesheet" href="assets/css/style.css?v=78">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+</head>
+<body>
+<div class="app-shell wide">
+  <div class="topbar">
+    <button class="topbar-back" onclick="window.location.href='painel.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Voltar
+    </button>
+    <div class="logo-header"><img src="assets/img/logo-consigaz-branca.png" alt="Consigaz"></div>
+    <div class="topbar-title" id="tituloCondominio">Condomínio</div>
+  </div>
+
+  <div class="screen">
+
+    <div id="contadorNaoMorador" style="display:none; margin-bottom:16px;">
+      <div class="card" style="background:#FEF2F2; border:1px solid #FCA5A5; padding:14px 16px; display:flex; align-items:center; gap:12px;">
+        <span style="font-size:22px;">⚠️</span>
+        <span style="font-weight:700; color:#B91C1C; font-size:14px;"><span id="qtdNaoMorador">0</span> aviso(s) de "não sou morador" recebido(s) — pode ser sinal de que a planilha do síndico está desatualizada.</span>
+      </div>
+    </div>
+
+    <!-- Ações rápidas -->
+    <div class="grid-2-cols">
+    <div class="card">
+      <h3>Link geral do condomínio</h3>
+      <p style="font-size:14px;">O morador acessa esse link/QR e digita a unidade dele para começar.</p>
+      <div id="linkGeralBox" style="display:none; align-items:center; gap:10px; flex-wrap:wrap;">
+        <input type="text" id="linkGeralInput" readonly class="mono" style="font-size:14px; flex:1; min-width:200px;">
+        <button class="btn btn-outline btn-sm" onclick="copiarParaAreaTransferencia(document.getElementById('linkGeralInput').value)">Copiar</button>
+        <button class="btn btn-outline btn-sm" onclick="gerarQRCode('linkGeralInput', 'qrGeralBox')">📱 Gerar QR Code</button>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btnGerarLinkGeral" onclick="gerarLinkGeral()" style="margin-top:10px;">Gerar link geral</button>
+      <div id="qrGeralBox" style="display:none; margin-top:16px; text-align:center;">
+        <img id="qrGeralImg" style="max-width:220px; border:1px solid var(--border); border-radius:12px; padding:10px; background:#fff;">
+        <p class="muted" style="font-size:12px; margin:8px 0 10px;">Pode imprimir e deixar afixado na portaria do edifício.</p>
+        <button class="btn btn-outline btn-sm" onclick="baixarQRCode('qrGeralImg', 'qrcode-geral')">⬇️ Baixar QR Code</button>
+      </div>
+    </div>
+
+    <!-- Importação de planilha -->
+    <div class="card">
+      <h3>Importar planilha do síndico</h3>
+      <p style="font-size:14px;">Excel, CSV ou PDF — o sistema identifica as colunas automaticamente.</p>
+      <input type="file" id="arquivoPlanilha" accept=".xlsx,.xls,.csv,.pdf" style="display:none;">
+      <button class="btn btn-outline btn-sm" id="btnEscolherArquivo" onclick="document.getElementById('arquivoPlanilha').click()" style="margin-bottom:6px;">📁 Escolher arquivo</button>
+      <p class="muted" id="nomeArquivoEscolhido" style="font-size:13px; margin:0;">Nenhum arquivo escolhido</p>
+      <div id="resultadoImportacao" class="muted" style="margin-top:12px; font-size:14px;"></div>
+    </div>
+    </div>
+
+    <!-- Lista de unidades -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <h2 style="margin:0;">Unidades</h2>
+      <button class="btn btn-outline btn-sm" onclick="exportarExcel(this)">Exportar Excel</button>
+    </div>
+    <!-- Lista de unidades: tabela em telas largas, cartões empilhados no celular -->
+    <div class="card unidades-table-wrap" style="padding:0; overflow-x:auto;">
+      <table class="data-table" id="tabelaUnidades" style="min-width:600px;">
+        <thead>
+          <tr>
+            <th>Unidade</th>
+            <th>Morador</th>
+            <th>Medidor</th>
+            <th>Verificação</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabela"></tbody>
+      </table>
+    </div>
+    <div class="unidades-cards" id="listaUnidadesMobile"></div>
+    <div id="vazioUnidades" class="empty-state" style="display:none;">
+      <p>Nenhuma unidade cadastrada ainda. Importe a planilha do síndico acima.</p>
+    </div>
+
+    <p class="center-text muted" style="font-size:12px; margin-top:24px;">© 2026 Diogo Soares. Todos os direitos reservados.</p>
+  </div>
+</div>
+
+<!-- Modal editar unidade -->
+<div id="modalEditar" style="display:none; position:fixed; inset:0; background:rgba(11,41,71,0.6); align-items:flex-end; justify-content:center; z-index:50;">
+  <div class="card" style="width:100%; max-width:480px; border-radius:24px 24px 0 0; margin:0; max-height:90vh; overflow-y:auto;">
+    <h3>Editar unidade</h3>
+    <div style="display:flex; gap:10px;">
+      <div class="field" style="flex:1;"><label>Torre</label><input type="text" id="editTorre"></div>
+      <div class="field" style="flex:1;"><label>Bloco</label><input type="text" id="editBloco"></div>
+    </div>
+    <div class="field"><label>Apto *</label><input type="text" id="editApto"></div>
+    <div class="divider"></div>
+    <h3 style="font-size:16px;">Morador</h3>
+    <div class="field"><label>Nome</label><input type="text" id="editNome"></div>
+    <div class="field"><label>CPF</label><input type="text" id="editCpf"></div>
+    <div class="field">
+      <label>Data de nascimento (dia/mês/ano)</label>
+      <div style="position:relative;">
+        <input type="text" id="editNascimento" placeholder="DD/MM/AAAA" style="padding-right:48px;">
+        <span aria-hidden="true" style="position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:20px; pointer-events:none;">📅</span>
+        <input type="date" id="editNascimento_calendario" aria-label="Abrir calendário"
+          style="position:absolute; right:0; top:0; width:48px; height:100%; opacity:0; margin:0; border:none; cursor:pointer;">
+      </div>
+    </div>
+    <div class="field"><label>E-mail</label><input type="email" id="editEmail"></div>
+    <div class="field"><label>Telefone</label><input type="tel" id="editTelefone"></div>
+    <div class="divider"></div>
+    <h3 style="font-size:16px;">Fotos capturadas (auditoria)</h3>
+    <div id="fotosAuditoria" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px;"></div>
+    <div id="avisoNaoMoradorBox" style="display:none; margin-bottom:18px;"></div>
+    <div id="verificacaoIdentidade" style="display:none; margin-bottom:18px;"></div>
+    <div id="acaoLiberarNovoEnvio" style="display:none; margin-bottom:18px;"></div>
+    <div id="historicoCapturas" style="display:none; margin-bottom:18px;"></div>
+    <div id="historicoAlteracoes" style="display:none; margin-bottom:18px;"></div>
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button type="button" class="btn btn-outline" onclick="document.getElementById('modalEditar').style.display='none'">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btnSalvarEdicao" onclick="salvarEdicao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/supabase-client.js?v=78"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const condominioId = params.get('id');
+let condominioAtual = null;
+let planilhaLinhas = [];
+let planilhaCabecalhos = [];
+
+const CAMPOS_ALVO = [
+  { chave: 'torre', aliases: ['torre', 'bloco torre', 'edificio', 'predio', 'tower', 'building'] },
+  { chave: 'bloco', aliases: ['bloco', 'quadra', 'block'] },
+  { chave: 'apto', aliases: ['apto', 'apartamento', 'unidade', 'unid', 'ap ', 'unit', 'apt'] },
+  { chave: 'nome', aliases: ['nome', 'titular', 'cliente', 'morador', 'proprietario', 'razao social', 'name', 'owner', 'resident'] },
+  { chave: 'nascimento', aliases: ['nascimento', 'nasc', 'data nasc', 'aniversario', 'dt nasc', 'birth', 'dob'] },
+  { chave: 'cpf', aliases: ['cpf', 'cnpj', 'doc cpf', 'documento', 'tax_id', 'tax id', 'document', 'ssn'] },
+  { chave: 'email', aliases: ['email', 'e-mail', 'e mail', 'mail'] },
+  { chave: 'telefone', aliases: ['telefone', 'celular', 'contato', 'tel ', 'fone', 'whatsapp', 'mobile', 'phone', 'cell'] },
+];
+
+async function iniciar() {
+  await exigirSessao();
+  const { data, error } = await sb.from('csd_condominios').select('*').eq('id', condominioId).single();
+  if (error || !data) {
+    toast('Condomínio não encontrado.', 'error');
+    return;
+  }
+  condominioAtual = data;
+  document.getElementById('tituloCondominio').textContent = data.nome;
+  await carregarUnidades();
+  await carregarContadorNaoMorador();
+}
+
+async function carregarContadorNaoMorador() {
+  const { count } = await sb.from('csd_avisos_nao_morador')
+    .select('*', { count: 'exact', head: true })
+    .eq('condominio_id', condominioId);
+  if (count && count > 0) {
+    document.getElementById('qtdNaoMorador').textContent = count;
+    document.getElementById('contadorNaoMorador').style.display = 'block';
+  }
+}
+
+// ---------- Link geral ----------
+async function gerarLinkGeral() {
+  const { data, error } = await sb.from('csd_links_acesso')
+    .insert({ condominio_id: condominioId })
+    .select().single();
+  if (error) { toast('Erro ao gerar link.', 'error'); return; }
+  const url = `${window.location.origin}${window.location.pathname.replace('condominio.html','')}morador.html?token=${data.token}`;
+  document.getElementById('linkGeralInput').value = url;
+  document.getElementById('linkGeralBox').style.display = 'flex';
+  document.getElementById('qrGeralBox').style.display = 'none'; // link mudou, esconde QR antigo até gerar de novo
+}
+
+// Gera o QR Code (opcional) a partir do link já criado, como uma imagem.
+// idInputLink: input readonly com a URL. idBoxQr: container que mostra a imagem + botão de baixar.
+function gerarQRCode(idInputLink, idBoxQr) {
+  const url = document.getElementById(idInputLink).value;
+  if (!url) { toast('Gere o link primeiro.', 'error'); return; }
+  const box = document.getElementById(idBoxQr);
+  try {
+    if (typeof qrcode !== 'function') throw new Error('biblioteca de QR Code não carregou');
+    const qr = qrcode(0, 'M'); // 0 = detecta o tamanho automaticamente, M = correção média de erros
+    qr.addData(url);
+    qr.make();
+    const img = box.querySelector('img');
+    img.src = qr.createDataURL(8, 4); // 8px por módulo, margem de 4 módulos
+    box.style.display = 'block';
+  } catch (e) {
+    toast('Erro ao gerar QR Code: ' + e.message, 'error');
+  }
+}
+
+function baixarQRCode(idImg, nomeArquivo) {
+  const img = document.getElementById(idImg);
+  const link = document.createElement('a');
+  link.download = `${nomeArquivo}.png`;
+  link.href = img.src;
+  link.click();
+}
+
+function normalizar(s) {
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+function escapeAttr(s) { return (s || '').toString().replace(/"/g, '&quot;'); }
+
+function maisRecente(lista) {
+  if (!lista || lista.length === 0) return null;
+  return [...lista].sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em))[0];
+}
+
+// Quando o CPF não bate na planilha, o morador acaba criando um cadastro novo
+// (fluxo "cadastro do zero"), e a unidade passa a ter mais de um registro de
+// morador. Prioriza sempre quem já concluiu a validação — senão, o mais recente.
+function moradorAtual(lista) {
+  if (!lista || lista.length === 0) return null;
+  const comValidacao = lista.find(m => (m.csd_validacoes || []).some(v => v.status === 'validado'));
+  return comValidacao || maisRecente(lista);
+}
+
+// Acha, para cada campo que precisamos, a coluna da planilha que mais provavelmente
+// corresponde a ele — sem pedir confirmação ao usuário. Cobre a variedade de
+// nomenclaturas que cada síndico usa na própria planilha.
+function detectarMapeamento(cabecalhos) {
+  const mapa = {};
+  for (const campo of CAMPOS_ALVO) {
+    const match = cabecalhos.find(h => campo.aliases.some(a => normalizar(h).includes(a)));
+    mapa[campo.chave] = match || null;
+  }
+  return mapa;
+}
+
+// ---------- Importação (automática, sem etapa de mapeamento manual) ----------
+document.getElementById('arquivoPlanilha').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('nomeArquivoEscolhido').textContent = file.name;
+
+  const btn = document.getElementById('btnEscolherArquivo');
+  setBtnLoading(btn, true);
+
+  try {
+    const ehPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+    if (ehPdf) {
+      // PDF não tem colunas pra mapear — a IA lê o documento inteiro e já devolve
+      // os dados prontos, direto nos nomes de campo internos (torre/bloco/apto/...)
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await sb.functions.invoke('csd-importar-pdf', { body: { pdf_base64: base64 } });
+      if (error || !data?.unidades || data.unidades.length === 0) {
+        toast('Não consegui ler unidades nesse PDF. Confira se é uma lista/tabela de moradores.', 'error');
+        setBtnLoading(btn, false, '📁 Escolher arquivo');
+        return;
+      }
+
+      planilhaLinhas = data.unidades;
+      // Mapeamento "identidade" — o PDF já vem com os nomes de campo certos
+      const mapeamentoIdentidade = { torre: 'torre', bloco: 'bloco', apto: 'apto', nome: 'nome', nascimento: 'data_nascimento', cpf: 'cpf', email: 'email', telefone: 'telefone' };
+      await importarPlanilha(mapeamentoIdentidade);
+      return;
+    }
+
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const primeiraAba = wb.Sheets[wb.SheetNames[0]];
+    const linhas = XLSX.utils.sheet_to_json(primeiraAba, { defval: '' });
+    if (linhas.length === 0) { toast('Planilha vazia.', 'error'); setBtnLoading(btn, false, '📁 Escolher arquivo'); return; }
+
+    planilhaLinhas = linhas;
+    planilhaCabecalhos = Object.keys(linhas[0]);
+
+    // Roda os dois reconhecimentos e mescla: usa a resposta da IA quando ela
+    // identificar o campo, e completa com o reconhecimento por palavra-chave
+    // pra qualquer campo que a IA não tenha achado — assim, mesmo que a IA erre
+    // uma coluna (como "Unidade" ou "Cliente"), o reconhecimento simples cobre.
+    const mapeamentoIA = await detectarMapeamentoComIA(planilhaCabecalhos, linhas.slice(0, 5));
+    const mapeamentoChave = detectarMapeamento(planilhaCabecalhos);
+    const mapeamento = {};
+    for (const campo of CAMPOS_ALVO) {
+      mapeamento[campo.chave] = (mapeamentoIA && mapeamentoIA[campo.chave]) || mapeamentoChave[campo.chave] || null;
+    }
+
+    if (!mapeamento.apto) {
+      toast('Não encontrei uma coluna de apartamento/unidade nessa planilha. Confira o arquivo.', 'error');
+      setBtnLoading(btn, false, '📁 Escolher arquivo');
+      return;
+    }
+
+    await importarPlanilha(mapeamento);
+  } finally {
+    setBtnLoading(btn, false, '📁 Escolher arquivo');
+  }
+});
+
+async function detectarMapeamentoComIA(cabecalhos, amostras) {
+  try {
+    const { data, error } = await sb.functions.invoke('csd-mapear-planilha', {
+      body: { cabecalhos, amostras },
+    });
+    if (error || !data?.mapeamento) return null;
+
+    // Traduz nomes de campo da IA (data_nascimento) pro nome usado internamente (nascimento)
+    const m = data.mapeamento;
+    return {
+      torre: m.torre || null,
+      bloco: m.bloco || null,
+      apto: m.apto || null,
+      nome: m.nome || null,
+      nascimento: m.data_nascimento || null,
+      cpf: m.cpf || null,
+      email: m.email || null,
+      telefone: m.telefone || null,
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function importarPlanilha(mapeamento) {
+  let importadas = 0, erros = 0;
+
+  for (const linha of planilhaLinhas) {
+    const torre = mapeamento.torre ? String(linha[mapeamento.torre] || '').trim() : null;
+    const bloco = mapeamento.bloco ? String(linha[mapeamento.bloco] || '').trim() : null;
+    const apto = String(linha[mapeamento.apto] || '').trim();
+    if (!apto) continue;
+
+    const nome = mapeamento.nome ? String(linha[mapeamento.nome] || '').trim() : '';
+    const nascimento = mapeamento.nascimento ? String(linha[mapeamento.nascimento] || '').trim() : '';
+    const cpf = mapeamento.cpf ? String(linha[mapeamento.cpf] || '').trim() : '';
+    const email = mapeamento.email ? String(linha[mapeamento.email] || '').trim() : '';
+    const telefone = mapeamento.telefone ? String(linha[mapeamento.telefone] || '').trim() : '';
+
+    try {
+      // Encontra ou cria a unidade (trata torre/bloco vazios como NULL de verdade)
+      let busca = sb.from('csd_unidades')
+        .select('id')
+        .eq('condominio_id', condominioId)
+        .eq('apto', apto);
+      busca = torre ? busca.eq('torre', torre) : busca.is('torre', null);
+      busca = bloco ? busca.eq('bloco', bloco) : busca.is('bloco', null);
+
+      let { data: unidade } = await busca.maybeSingle();
+
+      if (!unidade) {
+        const { data: novaUnidade, error: erroUnidade } = await sb.from('csd_unidades')
+          .insert({ condominio_id: condominioId, torre: torre || null, bloco: bloco || null, apto })
+          .select('id').single();
+        if (erroUnidade) throw erroUnidade;
+        unidade = novaUnidade;
+      }
+
+      // Cria o morador vinculado (se a planilha trouxer algum dado)
+      if (nome || cpf || email || telefone || nascimento) {
+        const { data: moradorExistente } = await sb.from('csd_moradores')
+          .select('id').eq('unidade_id', unidade.id).eq('origem', 'planilha').maybeSingle();
+
+        if (!moradorExistente) {
+          await sb.from('csd_moradores').insert({
+            unidade_id: unidade.id, nome, cpf, email, telefone, data_nascimento: nascimento, origem: 'planilha'
+          });
+        }
+      }
+      importadas++;
+    } catch (err) {
+      erros++;
+    }
+  }
+
+  document.getElementById('resultadoImportacao').textContent =
+    `${importadas} unidade(s) importada(s)` + (erros ? `, ${erros} erro(s).` : '.');
+  toast('Importação concluída!', 'success');
+  await carregarUnidades();
+}
+
+// ---------- Lista de unidades ----------
+async function carregarUnidades() {
+  const { data: unidades } = await sb.from('csd_unidades')
+    .select('*, csd_moradores(*, csd_validacoes(*)), csd_medidores(*)')
+    .eq('condominio_id', condominioId)
+    .order('apto');
+
+  const corpo = document.getElementById('corpoTabela');
+  const listaMobile = document.getElementById('listaUnidadesMobile');
+  corpo.innerHTML = '';
+  listaMobile.innerHTML = '';
+
+  if (!unidades || unidades.length === 0) {
+    document.getElementById('vazioUnidades').style.display = 'block';
+    return;
+  }
+  document.getElementById('vazioUnidades').style.display = 'none';
+
+  for (const u of unidades) {
+    const identificacao = [u.torre, u.bloco, u.apto].filter(Boolean).join(' / ');
+    const identificacaoHtml = formatarIdentificacaoUnidade(u);
+    const avisoNaoMorador = u.aviso_nao_morador_em
+      ? `<div style="margin-top:4px;"><span style="display:inline-block; background:#FEE2E2; color:#B91C1C; font-weight:700; font-size:11.5px; padding:2px 8px; border-radius:6px; cursor:help;" title="Recebido em ${new Date(u.aviso_nao_morador_em).toLocaleString('pt-BR')}">⚠️ Morador diz que não mora mais aqui</span></div>`
+      : '';
+    const morador = moradorAtual(u.csd_moradores);
+    const validacao = maisRecente(morador?.csd_validacoes);
+    const medidor = maisRecente(u.csd_medidores);
+
+    const statusMedidor = medidor
+      ? `<span class="badge badge-success">Capturado</span>`
+      : `<span class="badge badge-warning">Não capturado</span>`;
+
+    // "Validado" só quando o morador completou TODO o fluxo (dados + doc + selfie),
+    // não apenas a etapa de confirmação de dados. Se o consultor liberou nova
+    // tentativa, o status precisa refletir isso — senão continua mostrando
+    // "Validado" (do envio antigo) mesmo estando esperando o morador refazer.
+    const statusValidacao = u.permitir_novo_envio
+      ? `<span class="badge badge-warning">⏳ Aguardando refazer</span>`
+      : validacao?.status === 'validado'
+        ? `<span class="badge badge-success">Validado</span>`
+        : morador?.dados_confirmados
+          ? `<span class="badge badge-warning">🕓 Em andamento</span>`
+          : `<span class="badge badge-neutral">Não iniciada</span>`;
+
+
+    const dadosEdicao = JSON.stringify({
+      id: u.id, torre: u.torre, bloco: u.bloco, apto: u.apto,
+      morador_id: morador?.id || null, nome: morador?.nome || "", cpf: morador?.cpf || "", nascimento: morador?.data_nascimento || "", email: morador?.email || "", telefone: morador?.telefone || "",
+      medidor_foto: medidor?.foto_url || null, medidor_capturado_em: medidor?.capturado_em || null,
+      medidor_lat: medidor?.latitude || null, medidor_lng: medidor?.longitude || null,
+      doc_foto: validacao?.foto_documento_url || null, selfie_foto: validacao?.foto_selfie_url || null,
+      validado_em: validacao?.validado_em || null,
+      nome_extraido: validacao?.nome_extraido_documento || null, nome_confere: validacao?.nome_confere,
+      cpf_extraido: validacao?.cpf_extraido_documento || null, cpf_confere: validacao?.cpf_confere,
+      rg_extraido: validacao?.rg_extraido_documento || null,
+      facial_avaliacao: validacao?.facial_avaliacao || null, facial_observacao: validacao?.facial_observacao || null,
+      ja_validado: validacao?.status === 'validado', permitir_novo_envio: u.permitir_novo_envio || false,
+      aviso_nao_morador_em: u.aviso_nao_morador_em || null,
+      medidores_historico: (u.csd_medidores || []).map(m => ({
+        numero_serie: m.numero_serie, leitura_m3: m.leitura_m3, foto_url: m.foto_url, capturado_em: m.capturado_em || m.criado_em,
+      })).sort((a, b) => new Date(b.capturado_em) - new Date(a.capturado_em)),
+      validacoes_historico: (morador?.csd_validacoes || []).map(v => ({
+        foto_documento_url: v.foto_documento_url, foto_selfie_url: v.foto_selfie_url, status: v.status,
+        validado_em: v.validado_em || v.criado_em, nome_confere: v.nome_confere, facial_avaliacao: v.facial_avaliacao,
+      })).sort((a, b) => new Date(b.validado_em) - new Date(a.validado_em)),
+    });
+
+    const acoes = `
+      <button class="icon-btn" title="Capturar medidor" onclick="window.location.href='campo.html?unidade=${u.id}'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </button>
+      <button class="icon-btn" title="Link do morador" onclick="gerarLinkUnidade('${u.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </button>
+      <button class="icon-btn" title="Editar" onclick='abrirEdicao(${dadosEdicao})'>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
+      <button class="icon-btn danger" title="Excluir" onclick="excluirUnidade('${u.id}', '${escapeAttr(identificacao)}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+      </button>
+    `;
+
+    // ---- Linha da tabela (desktop) ----
+    const tr = document.createElement('tr');
+    tr.dataset.unidadeId = u.id;
+    tr.innerHTML = `
+      <td><strong>${identificacaoHtml}</strong>${avisoNaoMorador}</td>
+      <td>${escapeHtml(morador?.nome || '—')}</td>
+      <td>${statusMedidor}</td>
+      <td>${statusValidacao}</td>
+      <td style="white-space:nowrap;">${acoes}</td>
+    `;
+    corpo.appendChild(tr);
+
+    // ---- Cartão (mobile) ----
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginBottom = '10px';
+    card.innerHTML = `
+      <strong style="font-size:16px;">${identificacaoHtml}</strong>${avisoNaoMorador}
+      <div class="muted" style="font-size:14px; margin-top:2px;">${escapeHtml(morador?.nome || 'Sem morador vinculado')}</div>
+      <div class="status-tiles">
+        <button class="status-tile" onclick="window.location.href='campo.html?unidade=${u.id}'">
+          <div class="topo"><span class="emoji">📷</span><span class="rotulo">Medidor</span></div>
+          ${statusMedidor}
+        </button>
+        <button class="status-tile" onclick='abrirEdicao(${dadosEdicao})'>
+          <div class="topo"><span class="emoji">🪪</span><span class="rotulo">Verificação</span></div>
+          ${statusValidacao}
+        </button>
+      </div>
+      <div class="acoes-secundarias">
+        <button class="btn btn-ghost btn-sm" onclick="gerarLinkUnidade('${u.id}')">🔗 Link</button>
+        <button class="btn btn-ghost btn-sm" onclick='abrirEdicao(${dadosEdicao})'>✏️ Editar</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="excluirUnidade('${u.id}', '${escapeAttr(identificacao)}')">🗑️ Excluir</button>
+      </div>
+    `;
+    listaMobile.appendChild(card);
+  }
+}
+
+// ---------- Editar unidade / morador ----------
+let unidadeEmEdicao = null;
+
+function abrirEdicao(dados) {
+  unidadeEmEdicao = dados;
+  document.getElementById('editTorre').value = dados.torre || '';
+  document.getElementById('editBloco').value = dados.bloco || '';
+  document.getElementById('editApto').value = dados.apto || '';
+  document.getElementById('editNome').value = dados.nome || '';
+  document.getElementById('editCpf').value = dados.cpf || '';
+  document.getElementById('editNascimento').value = dados.nascimento || '';
+  document.getElementById('editEmail').value = dados.email || '';
+  document.getElementById('editTelefone').value = dados.telefone || '';
+  renderizarFotosAuditoria(dados);
+  renderizarAvisoNaoMorador(dados);
+  renderizarLiberarNovoEnvio(dados);
+  renderizarHistoricoCapturas(dados);
+  carregarHistoricoAlteracoes(dados.id);
+  document.getElementById('modalEditar').style.display = 'flex';
+}
+
+function renderizarAvisoNaoMorador(dados) {
+  const box = document.getElementById('avisoNaoMoradorBox');
+  if (!dados.aviso_nao_morador_em) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="card" style="background:#FEF2F2; border:1px solid #FCA5A5; padding:14px;">
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="font-size:20px;">⚠️</span>
+        <div style="flex:1;">
+          <p style="margin:0; font-weight:700; color:#B91C1C; font-size:14px;">Morador diz que não mora mais aqui</p>
+          <p class="muted" style="font-size:12px; margin:4px 0 10px;">Recebido em ${new Date(dados.aviso_nao_morador_em).toLocaleString('pt-BR')} — pode ser sinal de que a planilha do síndico está desatualizada pra essa unidade.</p>
+          <button class="btn btn-outline btn-sm" onclick="resolverAvisoNaoMorador('${dados.id}')">Marcar como resolvido</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function resolverAvisoNaoMorador(unidadeId) {
+  const { error } = await sb.rpc('csd_rpc_resolver_aviso_nao_morador_unidade', { p_unidade_id: unidadeId });
+  if (error) { toast('Erro ao marcar como resolvido.', 'error'); return; }
+  toast('Aviso marcado como resolvido.', 'success');
+  document.getElementById('avisoNaoMoradorBox').style.display = 'none';
+  await carregarUnidades();
+}
+
+function renderizarHistoricoCapturas(dados) {
+  const box = document.getElementById('historicoCapturas');
+  const totalMedidores = (dados.medidores_historico || []).length;
+  const totalValidacoes = (dados.validacoes_historico || []).length;
+
+  if (totalMedidores <= 1 && totalValidacoes <= 1) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('listaHistoricoCapturas').style.display = document.getElementById('listaHistoricoCapturas').style.display === 'none' ? 'block' : 'none'">
+      📜 Ver capturas anteriores (${totalMedidores} medição${totalMedidores !== 1 ? 'ões' : ''}, ${totalValidacoes} verificaç${totalValidacoes !== 1 ? 'ões' : 'ão'})
+    </button>
+    <div id="listaHistoricoCapturas" style="display:none; margin-top:12px;">
+      ${totalMedidores > 1 ? `
+        <p style="font-size:12px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; margin-bottom:8px;">Medições anteriores</p>
+        <div class="stack" style="margin-bottom:16px;">
+          ${dados.medidores_historico.map((m, i) => `
+            <div class="card-row">
+              <div style="display:flex; align-items:center; gap:10px;">
+                ${m.foto_url ? `<a href="${m.foto_url}" target="_blank" rel="noopener"><img src="${m.foto_url}" style="width:44px; height:44px; object-fit:cover; border-radius:8px;"></a>` : ''}
+                <div>
+                  <span style="font-size:13px; font-weight:600; color:var(--navy-900);">${m.leitura_m3 ?? '—'} m³</span>
+                  <span class="muted" style="font-size:11px; display:block;">${m.capturado_em ? new Date(m.capturado_em).toLocaleString('pt-BR') : ''}</span>
+                </div>
+              </div>
+              ${i === 0 ? '<span class="badge badge-success">Atual</span>' : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      ${totalValidacoes > 1 ? `
+        <p style="font-size:12px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; margin-bottom:8px;">Verificações anteriores</p>
+        <div class="stack">
+          ${dados.validacoes_historico.map((v, i) => `
+            <div class="card-row">
+              <div style="display:flex; align-items:center; gap:8px;">
+                ${v.foto_documento_url ? `<a href="${v.foto_documento_url}" target="_blank" rel="noopener"><img src="${v.foto_documento_url}" style="width:36px; height:36px; object-fit:cover; border-radius:6px;"></a>` : ''}
+                ${v.foto_selfie_url ? `<a href="${v.foto_selfie_url}" target="_blank" rel="noopener"><img src="${v.foto_selfie_url}" style="width:36px; height:36px; object-fit:cover; border-radius:6px;"></a>` : ''}
+                <span class="muted" style="font-size:11px;">${v.validado_em ? new Date(v.validado_em).toLocaleString('pt-BR') : ''}</span>
+              </div>
+              ${i === 0 ? '<span class="badge badge-success">Atual</span>' : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderizarLiberarNovoEnvio(dados) {
+  const box = document.getElementById('acaoLiberarNovoEnvio');
+  if (!dados.ja_validado) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  box.style.display = 'block';
+  if (dados.permitir_novo_envio) {
+    box.innerHTML = `
+      <div class="card-row" style="border:none; padding:0;">
+        <span class="badge badge-warning">Nova tentativa liberada</span>
+        <span class="muted" style="font-size:12px;">O morador já pode refazer pelo link individual dele.</span>
+      </div>
+    `;
+  } else {
+    box.innerHTML = `
+      <button class="btn btn-outline btn-sm" onclick="liberarNovoEnvio('${dados.id}')">🔄 Permitir que o morador refaça a verificação</button>
+      <p class="muted" style="font-size:11px; margin-top:6px;">O cadastro atual continua salvo no histórico — nada é apagado.</p>
+    `;
+  }
+}
+
+async function liberarNovoEnvio(unidadeId) {
+  const motivo = prompt('Motivo da liberação (opcional, ajuda no histórico):') || null;
+  const { data, error } = await sb.rpc('csd_rpc_liberar_novo_envio', { p_unidade_id: unidadeId, p_observacao: motivo });
+  if (error || data?.erro) { toast('Erro ao liberar nova tentativa.', 'error'); return; }
+  toast('Liberado! O morador já pode refazer pelo link dele.', 'success');
+  unidadeEmEdicao.permitir_novo_envio = true;
+  renderizarLiberarNovoEnvio(unidadeEmEdicao);
+  carregarHistoricoAlteracoes(unidadeId);
+  await carregarUnidades();
+}
+
+async function carregarHistoricoAlteracoes(unidadeId) {
+  const box = document.getElementById('historicoAlteracoes');
+  const { data: registros } = await sb.from('csd_log_alteracoes')
+    .select('*').eq('unidade_id', unidadeId).order('criado_em', { ascending: false });
+
+  if (!registros || registros.length === 0) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const rotulos = { verificacao_liberada: 'liberou nova tentativa de verificação', medidor_recapturado: 'recapturou o medidor' };
+  box.style.display = 'block';
+  box.innerHTML = `
+    <p style="font-size:12px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:8px;">Histórico de alterações</p>
+    ${registros.map(r => `
+      <div style="font-size:12.5px; color:var(--ink-soft); padding:6px 0; border-bottom:1px solid var(--border);">
+        <strong style="color:var(--navy-900);">${escapeHtml(r.autor_nome)}</strong> (${r.autor_tipo}) ${rotulos[r.tipo] || r.tipo}
+        em ${new Date(r.criado_em).toLocaleString('pt-BR')}
+        ${r.observacao ? `<br><span class="muted">"${escapeHtml(r.observacao)}"</span>` : ''}
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderizarFotosAuditoria(dados) {
+  const container = document.getElementById('fotosAuditoria');
+  const itens = [
+    {
+      titulo: 'Medidor',
+      url: dados.medidor_foto,
+      detalhe: dados.medidor_capturado_em
+        ? `Capturado em ${new Date(dados.medidor_capturado_em).toLocaleString('pt-BR')}` +
+          (dados.medidor_lat ? ` · ${dados.medidor_lat.toFixed(5)}, ${dados.medidor_lng.toFixed(5)}` : '')
+        : null,
+    },
+    { titulo: 'Documento', url: dados.doc_foto, detalhe: dados.validado_em ? `Enviado em ${new Date(dados.validado_em).toLocaleString('pt-BR')}` : null },
+    {
+      titulo: 'Selfie',
+      url: dados.selfie_foto,
+      detalhe: dados.validado_em ? `Validado em ${new Date(dados.validado_em).toLocaleString('pt-BR')}` : null,
+    },
+  ];
+
+  container.innerHTML = itens.map(item => `
+    <div style="text-align:center;">
+      <p style="font-size:12px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:6px;">${item.titulo}</p>
+      ${item.url
+        ? (item.url.toLowerCase().endsWith('.pdf')
+            ? `<a href="${item.url}" target="_blank" rel="noopener" style="width:100%; aspect-ratio:1; border-radius:10px; border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-decoration:none; background:var(--bg);">
+                 <span style="font-size:28px;">📄</span>
+                 <span style="font-size:11px; font-weight:600; color:var(--navy-900);">Abrir PDF</span>
+               </a>`
+            : `<a href="${item.url}" target="_blank" rel="noopener">
+                 <img src="${item.url}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; border:1px solid var(--border);">
+               </a>`)
+        : `<div style="width:100%; aspect-ratio:1; border-radius:10px; background:var(--bg); border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--ink-faint); font-size:12px;">Não capturado</div>`
+      }
+      ${item.detalhe ? `<p style="font-size:11px; color:var(--ink-faint); margin-top:6px;">${item.detalhe}</p>` : ''}
+    </div>
+  `).join('');
+
+  // Resultado da verificação automática de identidade (nome + avaliação facial)
+  const boxVerificacao = document.getElementById('verificacaoIdentidade');
+  if (dados.doc_foto && dados.selfie_foto) {
+    const linhaNome = dados.nome_confere === null || dados.nome_confere === undefined
+      ? `<span class="badge badge-neutral">Não verificado</span>`
+      : dados.nome_confere
+        ? `<span class="badge badge-success">Confere</span>`
+        : `<span class="badge badge-danger">Não confere</span>`;
+
+    const linhaCpf = dados.cpf_confere === null || dados.cpf_confere === undefined
+      ? `<span class="badge badge-neutral">Não lido no documento</span>`
+      : dados.cpf_confere
+        ? `<span class="badge badge-success">Confere</span>`
+        : `<span class="badge badge-danger">Não confere</span>`;
+
+    const rotulosFacial = {
+      mesma_pessoa: `<span class="badge badge-success">Parece a mesma pessoa</span>`,
+      pessoas_diferentes: `<span class="badge badge-danger">Parece pessoa diferente</span>`,
+      inconclusivo: `<span class="badge badge-neutral">Inconclusivo</span>`,
+    };
+    const linhaFacial = rotulosFacial[dados.facial_avaliacao] || `<span class="badge badge-neutral">Não verificado</span>`;
+
+    boxVerificacao.style.display = 'block';
+    boxVerificacao.innerHTML = `
+      <div class="card-row"><span style="font-size:13px;">Nome do documento (${escapeAttr(dados.nome_extraido || '—')}) confere com o cadastro</span>${linhaNome}</div>
+      <div class="card-row"><span style="font-size:13px;">CPF do documento (${escapeAttr(dados.cpf_extraido || '—')}) confere com o cadastro</span>${linhaCpf}</div>
+      ${dados.rg_extraido ? `<div class="card-row"><span style="font-size:13px;">RG lido no documento</span><span class="mono" style="font-size:13px; font-weight:700;">${escapeHtml(dados.rg_extraido)}</span></div>` : ''}
+      <div class="card-row"><span style="font-size:13px;">Rosto da selfie x documento</span>${linhaFacial}</div>
+      ${dados.facial_observacao ? `<p class="muted" style="font-size:12px; margin:6px 0 0;">"${escapeHtml(dados.facial_observacao)}"</p>` : ''}
+      <p class="muted" style="font-size:11px; margin:8px 0 0;">⚠️ Avaliação por IA — não é reconhecimento facial biométrico certificado. Use como sinal de apoio, não como prova definitiva.</p>
+    `;
+  } else {
+    boxVerificacao.style.display = 'none';
+    boxVerificacao.innerHTML = '';
+  }
+}
+
+async function salvarEdicao() {
+  const btn = document.getElementById('btnSalvarEdicao');
+  setBtnLoading(btn, true);
+
+  const torre = document.getElementById('editTorre').value.trim() || null;
+  const bloco = document.getElementById('editBloco').value.trim() || null;
+  const apto = document.getElementById('editApto').value.trim();
+  const nome = document.getElementById('editNome').value.trim();
+  const cpf = document.getElementById('editCpf').value.trim();
+  const nascimento = document.getElementById('editNascimento').value.trim();
+  const email = document.getElementById('editEmail').value.trim();
+  const telefone = document.getElementById('editTelefone').value.trim();
+
+  const { error: erroUnidade } = await sb.from('csd_unidades')
+    .update({ torre, bloco, apto })
+    .eq('id', unidadeEmEdicao.id);
+
+  let erroMorador = null;
+  if (unidadeEmEdicao.morador_id) {
+    const { error } = await sb.from('csd_moradores')
+      .update({ nome, cpf, data_nascimento: nascimento, email, telefone })
+      .eq('id', unidadeEmEdicao.morador_id);
+    erroMorador = error;
+  } else if (nome || cpf || email || telefone) {
+    const { error } = await sb.from('csd_moradores')
+      .insert({ unidade_id: unidadeEmEdicao.id, nome, cpf, data_nascimento: nascimento, email, telefone, origem: 'planilha' });
+    erroMorador = error;
+  }
+
+  setBtnLoading(btn, false, 'Salvar');
+
+  if (erroUnidade || erroMorador) {
+    toast('Erro ao salvar alterações.', 'error');
+    return;
+  }
+  toast('Atualizado com sucesso!', 'success');
+  document.getElementById('modalEditar').style.display = 'none';
+  await carregarUnidades();
+}
+
+async function excluirUnidade(unidadeId, identificacao) {
+  if (!confirm(`Excluir a unidade "${identificacao}"? Isso remove também o morador, medidor e validações vinculados. Essa ação não pode ser desfeita.`)) return;
+
+  const { error } = await sb.from('csd_unidades').delete().eq('id', unidadeId);
+  if (error) { toast('Erro ao excluir.', 'error'); return; }
+  toast('Unidade excluída.', 'success');
+  await carregarUnidades();
+}
+
+async function gerarLinkUnidade(unidadeId) {
+  const { data, error } = await sb.from('csd_links_acesso')
+    .insert({ unidade_id: unidadeId })
+    .select().single();
+  if (error) { toast('Erro ao gerar link.', 'error'); return; }
+  const url = `${window.location.origin}${window.location.pathname.replace('condominio.html','')}morador.html?token=${data.token}`;
+  copiarParaAreaTransferencia(url);
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+// Mostra torre/bloco em cinza discreto e o apto em destaque (negrito/azul-marinho),
+// separados por uma barrinha vertical — fica claro qual é qual mesmo quando os
+// três valores vêm colados numa planilha, sem duplicar palavras tipo "Torre Torre A"
+// caso o dado importado já venha com esse texto.
+// Evita duplicar o rótulo se o dado importado já vier com ele escrito
+// (ex: se a planilha já trouxe "Torre A", não queremos mostrar "Torre Torre A")
+function comRotulo(rotulo, valor) {
+  const v = String(valor).trim();
+  return v.toLowerCase().startsWith(rotulo.toLowerCase()) ? v : `${rotulo} ${v}`;
+}
+
+function formatarIdentificacaoUnidade(u) {
+  const partes = [];
+  if (u.torre) partes.push(`<span style="display:inline-block; background:#EEF2F7; color:var(--ink-soft); font-weight:700; font-size:12px; padding:2px 8px; border-radius:6px;">${escapeHtml(comRotulo('Torre', u.torre))}</span>`);
+  if (u.bloco) partes.push(`<span style="display:inline-block; background:#EEF2F7; color:var(--ink-soft); font-weight:700; font-size:12px; padding:2px 8px; border-radius:6px;">${escapeHtml(comRotulo('Bloco', u.bloco))}</span>`);
+  partes.push(`<span style="display:inline-block; background:var(--flame-light); color:var(--navy-900); font-weight:800; font-size:12px; padding:2px 8px; border-radius:6px;">${escapeHtml(comRotulo('Apto', u.apto))}</span>`);
+  return partes.join(' ');
+}
+
+// ---------- Exportação (Excel profissional com logo e formatação) ----------
+async function exportarExcel(btn) {
+  // Formata a leitura do medidor exatamente como o padrão da empresa: 5 dígitos
+  // inteiros com zeros à esquerda + vírgula + 3 casas decimais (ex: 00037,801).
+  // Escrito como texto puro (não número), pra não depender de nenhuma
+  // formatação/locale do Excel — fica idêntico em qualquer computador.
+  function formatarLeituraM3(valor) {
+    if (valor === null || valor === undefined || valor === '') return '';
+    const partes = Number(valor).toFixed(3).split('.');
+    return `${partes[0].padStart(5, '0')},${partes[1]}`;
+  }
+
+  if (btn) setBtnLoading(btn, true);
+
+  try {
+    if (typeof ExcelJS === 'undefined') {
+      throw new Error('Biblioteca de Excel não carregou (verifique sua conexão e recarregue a página)');
+    }
+
+    const { data: unidades, error: erroUnidades } = await sb.from('csd_unidades')
+      .select('*, csd_moradores(*, csd_validacoes(*)), csd_medidores(*)')
+      .eq('condominio_id', condominioId)
+      .order('apto');
+    if (erroUnidades) throw erroUnidades;
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Consigaz — Conta Sim Digital';
+  workbook.created = new Date();
+
+  const NAVY = 'FF0B2947';
+  const FLAME = 'FFFF5630';
+  const SUCCESS = 'FFE7F7EC';
+  const SUCCESS_TXT = 'FF16A34A';
+  const WARNING = 'FFFEF3DA';
+  const WARNING_TXT = 'FF92660A';
+  const NEUTRAL = 'FFF0F1F4';
+  const NEUTRAL_TXT = 'FF4B5875';
+  const BORDER = { style: 'thin', color: { argb: 'FFDCE1EA' } };
+
+  const sheet = workbook.addWorksheet('Conta Sim Digital', {
+    views: [{ state: 'frozen', ySplit: 7 }],
+  });
+
+  const colunas = ['Torre', 'Bloco', 'Apto', 'Morador', 'CPF', 'Data de Nascimento', 'E-mail', 'Telefone', 'Nº Série Medidor', 'Leitura (m³)', 'Status Medidor', 'Status Validação', 'Aviso'];
+  sheet.columns = colunas.map(c => ({ width: Math.max(14, c.length + 4) }));
+  sheet.columns[3].width = 26; // Morador
+  sheet.columns[6].width = 26; // E-mail
+  sheet.columns[12].width = 30; // Aviso
+
+  // Faixa de topo com a cor da marca
+  sheet.mergeCells('A1:M1');
+  sheet.getRow(1).height = 8;
+  sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: FLAME } };
+
+  // Logo — sozinha no topo, linha 2
+  try {
+    const resp = await fetch('assets/img/logo-consigaz.png');
+    const buf = await resp.arrayBuffer();
+    const imageId = workbook.addImage({ buffer: buf, extension: 'png' });
+    sheet.addImage(imageId, { tl: { col: 0.15, row: 1.15 }, ext: { width: 118, height: 28 } });
+  } catch (e) { /* segue sem logo se falhar o fetch */ }
+  sheet.getRow(2).height = 24;
+
+  // Linha 3: "Conta Sim Digital" (marca) — abaixo da logo, mesma margem esquerda
+  sheet.mergeCells('A3:M3');
+  const marcaCell = sheet.getCell('A3');
+  marcaCell.value = 'Conta Sim Digital';
+  marcaCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF8A93A6' } };
+  marcaCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  sheet.getRow(3).height = 16;
+
+  // Linha 4: Nome do edifício (destaque principal) — abaixo da marca
+  sheet.mergeCells('A4:M4');
+  const nomeCell = sheet.getCell('A4');
+  nomeCell.value = condominioAtual?.nome || '';
+  nomeCell.font = { name: 'Calibri', size: 17, bold: true, color: { argb: NAVY } };
+  nomeCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  sheet.getRow(4).height = 24;
+
+  // Linha 5: Síndico(a) e telefone
+  sheet.mergeCells('A5:M5');
+  const sindicoCell = sheet.getCell('A5');
+  const sindicoTexto = condominioAtual?.sindico_nome
+    ? `Síndico(a): ${condominioAtual.sindico_nome}${condominioAtual?.sindico_telefone ? '  ·  ' + condominioAtual.sindico_telefone : ''}`
+    : '';
+  sindicoCell.value = sindicoTexto;
+  sindicoCell.font = { name: 'Calibri', size: 10.5, color: { argb: NAVY } };
+  sindicoCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  sheet.getRow(5).height = 16;
+
+  // Linha 6: Endereço do edifício
+  sheet.mergeCells('A6:M6');
+  const enderecoCell = sheet.getCell('A6');
+  enderecoCell.value = [condominioAtual?.endereco, condominioAtual?.cidade].filter(Boolean).join(' — ');
+  enderecoCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF8A93A6' } };
+  enderecoCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  sheet.getRow(6).height = 16;
+
+  // Cabeçalho da tabela (uma linha abaixo de tudo isso)
+  const headerRow = sheet.getRow(7);
+  headerRow.values = colunas;
+  headerRow.height = 24;
+  headerRow.eachCell(cell => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } };
+    cell.font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
+  });
+
+  // Linhas de dados
+  let totalCapturados = 0, totalValidados = 0, totalCompletas = 0;
+  for (const u of (unidades || [])) {
+    const morador = moradorAtual(u.csd_moradores);
+    const validacao = maisRecente(morador?.csd_validacoes);
+    const medidor = maisRecente(u.csd_medidores);
+    const medidorOk = !!medidor;
+    const validadoOk = validacao?.status === 'validado';
+    if (medidorOk) totalCapturados++;
+    if (validadoOk) totalValidados++;
+    if (medidorOk && validadoOk) totalCompletas++;
+
+    const row = sheet.addRow([
+      u.torre || '', u.bloco || '', u.apto,
+      morador?.nome || '', morador?.cpf || '', morador?.data_nascimento || '', morador?.email || '', morador?.telefone || '',
+      medidor?.numero_serie || '', formatarLeituraM3(medidor?.leitura_m3),
+      medidorOk ? 'Capturado' : 'Pendente',
+      validadoOk ? 'Validado' : (morador?.dados_confirmados ? 'Em andamento' : 'Aguardando'),
+      u.aviso_nao_morador_em ? `⚠️ Não é mais morador (${new Date(u.aviso_nao_morador_em).toLocaleDateString('pt-BR')})` : '',
+    ]);
+    row.height = 20;
+    row.eachCell((cell, colNumber) => {
+      cell.font = { name: 'Calibri', size: 10.5, color: { argb: 'FF14213D' } };
+      cell.border = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
+      cell.alignment = { vertical: 'middle' };
+      if (colNumber === 6) {
+        cell.alignment.horizontal = 'center';
+      }
+      if (colNumber === 10) {
+        cell.font.name = 'Courier New';
+        cell.alignment.horizontal = 'center';
+      }
+      if (colNumber === 11) {
+        cell.alignment.horizontal = 'center';
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: medidorOk ? SUCCESS : WARNING } };
+        cell.font.color = { argb: medidorOk ? SUCCESS_TXT : WARNING_TXT };
+        cell.font.bold = true;
+      }
+      if (colNumber === 12) {
+        cell.alignment.horizontal = 'center';
+        const cor = validadoOk ? SUCCESS : (morador?.dados_confirmados ? WARNING : NEUTRAL);
+        const corTxt = validadoOk ? SUCCESS_TXT : (morador?.dados_confirmados ? WARNING_TXT : NEUTRAL_TXT);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: cor } };
+        cell.font.color = { argb: corTxt };
+        cell.font.bold = true;
+      }
+      if (colNumber === 13 && u.aviso_nao_morador_em) {
+        cell.alignment.horizontal = 'center';
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+        cell.font.color = { argb: 'FFB91C1C' };
+        cell.font.bold = true;
+      }
+    });
+  }
+
+  sheet.autoFilter = { from: 'A7', to: `M${7 + (unidades || []).length}` };
+
+  // ---------- Aba Resumo (layout tipo dashboard) ----------
+  const totalUnidades = (unidades || []).length;
+  const pctConcluido = totalUnidades > 0 ? Math.round((totalCompletas / totalUnidades) * 100) : 0;
+  const corPct = pctConcluido === 100 ? SUCCESS : pctConcluido === 0 ? NEUTRAL_TXT : WARNING_TXT;
+  const fundoPct = pctConcluido === 100 ? SUCCESS : pctConcluido === 0 ? 'FFF0F1F4' : WARNING;
+
+  const resumo = workbook.addWorksheet('Resumo');
+  resumo.columns = [{ width: 4 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 4 }];
+
+  // Faixa de topo com a cor da marca
+  resumo.mergeCells('A1:F1');
+  resumo.getRow(1).height = 8;
+  resumo.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: FLAME } };
+
+  // Logo + título
+  try {
+    const resp = await fetch('assets/img/logo-consigaz.png');
+    const buf = await resp.arrayBuffer();
+    const imageId = workbook.addImage({ buffer: buf, extension: 'png' });
+    resumo.addImage(imageId, { tl: { col: 0.15, row: 1.15 }, ext: { width: 148, height: 35 } });
+  } catch (e) { /* segue sem logo se falhar o fetch */ }
+
+  resumo.mergeCells('B2:F3');
+  const tituloResumo = resumo.getCell('B2');
+  tituloResumo.value = `Resumo — ${condominioAtual?.nome || ''}`;
+  tituloResumo.font = { name: 'Calibri', size: 16, bold: true, color: { argb: NAVY } };
+  tituloResumo.alignment = { vertical: 'bottom', horizontal: 'right' };
+
+  resumo.mergeCells('B4:F4');
+  const subResumo = resumo.getCell('B4');
+  subResumo.value = `Gerado em ${new Date().toLocaleString('pt-BR')}`;
+  subResumo.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF8A93A6' } };
+  subResumo.alignment = { horizontal: 'right' };
+
+  resumo.getRow(2).height = 20;
+  resumo.getRow(3).height = 20;
+
+  // Cartões de indicadores (linha 6-10)
+  const cartoes = [
+    { titulo: 'TOTAL DE UNIDADES', valor: totalUnidades, cor: NAVY, fundo: 'FFEFF3F8' },
+    { titulo: 'MEDIDORES CAPTURADOS', valor: totalCapturados, cor: SUCCESS_TXT, fundo: SUCCESS },
+    { titulo: 'MORADORES VALIDADOS', valor: totalValidados, cor: SUCCESS_TXT, fundo: SUCCESS },
+    { titulo: '% CONCLUÍDO', valor: `${pctConcluido}%`, cor: corPct, fundo: fundoPct },
+  ];
+  const colunasCartoes = ['B', 'C', 'D', 'E'];
+  cartoes.forEach((c, i) => {
+    const col = colunasCartoes[i];
+    resumo.mergeCells(`${col}6:${col}7`);
+    resumo.mergeCells(`${col}8:${col}9`);
+    const celTitulo = resumo.getCell(`${col}6`);
+    celTitulo.value = c.titulo;
+    celTitulo.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF8A93A6' } };
+    celTitulo.alignment = { vertical: 'bottom', horizontal: 'center', wrapText: true };
+    const celValor = resumo.getCell(`${col}8`);
+    celValor.value = c.valor;
+    celValor.font = { name: 'Calibri', size: 22, bold: true, color: { argb: c.cor } };
+    celValor.alignment = { vertical: 'top', horizontal: 'center' };
+    for (let linha = 6; linha <= 9; linha++) {
+      resumo.getCell(`${col}${linha}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: c.fundo } };
+    }
+  });
+  resumo.getRow(6).height = 16;
+  resumo.getRow(7).height = 8;
+  resumo.getRow(8).height = 30;
+  resumo.getRow(9).height = 10;
+
+  // Rodapé
+  resumo.mergeCells('B11:F11');
+  resumo.getCell('B11').value = 'Consigaz Distribuidora de Gás LTDA — Sistema Conta Sim Digital';
+  resumo.getCell('B11').font = { size: 9, italic: true, color: { argb: 'FF8A93A6' } };
+
+  const arrayBuffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `conta-sim-${(condominioAtual?.nome || 'condominio').replace(/[^a-z0-9]/gi, '-')}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Erro ao exportar Excel:', err);
+    toast('Erro ao exportar: ' + (err.message || 'erro desconhecido') + '. Tente novamente ou avise o suporte.', 'error');
+  } finally {
+    if (btn) setBtnLoading(btn, false, 'Exportar Excel');
+  }
+}
+
+ligarCalendario('editNascimento');
+ligarMascaraData('editNascimento');
+iniciar();
+
+// Corrige o bug de "voltar" mostrando dados desatualizados: sempre que a página
+// reaparece (seja pelo botão voltar do navegador, seja trocando de aba), recarrega.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) carregarUnidades();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && condominioAtual) carregarUnidades();
+});
+</script>
+</body>
+</html>

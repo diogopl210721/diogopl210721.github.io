@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Meus Condomínios — Conta Sim Digital</title>
+<link rel="stylesheet" href="assets/css/style.css?v=78">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="app-shell">
+  <div class="topbar">
+    <div class="logo-header"><img src="assets/img/logo-consigaz-branca.png" alt="Consigaz"></div>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost btn-sm" style="color:#fff;" onclick="sair()">Sair</button>
+  </div>
+
+  <div class="screen">
+    <div id="recuperacaoPerfil" style="display:none;">
+      <div class="card">
+        <h2 style="margin-bottom:6px;">Vamos terminar seu cadastro</h2>
+        <p style="font-size:14px;">Sua conta de acesso já existe, mas o cadastro do perfil não chegou a ser concluído da última vez. Só precisa completar mais uma vez:</p>
+
+        <div class="tabs" style="margin: 16px 0;">
+          <div class="tab active" id="tabRecConsultor">Sou consultor</div>
+        </div>
+
+        <form id="formRecuperacaoPerfil">
+          <div class="field">
+            <label for="recNome">Nome completo</label>
+            <input type="text" id="recNome" required>
+          </div>
+          <div class="field" id="recCampoTelefone">
+            <label for="recTelefone">Telefone</label>
+            <input type="tel" id="recTelefone">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" id="btnRecuperarPerfil">Concluir cadastro</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="conteudoPainel">
+    <div id="perfilInfo" class="card" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <h3 id="perfilNome" style="margin-bottom:2px;"></h3>
+          <p class="muted" style="margin:0; font-size:14px;">Responsável pelos condomínios abaixo</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge badge-neutral">Consultor</span>
+          <button class="icon-btn" title="Editar meu perfil" onclick="abrirEdicaoPerfil()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de edição do próprio perfil -->
+    <div id="modalEditarPerfil" style="display:none; position:fixed; inset:0; background:rgba(11,41,71,0.6); align-items:flex-end; justify-content:center; z-index:50;">
+      <div class="card" style="width:100%; max-width:480px; border-radius:20px 20px 0 0; max-height:90vh; overflow-y:auto;">
+        <h3>Meu perfil</h3>
+        <div class="field">
+          <label for="editPerfilNome">Nome completo</label>
+          <input type="text" id="editPerfilNome">
+        </div>
+        <div class="field">
+          <label for="editPerfilTelefone">Telefone</label>
+          <input type="tel" id="editPerfilTelefone">
+        </div>
+        <div class="field">
+          <label>E-mail</label>
+          <input type="email" id="editPerfilEmail" disabled style="background:var(--bg); color:var(--ink-faint);">
+          <div class="hint">O e-mail de login não pode ser alterado por aqui.</div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:4px;">
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('modalEditarPerfil').style.display='none'">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnSalvarPerfil" onclick="salvarEdicaoPerfil()">Salvar</button>
+        </div>
+
+        <div class="divider"></div>
+        <h3 style="font-size:16px;">Alterar senha</h3>
+        <p class="muted" style="font-size:13px; margin-top:-8px;">Deixe em branco se não quiser trocar a senha agora.</p>
+        <div class="field">
+          <label for="novaSenhaPerfil">Nova senha</label>
+          <input type="password" id="novaSenhaPerfil" autocomplete="new-password" minlength="6">
+        </div>
+        <div class="field">
+          <label for="confirmarNovaSenhaPerfil">Confirmar nova senha</label>
+          <input type="password" id="confirmarNovaSenhaPerfil" autocomplete="new-password" minlength="6">
+        </div>
+        <button type="button" class="btn btn-secondary btn-block" id="btnTrocarSenha" onclick="trocarSenhaPerfil()">Salvar nova senha</button>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <h2 style="margin:0;">Condomínios</h2>
+      <button class="btn btn-primary btn-sm" id="btnNovoCondominio" onclick="document.getElementById('modalNovo').style.display='flex'">+ Novo</button>
+    </div>
+
+    <div id="listaCondominios" class="stack"></div>
+    <div id="vazio" class="empty-state" style="display:none;">
+      <p>Nenhum condomínio cadastrado ainda.</p>
+    </div>
+
+    <p class="center-text muted" style="font-size:12px; margin-top:24px;">© 2026 Diogo Soares. Todos os direitos reservados.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal criar condomínio -->
+<div id="modalNovo" style="display:none; position:fixed; inset:0; background:rgba(11,41,71,0.6); align-items:flex-end; justify-content:center; z-index:50;">
+  <div class="card" style="width:100%; max-width:480px; border-radius:24px 24px 0 0; margin:0;">
+    <h3>Novo condomínio</h3>
+    <form id="formNovoCondominio">
+      <div class="field" style="position:relative;">
+        <label for="novoNome">Nome do condomínio</label>
+        <input type="text" id="novoNome" required autocomplete="off">
+        <div id="sugestoesNome" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--border); border-radius:10px; margin-top:4px; max-height:220px; overflow-y:auto; z-index:20; box-shadow:0 8px 24px rgba(11,41,71,0.15);"></div>
+      </div>
+      <div class="field">
+        <label for="novoEndereco">Endereço</label>
+        <input type="text" id="novoEndereco">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:1;">
+          <label for="novoCidade">Cidade</label>
+          <input type="text" id="novoCidade">
+        </div>
+        <div class="field" style="flex:1; position:relative;">
+          <label for="novoCodigoEdificio">Código do edifício</label>
+          <input type="text" id="novoCodigoEdificio" autocomplete="off">
+          <div class="hint">Opcional — ou busque pelo nome acima</div>
+          <div id="sugestoesCodigo" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--border); border-radius:10px; margin-top:4px; max-height:220px; overflow-y:auto; z-index:20; box-shadow:0 8px 24px rgba(11,41,71,0.15);"></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:1;">
+          <label for="novoSindicoNome">Síndico(a) atual</label>
+          <input type="text" id="novoSindicoNome">
+          <div class="hint">Opcional</div>
+        </div>
+        <div class="field" style="flex:1;">
+          <label for="novoSindicoTelefone">Telefone do síndico</label>
+          <input type="text" id="novoSindicoTelefone">
+          <div class="hint">Opcional</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('modalNovo').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btnCriarCondominio">Criar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal editar condomínio -->
+<div id="modalEditarCondominio" style="display:none; position:fixed; inset:0; background:rgba(11,41,71,0.6); align-items:flex-end; justify-content:center; z-index:50;">
+  <div class="card" style="width:100%; max-width:480px; border-radius:24px 24px 0 0; margin:0;">
+    <h3>Editar condomínio</h3>
+    <div class="field">
+      <label for="editNomeCondominio">Nome do condomínio</label>
+      <input type="text" id="editNomeCondominio" required>
+    </div>
+    <div class="field">
+      <label for="editEnderecoCondominio">Endereço</label>
+      <input type="text" id="editEnderecoCondominio">
+    </div>
+    <div style="display:flex; gap:10px;">
+      <div class="field" style="flex:1;">
+        <label for="editCidadeCondominio">Cidade</label>
+        <input type="text" id="editCidadeCondominio">
+      </div>
+      <div class="field" style="flex:1;">
+        <label for="editCodigoEdificioCondominio">Código do edifício</label>
+        <input type="text" id="editCodigoEdificioCondominio">
+        <div class="hint">Opcional</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <div class="field" style="flex:1;">
+        <label for="editSindicoNomeCondominio">Síndico(a) atual</label>
+        <input type="text" id="editSindicoNomeCondominio">
+      </div>
+      <div class="field" style="flex:1;">
+        <label for="editSindicoTelefoneCondominio">Telefone do síndico</label>
+        <input type="text" id="editSindicoTelefoneCondominio">
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button type="button" class="btn btn-outline" onclick="document.getElementById('modalEditarCondominio').style.display='none'">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btnSalvarEdicaoCondominio" onclick="salvarEdicaoCondominio()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/supabase-client.js?v=78"></script>
+<script>
+let perfilAtual = null;
+
+async function carregarPainel() {
+  await exigirSessao();
+  perfilAtual = await obterPerfil();
+
+  if (!perfilAtual) {
+    // Usuário autenticado no Auth mas o cadastro do perfil não completou da vez
+    // anterior (ex: sessão demorou a iniciar) — em vez de deslogar sem explicar,
+    // deixa a pessoa completar o cadastro dela mesma, sem precisar criar conta de novo
+    mostrarRecuperacaoPerfil();
+    return;
+  }
+
+  document.getElementById('perfilInfo').style.display = 'block';
+  document.getElementById('perfilNome').textContent = perfilAtual.nome;
+
+  await carregarCondominios();
+}
+
+// ---------- Editar meu perfil ----------
+async function abrirEdicaoPerfil() {
+  document.getElementById('editPerfilNome').value = perfilAtual.nome || '';
+  document.getElementById('editPerfilTelefone').value = perfilAtual.telefone || '';
+  const { data: { user } } = await sb.auth.getUser();
+  document.getElementById('editPerfilEmail').value = user?.email || '';
+  document.getElementById('novaSenhaPerfil').value = '';
+  document.getElementById('confirmarNovaSenhaPerfil').value = '';
+  document.getElementById('modalEditarPerfil').style.display = 'flex';
+}
+
+async function salvarEdicaoPerfil() {
+  const nome = document.getElementById('editPerfilNome').value.trim();
+  const telefone = document.getElementById('editPerfilTelefone').value.trim();
+  if (!nome) { toast('Informe seu nome.', 'error'); return; }
+
+  const btn = document.getElementById('btnSalvarPerfil');
+  setBtnLoading(btn, true);
+  const { error } = await sb.from('csd_consultores').update({ nome, telefone }).eq('id', perfilAtual.id);
+  setBtnLoading(btn, false, 'Salvar');
+
+  if (error) { toast('Erro ao salvar perfil.', 'error'); return; }
+  perfilAtual.nome = nome;
+  perfilAtual.telefone = telefone;
+  document.getElementById('perfilNome').textContent = nome;
+  toast('Perfil atualizado!', 'success');
+  document.getElementById('modalEditarPerfil').style.display = 'none';
+}
+
+async function trocarSenhaPerfil() {
+  const senha = document.getElementById('novaSenhaPerfil').value;
+  const confirmar = document.getElementById('confirmarNovaSenhaPerfil').value;
+  if (!senha) { toast('Digite a nova senha.', 'error'); return; }
+  if (senha.length < 6) { toast('A senha precisa ter pelo menos 6 caracteres.', 'error'); return; }
+  if (senha !== confirmar) { toast('As senhas não são iguais.', 'error'); return; }
+
+  const btn = document.getElementById('btnTrocarSenha');
+  setBtnLoading(btn, true);
+  const { error } = await sb.auth.updateUser({ password: senha });
+  setBtnLoading(btn, false, 'Salvar nova senha');
+
+  if (error) { toast('Erro ao trocar senha: ' + error.message, 'error'); return; }
+  document.getElementById('novaSenhaPerfil').value = '';
+  document.getElementById('confirmarNovaSenhaPerfil').value = '';
+  toast('Senha alterada com sucesso!', 'success');
+}
+
+async function carregarCondominios() {
+  const { data, error } = await sb.from('csd_condominios').select('*').order('nome');
+  const lista = document.getElementById('listaCondominios');
+  lista.innerHTML = '';
+
+  if (error || !data || data.length === 0) {
+    document.getElementById('vazio').style.display = 'block';
+    return;
+  }
+  document.getElementById('vazio').style.display = 'none';
+
+  for (const c of data) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <div class="area-clicavel" style="cursor:pointer; flex:1; min-width:0;">
+          <h3 style="margin:0;">${escapeHtml(c.nome)}</h3>
+          ${c.codigo_edificio ? `<p class="muted" style="margin:2px 0 0; font-size:13px;">Código: ${escapeHtml(c.codigo_edificio)}</p>` : ''}
+        </div>
+        <div id="pct-${c.id}" style="flex-shrink:0;"></div>
+        <div style="display:flex; gap:4px; flex-shrink:0;">
+          <button class="icon-btn" data-acao="editar" title="Editar" aria-label="Editar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
+          <button class="icon-btn danger" data-acao="excluir" title="Excluir" aria-label="Excluir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+    card.querySelector('.area-clicavel').onclick = () => window.location.href = 'condominio.html?id=' + c.id;
+    card.querySelector('[data-acao="editar"]').onclick = () => abrirEdicaoCondominio(c);
+    card.querySelector('[data-acao="excluir"]').onclick = () => excluirCondominio(c.id, c.nome);
+    lista.appendChild(card);
+    carregarPercentualConcluido(c.id);
+  }
+}
+
+function circuloProgresso(pct) {
+  const r = 17, circ = 2 * Math.PI * r;
+  const offset = circ - (circ * pct / 100);
+  const cor = pct === 100 ? '#16A34A' : pct === 0 ? '#DCE1EA' : '#FF5630';
+  return `
+    <div style="position:relative; width:46px; height:46px;">
+      <svg width="46" height="46" viewBox="0 0 46 46">
+        <circle cx="23" cy="23" r="${r}" fill="none" stroke="#E2E6EC" stroke-width="4"></circle>
+        <circle cx="23" cy="23" r="${r}" fill="none" stroke="${cor}" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="${circ}" stroke-dashoffset="${offset}" transform="rotate(-90 23 23)"
+          style="transition: stroke-dashoffset 0.4s ease;"></circle>
+      </svg>
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--navy-900);">${pct}%</div>
+    </div>
+  `;
+}
+
+async function carregarPercentualConcluido(condominioId) {
+  const container = document.getElementById('pct-' + condominioId);
+  if (!container) return;
+
+  const { data: unidades } = await sb.from('csd_unidades')
+    .select('id, csd_medidores(id), csd_moradores(id, csd_validacoes(status))')
+    .eq('condominio_id', condominioId);
+
+  const total = (unidades || []).length;
+  if (total === 0) {
+    container.innerHTML = circuloProgresso(0);
+    return;
+  }
+
+  const completas = unidades.filter(u => {
+    const temMedidor = (u.csd_medidores || []).length > 0;
+    const temValidacao = (u.csd_moradores || []).some(m => (m.csd_validacoes || []).some(v => v.status === 'validado'));
+    return temMedidor && temValidacao;
+  }).length;
+
+  const pct = Math.round((completas / total) * 100);
+  container.innerHTML = circuloProgresso(pct);
+}
+
+let condominioEmEdicao = null;
+
+function abrirEdicaoCondominio(c) {
+  condominioEmEdicao = c;
+  document.getElementById('editNomeCondominio').value = c.nome || '';
+  document.getElementById('editEnderecoCondominio').value = c.endereco || '';
+  document.getElementById('editCidadeCondominio').value = c.cidade || '';
+  document.getElementById('editCodigoEdificioCondominio').value = c.codigo_edificio || '';
+  document.getElementById('editSindicoNomeCondominio').value = c.sindico_nome || '';
+  document.getElementById('editSindicoTelefoneCondominio').value = c.sindico_telefone || '';
+  document.getElementById('modalEditarCondominio').style.display = 'flex';
+}
+
+async function salvarEdicaoCondominio() {
+  const btn = document.getElementById('btnSalvarEdicaoCondominio');
+  setBtnLoading(btn, true);
+
+  const nome = document.getElementById('editNomeCondominio').value.trim();
+  const endereco = document.getElementById('editEnderecoCondominio').value.trim();
+  const cidade = document.getElementById('editCidadeCondominio').value.trim();
+  const codigo_edificio = document.getElementById('editCodigoEdificioCondominio').value.trim();
+  const sindico_nome = document.getElementById('editSindicoNomeCondominio').value.trim();
+  const sindico_telefone = document.getElementById('editSindicoTelefoneCondominio').value.trim();
+
+  const { error } = await sb.from('csd_condominios')
+    .update({ nome, endereco, cidade, codigo_edificio, sindico_nome, sindico_telefone })
+    .eq('id', condominioEmEdicao.id);
+
+  setBtnLoading(btn, false, 'Salvar');
+
+  if (error) { toast('Erro ao salvar alterações.', 'error'); return; }
+  toast('Condomínio atualizado!', 'success');
+  document.getElementById('modalEditarCondominio').style.display = 'none';
+  await carregarCondominios();
+}
+
+async function excluirCondominio(id, nome) {
+  if (!confirm(`Excluir o condomínio "${nome}"? Isso remove TODAS as unidades, moradores, medidores e validações vinculados. Essa ação não pode ser desfeita.`)) return;
+  if (!confirm(`Confirme mais uma vez: excluir "${nome}" e tudo dentro dele?`)) return;
+
+  const { error } = await sb.from('csd_condominios').delete().eq('id', id);
+  if (error) { toast('Erro ao excluir.', 'error'); return; }
+  toast('Condomínio excluído.', 'success');
+  await carregarCondominios();
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+document.getElementById('formNovoCondominio').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnCriarCondominio');
+  setBtnLoading(btn, true);
+
+  const nome = document.getElementById('novoNome').value.trim();
+  const endereco = document.getElementById('novoEndereco').value.trim();
+  const cidade = document.getElementById('novoCidade').value.trim();
+  const codigo_edificio = document.getElementById('novoCodigoEdificio').value.trim();
+  const sindico_nome = document.getElementById('novoSindicoNome').value.trim();
+  const sindico_telefone = document.getElementById('novoSindicoTelefone').value.trim();
+
+  const { data, error } = await sb.from('csd_condominios')
+    .insert({ nome, endereco, cidade, codigo_edificio, sindico_nome, sindico_telefone, consultor_id: perfilAtual.id })
+    .select().single();
+
+  setBtnLoading(btn, false, 'Criar');
+
+  if (error) {
+    toast('Erro ao criar condomínio.', 'error');
+    return;
+  }
+  window.location.href = 'condominio.html?id=' + data.id;
+});
+
+function mostrarRecuperacaoPerfil() {
+  document.getElementById('recuperacaoPerfil').style.display = 'block';
+  document.getElementById('conteudoPainel').style.display = 'none';
+}
+
+// ---------- Busca no catálogo de edifícios (autocompletar) ----------
+function preencherComEdificio(ed) {
+  document.getElementById('novoNome').value = ed.nome;
+  document.getElementById('novoEndereco').value = [ed.endereco, ed.bairro].filter(Boolean).join(', ');
+  document.getElementById('novoCidade').value = ed.cidade || 'Curitiba';
+  document.getElementById('novoCodigoEdificio').value = ed.codigo_edificio || '';
+  document.getElementById('novoSindicoNome').value = ed.sindico_nome || '';
+  document.getElementById('novoSindicoTelefone').value = ed.sindico_telefone || '';
+  document.getElementById('sugestoesNome').style.display = 'none';
+  document.getElementById('sugestoesCodigo').style.display = 'none';
+  if (ed.sindico_nome) {
+    toast(`Preenchido automaticamente. Síndico: ${ed.sindico_nome}${ed.sindico_telefone ? ' — ' + ed.sindico_telefone : ''}`, 'success');
+  }
+}
+
+function renderizarSugestoes(container, lista) {
+  if (!lista || lista.length === 0) { container.style.display = 'none'; return; }
+  container.innerHTML = lista.map(ed => `
+    <div class="sugestao-edificio" style="padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--border);">
+      <div style="font-weight:600; color:var(--navy-900); font-size:14px;">${escapeHtml(ed.nome)}</div>
+      <div class="muted" style="font-size:12px;">${escapeHtml(ed.bairro || '')} · Cód. ${escapeHtml(ed.codigo_edificio || '—')}</div>
+    </div>
+  `).join('');
+  [...container.children].forEach((el, i) => {
+    el.onclick = () => preencherComEdificio(lista[i]);
+  });
+  container.style.display = 'block';
+}
+
+let buscaEdificioTimeout = null;
+async function buscarEdificios(termo, container) {
+  clearTimeout(buscaEdificioTimeout);
+  if (!termo || termo.trim().length < 2) { container.style.display = 'none'; return; }
+  buscaEdificioTimeout = setTimeout(async () => {
+    const { data } = await sb.from('csd_catalogo_edificios')
+      .select('*')
+      .or(`nome.ilike.%${termo}%,codigo_edificio.ilike.%${termo}%`)
+      .limit(6);
+    renderizarSugestoes(container, data);
+  }, 200);
+}
+
+document.getElementById('novoNome').addEventListener('input', (e) => buscarEdificios(e.target.value, document.getElementById('sugestoesNome')));
+document.getElementById('novoCodigoEdificio').addEventListener('input', (e) => buscarEdificios(e.target.value, document.getElementById('sugestoesCodigo')));
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#novoNome') && !e.target.closest('#sugestoesNome')) document.getElementById('sugestoesNome').style.display = 'none';
+  if (!e.target.closest('#novoCodigoEdificio') && !e.target.closest('#sugestoesCodigo')) document.getElementById('sugestoesCodigo').style.display = 'none';
+});
+
+document.getElementById('formRecuperacaoPerfil').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnRecuperarPerfil');
+  setBtnLoading(btn, true);
+
+  const nome = document.getElementById('recNome').value.trim();
+  const telefone = document.getElementById('recTelefone').value.trim();
+
+  const { data, error } = await sb.rpc('csd_rpc_signup_consultor', { p_nome: nome, p_telefone: telefone });
+  if (error || data?.erro) {
+    toast('Erro: ' + (error?.message || data?.erro), 'error');
+    setBtnLoading(btn, false, 'Concluir cadastro');
+    return;
+  }
+  toast('Cadastro concluído!', 'success');
+
+  setTimeout(() => window.location.reload(), 1200);
+});
+
+carregarPainel();
+
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) carregarPainel();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && perfilAtual) carregarCondominios();
+});
+</script>
+</body>
+</html>
