@@ -42,7 +42,7 @@ h1 .ch{display:inline-block;opacity:0;transform:translateY(40px) rotate(6deg);fi
 .type{font:500 clamp(17px,1.7vw,21px) Inter;color:var(--mut);min-height:2.8em}
 .type b{color:#fff;font-weight:600}.type i{display:inline-block;width:2px;height:1.1em;background:var(--or);vertical-align:-3px;margin-left:3px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
-.cta{display:flex;gap:14px;flex-wrap:wrap;margin:26px 0 20px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin:26px 0 20px}.cta .btn{padding:14px 22px;font-size:15px;white-space:nowrap}
 .hint{font:600 13px Inter;color:var(--mut);display:flex;gap:10px;align-items:center}
 .hint span{display:inline-block;animation:bob 1.6s infinite}@keyframes bob{50%{transform:translateY(5px)}}
 /* scan stage */
@@ -69,6 +69,7 @@ h1 .ch{display:inline-block;opacity:0;transform:translateY(40px) rotate(6deg);fi
 .cap b{color:#fff}
 .prog{height:4px;background:#12304f;border-radius:9px;margin:12px auto 0;max-width:420px;overflow:hidden}.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--or),#5fe0ff)}
 @media(max-width:900px){.cta{flex-direction:column;gap:10px}.cta .btn{justify-content:center;width:100%;padding:14px 20px;font-size:15px}.paper h4{font-size:15px;top:14px;white-space:nowrap}.stamp{top:8%}.hero{height:300vh}.stage{grid-template-columns:1fr;gap:16px;padding-top:84px;align-content:start}h1{margin:10px 0 10px;font-size:clamp(36px,11vw,52px)}.type{min-height:2.6em;font-size:16px}.cta{margin:12px 0 6px}.hint{display:none}.cap{margin-top:16px}.beamlab{top:-26px}.chip{font-size:11px;padding:6px 10px}}
+@media(min-width:600px) and (max-width:900px){.cta{flex-direction:row}.cta .btn{width:auto}}
 /* TICKER */
 .tick{border-block:1px solid var(--line);background:#071f39;overflow:hidden;padding:18px 0}
 .tk{display:flex;gap:56px;white-space:nowrap;width:max-content;animation:tk 34s linear infinite;font:700 clamp(20px,3vw,32px) Poppins}
