@@ -411,6 +411,7 @@ async function salvarCadastroZero() {
   const telefone = document.getElementById('zeroTelefone').value.trim();
 
   if (!nome || (!cpf && !rg)) { toast('Preencha nome e CPF ou RG.', 'error'); return; }
+  if (cpf && !cpfValido(cpf)) { toast('CPF inválido. Confira os números digitados.', 'error'); return; }
 
   const { data, error } = await sb.rpc('csd_rpc_cadastrar_morador_zero', {
     p_unidade_id: unidadeId, p_nome: nome, p_cpf: cpf, p_email: email, p_telefone: telefone, p_data_nascimento: nascimento, p_rg: rg
@@ -427,6 +428,19 @@ async function salvarCadastroZero() {
   mostrarEtapa('confirmar', 2);
 }
 
+
+// Valida CPF pelos dígitos verificadores (não consulta base nenhuma, só confere se o número é possível)
+function cpfValido(valor) {
+  const d = String(valor || '').replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  for (const n of [9, 10]) {
+    let soma = 0;
+    for (let i = 0; i < n; i++) soma += parseInt(d[i], 10) * (n + 1 - i);
+    if (((soma * 10) % 11) % 10 !== parseInt(d[n], 10)) return false;
+  }
+  return true;
+}
+
 async function salvarConfirmacao() {
   const nome = document.getElementById('confNome').value.trim();
   const cpf = document.getElementById('confCpf').value.trim();
@@ -437,6 +451,7 @@ async function salvarConfirmacao() {
 
   if (!nome) { toast('Informe seu nome completo.', 'error'); return; }
   if (!cpf && !rg) { toast('Informe seu CPF ou RG completo.', 'error'); return; }
+  if (cpf && !cpfValido(cpf)) { toast('CPF inválido. Confira os números digitados.', 'error'); return; }
   if (!nascimento) { toast('Informe sua data de nascimento.', 'error'); return; }
   if (!email) { toast('Informe seu e-mail.', 'error'); return; }
   if (!telefone) { toast('Informe seu telefone.', 'error'); return; }

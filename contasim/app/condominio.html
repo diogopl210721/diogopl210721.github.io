@@ -336,7 +336,7 @@ async function detectarMapeamentoComIA(cabecalhos, amostras) {
 }
 
 async function importarPlanilha(mapeamento) {
-  let importadas = 0, erros = 0;
+  let importadas = 0, erros = 0, cpfsInvalidos = 0;
 
   for (const linha of planilhaLinhas) {
     const torre = mapeamento.torre ? String(linha[mapeamento.torre] || '').trim() : null;
@@ -381,6 +381,7 @@ async function importarPlanilha(mapeamento) {
           });
         }
       }
+      if (cpf && !cpfValido(cpf)) cpfsInvalidos++;
       importadas++;
     } catch (err) {
       erros++;
@@ -388,7 +389,7 @@ async function importarPlanilha(mapeamento) {
   }
 
   document.getElementById('resultadoImportacao').textContent =
-    `${importadas} unidade(s) importada(s)` + (erros ? `, ${erros} erro(s).` : '.');
+    `${importadas} unidade(s) importada(s)` + (erros ? `, ${erros} erro(s)` : '') + (cpfsInvalidos ? ` — ⚠️ ${cpfsInvalidos} CPF(s) inválido(s) na planilha (o morador terá que corrigir ao se cadastrar).` : '.');
   toast('Importação concluída!', 'success');
   await carregarUnidades();
 }
@@ -749,6 +750,19 @@ function renderizarFotosAuditoria(dados) {
   }
 }
 
+
+// Valida CPF pelos dígitos verificadores (não consulta base nenhuma, só confere se o número é possível)
+function cpfValido(valor) {
+  const d = String(valor || '').replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  for (const n of [9, 10]) {
+    let soma = 0;
+    for (let i = 0; i < n; i++) soma += parseInt(d[i], 10) * (n + 1 - i);
+    if (((soma * 10) % 11) % 10 !== parseInt(d[n], 10)) return false;
+  }
+  return true;
+}
+
 async function salvarEdicao() {
   const btn = document.getElementById('btnSalvarEdicao');
   setBtnLoading(btn, true);
@@ -762,6 +776,12 @@ async function salvarEdicao() {
   const nascimento = document.getElementById('editNascimento').value.trim();
   const email = document.getElementById('editEmail').value.trim();
   const telefone = document.getElementById('editTelefone').value.trim();
+
+  if (cpf && !cpfValido(cpf)) {
+    setBtnLoading(btn, false, 'Salvar');
+    toast('CPF inválido. Confira os números digitados.', 'error');
+    return;
+  }
 
   const { error: erroUnidade } = await sb.from('csd_unidades')
     .update({ torre, bloco, apto })
