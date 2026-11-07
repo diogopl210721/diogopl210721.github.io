@@ -101,6 +101,7 @@
     <h3 style="font-size:16px;">Morador</h3>
     <div class="field"><label>Nome</label><input type="text" id="editNome"></div>
     <div class="field"><label>CPF</label><input type="text" id="editCpf"></div>
+    <div class="field"><label>RG</label><input type="text" id="editRg"></div>
     <div class="field">
       <label>Data de nascimento (dia/mês/ano)</label>
       <div style="position:relative;">
@@ -142,6 +143,7 @@ const CAMPOS_ALVO = [
   { chave: 'nome', aliases: ['nome', 'titular', 'cliente', 'morador', 'proprietario', 'razao social', 'name', 'owner', 'resident'] },
   { chave: 'nascimento', aliases: ['nascimento', 'nasc', 'data nasc', 'aniversario', 'dt nasc', 'birth', 'dob'] },
   { chave: 'cpf', aliases: ['cpf', 'cnpj', 'doc cpf', 'documento', 'tax_id', 'tax id', 'document', 'ssn'] },
+  { chave: 'rg', aliases: ['rg', 'identidade', 'registro geral', 'doc rg', 'carteira de identidade', 'cin', 'id number'] },
   { chave: 'email', aliases: ['email', 'e-mail', 'e mail', 'mail'] },
   { chave: 'telefone', aliases: ['telefone', 'celular', 'contato', 'tel ', 'fone', 'whatsapp', 'mobile', 'phone', 'cell'] },
 ];
@@ -271,7 +273,7 @@ document.getElementById('arquivoPlanilha').addEventListener('change', async (e) 
 
       planilhaLinhas = data.unidades;
       // Mapeamento "identidade" — o PDF já vem com os nomes de campo certos
-      const mapeamentoIdentidade = { torre: 'torre', bloco: 'bloco', apto: 'apto', nome: 'nome', nascimento: 'data_nascimento', cpf: 'cpf', email: 'email', telefone: 'telefone' };
+      const mapeamentoIdentidade = { torre: 'torre', bloco: 'bloco', apto: 'apto', nome: 'nome', nascimento: 'data_nascimento', cpf: 'cpf', rg: 'rg', email: 'email', telefone: 'telefone' };
       await importarPlanilha(mapeamentoIdentidade);
       return;
     }
@@ -324,6 +326,7 @@ async function detectarMapeamentoComIA(cabecalhos, amostras) {
       nome: m.nome || null,
       nascimento: m.data_nascimento || null,
       cpf: m.cpf || null,
+      rg: m.rg || null,
       email: m.email || null,
       telefone: m.telefone || null,
     };
@@ -344,6 +347,7 @@ async function importarPlanilha(mapeamento) {
     const nome = mapeamento.nome ? String(linha[mapeamento.nome] || '').trim() : '';
     const nascimento = mapeamento.nascimento ? String(linha[mapeamento.nascimento] || '').trim() : '';
     const cpf = mapeamento.cpf ? String(linha[mapeamento.cpf] || '').trim() : '';
+    const rg = mapeamento.rg ? String(linha[mapeamento.rg] || '').trim() : '';
     const email = mapeamento.email ? String(linha[mapeamento.email] || '').trim() : '';
     const telefone = mapeamento.telefone ? String(linha[mapeamento.telefone] || '').trim() : '';
 
@@ -367,13 +371,13 @@ async function importarPlanilha(mapeamento) {
       }
 
       // Cria o morador vinculado (se a planilha trouxer algum dado)
-      if (nome || cpf || email || telefone || nascimento) {
+      if (nome || cpf || rg || email || telefone || nascimento) {
         const { data: moradorExistente } = await sb.from('csd_moradores')
           .select('id').eq('unidade_id', unidade.id).eq('origem', 'planilha').maybeSingle();
 
         if (!moradorExistente) {
           await sb.from('csd_moradores').insert({
-            unidade_id: unidade.id, nome, cpf, email, telefone, data_nascimento: nascimento, origem: 'planilha'
+            unidade_id: unidade.id, nome, cpf, rg: rg || null, email, telefone, data_nascimento: nascimento, origem: 'planilha'
           });
         }
       }
@@ -436,7 +440,7 @@ async function carregarUnidades() {
 
     const dadosEdicao = JSON.stringify({
       id: u.id, torre: u.torre, bloco: u.bloco, apto: u.apto,
-      morador_id: morador?.id || null, nome: morador?.nome || "", cpf: morador?.cpf || "", nascimento: morador?.data_nascimento || "", email: morador?.email || "", telefone: morador?.telefone || "",
+      morador_id: morador?.id || null, nome: morador?.nome || "", cpf: morador?.cpf || "", rg: morador?.rg || "", nascimento: morador?.data_nascimento || "", email: morador?.email || "", telefone: morador?.telefone || "",
       medidor_foto: medidor?.foto_url || null, medidor_capturado_em: medidor?.capturado_em || null,
       medidor_lat: medidor?.latitude || null, medidor_lng: medidor?.longitude || null,
       doc_foto: validacao?.foto_documento_url || null, selfie_foto: validacao?.foto_selfie_url || null,
@@ -456,7 +460,13 @@ async function carregarUnidades() {
       })).sort((a, b) => new Date(b.validado_em) - new Date(a.validado_em)),
     });
 
+    const jaValidadoWa = validacao?.status === 'validado';
+    waInfo[u.id] = { tel: morador?.telefone || '', nome: morador?.nome || '', ident: identificacao, validado: jaValidadoWa };
+    const btnWa = (morador?.telefone && String(morador.telefone).replace(/\D/g,'').length >= 10)
+      ? `<button class="icon-btn" title="Chamar no WhatsApp" style="color:#25d366;" onclick="abrirWhatsApp('${u.id}')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3.5A11.9 11.9 0 0 0 12 0C5.4 0 .1 5.3.1 11.9c0 2.1.5 4.1 1.6 5.9L0 24l6.4-1.7a11.9 11.9 0 0 0 5.6 1.4c6.6 0 11.9-5.3 11.9-11.9 0-3.2-1.2-6.2-3.4-8.3zM12 21.7c-1.8 0-3.5-.5-5-1.4l-.4-.2-3.800 1 1-3.700-.2-.4a9.800 9.800 0 0 1-1.500-5.200c0-5.400 4.400-9.800 9.900-9.800 2.600 0 5.100 1 6.900 2.900a9.800 9.800 0 0 1 2.900 6.900c0 5.400-4.500 9.900-9.900 9.900zm5.400-7.400c-.3-.1-1.800-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.200-.2.200-.3.200-.6.100-.3-.1-1.300-.5-2.400-1.500-.9-.8-1.500-1.800-1.700-2.100-.2-.3 0-.5.100-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.600-.9-2.200-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.300-1 1-1 2.500s1.100 2.900 1.200 3.100c.1.200 2.100 3.200 5.100 4.500.7.3 1.300.5 1.700.6.700.2 1.400.2 1.900.1.600-.1 1.800-.7 2-1.400.3-.7.3-1.300.2-1.400-.1-.1-.3-.2-.6-.3z"/></svg></button>`
+      : '';
     const acoes = `
+      ${btnWa}
       <button class="icon-btn" title="Capturar medidor" onclick="window.location.href='campo.html?unidade=${u.id}'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </button>
@@ -501,6 +511,7 @@ async function carregarUnidades() {
         </button>
       </div>
       <div class="acoes-secundarias">
+        ${morador?.telefone ? `<button class="btn btn-ghost btn-sm" style="color:#128c4a;" onclick="abrirWhatsApp('${u.id}')">💬 WhatsApp</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="gerarLinkUnidade('${u.id}')">🔗 Link</button>
         <button class="btn btn-ghost btn-sm" onclick='abrirEdicao(${dadosEdicao})'>✏️ Editar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="excluirUnidade('${u.id}', '${escapeAttr(identificacao)}')">🗑️ Excluir</button>
@@ -520,6 +531,7 @@ function abrirEdicao(dados) {
   document.getElementById('editApto').value = dados.apto || '';
   document.getElementById('editNome').value = dados.nome || '';
   document.getElementById('editCpf').value = dados.cpf || '';
+  document.getElementById('editRg').value = dados.rg || '';
   document.getElementById('editNascimento').value = dados.nascimento || '';
   document.getElementById('editEmail').value = dados.email || '';
   document.getElementById('editTelefone').value = dados.telefone || '';
@@ -746,6 +758,7 @@ async function salvarEdicao() {
   const apto = document.getElementById('editApto').value.trim();
   const nome = document.getElementById('editNome').value.trim();
   const cpf = document.getElementById('editCpf').value.trim();
+  const rg = document.getElementById('editRg').value.trim() || null;
   const nascimento = document.getElementById('editNascimento').value.trim();
   const email = document.getElementById('editEmail').value.trim();
   const telefone = document.getElementById('editTelefone').value.trim();
@@ -757,12 +770,12 @@ async function salvarEdicao() {
   let erroMorador = null;
   if (unidadeEmEdicao.morador_id) {
     const { error } = await sb.from('csd_moradores')
-      .update({ nome, cpf, data_nascimento: nascimento, email, telefone })
+      .update({ nome, cpf, rg, data_nascimento: nascimento, email, telefone })
       .eq('id', unidadeEmEdicao.morador_id);
     erroMorador = error;
-  } else if (nome || cpf || email || telefone) {
+  } else if (nome || cpf || rg || email || telefone) {
     const { error } = await sb.from('csd_moradores')
-      .insert({ unidade_id: unidadeEmEdicao.id, nome, cpf, data_nascimento: nascimento, email, telefone, origem: 'planilha' });
+      .insert({ unidade_id: unidadeEmEdicao.id, nome, cpf, rg, data_nascimento: nascimento, email, telefone, origem: 'planilha' });
     erroMorador = error;
   }
 
@@ -784,6 +797,34 @@ async function excluirUnidade(unidadeId, identificacao) {
   if (error) { toast('Erro ao excluir.', 'error'); return; }
   toast('Unidade excluída.', 'success');
   await carregarUnidades();
+}
+
+const waInfo = {};
+
+// Abre o WhatsApp do morador com mensagem pronta. Se ainda não validou, já leva o link de cadastro dele.
+async function abrirWhatsApp(unidadeId) {
+  const info = waInfo[unidadeId];
+  if (!info) return;
+  let fone = String(info.tel || '').replace(/\D/g, '').replace(/^0+/, '');
+  if (fone.length < 10) { toast('Telefone do morador inválido ou vazio.', 'error'); return; }
+  if (!fone.startsWith('55')) fone = '55' + fone;
+  const janela = window.open('', '_blank'); // abre já no clique p/ não ser bloqueado
+  const primeiro = (info.nome || '').trim().split(/\s+/)[0];
+  const sau = primeiro ? `Olá, ${primeiro.charAt(0).toUpperCase() + primeiro.slice(1).toLowerCase()}!` : 'Olá!';
+  const cond = (typeof condominioAtual !== 'undefined' && condominioAtual?.nome) ? condominioAtual.nome : 'seu condomínio';
+  let msg;
+  if (info.validado) {
+    msg = `${sau} Aqui é da administração do ${cond}, sobre a unidade ${info.ident}. Podemos conversar rapidinho?`;
+  } else {
+    let url = '';
+    try {
+      const { data, error } = await sb.from('csd_links_acesso').insert({ unidade_id: unidadeId }).select().single();
+      if (!error) url = `${window.location.origin}${window.location.pathname.replace('condominio.html','')}morador.html?token=${data.token}`;
+    } catch (e) {}
+    msg = `${sau} Aqui é da administração do ${cond}. Precisamos que você confirme seus dados e a leitura do medidor de gás da unidade ${info.ident}, pelo celular, em poucos minutos.` + (url ? ` Acesse: ${url}` : '');
+  }
+  const destino = `https://wa.me/${fone}?text=${encodeURIComponent(msg)}`;
+  if (janela) janela.location.href = destino; else window.location.href = destino;
 }
 
 async function gerarLinkUnidade(unidadeId) {

@@ -80,7 +80,7 @@
     <div id="etapaCpf" style="display:none;">
       <button type="button" id="btnVoltarCpf" onclick="mostrarEtapa('localizar', 1)" style="display:none; align-items:center; gap:6px; background:var(--flame-light); border:none; border-radius:999px; padding:8px 16px; margin-bottom:14px; font-size:14px; font-weight:700; color:var(--navy-900); cursor:pointer;">← Voltar e corrigir a unidade</button>
       <h2>Confirme sua identidade</h2>
-      <p>Para sua segurança, digite os <strong>3 últimos números</strong> do seu CPF.</p>
+      <p>Para sua segurança, digite os <strong>3 últimos números</strong> do seu CPF (ou do RG, se o cadastro for pelo RG).</p>
       <div class="field">
         <input type="text" id="inputCpf3" class="digit-input" inputmode="numeric" maxlength="3" placeholder="123">
       </div>
@@ -99,6 +99,7 @@
       <p>Os dados que temos podem estar desatualizados ou não bateram com o que foi informado — sem problema, é só preencher novamente abaixo.</p>
       <div class="field"><label>Nome completo</label><input type="text" id="zeroNome"></div>
       <div class="field"><label>CPF</label><input type="text" id="zeroCpf" inputmode="numeric" placeholder="000.000.000-00"></div>
+      <div class="field"><label>RG <span class="muted" style="font-weight:400;">(se não tiver CPF no documento)</span></label><input type="text" id="zeroRg" placeholder="Número do RG"></div>
       <div class="field">
         <label>Data de nascimento (dia/mês/ano)</label>
         <div style="position:relative;">
@@ -118,6 +119,7 @@
       <h2>Confira seus dados</h2>
       <div class="field"><label>Nome completo</label><input type="text" id="confNome"></div>
       <div class="field"><label>CPF</label><input type="text" id="confCpf" inputmode="numeric" placeholder="000.000.000-00"></div>
+      <div class="field"><label>RG <span class="muted" style="font-weight:400;">(preencha CPF ou RG, o que estiver no seu documento)</span></label><input type="text" id="confRg" placeholder="Número do RG"></div>
       <div class="field">
         <label>Data de nascimento (dia/mês/ano)</label>
         <div style="position:relative;">
@@ -377,7 +379,7 @@ async function reportarNaoMoradorUnidade() {
 
 async function validarCpf() {
   const digitos = document.getElementById('inputCpf3').value.trim();
-  if (digitos.length !== 3) { toast('Digite os 3 últimos números do CPF.', 'error'); return; }
+  if (digitos.length !== 3) { toast('Digite os 3 últimos números do CPF ou RG.', 'error'); return; }
 
   const { data, error } = await sb.rpc('csd_rpc_validar_cpf', { p_unidade_id: unidadeId, p_ultimos_digitos: digitos });
   if (error) { toast('Erro ao validar. Tente novamente.', 'error'); return; }
@@ -386,6 +388,7 @@ async function validarCpf() {
     moradorId = data.morador_id;
     document.getElementById('confNome').value = data.nome || '';
     document.getElementById('confCpf').value = data.cpf || '';
+    document.getElementById('confRg').value = data.rg || '';
     document.getElementById('confNascimento').value = data.nascimento || '';
     document.getElementById('confEmail').value = data.email || '';
     document.getElementById('confTelefone').value = data.telefone || '';
@@ -402,20 +405,22 @@ async function validarCpf() {
 async function salvarCadastroZero() {
   const nome = document.getElementById('zeroNome').value.trim();
   const cpf = document.getElementById('zeroCpf').value.trim();
+  const rg = document.getElementById('zeroRg').value.trim();
   const nascimento = document.getElementById('zeroNascimento').value.trim();
   const email = document.getElementById('zeroEmail').value.trim();
   const telefone = document.getElementById('zeroTelefone').value.trim();
 
-  if (!nome || !cpf) { toast('Preencha nome e CPF.', 'error'); return; }
+  if (!nome || (!cpf && !rg)) { toast('Preencha nome e CPF ou RG.', 'error'); return; }
 
   const { data, error } = await sb.rpc('csd_rpc_cadastrar_morador_zero', {
-    p_unidade_id: unidadeId, p_nome: nome, p_cpf: cpf, p_email: email, p_telefone: telefone, p_data_nascimento: nascimento
+    p_unidade_id: unidadeId, p_nome: nome, p_cpf: cpf, p_email: email, p_telefone: telefone, p_data_nascimento: nascimento, p_rg: rg
   });
   if (error) { toast('Erro ao salvar cadastro.', 'error'); return; }
   moradorId = data.morador_id;
 
   document.getElementById('confNome').value = nome;
   document.getElementById('confCpf').value = cpf;
+  document.getElementById('confRg').value = rg;
   document.getElementById('confNascimento').value = nascimento;
   document.getElementById('confEmail').value = email;
   document.getElementById('confTelefone').value = telefone;
@@ -425,12 +430,13 @@ async function salvarCadastroZero() {
 async function salvarConfirmacao() {
   const nome = document.getElementById('confNome').value.trim();
   const cpf = document.getElementById('confCpf').value.trim();
+  const rg = document.getElementById('confRg').value.trim();
   const nascimento = document.getElementById('confNascimento').value.trim();
   const email = document.getElementById('confEmail').value.trim();
   const telefone = document.getElementById('confTelefone').value.trim();
 
   if (!nome) { toast('Informe seu nome completo.', 'error'); return; }
-  if (!cpf) { toast('Informe seu CPF completo.', 'error'); return; }
+  if (!cpf && !rg) { toast('Informe seu CPF ou RG completo.', 'error'); return; }
   if (!nascimento) { toast('Informe sua data de nascimento.', 'error'); return; }
   if (!email) { toast('Informe seu e-mail.', 'error'); return; }
   if (!telefone) { toast('Informe seu telefone.', 'error'); return; }
@@ -447,7 +453,7 @@ async function salvarConfirmacao() {
   document.getElementById('avisoMenorIdade').style.display = 'none';
 
   const { error } = await sb.rpc('csd_rpc_atualizar_morador', {
-    p_morador_id: moradorId, p_nome: nome, p_cpf: cpf, p_email: email, p_telefone: telefone, p_data_nascimento: nascimento
+    p_morador_id: moradorId, p_nome: nome, p_cpf: cpf, p_email: email, p_telefone: telefone, p_data_nascimento: nascimento, p_rg: rg
   });
   if (error) { toast('Erro ao salvar dados.', 'error'); return; }
   salvarProgresso('documento');
@@ -709,6 +715,7 @@ async function continuarAposDocumento() {
       body: JSON.stringify({
         nome_cadastrado: document.getElementById('confNome').value.trim(),
         cpf_cadastrado: document.getElementById('confCpf').value.trim(),
+        rg_cadastrado: document.getElementById('confRg').value.trim(),
         doc_base64: docBase64, doc_media_type: docMediaType,
       }),
     });
@@ -726,10 +733,10 @@ async function continuarAposDocumento() {
     erroDoc = 'Não foi possível analisar a foto agora. Verifique sua conexão e tente novamente.';
   } else if (!v.eh_documento) {
     erroDoc = 'Essa foto não parece ser um documento de identidade (RG, CNH ou CPF). Fotografe o documento aberto, inteiro e bem iluminado.';
-  } else if (!v.numero_encontrado || !v.cpf_extraido) {
-    erroDoc = 'Não consegui ler o número do CPF no documento. Refaça a foto com o documento reto, sem reflexo e com o número bem visível.';
-  } else if (v.cpf_confere !== true) {
-    erroDoc = 'O número do documento não confere com o CPF cadastrado. Refaça a foto ou volte para conferir seus dados.';
+  } else if (!v.numero_encontrado) {
+    erroDoc = 'Não consegui ler o número (CPF ou RG) no documento. Refaça a foto com o documento reto, sem reflexo e com o número bem visível.';
+  } else if (v.numero_confere !== true) {
+    erroDoc = 'O número do documento não confere com o CPF/RG cadastrado. Refaça a foto ou volte para conferir seus dados.';
   } else if (v.nome_extraido && v.nome_confere === false) {
     erroDoc = 'O nome no documento não confere com o nome cadastrado. Refaça a foto ou volte para conferir seus dados.';
   }
@@ -790,6 +797,7 @@ async function finalizar() {
         body: JSON.stringify({
           nome_cadastrado: document.getElementById('confNome').value.trim(),
           cpf_cadastrado: document.getElementById('confCpf').value.trim(),
+        rg_cadastrado: document.getElementById('confRg').value.trim(),
           doc_base64: docBase64, doc_media_type: docMediaType,
           selfie_base64: selfieBase64, selfie_media_type: selfieMediaType,
         }),
@@ -827,6 +835,7 @@ function salvarProgresso(etapa) {
       etapa, condominioId, unidadeId, moradorId, identificacaoUnidade, partesUnidade, numeroSerieUnidade,
       nome: document.getElementById('confNome')?.value || '',
       cpf: document.getElementById('confCpf')?.value || '',
+      rg: document.getElementById('confRg')?.value || '',
       nascimento: document.getElementById('confNascimento')?.value || '',
       email: document.getElementById('confEmail')?.value || '',
       telefone: document.getElementById('confTelefone')?.value || '',
@@ -857,6 +866,7 @@ function restaurarProgresso() {
     docUrl = p.docUrl || null; docMediaType = p.docMediaType || null;
     document.getElementById('confNome').value = p.nome || '';
     document.getElementById('confCpf').value = p.cpf || '';
+    document.getElementById('confRg').value = p.rg || '';
     document.getElementById('confNascimento').value = p.nascimento || '';
     document.getElementById('confEmail').value = p.email || '';
     document.getElementById('confTelefone').value = p.telefone || '';
