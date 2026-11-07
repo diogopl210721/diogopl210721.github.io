@@ -24,9 +24,10 @@
   <div class="screen">
 
     <div id="contadorNaoMorador" style="display:none; margin-bottom:16px;">
-      <div class="card" style="background:#FEF2F2; border:1px solid #FCA5A5; padding:14px 16px; display:flex; align-items:center; gap:12px;">
+      <div class="card" style="background:#FEF2F2; border:1px solid #FCA5A5; padding:14px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <span style="font-size:22px;">⚠️</span>
-        <span style="font-weight:700; color:#B91C1C; font-size:14px;"><span id="qtdNaoMorador">0</span> aviso(s) de "não moro mais na unidade" recebido(s) — pode ser sinal de que a planilha do síndico está desatualizada.</span>
+        <span style="font-weight:700; color:#B91C1C; font-size:14px; flex:1; min-width:200px;" id="textoNaoMorador"></span>
+        <button type="button" id="btnDispensarAvisos" class="btn btn-outline btn-sm" style="display:none;" onclick="dispensarAvisosSemUnidade()">Marcar como visto</button>
       </div>
     </div>
 
@@ -163,16 +164,29 @@ async function iniciar() {
 }
 
 async function carregarContadorNaoMorador() {
+  // Só conta avisos PENDENTES (os resolvidos — unidade revalidada ou marcada pelo síndico — saem do contador)
   const { count } = await sb.from('csd_avisos_nao_morador')
     .select('*', { count: 'exact', head: true })
-    .eq('condominio_id', condominioId);
+    .eq('condominio_id', condominioId).is('resolvido_em', null);
   const { count: semUnidade } = await sb.from('csd_avisos_nao_morador')
     .select('*', { count: 'exact', head: true })
-    .eq('condominio_id', condominioId).is('unidade_id', null);
-  if (count && count > 0) {
-    document.getElementById('qtdNaoMorador').textContent = count + (semUnidade ? ` (${semUnidade} sem unidade identificada)` : '');
-    document.getElementById('contadorNaoMorador').style.display = 'block';
-  }
+    .eq('condominio_id', condominioId).is('resolvido_em', null).is('unidade_id', null);
+  const box = document.getElementById('contadorNaoMorador');
+  if (!count) { box.style.display = 'none'; return; }
+  const comUnidade = count - (semUnidade || 0);
+  const partes = [];
+  if (comUnidade) partes.push(`${comUnidade} aviso(s) em unidades identificadas (veja a etiqueta vermelha na lista)`);
+  if (semUnidade) partes.push(`${semUnidade} aviso(s) sem unidade identificada`);
+  document.getElementById('textoNaoMorador').textContent =
+    `Avisos de "não moro mais na unidade" pendentes: ${partes.join(' e ')}. Pode ser sinal de que a planilha do síndico está desatualizada.`;
+  document.getElementById('btnDispensarAvisos').style.display = semUnidade ? 'inline-flex' : 'none';
+  box.style.display = 'block';
+}
+
+async function dispensarAvisosSemUnidade() {
+  const { data, error } = await sb.rpc('csd_rpc_dispensar_avisos_sem_unidade', { p_condominio_id: condominioId });
+  if (error || data?.erro) { toast('Não foi possível marcar como visto.', 'error'); return; }
+  await carregarContadorNaoMorador();
 }
 
 // ---------- Link geral ----------
@@ -623,6 +637,7 @@ async function resolverAvisoNaoMorador(unidadeId) {
   toast('Aviso marcado como resolvido.', 'success');
   document.getElementById('avisoNaoMoradorBox').style.display = 'none';
   await carregarUnidades();
+  await carregarContadorNaoMorador();
 }
 
 function renderizarHistoricoCapturas(dados) {
