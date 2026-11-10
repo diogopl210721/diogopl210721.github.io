@@ -41,47 +41,6 @@ body::after, html.claro body::after{ content:""; position:fixed; inset:0; z-inde
 #appbar-nome i{ font-style:italic!important; color:var(--trigo-claro)!important; }
 .appbar-btn, html.claro .appbar-btn{ background:transparent!important; border:1px solid var(--line)!important; color:var(--miolo)!important; box-shadow:none!important; }
 
-/* ---------- Colunata no topo das telas iniciais ---------- */
-.cpv-topo{ position:relative; height:190px; margin:-8px -16px -118px; pointer-events:none; z-index:0;
-  transform:translateY(var(--py,0)); opacity:var(--po,1); }
-.cpv-topo .templo{ position:absolute; left:50%; top:4px; width:min(84%,360px); transform:translateX(-50%); overflow:visible; }
-.cpv-topo-membro{ height:170px; margin-bottom:-96px; }
-.cpv-topo-membro .templo{ width:min(70%,300px); opacity:.55; }
-.cpv-topo-visitante .templo{ opacity:.62; }
-.cpv-topo::after{ content:""; position:absolute; inset:auto 0 0; height:120px; background:linear-gradient(transparent, var(--noite)); }
-#tela-visitante .scroll > *:not(.cpv-topo), #tela-membro-home .scroll > *:not(.cpv-topo){ position:relative; z-index:1; }
-
-/* Desenho do templo */
-.templo{ display:block; fill:none; stroke:var(--miolo); stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; }
-.templo .col-luz{ fill:rgba(243,231,211,.05); stroke:none; }
-.templo .tri-in{ stroke-opacity:.35; }
-.templo .raios path{ fill:rgba(241,207,134,.10); stroke:none; }
-.templo .sb path{ stroke-width:1.7; }
-.templo .cruz path{ stroke:var(--s-cruz); }
-.templo .pomba path{ stroke:var(--s-pomba); fill:rgba(245,197,24,.25); }
-.templo .calice path{ stroke:var(--s-calice); fill:rgba(59,111,209,.25); }
-.templo .coroa path{ stroke:var(--s-coroa); fill:rgba(178,58,160,.25); }
-
-/* ---------- Abertura ---------- */
-html.cpv-abrindo, html.cpv-abrindo body{ overflow:hidden; }
-#cpv-intro{ position:fixed; inset:0; z-index:9999; background:var(--noite); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 24px calc(28px + env(safe-area-inset-bottom)); overflow:hidden; touch-action:none; }
-#cpv-intro::before{ content:""; position:absolute; inset:-30% -20% auto; height:90%; background:radial-gradient(55% 50% at 50% 30%, rgba(217,164,65,.20), transparent 70%); pointer-events:none; }
-.cpv-grao{ position:absolute; inset:0; opacity:.6; pointer-events:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .95  0 0 0 0 .9  0 0 0 0 .82  0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
-.cpv-palco{ position:relative; width:min(86vw,380px); margin-top:-6vh; }
-.templo-intro{ width:100%; height:auto; overflow:visible; filter:drop-shadow(0 0 18px rgba(217,164,65,.25)); }
-.templo-intro .templo, .templo-intro{ stroke-width:1.5; }
-.cpv-wordmark{ position:relative; }
-.cpv-lema{ position:relative; margin:14px 0 0; font:italic 500 20px/1.2 var(--serif); color:var(--trigo-claro); letter-spacing:.01em; }
-.cpv-abrir{ position:absolute; left:50%; bottom:calc(64px + env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:10px; background:none; border:0; color:var(--miolo); font:600 15px var(--fino); cursor:pointer; padding:10px 18px; }
-.cpv-abrir:focus-visible{ outline:2px solid var(--trigo); outline-offset:4px; border-radius:12px; }
-.cpv-seta{ width:30px; height:46px; border:1.5px solid rgba(243,231,211,.5); border-radius:16px; position:relative; }
-.cpv-seta::after{ content:""; position:absolute; left:50%; top:9px; width:4px; height:9px; margin-left:-2px; border-radius:3px; background:var(--trigo); animation:cpvSobe 1.8s ease-in-out infinite; }
-@keyframes cpvSobe{ 0%{ transform:translateY(16px); opacity:0 } 30%{ opacity:1 } 100%{ transform:translateY(-2px); opacity:0 } }
-.cpv-copy{ position:absolute; bottom:calc(20px + env(safe-area-inset-bottom)); font:500 12px var(--fino); color:var(--ink-faint); text-decoration:none; }
-.cpv-copy:hover{ color:var(--trigo-claro); }
-#cpv-intro.sem-gsap .templo .col{ animation:cpvCol .8s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(.4s + var(--i) * .08s); transform-origin:50% 100%; transform-box:fill-box; }
-@keyframes cpvCol{ from{ transform:scaleY(0) } }
-
 /* ---------- Visitante ---------- */
 .hero-boasvindas, html.claro .hero-boasvindas{ background:none!important; border:0!important; box-shadow:none!important; padding:96px 6px 8px!important; margin:0 0 6px!important; text-align:center; color:var(--miolo); }
 .hero-boasvindas::before, .hero-boasvindas::after{ display:none!important; }
@@ -168,7 +127,6 @@ html.cpv-abrindo, html.cpv-abrindo body{ overflow:hidden; }
 .di-ic svg{ stroke:var(--trigo-claro)!important; }
 .dds-copy a{ color:var(--trigo-claro)!important; }
 
-@media (prefers-reduced-motion: reduce){ .cpv-topo{ transform:none; opacity:1; } }
 .drawer-tema{ display:none!important; }
 
 /* ---------- Ajustes de especificidade sobre as camadas antigas ---------- */
@@ -186,25 +144,159 @@ html.cpv .pal-card .pc-eye{ color:var(--trigo-claro)!important; }
 html.cpv .pal-card .pc-eye i{ background:var(--trigo)!important; }
 html.cpv .pal-card .pc-go{ background:var(--trigo)!important; color:#1B140C!important; }
 
-/* Abertura: a luz não tem contorno */
-.templo .luz{ stroke:none!important; }
-.templo-intro .sb path{ stroke-width:2; }
-/* nome tipográfico na abertura */
-.cpv-nome{ position:relative; margin:18px 0 0; text-align:center; color:var(--miolo); }
-.cpv-nome small{ display:block; font:italic 500 22px/1 var(--serif); color:var(--trigo-claro); margin-bottom:2px; }
-.cpv-nome strong{ display:block; font:500 46px/1 var(--serif); letter-spacing:-.01em; }
-.cpv-nome span{ display:block; margin-top:12px; font:500 13.5px var(--fino); color:var(--ink-soft); }
-
-/* Topo: mais respiro entre a colunata e o título */
-html.cpv .hero-boasvindas{ padding-top:150px!important; }
-.cpv-topo-visitante{ height:200px; margin-bottom:-170px; }
-.cpv-topo-visitante .templo{ width:min(78%,330px); opacity:.5; }
-.cpv-topo-membro{ height:150px; margin:-4px -16px -60px; }
-.cpv-topo-membro .templo{ width:min(62%,260px); opacity:.42; }
-html.cpv #tela-membro-home .greet-box{ padding-top:24px!important; }
-html.cpv .greet-name small{ text-transform:none!important; letter-spacing:0!important; font-size:15px!important; }
-html.cpv .hero-boasvindas{ padding-top:196px!important; }
 html.cpv .quicklink{ white-space:normal!important; overflow:visible!important; text-overflow:clip!important; word-break:normal; }
 html.cpv .topbar .badge{ text-transform:none!important; letter-spacing:0!important; font:600 12.5px var(--fino)!important; }
 html.cpv .culto-quando{ text-transform:none!important; letter-spacing:0!important; font:600 14px var(--fino)!important; color:var(--trigo-claro)!important; }
-html.cpv .templo-intro .sb{ transform-box:fill-box; }
+
+/* ============================================================
+   LAYOUT PRÓPRIO
+   ============================================================ */
+
+/* ---------- Abertura com a logo original ---------- */
+html.cpv-abrindo, html.cpv-abrindo body{ overflow:hidden; }
+#cpv-intro{ position:fixed; inset:0; z-index:9999; background:var(--noite); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; overflow:hidden; touch-action:none; }
+#cpv-intro::before{ content:""; position:absolute; left:50%; top:42%; width:150vmax; height:150vmax; transform:translate(-50%,-50%); background:radial-gradient(closest-side, rgba(217,164,65,.22), rgba(194,103,46,.06) 45%, transparent 70%); pointer-events:none; }
+.cpv-grao{ position:absolute; inset:0; opacity:.6; pointer-events:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .95  0 0 0 0 .9  0 0 0 0 .82  0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+.cpv-logo-palco{ position:relative; width:min(84vw,400px); margin-top:-8vh; overflow:hidden; }
+.cpv-logo{ display:block; width:100%; height:auto; --rev:100%;
+  -webkit-mask:linear-gradient(90deg,#000 calc(var(--rev) - 12%), transparent var(--rev)); mask:linear-gradient(90deg,#000 calc(var(--rev) - 12%), transparent var(--rev));
+  -webkit-mask-size:112% 100%; mask-size:112% 100%; filter:drop-shadow(0 18px 40px rgba(0,0,0,.6)); }
+.cpv-varredura{ position:absolute; inset:-10% -30%; background:linear-gradient(100deg, transparent 40%, rgba(255,240,205,.55) 50%, transparent 60%); mix-blend-mode:overlay; opacity:0; pointer-events:none; }
+.cpv-quatro{ display:flex; gap:6px; margin-top:26px; }
+.cpv-quatro i{ display:block; width:34px; height:3px; border-radius:3px; background:var(--c); transform-origin:left center; box-shadow:0 0 14px var(--c); }
+.cpv-abrir{ position:absolute; left:50%; bottom:calc(64px + env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:10px; background:none; border:0; color:var(--miolo); font:600 15px var(--fino); cursor:pointer; padding:10px 18px; }
+.cpv-abrir:focus-visible{ outline:2px solid var(--trigo); outline-offset:4px; border-radius:12px; }
+.cpv-seta{ width:30px; height:46px; border:1.5px solid rgba(243,231,211,.5); border-radius:16px; position:relative; }
+.cpv-seta::after{ content:""; position:absolute; left:50%; top:9px; width:4px; height:9px; margin-left:-2px; border-radius:3px; background:var(--trigo); animation:cpvSobe 1.8s ease-in-out infinite; }
+@keyframes cpvSobe{ 0%{ transform:translateY(16px); opacity:0 } 30%{ opacity:1 } 100%{ transform:translateY(-2px); opacity:0 } }
+.cpv-copy{ position:absolute; bottom:calc(20px + env(safe-area-inset-bottom)); font:500 12px var(--fino); color:var(--ink-faint); text-decoration:none; }
+
+/* ---------- Barra superior: só a logo original ---------- */
+html.cpv .appbar{ justify-content:space-between; }
+html.cpv .appbar-brand{ flex:1; justify-content:center; }
+html.cpv .appbar-brand img#appbar-logo{ width:auto!important; height:40px!important; max-width:110px; border-radius:0!important; background:none!important; box-shadow:none!important; }
+html.cpv #appbar-nome{ position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+
+/* ---------- Abas ---------- */
+html.cpv .bottomnav{ display:none!important; }
+#cpv-abas{ position:fixed; z-index:60; left:50%; bottom:calc(12px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(calc(100% - 24px), 480px);
+  display:flex; padding:6px; border-radius:24px; background:rgba(30,24,18,.86); border:1px solid rgba(217,164,65,.18);
+  -webkit-backdrop-filter:blur(22px) saturate(1.4); backdrop-filter:blur(22px) saturate(1.4); box-shadow:0 24px 50px -20px rgba(0,0,0,.95); }
+#cpv-abas button{ position:relative; z-index:1; flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 2px 7px; background:none; border:0; color:rgba(243,231,211,.55); font:600 11.5px var(--fino); cursor:pointer; border-radius:18px; transition:color .25s; }
+#cpv-abas button .icon{ width:22px; height:22px; stroke:currentColor; stroke-width:1.6; fill:none; }
+#cpv-abas button.on{ color:#1B140C; }
+#cpv-abas button:focus-visible{ outline:2px solid var(--trigo-claro); outline-offset:-2px; }
+.cpv-abas-luz{ position:absolute; z-index:0; left:0; top:6px; bottom:6px; border-radius:18px; background:var(--trigo); transition:transform .45s cubic-bezier(.22,1,.36,1), width .45s cubic-bezier(.22,1,.36,1), opacity .2s; box-shadow:0 8px 20px -8px rgba(217,164,65,.8); }
+html.cpv-abrindo #cpv-abas{ opacity:0; }
+html.cpv .scroll{ padding-bottom:110px!important; }
+
+/* ---------- Peças comuns ---------- */
+.cpv-btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:0 18px; border-radius:14px; font:700 14px var(--fino); text-decoration:none; cursor:pointer; border:0; }
+.cpv-btn .icon{ width:17px; height:17px; stroke:currentColor; fill:none; }
+.cpv-btn.ouro{ background:var(--trigo); color:#1B140C; box-shadow:0 12px 26px -14px rgba(217,164,65,.9); }
+.cpv-btn.claro{ background:var(--miolo); color:#1B140C; }
+.cpv-btn.vidro{ background:rgba(20,17,14,.45); color:var(--miolo); border:1px solid rgba(243,231,211,.28); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+.cpv-btn.linha{ background:transparent; color:var(--miolo); border:1px solid rgba(217,164,65,.45); }
+.cpv-btn:focus-visible, .cpv-passo:focus-visible, .cpv-area:focus-visible, .cpv-atalhos > *:focus-visible, .cpv-semana button:focus-visible{ outline:2px solid var(--trigo-claro); outline-offset:2px; }
+.cpv-saudacao{ padding:22px 2px 14px; }
+.cpv-saudacao p{ margin:0 0 4px; font:500 14px var(--fino); color:var(--ink-soft); }
+.cpv-saudacao h1{ margin:0; font:500 40px/1.02 var(--serif); letter-spacing:-.012em; color:var(--miolo); }
+.cpv-sec{ margin:30px 2px 12px; font:500 26px/1.1 var(--serif); color:var(--miolo); }
+.cpv-intro-tx{ margin:0 2px 18px; font:400 15px/1.55 var(--fino); color:var(--ink-soft); max-width:40ch; }
+.cpv-destaque{ animation:cpvPisca 1.6s ease-out; }
+@keyframes cpvPisca{ 0%,40%{ box-shadow:0 0 0 3px var(--trigo), 0 0 40px rgba(217,164,65,.5); } 100%{ box-shadow:0 0 0 0 transparent; } }
+
+/* ---------- Cartão do próximo culto ---------- */
+.cpv-agora{ position:relative; overflow:hidden; border-radius:26px; padding:20px 18px 18px; min-height:250px; display:flex; flex-direction:column; justify-content:flex-end; isolation:isolate;
+  background:linear-gradient(180deg, rgba(20,17,14,.05) 0%, rgba(20,17,14,.55) 45%, rgba(20,17,14,.96) 100%), var(--foto, linear-gradient(160deg,#3B2A17,#1A1410)) center/cover no-repeat;
+  border:1px solid rgba(243,231,211,.1); box-shadow:0 30px 60px -32px rgba(0,0,0,.95); }
+.cpv-agora::after{ content:""; position:absolute; inset:0; z-index:-1; background:inherit; filter:sepia(.35) saturate(.85); }
+.cpv-agora-topo{ position:absolute; top:16px; left:16px; display:flex; align-items:center; gap:8px; padding:7px 12px 7px 10px; border-radius:99px; background:rgba(20,17,14,.62); border:1px solid rgba(217,164,65,.4); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+.cpv-agora-topo b{ font:700 13px var(--fino); color:var(--trigo-claro); }
+.cpv-pulso{ width:8px; height:8px; border-radius:50%; background:var(--trigo); box-shadow:0 0 0 0 rgba(217,164,65,.7); animation:cpvPulso 2s infinite; }
+@keyframes cpvPulso{ 70%{ box-shadow:0 0 0 9px rgba(217,164,65,0); } 100%{ box-shadow:0 0 0 0 rgba(217,164,65,0); } }
+.cpv-agora h2{ margin:0; font:500 36px/1.02 var(--serif); color:#fff; letter-spacing:-.01em; }
+.cpv-agora-tema{ margin:6px 0 0; font:italic 500 19px/1.2 var(--serif); color:var(--trigo-claro); }
+.cpv-agora-info{ display:flex; align-items:center; gap:6px; margin:10px 0 14px; font:500 14px var(--fino); color:rgba(243,231,211,.85); }
+.cpv-agora-info .icon{ width:15px; height:15px; stroke:var(--trigo-claro); fill:none; }
+.cpv-agora-acoes{ display:flex; gap:8px; }
+.cpv-agora-acoes .cpv-btn{ flex:1; padding:0 10px; font-size:13.5px; }
+.cpv-agora.vazio{ min-height:0; padding:22px; color:var(--ink-soft); }
+
+/* ---------- Seu dia com Deus ---------- */
+.cpv-dia{ --prog:0; margin-top:14px; padding:18px 16px 8px; border-radius:24px; background:linear-gradient(180deg, rgba(243,231,211,.07), rgba(243,231,211,.03)); border:1px solid var(--line); }
+.cpv-dia-cab{ display:flex; align-items:center; gap:14px; margin-bottom:6px; }
+.cpv-dia-cab h2{ margin:0; font:500 24px/1.1 var(--serif); color:var(--miolo); }
+.cpv-dia-n{ margin:2px 0 0; font:500 13.5px var(--fino); color:var(--ink-soft); }
+.cpv-anel{ width:48px; height:48px; flex:none; }
+.cpv-anel svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.cpv-anel circle{ fill:none; stroke:rgba(243,231,211,.12); stroke-width:3.2; }
+.cpv-anel circle.v{ stroke:var(--trigo); stroke-linecap:round; stroke-dasharray:97.4; stroke-dashoffset:calc(97.4 * (1 - var(--prog))); transition:stroke-dashoffset .8s cubic-bezier(.22,1,.36,1); }
+.cpv-passos{ list-style:none; margin:0; padding:0; }
+.cpv-passos li + li{ border-top:1px solid var(--line); }
+.cpv-passo{ width:100%; display:flex; align-items:center; gap:12px; padding:13px 2px; background:none; border:0; text-align:left; color:var(--miolo); cursor:pointer; font-family:var(--fino); }
+.cpv-check{ width:28px; height:28px; flex:none; border-radius:50%; border:1.5px solid rgba(217,164,65,.55); display:grid; place-items:center; transition:background .3s, border-color .3s; }
+.cpv-check .icon{ width:15px; height:15px; stroke:#1B140C; stroke-width:2.4; fill:none; opacity:0; transform:scale(.4); transition:all .35s cubic-bezier(.34,1.56,.64,1); }
+.cpv-passo.feito .cpv-check{ background:var(--trigo); border-color:var(--trigo); }
+.cpv-passo.feito .cpv-check .icon{ opacity:1; transform:none; }
+.cpv-passo.feito b{ color:var(--ink-soft); text-decoration:line-through; text-decoration-color:rgba(217,164,65,.6); }
+.cpv-passo-tx{ flex:1; display:flex; flex-direction:column; gap:2px; }
+.cpv-passo-tx b{ font:600 15px var(--fino); }
+.cpv-passo-tx small{ font:400 13px var(--fino); color:var(--ink-soft); }
+.cpv-seta-dir{ width:18px; height:18px; stroke:var(--ink-faint); fill:none; flex:none; }
+
+/* ---------- Atalhos ---------- */
+.cpv-atalhos{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
+.cpv-atalhos > *{ display:flex; align-items:center; gap:10px; padding:13px 12px; border-radius:16px; background:var(--casca); border:1px solid rgba(243,231,211,.07); color:var(--miolo); font:600 13.5px var(--fino); text-decoration:none; cursor:pointer; }
+.cpv-atalhos .icon{ width:20px; height:20px; stroke:var(--trigo-claro); fill:none; flex:none; }
+.cpv-atalhos > *:active{ background:var(--casca-2); }
+
+/* ---------- Home do membro: esconde a estrutura antiga ---------- */
+#tela-membro-home.cpv-layout .home-bg, #tela-membro-home.cpv-layout .greet-box, #tela-membro-home.cpv-layout #home-stories,
+#tela-membro-home.cpv-layout #hero-carousel, #tela-membro-home.cpv-layout #hero-dots, #tela-membro-home.cpv-layout .atalhos-rapidos{ display:none!important; }
+#tela-membro-home.cpv-layout .topbar{ position:absolute; top:18px; right:16px; z-index:3; padding:0; margin:0; }
+#tela-membro-home.cpv-layout .topbar .badge{ display:none!important; }
+#tela-membro-home.cpv-layout .scroll{ position:relative; }
+#tela-membro-home.cpv-layout .pal-card{ margin-top:14px!important; }
+#tela-membro-home.cpv-layout #palavra-dia, #tela-membro-home.cpv-layout #checkin-diario-box{ margin-top:14px!important; scroll-margin:90px; }
+
+/* ---------- Visitante ---------- */
+#tela-visitante.cpv-layout .hero-boasvindas, #tela-visitante.cpv-layout .quicklinks,
+#tela-visitante.cpv-layout #secao-cultos, #tela-visitante.cpv-layout #lista-cultos{ display:none!important; }
+.cpv-marca{ display:flex; justify-content:center; padding:18px 0 6px; }
+.cpv-marca img{ width:min(78%,320px); height:auto; }
+.cpv-ola{ margin:6px auto 22px; max-width:30ch; text-align:center; font:400 14.5px/1.5 var(--fino); color:var(--ink-soft); }
+.cpv-guia{ list-style:none; margin:0; padding:0; position:relative; }
+.cpv-guia::before{ content:""; position:absolute; left:17px; top:22px; bottom:40px; width:1.5px; background:linear-gradient(var(--trigo), rgba(217,164,65,.15)); }
+.cpv-g{ position:relative; display:flex; gap:14px; padding-bottom:26px; }
+.cpv-g-n{ position:relative; z-index:1; flex:none; width:36px; height:36px; border-radius:50%; display:grid; place-items:center; background:var(--noite); border:1.5px solid var(--trigo); color:var(--trigo-claro); font:600 20px/1 var(--serif); }
+.cpv-g-c{ flex:1; min-width:0; padding-top:4px; }
+.cpv-g-c h2{ margin:0; font:500 26px/1.1 var(--serif); color:var(--miolo); }
+.cpv-g-c > p{ margin:4px 0 12px; font:400 14.5px/1.5 var(--fino); color:var(--ink-soft); }
+.cpv-semana{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:10px; }
+.cpv-semana button{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 0; border-radius:14px; background:transparent; border:1px solid var(--line); color:var(--ink-faint); font-family:var(--fino); cursor:default; }
+.cpv-semana button small{ font:500 11.5px var(--fino); }
+.cpv-semana button b{ font:600 14px var(--fino); }
+.cpv-semana button.tem{ color:var(--miolo); border-color:rgba(217,164,65,.4); background:var(--casca); cursor:pointer; }
+.cpv-semana button.tem b{ color:var(--trigo-claro); }
+.cpv-semana button.on{ background:var(--trigo); border-color:var(--trigo); color:#1B140C; }
+.cpv-semana button.on b{ color:#1B140C; }
+#cpv-agora-vis .cpv-agora{ min-height:220px; }
+
+/* ---------- Servir ---------- */
+.cpv-servir{ display:flex; flex-direction:column; gap:10px; }
+.cpv-area{ display:flex; align-items:center; gap:14px; width:100%; padding:16px; border-radius:20px; background:var(--casca); border:1px solid rgba(243,231,211,.07); color:var(--miolo); text-align:left; cursor:pointer; position:relative; overflow:hidden; font-family:var(--fino); }
+.cpv-area::before{ content:""; position:absolute; left:0; top:14px; bottom:14px; width:3px; border-radius:0 3px 3px 0; background:var(--cor); }
+.cpv-area-ic{ width:46px; height:46px; flex:none; border-radius:14px; display:grid; place-items:center; background:color-mix(in srgb, var(--cor) 16%, transparent); }
+.cpv-area-ic .icon{ width:22px; height:22px; stroke:var(--cor); fill:none; }
+.cpv-area-tx{ flex:1; display:flex; flex-direction:column; gap:3px; }
+.cpv-area-tx b{ font:500 22px/1.1 var(--serif); }
+.cpv-area-tx small{ font:400 13.5px/1.4 var(--fino); color:var(--ink-soft); }
+.cpv-area em{ font:600 11.5px var(--fino); font-style:normal; color:var(--ink-faint); padding:4px 9px; border-radius:99px; border:1px solid var(--line); white-space:nowrap; }
+.cpv-area[aria-disabled="true"]{ cursor:default; }
+.cpv-btn{ white-space:nowrap; }
+#cpv-agora-vis .cpv-agora{ padding:18px 14px 14px; }
+#cpv-agora-vis .cpv-agora-acoes .cpv-btn{ font-size:13px; padding:0 6px; gap:6px; }
+#cpv-agora-vis .cpv-agora h2{ font-size:31px; }
+.cpv-g-n{ font:700 15px/1 var(--fino)!important; }
+html.cpv .appbar-brand img#appbar-logo{ border:0!important; outline:0!important; padding:0!important; }
