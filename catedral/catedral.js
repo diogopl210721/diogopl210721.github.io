@@ -470,8 +470,45 @@ gl_FragColor=vec4(col,1.);}`;
     if (img && !img.src.endsWith(NOME)) { img.src = NOME; img.alt = "Catedral Pão da Vida"; img.classList.add("cpv-nome-barra"); }
   }
 
+  /* ---------- Aparência: claro ou escuro (escolha da pessoa) ---------- */
+  // no tema claro entram os arquivos pretos originais da logo e do nome
+  const LOGOS = { "assets/logo-branca.png": "assets/logo-preta.png", "assets/nome-script-branco.png": "assets/nome-script-preto.png" };
+  function temaClaro() { return document.documentElement.classList.contains("cpv-claro"); }
+  function trocarLogos() {
+    const claro = temaClaro();
+    $$("img").forEach(img => {
+      const src = img.getAttribute("src") || "";
+      for (const [esc0, cla] of Object.entries(LOGOS)) {
+        if (claro && src.endsWith(esc0)) img.setAttribute("src", src.replace(esc0, cla));
+        if (!claro && src.endsWith(cla)) img.setAttribute("src", src.replace(cla, esc0));
+      }
+    });
+  }
+  function rotuloTema() {
+    const claro = temaClaro();
+    const r = $("#tema-rotulo"); if (r) r.textContent = claro ? "Claro" : "Escuro";
+    const u = $(".dt-ic use"); if (u) u.setAttribute("href", claro ? "#k-sun" : "#k-moon");
+    const sw = $("#btn-tema"); if (sw) sw.setAttribute("aria-pressed", String(claro));
+    const meta = $('meta[name="theme-color"]'); if (meta) meta.content = claro ? "#F6EEE1" : "#16161C";
+  }
+  function aplicarTema(claro) {
+    document.documentElement.classList.toggle("cpv-claro", claro);
+    try { localStorage.setItem("cpv_tema", claro ? "claro" : "escuro"); } catch (e) {}
+    trocarLogos(); rotuloTema();
+  }
+  // o botão "Aparência" do menu passa a controlar o tema da Catedral
+  document.addEventListener("click", e => {
+    if (!(e.target.closest && e.target.closest("#btn-tema"))) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    aplicarTema(!temaClaro());
+  }, true);
+  new MutationObserver(() => { if (temaClaro()) trocarLogos(); }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["src"] });
+  window.cpvTema = aplicarTema;
+
   function iniciar() {
     document.documentElement.classList.add("cpv");
+    document.documentElement.classList.remove("claro");
+    trocarLogos(); rotuloTema();
     try { localStorage.setItem("igr_a2hs_fechado", "1"); } catch (e) {}
     injetarIcones();
     ligarNavegacao();
