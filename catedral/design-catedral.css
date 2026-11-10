@@ -301,3 +301,39 @@ html.cpv .scroll{ padding-bottom:110px!important; }
 .cpv-g-n{ font:700 15px/1 var(--fino)!important; }
 html.cpv .appbar-brand img#appbar-logo{ border:0!important; outline:0!important; padding:0!important; }
 html.cpv .appbar-brand img#appbar-logo.cpv-nome-barra{ height:auto!important; width:min(56vw,210px)!important; max-width:none; }
+
+/* ---------- Ícones em dois tons ---------- */
+.ci{ width:24px; height:24px; flex:none; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; overflow:visible; }
+.ci .d{ fill:currentColor; stroke:none; opacity:.22; }
+.ci .p{ fill:currentColor; stroke:none; }
+
+/* Abas: ícone ganha preenchimento quando ativo */
+#cpv-abas button .ci{ width:24px; height:24px; transition:transform .35s cubic-bezier(.34,1.56,.64,1); }
+#cpv-abas button.on .ci{ transform:translateY(-1px) scale(1.06); }
+#cpv-abas button.on .ci .d{ opacity:.35; }
+
+/* Atalhos: ladrilho com luz interna e borda em gradiente */
+.cpv-atalhos > *{ flex-direction:column; align-items:flex-start; gap:10px; padding:12px; min-height:92px; }
+.cpv-tile{ position:relative; width:40px; height:40px; border-radius:13px; display:grid; place-items:center; color:var(--trigo-claro);
+  background:radial-gradient(120% 120% at 25% 15%, rgba(241,207,134,.32), rgba(217,164,65,.08) 55%, rgba(20,17,14,.2)), var(--casca-2);
+  box-shadow:inset 0 1px 0 rgba(255,240,205,.22), inset 0 -8px 16px rgba(0,0,0,.25), 0 8px 18px -10px rgba(217,164,65,.55); }
+.cpv-tile::after{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1px; background:linear-gradient(160deg, rgba(241,207,134,.65), rgba(217,164,65,.05) 60%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+.cpv-tile .ci{ width:22px; height:22px; }
+.cpv-atalhos > * > span:last-child{ font:600 13.5px var(--fino); color:var(--miolo); }
+.cpv-atalhos > *:active .cpv-tile{ transform:scale(.94); }
+.cpv-tile{ transition:transform .3s cubic-bezier(.34,1.56,.64,1); }
+
+/* Servir: ícone com a cor do símbolo */
+.cpv-area-ic{ position:relative; color:var(--cor); background:radial-gradient(120% 120% at 25% 15%, color-mix(in srgb, var(--cor) 38%, transparent), color-mix(in srgb, var(--cor) 8%, transparent) 60%), var(--casca-2)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 10px 20px -12px var(--cor); }
+.cpv-area-ic .ci{ width:24px; height:24px; }
+.cpv-btn .ci, .cpv-agora-info .ci{ width:18px; height:18px; }
+.cpv-agora-info .ci{ color:var(--trigo-claro); }
+
+/* ---------- Visitante: cabeçalho compacto ---------- */
+.cpv-marca{ display:flex!important; align-items:center; gap:16px; padding:18px 2px 22px!important; justify-content:flex-start!important; }
+.cpv-marca img{ width:112px!important; flex:none; height:auto; }
+.cpv-marca h1{ margin:0 0 4px; font:500 30px/1.05 var(--serif); color:var(--miolo); }
+.cpv-marca p{ margin:0; font:400 13.5px/1.45 var(--fino); color:var(--ink-soft); }
+.cpv-ola{ display:none; }

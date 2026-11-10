@@ -19,6 +19,41 @@
   const hojeISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
   const membro = () => (typeof state !== "undefined" && state.membro) || null;
 
+
+  /* Ícones próprios em dois tons: uma forma preenchida suave (.d) + traço */
+  const ICONES = {
+    "c-hoje": '<path class="d" d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M3 11 12 3.5 21 11"/><path d="M5.5 9.6V19a1.5 1.5 0 0 0 1.5 1.5h10A1.5 1.5 0 0 0 18.5 19V9.6"/><path d="M10 20.5v-5a2 2 0 0 1 4 0v5"/>',
+    "c-agenda": '<rect class="d" x="3.5" y="5" width="17" height="15.5" rx="3.5"/><rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle class="p" cx="8.5" cy="14.5" r="1.3"/><circle class="p" cx="12" cy="14.5" r="1.3"/><circle class="p" cx="15.5" cy="14.5" r="1.3"/>',
+    "c-servir": '<path class="d" d="M12 20.5s-7.5-4.6-9-9.4C1.9 7.6 4 4.5 7.3 4.5c2 0 3.4 1.1 4.7 2.8 1.3-1.7 2.7-2.8 4.7-2.8 3.3 0 5.4 3.1 4.3 6.6-1.5 4.8-9 9.4-9 9.4z"/><path d="M12 20.5s-7.5-4.6-9-9.4C1.9 7.6 4 4.5 7.3 4.5c2 0 3.4 1.1 4.7 2.8 1.3-1.7 2.7-2.8 4.7-2.8 3.3 0 5.4 3.1 4.3 6.6-1.5 4.8-9 9.4-9 9.4z"/><path d="M7.5 11.5h2.2l1.3-2.5 2 5 1.3-2.5h2.2"/>',
+    "c-biblia": '<path class="d" d="M5.5 4.5A1.5 1.5 0 0 1 7 3h11.5v15H7a1.5 1.5 0 0 0-1.5 1.5z"/><path d="M5.5 19.5V4.5A1.5 1.5 0 0 1 7 3h11.5v15H7a1.5 1.5 0 0 0 0 3h11.5"/><path d="M12 6.5v7M9.5 9h5"/>',
+    "c-eu": '<circle class="d" cx="12" cy="8.5" r="4.5"/><circle cx="12" cy="8.5" r="4.5"/><path class="d" d="M4 20.5c.8-4 4-6 8-6s7.2 2 8 6z"/><path d="M4 20.5c.8-4 4-6 8-6s7.2 2 8 6"/>',
+    "c-entrar": '<path class="d" d="M13 3.5h4.5A2.5 2.5 0 0 1 20 6v12a2.5 2.5 0 0 1-2.5 2.5H13z"/><path d="M13 3.5h4.5A2.5 2.5 0 0 1 20 6v12a2.5 2.5 0 0 1-2.5 2.5H13"/><path d="M3.5 12H14M10.5 8.5 14 12l-3.5 3.5"/>',
+    "c-diario": '<rect class="d" x="5" y="3" width="14" height="18" rx="3"/><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 3v18"/><path class="p" d="M14 9.2c-.9-1.1-2.6-.6-2.6.8 0 1.4 2.6 3 2.6 3s2.6-1.6 2.6-3c0-1.4-1.7-1.9-2.6-.8z"/>',
+    "c-eventos": '<path class="d" d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v1.8a2.7 2.7 0 0 0 0 5.4v1.8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-1.8a2.7 2.7 0 0 0 0-5.4z"/><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v1.8a2.7 2.7 0 0 0 0 5.4v1.8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-1.8a2.7 2.7 0 0 0 0-5.4z"/><path d="M14 5v2M14 11v2M14 17v2"/>',
+    "c-chat": '<path class="d" d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17A2.5 2.5 0 0 1 4 14.5z"/><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17A2.5 2.5 0 0 1 4 14.5z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/>',
+    "c-fotos": '<rect class="d" x="3" y="5" width="18" height="15" rx="3"/><rect x="3" y="5" width="18" height="15" rx="3"/><circle class="p" cx="8.5" cy="10" r="1.6"/><path d="M3.5 17.5 9 12.5l3.5 3 2.5-2 5.5 4.5"/>',
+    "c-grupos": '<circle class="d" cx="9" cy="8.5" r="3.5"/><circle cx="9" cy="8.5" r="3.5"/><path class="d" d="M2.5 19.5c.6-3.3 3.2-5 6.5-5s5.9 1.7 6.5 5z"/><path d="M2.5 19.5c.6-3.3 3.2-5 6.5-5s5.9 1.7 6.5 5"/><path d="M15.5 5.3a3.2 3.2 0 0 1 0 6.4M17.5 14.8c2.2.5 3.6 2 4 4.7"/>',
+    "c-tudo": '<rect class="d" x="3.5" y="3.5" width="7" height="7" rx="2.2"/><rect x="3.5" y="3.5" width="7" height="7" rx="2.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2.2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2.2"/><rect class="d" x="13.5" y="13.5" width="7" height="7" rx="2.2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2.2"/>',
+    "c-avisos": '<path class="d" d="M4 9.5v5h3l8 4.5V5L7 9.5z"/><path d="M4 9.5v5h3l8 4.5V5L7 9.5z"/><path d="M7 14.5 8.5 20h2.5"/><path d="M18 9.5a3.5 3.5 0 0 1 0 5M19.5 7a7 7 0 0 1 0 10"/>',
+    "c-livros": '<rect class="d" x="3.5" y="4" width="5" height="16" rx="1.4"/><rect x="3.5" y="4" width="5" height="16" rx="1.4"/><rect x="10" y="6.5" width="5" height="13.5" rx="1.4"/><path class="d" d="m16.6 8.4 3.6-1 2.8 11.6-3.6 1z"/><path d="m16.6 8.4 3.6-1 2.8 11.6-3.6 1zM3.5 8h5M10 10h5"/>',
+    "c-aovivo": '<rect class="d" x="3" y="6" width="13" height="12" rx="3"/><rect x="3" y="6" width="13" height="12" rx="3"/><path d="m16 10.5 5-3v9l-5-3"/><circle class="p" cx="7.5" cy="10" r="1.3"/>',
+    "c-musica": '<path class="d" d="M9 17.5a3 3 0 1 1-3-3 3 3 0 0 1 3 3zM20 15.5a3 3 0 1 1-3-3 3 3 0 0 1 3 3z"/><path d="M9 17.5V6l11-2.5v12"/><circle cx="6" cy="17.5" r="3"/><circle cx="17" cy="15.5" r="3"/><path d="M9 9.5l11-2.5"/>',
+    "c-calice": '<path class="d" d="M6 3.5h12c0 5-2.5 8-6 8s-6-3-6-8z"/><path d="M6 3.5h12c0 5-2.5 8-6 8s-6-3-6-8zM12 11.5v6M8 20.5h8M9.5 17.5h5"/>',
+    "c-coroa": '<path class="d" d="M3.5 8 7.5 12l4.5-7 4.5 7 4-4-1.5 10.5h-14z"/><path d="M3.5 8 7.5 12l4.5-7 4.5 7 4-4-1.5 10.5h-14zM5 21h14"/>',
+    "c-crianca": '<circle class="d" cx="12" cy="7" r="3.5"/><circle cx="12" cy="7" r="3.5"/><path class="d" d="M7 21v-4.5a5 5 0 0 1 10 0V21z"/><path d="M7 21v-4.5a5 5 0 0 1 10 0V21M4 12.5l3 2M20 12.5l-3 2"/>',
+    "c-pin": '<path class="d" d="M12 21s-7-6-7-11.5a7 7 0 0 1 14 0C19 15 12 21 12 21z"/><path d="M12 21s-7-6-7-11.5a7 7 0 0 1 14 0C19 15 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+    "c-convidar": '<circle class="d" cx="9.5" cy="8" r="3.5"/><circle cx="9.5" cy="8" r="3.5"/><path d="M3 20c.6-3.4 3.2-5.5 6.5-5.5 1.6 0 3 .4 4.1 1.2M18.5 13v7M15 16.5h7"/>',
+    "c-relogio": '<circle class="d" cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  };
+  function injetarIcones() {
+    if (document.getElementById("cpv-icones")) return;
+    const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    sv.id = "cpv-icones"; sv.setAttribute("width", "0"); sv.setAttribute("height", "0"); sv.style.position = "absolute";
+    sv.innerHTML = Object.entries(ICONES).map(([id, p]) => `<symbol id="${id}" viewBox="0 0 24 24">${p}</symbol>`).join("");
+    document.body.prepend(sv);
+  }
+  const ci = (id, cls = "") => `<svg class="ci ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+
   /* ============ 1) Abertura: a logo original, revelada pela luz ============ */
   function abertura() {
     const antigo = document.getElementById("intro-overlay");
@@ -93,17 +128,17 @@
 
   /* ============ 2) Barra de abas única ============ */
   const ABAS_MEMBRO = [
-    { id: "hoje", rot: "Hoje", ic: "i-home", tela: "tela-membro-home" },
-    { id: "agenda", rot: "Agenda", ic: "k-calendar", tela: "tela-calendario" },
-    { id: "servir", rot: "Servir", ic: "i-heart", tela: "tela-cpv-servir" },
-    { id: "biblia", rot: "Bíblia", ic: "k-bible", tela: "tela-biblia" },
-    { id: "eu", rot: "Eu", ic: "i-user", acao: () => $("#btn-meu-perfil")?.click() },
+    { id: "hoje", rot: "Hoje", ic: "c-hoje", tela: "tela-membro-home" },
+    { id: "agenda", rot: "Agenda", ic: "c-agenda", tela: "tela-calendario" },
+    { id: "servir", rot: "Servir", ic: "c-servir", tela: "tela-cpv-servir" },
+    { id: "biblia", rot: "Bíblia", ic: "c-biblia", tela: "tela-biblia" },
+    { id: "eu", rot: "Eu", ic: "c-eu", acao: () => $("#btn-meu-perfil")?.click() },
   ];
   const ABAS_VISITANTE = [
-    { id: "inicio", rot: "Início", ic: "i-home", tela: "tela-visitante" },
-    { id: "agenda", rot: "Agenda", ic: "k-calendar", tela: "tela-calendario" },
-    { id: "biblia", rot: "Bíblia", ic: "k-bible", tela: "tela-biblia" },
-    { id: "entrar", rot: "Entrar", ic: "k-enter", tela: "tela-login" },
+    { id: "inicio", rot: "Início", ic: "c-hoje", tela: "tela-visitante" },
+    { id: "agenda", rot: "Agenda", ic: "c-agenda", tela: "tela-calendario" },
+    { id: "biblia", rot: "Bíblia", ic: "c-biblia", tela: "tela-biblia" },
+    { id: "entrar", rot: "Entrar", ic: "c-entrar", tela: "tela-login" },
   ];
   const TELA_ABA = { "tela-membro-home": "hoje", "tela-visitante": "inicio", "tela-calendario": "agenda", "tela-cpv-servir": "servir", "tela-membro-louvor": "servir", "tela-biblia": "biblia", "tela-editar-perfil": "eu", "tela-login": "entrar", "tela-cadastro": "entrar" };
 
@@ -111,7 +146,7 @@
     let bar = $("#cpv-abas");
     if (!bar) { bar = document.createElement("nav"); bar.id = "cpv-abas"; bar.setAttribute("aria-label", "Navegação principal"); document.body.appendChild(bar); }
     const lista = membro() ? ABAS_MEMBRO : ABAS_VISITANTE;
-    bar.innerHTML = `<i class="cpv-abas-luz"></i>` + lista.map(a => `<button type="button" data-aba="${a.id}">${ic(a.ic)}<span>${a.rot}</span></button>`).join("");
+    bar.innerHTML = `<i class="cpv-abas-luz"></i>` + lista.map(a => `<button type="button" data-aba="${a.id}">${ci(a.ic)}<span>${a.rot}</span></button>`).join("");
     $$("button", bar).forEach((b, i) => b.addEventListener("click", () => {
       const a = lista[i];
       if (a.acao) a.acao(); else irPara(a.tela);
@@ -181,10 +216,10 @@
         <div class="cpv-agora-topo"><span class="cpv-pulso"></span><b data-falta>${esc(falta(p.alvo))}</b></div>
         <h2>${esc(c.titulo)}</h2>
         ${p.tema ? `<p class="cpv-agora-tema">${p.tema.n}º domingo do mês: ${esc(p.tema.tema)}</p>` : ""}
-        <p class="cpv-agora-info">${ic("k-clock")} ${dia} às ${esc(String(c.horario || "").slice(0, 5))}${c.local ? ` · ${esc(c.local)}` : ""}</p>
+        <p class="cpv-agora-info">${ci("c-relogio")} ${dia} às ${esc(String(c.horario || "").slice(0, 5))}${c.local ? ` · ${esc(c.local)}` : ""}</p>
         <div class="cpv-agora-acoes">
-          <a class="cpv-btn claro" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((state.igreja?.nome || "") + " " + (state.igreja?.endereco || ""))}" target="_blank" rel="noopener">${ic("k-pin")} Como chegar</a>
-          <button class="cpv-btn vidro" type="button" data-cpv-share>${ic("k-share2")} Convidar alguém</button>
+          <a class="cpv-btn claro" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((state.igreja?.nome || "") + " " + (state.igreja?.endereco || ""))}" target="_blank" rel="noopener">${ci("c-pin")} Como chegar</a>
+          <button class="cpv-btn vidro" type="button" data-cpv-share>${ci("c-convidar")} Convidar alguém</button>
         </div>
       </article>`;
   }
@@ -249,8 +284,8 @@
           </ol>
         </section>
         <nav class="cpv-atalhos" aria-label="Atalhos">
-          ${[["Diário", "k-diary", "tela-diario"], ["Eventos", "k-event", "tela-eventos"], ["Chat", "k-chat", "tela-mensagens"], ["Fotos", "k-photos", "tela-fotos"], ["Grupos", "i-user", "tela-grupos-lista"], ["Tudo", "k-grid", null]]
-            .map(([r, i, t]) => `<button type="button" ${t ? `data-nav="${t}"` : "data-abrir-explorar"}>${ic(i)}<span>${r}</span></button>`).join("")}
+          ${[["Diário", "c-diario", "tela-diario"], ["Eventos", "c-eventos", "tela-eventos"], ["Chat", "c-chat", "tela-mensagens"], ["Fotos", "c-fotos", "tela-fotos"], ["Grupos", "c-grupos", "tela-grupos-lista"], ["Tudo", "c-tudo", null]]
+            .map(([r, i, t]) => `<button type="button" ${t ? `data-nav="${t}"` : "data-abrir-explorar"}><span class="cpv-tile">${ci(i)}</span><span>${r}</span></button>`).join("")}
         </nav>`;
       $$(".cpv-passo", topo).forEach(b => b.addEventListener("click", () => acaoPasso(b.dataset.passo)));
       $$("#checkin-diario-box .reacao-btn").forEach(b => b.addEventListener("click", () => marcar("humor")));
@@ -281,8 +316,10 @@
       topo.id = "cpv-bemvindo";
       sc.prepend(topo);
       topo.innerHTML = `
-        <div class="cpv-marca"><img src="${LOGO}" alt="Catedral Pão da Vida — Pr. Ismair e Pra. Débora"></div>
-        <p class="cpv-ola">Igreja do Evangelho Quadrangular em Balneário Ipanema, Pontal do Paraná.</p>
+        <header class="cpv-marca">
+          <img src="${LOGO}" alt="Catedral Pão da Vida — Pr. Ismair e Pra. Débora">
+          <div><h1>Seja bem-vindo</h1><p>Igreja do Evangelho Quadrangular em Balneário Ipanema, Pontal do Paraná.</p></div>
+        </header>
         <ol class="cpv-guia">
           <li class="cpv-g">
             <span class="cpv-g-n">1</span>
@@ -304,8 +341,8 @@
         </ol>
         <h2 class="cpv-sec">Explore</h2>
         <nav class="cpv-atalhos" aria-label="Explorar">
-          ${[["Avisos", "k-megaphone2", "#secao-avisos"], ["Fotos", "k-photos", "tela-fotos"], ["Eventos", "k-ticket", "tela-eventos"], ["Livros", "k-books", "tela-biblioteca"], ["Ao vivo", "k-live", "tela-camera-jerusalem"], ["Bíblia", "k-bible", "tela-biblia"]]
-            .map(([r, i, t]) => t.startsWith("#") ? `<a href="${t}">${ic(i)}<span>${r}</span></a>` : `<button type="button" data-nav="${t}">${ic(i)}<span>${r}</span></button>`).join("")}
+          ${[["Avisos", "c-avisos", "#secao-avisos"], ["Fotos", "c-fotos", "tela-fotos"], ["Eventos", "c-eventos", "tela-eventos"], ["Livros", "c-livros", "tela-biblioteca"], ["Ao vivo", "c-aovivo", "tela-camera-jerusalem"], ["Bíblia", "c-biblia", "tela-biblia"]]
+            .map(([r, i, t]) => t.startsWith("#") ? `<a href="${t}"><span class="cpv-tile">${ci(i)}</span><span>${r}</span></a>` : `<button type="button" data-nav="${t}"><span class="cpv-tile">${ci(i)}</span><span>${r}</span></button>`).join("")}
         </nav>`;
     }
     const lista = await cultos();
@@ -338,17 +375,17 @@
     const t = document.createElement("div");
     t.className = "screen cpv-layout"; t.id = "tela-cpv-servir";
     const areas = [
-      { cor: "var(--s-pomba)", tit: "Louvor", sub: "Escalas, repertório, mapa de ensaio e VS", tela: "tela-membro-louvor", ic: "i-music" },
-      { cor: "var(--s-calice)", tit: "Diaconato", sub: "Escala dos cultos, Santa Ceia e portaria", ic: "i-heart" },
-      { cor: "var(--s-coroa)", tit: "Reuniões", sub: "Líderes, ministérios e pastores", ic: "k-calendar" },
-      { cor: "var(--s-cruz)", tit: "Ministério Infantil", sub: "Crianças de 0 a 5 anos", ic: "i-user", tela: "tela-grupos-lista" },
+      { cor: "var(--s-pomba)", tit: "Louvor", sub: "Escalas, repertório, mapa de ensaio e VS", tela: "tela-membro-louvor", ic: "c-musica" },
+      { cor: "var(--s-calice)", tit: "Diaconato", sub: "Escala dos cultos, Santa Ceia e portaria", ic: "c-calice" },
+      { cor: "var(--s-coroa)", tit: "Reuniões", sub: "Líderes, ministérios e pastores", ic: "c-coroa" },
+      { cor: "var(--s-cruz)", tit: "Ministério Infantil", sub: "Crianças de 0 a 5 anos", ic: "c-crianca", tela: "tela-grupos-lista" },
     ];
     t.innerHTML = `<div class="scroll">
       <header class="cpv-saudacao"><p>Onde você serve</p><h1>Servir</h1></header>
       <p class="cpv-intro-tx">Tudo do seu ministério num lugar só: a próxima escala, o que ensaiar e as reuniões.</p>
       <div class="cpv-servir">
         ${areas.map(a => `<button type="button" class="cpv-area" style="--cor:${a.cor}" ${a.tela ? `data-nav="${a.tela}"` : `aria-disabled="true"`}>
-          <span class="cpv-area-ic">${ic(a.ic)}</span>
+          <span class="cpv-area-ic">${ci(a.ic)}</span>
           <span class="cpv-area-tx"><b>${a.tit}</b><small>${a.sub}</small></span>
           ${a.tela ? ic("k-chevron", "cpv-seta-dir") : `<em>Em breve</em>`}
         </button>`).join("")}
@@ -368,6 +405,7 @@
   function iniciar() {
     document.documentElement.classList.add("cpv");
     try { localStorage.setItem("igr_a2hs_fechado", "1"); } catch (e) {}
+    injetarIcones();
     ligarNavegacao();
     barra();
     telaServir();
