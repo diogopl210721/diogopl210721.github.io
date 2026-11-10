@@ -205,7 +205,7 @@ gl_FragColor=vec4(col,1.);}`;
     { id: "biblia", rot: "Bíblia", ic: "c-biblia", tela: "tela-biblia" },
     { id: "entrar", rot: "Entrar", ic: "c-entrar", tela: "tela-login" },
   ];
-  const TELA_ABA = { "tela-membro-home": "hoje", "tela-visitante": "inicio", "tela-calendario": "agenda", "tela-cpv-servir": "servir", "tela-membro-louvor": "servir", "tela-biblia": "biblia", "tela-editar-perfil": "eu", "tela-login": "entrar", "tela-cadastro": "entrar" };
+  const TELA_ABA = { "tela-membro-home": "hoje", "tela-visitante": "inicio", "tela-calendario": "agenda", "tela-cpv-servir": "servir", "tela-membro-louvor": "servir", "tela-cpv-diaconato": "servir", "tela-cpv-diac-editor": "servir", "tela-cpv-reunioes": "servir", "tela-cpv-reuniao-form": "servir", "tela-biblia": "biblia", "tela-editar-perfil": "eu", "tela-login": "entrar", "tela-cadastro": "entrar" };
 
   function abas() {
     let bar = $("#cpv-abas");
@@ -349,8 +349,8 @@ gl_FragColor=vec4(col,1.);}`;
           </ol>
         </section>
         <nav class="cpv-atalhos" aria-label="Atalhos">
-          ${[["Diário", "c-diario", "tela-diario"], ["Eventos", "c-eventos", "tela-eventos"], ["Chat", "c-chat", "tela-mensagens"], ["Fotos", "c-fotos", "tela-fotos"], ["Grupos", "c-grupos", "tela-grupos-lista"], ["Tudo", "c-tudo", null]]
-            .map(([r, i, t]) => `<button type="button" ${t ? `data-nav="${t}"` : "data-abrir-explorar"}><span class="cpv-tile">${ci(i)}</span><span>${r}</span></button>`).join("")}
+          ${[["Diário", "c-diario", "tela-diario"], ["Eventos", "c-eventos", "tela-eventos"], ["Chat", "c-chat", "tela-mensagens"], ["Ofertar", "c-oferta", "@tela-cpv-ofertas"], ["Grupos", "c-grupos", "tela-grupos-lista"], ["Tudo", "c-tudo", null]]
+            .map(([r, i, t]) => `<button type="button" ${!t ? "data-abrir-explorar" : t.startsWith("@") ? `data-cpv-ir="${t.slice(1)}"` : `data-nav="${t}"`}><span class="cpv-tile">${ci(i)}</span><span>${r}</span></button>`).join("")}
         </nav>`;
       $$(".cpv-passo", topo).forEach(b => b.addEventListener("click", () => acaoPasso(b.dataset.passo)));
       $$("#checkin-diario-box .reacao-btn").forEach(b => b.addEventListener("click", () => marcar("humor")));
@@ -406,8 +406,8 @@ gl_FragColor=vec4(col,1.);}`;
         </ol>
         <h2 class="cpv-sec">Explore</h2>
         <nav class="cpv-atalhos" aria-label="Explorar">
-          ${[["Avisos", "c-avisos", "#secao-avisos"], ["Fotos", "c-fotos", "tela-fotos"], ["Eventos", "c-eventos", "tela-eventos"], ["Livros", "c-livros", "tela-biblioteca"], ["Ao vivo", "c-aovivo", "tela-camera-jerusalem"], ["Bíblia", "c-biblia", "tela-biblia"]]
-            .map(([r, i, t]) => t.startsWith("#") ? `<a href="${t}"><span class="cpv-tile">${ci(i)}</span><span>${r}</span></a>` : `<button type="button" data-nav="${t}"><span class="cpv-tile">${ci(i)}</span><span>${r}</span></button>`).join("")}
+          ${[["Avisos", "c-avisos", "#secao-avisos"], ["Fotos", "c-fotos", "tela-fotos"], ["Eventos", "c-eventos", "tela-eventos"], ["Ofertar", "c-oferta", "@tela-cpv-ofertas"], ["Ao vivo", "c-aovivo", "tela-camera-jerusalem"], ["Bíblia", "c-biblia", "tela-biblia"]]
+            .map(([r, i, t]) => t.startsWith("#") ? `<a href="${t}"><span class="cpv-tile">${ci(i)}</span><span>${r}</span></a>` : `<button type="button" ${t.startsWith("@") ? `data-cpv-ir="${t.slice(1)}"` : `data-nav="${t}"`}><span class="cpv-tile">${ci(i)}</span><span>${r}</span></button>`).join("")}
         </nav>`;
     }
     const lista = await cultos();
@@ -440,20 +440,23 @@ gl_FragColor=vec4(col,1.);}`;
     const t = document.createElement("div");
     t.className = "screen cpv-layout"; t.id = "tela-cpv-servir";
     const areas = [
-      { cor: "var(--s-pomba)", tit: "Louvor", sub: "Escalas, repertório, mapa de ensaio e VS", tela: "tela-membro-louvor", ic: "c-musica" },
-      { cor: "var(--s-calice)", tit: "Diaconato", sub: "Escala dos cultos, Santa Ceia e portaria", ic: "c-calice" },
-      { cor: "var(--s-coroa)", tit: "Reuniões", sub: "Líderes, ministérios e pastores", ic: "c-coroa" },
-      { cor: "var(--s-cruz)", tit: "Ministério Infantil", sub: "Crianças de 0 a 5 anos", ic: "c-crianca", tela: "tela-grupos-lista" },
+      { chave: "louvor", cor: "var(--s-pomba)", tit: "Louvor", sub: "Escalas, repertório e ensaios", nav: "tela-membro-louvor", ic: "c-musica" },
+      { chave: "vs", cor: "var(--s-pomba)", tit: "VS · DDS MultiTrack", sub: "Abrir as faixas pro culto", link: "https://www.ddsinovacao.com.br/vs", ic: "c-aovivo" },
+      { chave: "diaconato", cor: "var(--s-calice)", tit: "Diaconato", sub: "Escala dos cultos, Santa Ceia e portaria", ir: "tela-cpv-diaconato", ic: "c-calice" },
+      { chave: "reunioes", cor: "var(--s-coroa)", tit: "Reuniões", sub: "Líderes, ministérios e pastores", ir: "tela-cpv-reunioes", ic: "c-coroa" },
+      { chave: "infantil", cor: "var(--s-cruz)", tit: "Ministério Infantil", sub: "Crianças de 0 a 5 anos", nav: "tela-grupos-lista", ic: "c-crianca" },
     ];
+    const seta = '<svg class="ci cpv-seta-dir" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
     t.innerHTML = `<div class="scroll">
       <header class="cpv-saudacao"><p>Onde você serve</p><h1>Servir</h1></header>
       <p class="cpv-intro-tx">Tudo do seu ministério num lugar só: a próxima escala, o que ensaiar e as reuniões.</p>
       <div class="cpv-servir">
-        ${areas.map(a => `<button type="button" class="cpv-area" style="--cor:${a.cor}" ${a.tela ? `data-nav="${a.tela}"` : `aria-disabled="true"`}>
+        ${areas.map(a => {
+          const attr = a.link ? `href="${a.link}" target="_blank" rel="noopener"` : a.ir ? `data-cpv-ir="${a.ir}"` : `data-nav="${a.nav}"`;
+          const tag = a.link ? "a" : "button";
+          return `<${tag} ${tag === "button" ? 'type="button"' : ""} class="cpv-area" data-area="${a.chave}" style="--cor:${a.cor}" ${attr}>
           <span class="cpv-area-ic">${ci(a.ic)}</span>
-          <span class="cpv-area-tx"><b>${a.tit}</b><small>${a.sub}</small></span>
-          ${a.tela ? ic("k-chevron", "cpv-seta-dir") : `<em>Em breve</em>`}
-        </button>`).join("")}
+          <span class="cpv-area-tx"><b>${a.tit}</b><small>${a.sub}</small></span>${seta}</${tag}>`; }).join("")}
       </div>
     </div>`;
     ref.after(t);

@@ -6538,7 +6538,7 @@ async function carregarPainelAdmin() {
         <label class="interesse-item"><input type="checkbox" value="editar_grupo" checked> Editar capa/descrição</label>
         <label class="interesse-item"><input type="checkbox" value="postar_avisos" checked> Postar avisos</label>
         <label class="interesse-item"><input type="checkbox" value="gerenciar_oracao" checked> Ver pedidos de oração</label>
-        <label class="interesse-item"><input type="checkbox" value="gerenciar_louvor"> Gerenciar Louvor</label>
+        <label class="interesse-item"><input type="checkbox" value="gerenciar_louvor"> Gerenciar Louvor</label><label class="interesse-item"><input type="checkbox" value="gerenciar_diaconato"> Montar escalas do Diaconato</label><label class="interesse-item"><input type="checkbox" value="gerenciar_reunioes"> Registrar reuniões</label><label class="interesse-item"><input type="checkbox" value="gerenciar_ofertas"> Configurar ofertas</label>
       </div>
       <div style="display:flex;gap:8px;margin-top:4px;">
         <button class="btn btn-primary" style="width:auto;padding:9px 16px;font-size:12.5px;" data-acao="aprovar" data-id="${m.id}">Aprovar</button>
@@ -6633,7 +6633,7 @@ async function promoverMembroALider() {
 
 const LABELS_PERMISSOES = {
   editar_grupo: "Editar grupo", postar_avisos: "Postar avisos",
-  gerenciar_oracao: "Ver oração", gerenciar_louvor: "Gerenciar Louvor",
+  gerenciar_oracao: "Ver oração", gerenciar_louvor: "Gerenciar Louvor", gerenciar_diaconato: "Escalas do Diaconato", gerenciar_reunioes: "Reuniões", gerenciar_ofertas: "Ofertas",
 };
 
 async function carregarLideresAtivos() {
@@ -6660,6 +6660,9 @@ async function carregarLideresAtivos() {
           <label class="interesse-item"><input type="checkbox" value="postar_avisos" ${(m.permissoes || []).includes("postar_avisos") ? "checked" : ""}> Postar avisos</label>
           <label class="interesse-item"><input type="checkbox" value="gerenciar_oracao" ${(m.permissoes || []).includes("gerenciar_oracao") ? "checked" : ""}> Ver pedidos de oração</label>
           <label class="interesse-item"><input type="checkbox" value="gerenciar_louvor" ${(m.permissoes || []).includes("gerenciar_louvor") ? "checked" : ""}> Gerenciar Louvor</label>
+          <label class="interesse-item"><input type="checkbox" value="gerenciar_diaconato" ${(m.permissoes || []).includes("gerenciar_diaconato") ? "checked" : ""}> Montar escalas do Diaconato</label>
+          <label class="interesse-item"><input type="checkbox" value="gerenciar_reunioes" ${(m.permissoes || []).includes("gerenciar_reunioes") ? "checked" : ""}> Registrar reuniões</label>
+          <label class="interesse-item"><input type="checkbox" value="gerenciar_ofertas" ${(m.permissoes || []).includes("gerenciar_ofertas") ? "checked" : ""}> Configurar ofertas</label>
         </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary" style="flex:1;" data-salvar-lider="${m.id}">Salvar</button>
