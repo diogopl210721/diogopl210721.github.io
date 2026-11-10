@@ -54,6 +54,60 @@
   }
   const ci = (id, cls = "") => `<svg class="ci ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
+
+  /* Fundo líquido (WebGL) nos tons da Catedral: noite, trigo e brasa */
+  function auroraQuente(cv) {
+    const gl = cv.getContext("webgl", { antialias: false, alpha: false, powerPreference: "low-power" });
+    if (!gl) { cv.style.background = "radial-gradient(80% 70% at 50% 35%,#3b2a17,#14110E)"; return { play() {}, stop() {} }; }
+    const vs = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+    const fs = `precision mediump float;uniform vec2 r;uniform float t;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),u.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),u.x),u.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+void main(){vec2 p=(gl_FragCoord.xy-.5*r)/min(r.x,r.y);float tt=t*.12;
+vec2 q=vec2(fbm(p*1.5+tt),fbm(p*1.5+vec2(5.2,1.3)-tt));
+vec2 w=vec2(fbm(p*1.5+2.*q+vec2(1.7,9.2)+tt*1.3),fbm(p*1.5+2.*q+vec2(8.3,2.8)-tt));
+float v=fbm(p*1.3+2.4*w);
+vec3 B=vec3(.06,.045,.035),c1=vec3(.36,.2,.07),c2=vec3(.98,.78,.4),c3=vec3(.55,.22,.1);
+vec3 col=mix(B,c1,smoothstep(.3,.85,v));
+col=mix(col,c3,smoothstep(.5,.95,length(w))*.45);
+col+=c2*pow(smoothstep(.55,.95,v+.15*sin(tt*3.+p.x*3.)),3.)*.5;
+col*=1.-.6*length(p*.7);
+gl_FragColor=vec4(col,1.);}`;
+    const sh = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+    const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr); gl.useProgram(pr);
+    const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const ur = gl.getUniformLocation(pr, "r"), ut = gl.getUniformLocation(pr, "t");
+    let on = false, raf = 0; const t0 = performance.now();
+    const size = () => { cv.width = Math.max(2, cv.clientWidth * .5 | 0); cv.height = Math.max(2, cv.clientHeight * .5 | 0); gl.viewport(0, 0, cv.width, cv.height); };
+    const draw = () => { if (!on) return; gl.uniform2f(ur, cv.width, cv.height); gl.uniform1f(ut, (performance.now() - t0) / 1000); gl.drawArrays(gl.TRIANGLES, 0, 3); raf = requestAnimationFrame(draw); };
+    addEventListener("resize", () => { if (on) size(); });
+    return { play() { if (!on) { on = true; size(); draw(); } }, stop() { on = false; cancelAnimationFrame(raf); } };
+  }
+  /* Partículas douradas subindo (aceleram ao deslizar) */
+  function particulas(cv) {
+    const cx = cv.getContext("2d"); let W = 0, H = 0, vivo = true, impulso = 0;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dim = () => { W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    dim(); addEventListener("resize", dim);
+    const pts = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), r: .6 + Math.random() * 2.2, v: .02 + Math.random() * .06, d: Math.random() * 6.28, z: .3 + Math.random() }));
+    (function quadro() {
+      if (!vivo) return;
+      cx.clearRect(0, 0, W, H);
+      pts.forEach(p => {
+        p.y -= p.v * .004 * (1 + impulso * 10) * p.z; p.d += .012;
+        if (p.y < -.05) { p.y = 1.05; p.x = Math.random(); }
+        const x = (p.x + Math.sin(p.d) * .015) * W, y = p.y * H, a = .25 + .55 * p.z;
+        const g = cx.createRadialGradient(x, y, 0, x, y, p.r * 4);
+        g.addColorStop(0, `rgba(241,207,134,${a})`); g.addColorStop(1, "rgba(217,164,65,0)");
+        cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, p.r * 4, 0, 6.29); cx.fill();
+      });
+      requestAnimationFrame(quadro);
+    })();
+    return { impulso(v) { impulso = v; }, parar() { vivo = false; } };
+  }
+
   /* ============ 1) Abertura: a logo original, revelada pela luz ============ */
   function abertura() {
     const antigo = document.getElementById("intro-overlay");
@@ -65,6 +119,9 @@
     const ov = document.createElement("div");
     ov.id = "cpv-intro";
     ov.innerHTML = `
+      <canvas class="cpv-aurora"></canvas>
+      <canvas class="cpv-particulas"></canvas>
+      <div class="cpv-aneis"><i></i><i></i><i></i></div>
       <div class="cpv-grao"></div>
       <div class="cpv-logo-palco"><img class="cpv-logo" src="${LOGO}" alt="Catedral Pão da Vida — Pr. Ismair e Pra. Débora"><span class="cpv-varredura"></span></div>
       <div class="cpv-quatro" aria-hidden="true"><i style="--c:var(--s-cruz)"></i><i style="--c:var(--s-pomba)"></i><i style="--c:var(--s-calice)"></i><i style="--c:var(--s-coroa)"></i></div>
@@ -73,6 +130,12 @@
     document.body.appendChild(ov);
     document.documentElement.classList.add("cpv-abrindo");
 
+    const fundo = auroraQuente($(".cpv-aurora", ov)); fundo.play();
+    const pts = particulas($(".cpv-particulas", ov));
+    // a logo inclina levemente com o dedo/mouse
+    const palco = $(".cpv-logo-palco", ov);
+    const inclina = (x, y) => { palco.style.setProperty("--ry", ((x / innerWidth - .5) * 14).toFixed(2) + "deg"); palco.style.setProperty("--rx", (-(y / innerHeight - .5) * 14).toFixed(2) + "deg"); };
+    ov.addEventListener("pointermove", e => inclina(e.clientX, e.clientY));
     const g = window.gsap;
     let tl = null;
     if (g) {
@@ -93,6 +156,8 @@
     function entrar() {
       if (saindo) return;
       saindo = true;
+      pts.impulso(1);
+      setTimeout(() => { fundo.stop(); pts.parar(); }, 1200);
       try { sessionStorage.setItem("cpv_intro", "1"); } catch (e) {}
       if (tl) tl.progress(1);
       document.documentElement.classList.remove("cpv-abrindo");
@@ -110,7 +175,7 @@
     }
     let y0 = null;
     ov.addEventListener("touchstart", e => { y0 = e.touches[0].clientY; }, { passive: true });
-    ov.addEventListener("touchmove", e => { if (y0 !== null && y0 - e.touches[0].clientY > 50) entrar(); }, { passive: true });
+    ov.addEventListener("touchmove", e => { if (y0 === null) return; const dy = y0 - e.touches[0].clientY; pts.impulso(Math.max(0, Math.min(1, dy / 120))); inclina(e.touches[0].clientX, e.touches[0].clientY); if (dy > 50) entrar(); }, { passive: true });
     ov.addEventListener("wheel", e => { if (e.deltaY > 20) entrar(); }, { passive: true });
     $(".cpv-abrir", ov).addEventListener("click", entrar);
   }

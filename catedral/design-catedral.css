@@ -340,3 +340,20 @@ html.cpv .appbar-brand img#appbar-logo.cpv-nome-barra{ height:auto!important; wi
 
 /* Louvor: mapa de ensaio desativado na Catedral */
 html.cpv [data-abrir-mapa]{ display:none!important; }
+
+/* ---------- Abertura: efeitos (fundo líquido, partículas, anéis) e logo menor ---------- */
+.cpv-aurora, .cpv-particulas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.cpv-aurora{ opacity:.95; }
+#cpv-intro::before{ z-index:1; }
+.cpv-aneis{ position:absolute; left:50%; top:42%; width:0; height:0; pointer-events:none; }
+.cpv-aneis i{ position:absolute; width:150px; height:150px; margin:-75px 0 0 -75px; border-radius:50%; border:1px solid rgba(241,207,134,.4); opacity:0; animation:cpvAnel 3.2s ease-out infinite; }
+.cpv-aneis i:nth-child(2){ animation-delay:1s; } .cpv-aneis i:nth-child(3){ animation-delay:2s; }
+@keyframes cpvAnel{ 0%{ transform:scale(.4); opacity:.75; } 100%{ transform:scale(4.2); opacity:0; } }
+.cpv-logo-palco{ width:min(58vw,250px)!important; margin-top:-10vh!important; overflow:visible!important; z-index:2;
+  transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition:transform .25s ease-out; }
+.cpv-logo{ filter:drop-shadow(0 0 22px rgba(241,207,134,.35)) drop-shadow(0 18px 40px rgba(0,0,0,.6))!important; animation:cpvRespira 5s 2.6s ease-in-out infinite; }
+@keyframes cpvRespira{ 50%{ filter:drop-shadow(0 0 34px rgba(241,207,134,.55)) drop-shadow(0 18px 40px rgba(0,0,0,.6)); } }
+.cpv-quatro, .cpv-abrir, .cpv-copy{ z-index:2; }
+.cpv-quatro{ margin-top:22px!important; }
+.cpv-quatro i{ width:26px!important; }
+@media (prefers-reduced-motion: reduce){ .cpv-aneis, .cpv-logo{ animation:none!important; } }
