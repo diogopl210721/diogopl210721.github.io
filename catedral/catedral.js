@@ -358,9 +358,11 @@
   }
 
   /* ============ 7) Barra superior com a logo original ============ */
+  // na barra vai o nome em Brush Script, como na logo (arquivo enviado pela igreja)
+  const NOME = "assets/nome-script-branco.png";
   function barra() {
     const img = $("#appbar-logo");
-    if (img && !img.src.endsWith(LOGO)) { img.src = LOGO; img.alt = "Catedral Pão da Vida"; }
+    if (img && !img.src.endsWith(NOME)) { img.src = NOME; img.alt = "Catedral Pão da Vida"; img.classList.add("cpv-nome-barra"); }
   }
 
   function iniciar() {

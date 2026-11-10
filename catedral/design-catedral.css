@@ -300,3 +300,4 @@ html.cpv .scroll{ padding-bottom:110px!important; }
 #cpv-agora-vis .cpv-agora h2{ font-size:31px; }
 .cpv-g-n{ font:700 15px/1 var(--fino)!important; }
 html.cpv .appbar-brand img#appbar-logo{ border:0!important; outline:0!important; padding:0!important; }
+html.cpv .appbar-brand img#appbar-logo.cpv-nome-barra{ height:auto!important; width:min(56vw,210px)!important; max-width:none; }
