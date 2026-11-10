@@ -337,3 +337,6 @@ html.cpv .appbar-brand img#appbar-logo.cpv-nome-barra{ height:auto!important; wi
 .cpv-marca h1{ margin:0 0 4px; font:500 30px/1.05 var(--serif); color:var(--miolo); }
 .cpv-marca p{ margin:0; font:400 13.5px/1.45 var(--fino); color:var(--ink-soft); }
 .cpv-ola{ display:none; }
+
+/* Louvor: mapa de ensaio desativado na Catedral */
+html.cpv [data-abrir-mapa]{ display:none!important; }
