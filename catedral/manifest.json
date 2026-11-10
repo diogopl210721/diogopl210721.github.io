@@ -1,0 +1,11 @@
+{
+  "name": "Catedral Pão da Vida",
+  "short_name": "Pão da Vida",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#16161C",
+  "theme_color": "#16161C",
+  "icons": [
+    { "src": "assets/icone-app.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

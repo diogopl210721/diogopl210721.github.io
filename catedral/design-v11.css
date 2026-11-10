@@ -1,0 +1,81 @@
+/* V11: palavra do dia e aniversariantes de hoje na Home */
+.pdd,.aniv-hoje{ position:relative; margin:14px 0 6px; padding:20px 20px 16px; border-radius:24px; overflow:hidden; border:1px solid rgba(255,255,255,.12); background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); animation:rvIn .6s cubic-bezier(.22,1,.36,1) both; }
+.pdd[hidden],.aniv-hoje[hidden]{ display:none!important; }
+.pdd::before{ content:"“"; position:absolute; right:14px; top:-18px; font:400 120px/1 var(--serif); color:var(--gold); opacity:.14; pointer-events:none; }
+html.claro .pdd,html.claro .aniv-hoje{ background:linear-gradient(160deg,#fff,rgba(255,255,255,.7)); border-color:rgba(11,16,48,.08); box-shadow:0 14px 34px -22px rgba(11,16,48,.35); }
+.pdd-eye{ display:flex; align-items:center; gap:7px; font:600 12.5px var(--fino); color:var(--gold-t,var(--gold)); }
+.pdd-eye .icon{ width:15px; height:15px; stroke:currentColor; }
+.pdd-eye i{ font-style:normal; opacity:.6; }
+.pdd blockquote{ margin:10px 0 12px; font:400 19px/1.5 var(--serif); letter-spacing:-.005em; color:var(--ink); }
+.pdd-rod{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.pdd cite{ font:600 13.5px var(--fino); font-style:normal; color:var(--ink-soft); }
+.pdd-share{ display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 16px; border-radius:99px; border:0; background:var(--gold); color:#1a1300; font:700 13.5px var(--fino); cursor:pointer; transition:transform .25s; }
+.pdd-share:active{ transform:scale(.96); }
+.pdd-share .icon{ width:16px; height:16px; stroke:#1a1300; }
+.aniv-hoje{ background:linear-gradient(135deg,rgba(249,189,0,.2),rgba(249,189,0,.05)); border-color:rgba(249,189,0,.5); }
+html.claro .aniv-hoje{ background:linear-gradient(135deg,#fff3c6,#fffaf0); border-color:rgba(154,107,0,.45); }
+.ah-lista{ display:flex; gap:16px; overflow-x:auto; padding:12px 2px 2px; scrollbar-width:none; }
+.ah-lista::-webkit-scrollbar{ display:none; }
+.ah-p{ flex:none; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:78px; padding:0; border:0; background:none; cursor:pointer; font-family:var(--fino); color:var(--ink); }
+.ah-f{ width:64px; height:64px; border-radius:50%; display:grid; place-items:center; overflow:hidden; box-shadow:0 0 0 3px var(--gold), 0 10px 22px -8px rgba(249,189,0,.7); background:rgba(255,255,255,.1); }
+.ah-f img{ width:100%; height:100%; object-fit:cover; }
+.ah-p b{ margin-top:6px; font:600 14px var(--fino); }
+.ah-p small{ font:500 11.5px var(--fino); color:var(--ink-soft); }
+@media (min-width:900px){ .pdd blockquote{ font-size:23px; } .pdd,.aniv-hoje{ max-width:760px; } }
+.ah-f > *{ box-shadow:none!important; width:100%!important; height:100%!important; margin:0!important; }
+
+/* ---------- Home: cards que rolam, compactos (como no exemplo) ---------- */
+#home-stories{ display:none!important; }
+.hero-carousel{ gap:10px!important; margin:6px -18px 0!important; padding:4px 18px 8px!important; }
+.hero-carousel .slide{ flex:0 0 46%!important; min-height:150px!important; scroll-snap-align:start!important; transform:none!important; opacity:1!important; }
+.hero-carousel .home-culto .culto-hero,.hero-carousel .devo-card,.hero-carousel .foto-tile{ min-height:150px!important; height:150px; padding:12px!important; border-radius:20px!important; }
+.hero-carousel .culto-hero h3{ font-size:24px!important; line-height:1.05!important; margin:0 0 4px!important; }
+.hero-carousel .culto-pill,.hero-carousel .culto-hero .culto-pill{ font-size:10px!important; padding:4px 8px!important; letter-spacing:.02em!important; }
+.hero-carousel .culto-quando,.hero-carousel .culto-local,.hero-carousel .culto-hero small{ font-size:11.5px!important; margin:0 0 2px!important; }
+.hero-carousel .culto-hero .btn-share,.hero-carousel .culto-hero [class*="share"]{ transform:scale(.8); }
+.hero-carousel .devo-card h3{ font-size:17px!important; line-height:1.15!important; margin:4px 0!important; }
+.hero-carousel .devo-card p,.hero-carousel .devo-card .pattern{ display:none!important; }
+.hero-carousel .devo-card .btn{ padding:8px 14px!important; font-size:12.5px!important; }
+.hero-carousel .foto-tile .tile-titulo{ padding-top:36px!important; font-size:20px!important; }
+.hero-carousel .foto-tile .tile-sub{ font-size:11px!important; }
+.hero-dots{ margin:0 0 10px!important; }
+.atalhos-rapidos{ margin-top:4px!important; }
+.pdd,.aniv-hoje{ margin:18px 0 4px; }
+@media (min-width:900px){ .hero-carousel .slide{ flex:0 0 300px!important; min-height:170px!important; } .hero-carousel .home-culto .culto-hero,.hero-carousel .devo-card,.hero-carousel .foto-tile{ height:170px; } }
+.hero-carousel{ scroll-padding-left:18px; }
+.hero-carousel .culto-pill{ white-space:nowrap; }
+.hero-carousel .culto-hero .culto-pill{ max-width:calc(100% - 38px); overflow:hidden; text-overflow:ellipsis; }
+
+/* ---------- pontuação ao lado do nome, pequena ---------- */
+.greet-box{ position:relative; }
+.greet-box #home-minha-pontuacao{ position:absolute; right:0; top:34px; margin:0!important; z-index:2; max-width:58%; }
+.greet-box #home-minha-pontuacao .badge-inline{ display:inline-flex; align-items:center; gap:5px; padding:6px 10px!important; font:600 11.5px var(--fino)!important; border-radius:99px; white-space:nowrap; letter-spacing:0!important; text-transform:none!important; }
+.greet-box #home-minha-pontuacao .ic8{ width:13px; height:13px; margin:0; }
+.greet-box #home-minha-pontuacao #home-pontos-num{ font-weight:800; }
+@media (min-width:900px){ .greet-box #home-minha-pontuacao{ top:60px; } }
+
+/* ---------- devocional sai do carrossel; avisos entram no mesmo tamanho ---------- */
+.hero-carousel .slide:has(.devo-card){ display:none!important; }
+#home-avisos-label,#home-avisos{ display:none!important; }
+.av-mini{ flex:1; display:flex; flex-direction:column; gap:4px; width:100%; height:150px; padding:12px; text-align:left; border-radius:20px; border:1px solid rgba(255,255,255,.14); background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,.03)); color:var(--ink); font-family:var(--fino); cursor:pointer; overflow:hidden; }
+.av-mini.dest{ border-color:var(--gold); background:linear-gradient(160deg,rgba(249,189,0,.22),rgba(249,189,0,.05)); }
+.av-top{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.av-d{ font:700 11px var(--fino); padding:3px 8px; border-radius:99px; background:rgba(128,128,150,.22); color:var(--ink); }
+.av-top em{ font:600 11px var(--fino); font-style:normal; color:var(--gold-t,var(--gold)); }
+.av-mini b{ margin-top:4px; font:500 17px/1.2 var(--serif); letter-spacing:-.005em; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.av-t{ font:400 12px/1.4 var(--fino); color:var(--ink-soft); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+html.claro .av-mini{ background:#fff; border-color:rgba(11,16,48,.1); box-shadow:0 10px 26px -18px rgba(11,16,48,.4); }
+html.claro .av-d{ background:rgba(11,16,48,.08); }
+@media (min-width:900px){ .av-mini{ height:170px; } }
+.greet-box #home-minha-pontuacao{ right:18px!important; } @media (min-width:900px){ .greet-box #home-minha-pontuacao{ right:0!important; } }
+.hoje-mini{ flex:1; display:flex; flex-direction:column; gap:3px; width:100%; height:150px; padding:12px; text-align:left; border-radius:20px; border:1px solid rgba(249,189,0,.5); background:linear-gradient(160deg,rgba(249,189,0,.2),rgba(249,189,0,.04)); color:var(--ink); font-family:var(--fino); cursor:pointer; overflow:hidden; }
+.hoje-mini .av-d{ background:var(--gold); color:#1a1300; }
+.hoje-mini .hj-dia{ font:400 15px var(--serif); text-transform:lowercase; color:var(--ink-soft); }
+.hoje-mini .hj-dia b{ font:500 30px/1 var(--serif); color:var(--ink); margin-right:4px; }
+.hoje-mini ul{ list-style:none; margin:4px 0 0; padding:0; display:grid; gap:3px; }
+.hoje-mini li{ display:flex; gap:7px; font:500 12px/1.3 var(--fino); }
+.hoje-mini li b{ flex:none; color:var(--gold-t,var(--gold)); font-weight:700; }
+.hoje-mini li span{ overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.hoje-mini small{ font:500 11px var(--fino); color:var(--ink-soft); }
+html.claro .hoje-mini{ background:linear-gradient(160deg,#fff3c6,#fff); border-color:rgba(154,107,0,.4); box-shadow:0 10px 26px -18px rgba(11,16,48,.4); }
+@media (min-width:900px){ .hoje-mini{ height:170px; } }

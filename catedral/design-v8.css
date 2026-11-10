@@ -1,0 +1,328 @@
+/* =====================================================================
+   DESIGN V8 — Fraunces + "Palavra para você" (fluxo do devocional)
+   ===================================================================== */
+@font-face{ font-family:'Fraunces'; font-style:normal; font-weight:100 900; font-display:swap; src:url(assets/fonts/fraunces-latin-opsz-normal.woff2) format('woff2'); }
+@font-face{ font-family:'Fraunces'; font-style:italic; font-weight:100 900; font-display:swap; src:url(assets/fonts/fraunces-latin-opsz-italic.woff2) format('woff2'); }
+:root{ --serif:'Fraunces','Instrument Serif',Georgia,serif; --gold:#F9BD00; --night:#05070f; }
+.greet-name b{ font-family:var(--serif); font-weight:300; font-variation-settings:"opsz" 144; font-size:64px; letter-spacing:-2px; }
+.greet-sub{ font-family:var(--serif); font-weight:300; font-size:18px; }
+.section-label b{ font-family:var(--serif); font-weight:300; font-size:28px; font-variation-settings:"opsz" 144; }
+.devo-card h3,.culto-hero h3,.tile-titulo{ font-family:var(--serif); font-weight:300; font-variation-settings:"opsz" 144; }
+
+/* o check-in antigo foi absorvido pelo fluxo da palavra */
+#checkin-diario-box{ display:none !important; }
+
+/* ---------- cartão na Home ---------- */
+.pal-card{ position:relative; display:block; width:100%; text-align:left; margin:18px 0 6px; padding:22px 22px 20px; border-radius:26px; color:#fff; overflow:hidden; cursor:pointer;
+  background:radial-gradient(120% 140% at 100% 0%, rgba(249,189,0,.28), transparent 55%), linear-gradient(155deg,#0b1030,#0026B7 140%);
+  border:1px solid rgba(249,189,0,.35); box-shadow:0 24px 60px -24px rgba(0,38,183,.8), inset 0 1px 0 rgba(255,255,255,.12); transition:transform .5s cubic-bezier(.22,1,.36,1), box-shadow .5s; }
+.pal-card::after{ content:""; position:absolute; inset:0; background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.14) 50%,transparent 65%); transform:translateX(-120%); animation:palBrilho 5.5s 1.2s infinite; pointer-events:none; }
+@keyframes palBrilho{ 60%,100%{ transform:translateX(120%); } }
+.pal-card:active{ transform:scale(.985); }
+@media (hover:hover){ .pal-card:hover{ transform:translateY(-4px); box-shadow:0 34px 70px -24px rgba(0,38,183,.95); } }
+.pal-card .pc-eye{ display:flex; align-items:center; gap:8px; font:800 10.5px/1 var(--fino,'Manrope'); letter-spacing:.24em; text-transform:uppercase; color:var(--gold); }
+.pal-card .pc-eye i{ width:8px; height:8px; border-radius:50%; background:var(--gold); box-shadow:0 0 0 0 rgba(249,189,0,.7); animation:palPulso 2s infinite; }
+@keyframes palPulso{ 70%{ box-shadow:0 0 0 10px rgba(249,189,0,0); } 100%{ box-shadow:0 0 0 0 rgba(249,189,0,0); } }
+.pal-card .pc-t{ display:block; margin:12px 0 6px; font-family:var(--serif); font-weight:300; font-size:29px; line-height:1.06; letter-spacing:-.6px; font-variation-settings:"opsz" 144; }
+.pal-card .pc-t em{ font-style:italic; color:var(--gold); }
+.pal-card .pc-s{ display:block; font-size:13.5px; line-height:1.5; color:rgba(255,255,255,.78); max-width:30em; }
+.pal-card .pc-go{ display:inline-flex; align-items:center; gap:6px; margin-top:14px; padding:9px 16px; border-radius:99px; background:var(--gold); color:#241a00; font:800 12.5px/1 var(--fino,'Manrope'); }
+.pal-card .pc-go .icon{ width:14px; height:14px; stroke:#241a00; }
+.pal-card.feito{ background:linear-gradient(155deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); border-color:rgba(255,255,255,.14); box-shadow:none; }
+.pal-card.feito .pc-t{ font-size:23px; }
+.pal-card.feito .pc-go{ background:rgba(255,255,255,.12); color:#fff; } .pal-card.feito .pc-go .icon{ stroke:#fff; }
+
+/* ---------- Palavra (tela cheia) ---------- */
+#palavra{ position:fixed; inset:0; z-index:9000; display:none; overflow-y:auto; background:var(--night); isolation:isolate; color:#fff; font-family:var(--fino,'Manrope'); }
+#palavra.on{ display:block; animation:palIn .6s cubic-bezier(.22,1,.36,1); }
+@keyframes palIn{ from{ opacity:0; transform:scale(1.04); } }
+body.palavra-aberta{ overflow:hidden; }
+#palavra canvas{ position:fixed; inset:0; width:100%; height:100%; z-index:-1; }
+#palavra .w-close{ position:fixed; z-index:3; top:max(16px,env(safe-area-inset-top)); right:16px; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); color:#fff; font-size:18px; backdrop-filter:blur(10px); cursor:pointer; }
+#palavra .w-in{ min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:90px 24px 60px; max-width:640px; margin:0 auto; }
+#palavra .w-step{ display:none; width:100%; flex-direction:column; align-items:center; }
+#palavra .w-step.on{ display:flex; }
+#palavra .seal{ width:140px; height:140px; border-radius:50%; margin:0 auto 32px; background:radial-gradient(circle at 35% 30%,#ff7a63,#b3122b 60%,#6a0a19); box-shadow:inset 0 -8px 20px rgba(0,0,0,.4),0 20px 60px -10px rgba(255,60,80,.5); display:grid; place-items:center; animation:palSelo 3s ease-in-out infinite; }
+#palavra .seal svg{ width:58px; fill:none; stroke:rgba(255,230,200,.9); stroke-width:2.2; stroke-linecap:round; }
+@keyframes palSelo{ 50%{ transform:scale(1.06) rotate(-3deg); } }
+#palavra .seal.quebra{ animation:none; transition:transform .8s cubic-bezier(.22,1,.36,1), opacity .8s; transform:scale(1.8) rotate(25deg); opacity:0; }
+#palavra .w-eyebrow{ font-size:11px; font-weight:800; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); }
+#palavra .w-h{ font-family:var(--serif); font-weight:300; font-size:clamp(34px,8vw,56px); line-height:1.02; letter-spacing:-.03em; margin:14px 0; font-variation-settings:"opsz" 144; color:#fff; }
+#palavra .w-h em{ color:var(--gold); font-style:italic; }
+#palavra .w-p{ color:rgba(255,255,255,.78); font-size:16px; line-height:1.65; max-width:460px; margin:0; }
+#palavra .w-btn{ margin-top:28px; padding:16px 30px; border-radius:99px; background:var(--gold); color:#241a00; border:0; font:800 15px/1 var(--fino,'Manrope'); cursor:pointer; box-shadow:0 14px 40px -10px rgba(249,189,0,.6); transition:transform .4s cubic-bezier(.22,1,.36,1); }
+#palavra .w-btn:hover{ transform:translateY(-3px); }
+#palavra .w-link{ margin-top:14px; background:none; border:0; color:#fff; font:700 14px var(--fino,'Manrope'); text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
+#palavra .moods{ display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; margin-top:24px; }
+#palavra .mood{ padding:16px 10px; border-radius:22px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); backdrop-filter:blur(12px); color:#fff; font:700 14.5px var(--fino,'Manrope'); transition:.4s cubic-bezier(.22,1,.36,1); display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; }
+#palavra .mood span{ font-size:27px; }
+#palavra .mood:hover,#palavra .mood:active{ background:rgba(249,189,0,.2); border-color:var(--gold); transform:translateY(-4px); }
+#palavra .msg{ font-family:var(--serif); font-weight:300; font-size:clamp(23px,5.2vw,32px); line-height:1.28; letter-spacing:-.015em; margin:14px 0 24px; min-height:7.5em; font-variation-settings:"opsz" 72; }
+#palavra .msg::after{ content:""; display:inline-block; width:2px; height:1em; background:var(--gold); margin-left:3px; vertical-align:-.1em; animation:palPisca .8s infinite; }
+#palavra .msg.fim::after{ display:none; }
+@keyframes palPisca{ 50%{ opacity:0; } }
+#palavra .vcard{ width:100%; padding:22px; border-radius:26px; background:linear-gradient(160deg,rgba(249,189,0,.2),rgba(249,189,0,.04)); border:1px solid rgba(249,189,0,.4); text-align:left; opacity:0; transform:translateY(20px); transition:.9s cubic-bezier(.22,1,.36,1); }
+#palavra .vcard.on{ opacity:1; transform:none; }
+#palavra .vcard q{ display:block; font-family:var(--serif); font-size:21px; line-height:1.32; font-weight:300; quotes:none; }
+#palavra .vcard b{ display:block; margin-top:12px; font-family:var(--serif); font-style:italic; font-weight:300; font-size:18px; color:var(--gold); }
+#palavra .w-extra{ width:100%; display:flex; flex-direction:column; align-items:center; opacity:0; transform:translateY(20px); transition:.9s .2s cubic-bezier(.22,1,.36,1); margin-top:6px; pointer-events:none; }
+#palavra .w-extra.on{ opacity:1; transform:none; pointer-events:auto; }
+.conf-v8{ position:fixed; top:-12px; z-index:9500; width:8px; height:14px; border-radius:2px; pointer-events:none; animation:confV8 2.4s cubic-bezier(.3,.6,.5,1) forwards; }
+@keyframes confV8{ to{ transform:translate(var(--dx,0),105vh) rotate(720deg); opacity:.9; } }
+@media (prefers-reduced-motion:reduce){ .pal-card::after,.pal-card .pc-eye i,#palavra .seal{ animation:none; } }
+.greet-name b{ padding-bottom:.14em; line-height:1.02; display:inline-block; }
+
+/* =====================================================================
+   V8 · camada global — todas as telas no mesmo padrão
+   ===================================================================== */
+/* ---------- títulos de página: serifa grande, palavra final em itálico dourado ---------- */
+.screen h2{ font-family:var(--serif); font-weight:300; font-size:clamp(34px,8.4vw,46px); line-height:1.02; letter-spacing:-.03em; font-variation-settings:"opsz" 144; margin:6px 0 8px; color:#fff; }
+.screen h2 em{ font-style:italic; color:var(--gold); }
+.screen > .scroll > p.hint:first-of-type, .screen h2 + p.hint{ font-family:var(--serif); font-style:italic; font-weight:300; font-size:17px; line-height:1.4; color:rgba(255,255,255,.7); }
+.voltar-btn,.admin-aba-voltar{ border-radius:99px; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); transition:transform .4s cubic-bezier(.22,1,.36,1), background .3s; }
+.voltar-btn:active{ transform:scale(.94); }
+@media (hover:hover){ .voltar-btn:hover{ transform:translateX(-3px); background:rgba(255,255,255,.14); } }
+
+/* ---------- cartões: vidro com fio dourado e brilho que segue o dedo/mouse ---------- */
+.card,.evento-card,.album-card,.contato-item,.admin-grid-card,.banner,.interesse-item,.prayer-item{ position:relative; overflow:hidden;
+  background:linear-gradient(160deg,rgba(255,255,255,.085),rgba(255,255,255,.025)); border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 44px -26px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.08); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  transition:transform .5s cubic-bezier(.22,1,.36,1), border-color .4s, box-shadow .5s; }
+.card::before,.evento-card::before,.album-card::before,.contato-item::before,.admin-grid-card::before,.prayer-item::before{ content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .4s;
+  background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%), rgba(249,189,0,.16), transparent 70%); }
+@media (hover:hover){
+  .card:hover,.evento-card:hover,.album-card:hover,.contato-item:hover,.admin-grid-card:hover{ transform:translateY(-4px); border-color:rgba(249,189,0,.4); box-shadow:0 30px 60px -28px rgba(0,0,0,.9); }
+  .card:hover::before,.evento-card:hover::before,.album-card:hover::before,.contato-item:hover::before,.admin-grid-card:hover::before,.prayer-item:hover::before{ opacity:1; }
+}
+.card h3{ font-family:var(--serif); font-weight:300; font-size:23px; letter-spacing:-.02em; font-variation-settings:"opsz" 72; }
+.card > *{ position:relative; }
+
+/* entrada suave de tudo que aparece (inclusive listas carregadas depois) */
+@keyframes rvIn{ from{ opacity:0; transform:translateY(22px) scale(.985); } to{ opacity:1; transform:none; } }
+.screen.active .card,.screen.active .prayer-item,.screen.active .evento-card,.screen.active .album-card,.screen.active .contato-item,.screen.active .admin-grid-card,.screen.active .banner,.screen.active .bday,.screen.active .quicklink,.screen.active .interesse-item{ animation:rvIn .8s cubic-bezier(.22,1,.36,1) both; }
+.screen.active .card:nth-child(2),.screen.active .quicklink:nth-child(2),.screen.active .admin-grid-card:nth-child(2){ animation-delay:.06s; }
+.screen.active .card:nth-child(3),.screen.active .quicklink:nth-child(3),.screen.active .admin-grid-card:nth-child(3){ animation-delay:.12s; }
+.screen.active .card:nth-child(4),.screen.active .quicklink:nth-child(4),.screen.active .admin-grid-card:nth-child(4){ animation-delay:.18s; }
+.screen.active .card:nth-child(n+5),.screen.active .quicklink:nth-child(n+5),.screen.active .admin-grid-card:nth-child(n+5){ animation-delay:.24s; }
+
+/* ---------- botões ---------- */
+.btn{ border-radius:99px; font-family:var(--fino); font-weight:700; letter-spacing:.2px; }
+.btn-primary{ background:linear-gradient(135deg,#1239e0,#0026B7); box-shadow:0 14px 34px -12px rgba(0,38,183,.9), inset 0 1px 0 rgba(255,255,255,.25); }
+.btn-primary::after{ content:""; position:absolute; inset:0; background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%); transform:translateX(-120%); transition:transform .8s; }
+@media (hover:hover){ .btn-primary:hover{ transform:translateY(-2px); } .btn-primary:hover::after{ transform:translateX(120%); } }
+.chip.on{ background:var(--gold); color:#241a00; }
+.field input,.field select,.field textarea,textarea{ border-radius:16px; }
+.field input:focus,.field select:focus,.field textarea:focus{ border-color:var(--gold); box-shadow:0 0 0 4px rgba(249,189,0,.14); }
+
+/* ---------- Home: ranking, aniversários, orações ---------- */
+#ranking-mes-lista .card:first-child{ background:linear-gradient(150deg,rgba(249,189,0,.22),rgba(249,189,0,.04)); border-color:rgba(249,189,0,.55); box-shadow:0 24px 60px -26px rgba(249,189,0,.5); }
+.row-avatar .row-info b{ font-family:var(--serif); font-weight:400; font-size:19px; }
+.bday-row{ gap:14px; }
+.bday .circle{ box-shadow:0 0 0 2px var(--night), 0 0 0 4px rgba(249,189,0,.7); }
+.bday .bday-data{ color:var(--gold); font-weight:700; }
+.prayer-item{ padding:16px 18px; border-radius:20px; margin-bottom:10px; display:flex; gap:12px; justify-content:space-between; align-items:flex-start; }
+.prayer-item p{ font-family:var(--serif); font-weight:300; font-size:18px; line-height:1.35; color:#fff; margin:0 0 6px; }
+.prayer-item span{ font-size:11.5px; color:rgba(255,255,255,.6); }
+.status-pill{ font:800 10px/1 var(--fino); letter-spacing:.14em; text-transform:uppercase; padding:6px 10px; border-radius:99px; flex:none; }
+#novo-pedido-texto{ font-family:var(--serif)!important; font-size:18px!important; font-weight:300; line-height:1.4; }
+
+/* ---------- rodapé DDS ---------- */
+.dds-copy{ font-family:var(--fino); }
+
+/* =====================================================================
+   DESKTOP — vira site: coluna larga, conteúdo centralizado, dock flutuante
+   ===================================================================== */
+@media (min-width:900px){
+  #app{ max-width:1180px; }
+  .scroll{ padding-left:clamp(32px,5vw,72px); padding-right:clamp(32px,5vw,72px); padding-top:26px; }
+  .scroll > *{ max-width:920px; margin-left:auto; margin-right:auto; }
+  .scroll > .hero-carousel,.scroll > .atalhos-rapidos,.scroll > .stories-row{ max-width:920px; }
+  .greet-name b{ font-size:96px; }
+  .greet-sub{ font-size:24px; }
+  .pal-card{ padding:34px 40px; border-radius:34px; }
+  .pal-card .pc-t{ font-size:46px; max-width:15em; letter-spacing:-1.2px; }
+  .pal-card .pc-s{ font-size:16px; }
+  .pal-card .pc-go{ padding:13px 24px; font-size:14px; }
+  .section-label b{ font-size:40px; }
+  .atalhos-rapidos{ display:grid!important; grid-template-columns:repeat(5,1fr); gap:14px; overflow:visible; }
+  .quicklinks{ display:grid!important; grid-template-columns:repeat(4,1fr); gap:14px; }
+  #home-avisos{ display:grid!important; grid-template-columns:repeat(2,1fr); gap:16px; overflow:visible; }
+  #ranking-mes-lista,#lista-pedidos-oracao{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  #ranking-mes-lista .card,.prayer-item{ margin:0; }
+  .admin-grid{ grid-template-columns:repeat(4,1fr)!important; }
+  .bottomnav{ max-width:640px; bottom:18px; }
+  .screen h2{ font-size:56px; }
+  .hero-boasvindas{ max-width:920px; }
+  #palavra .w-in{ max-width:760px; }
+  #palavra .moods{ grid-template-columns:repeat(3,1fr); }
+}
+@media (min-width:1280px){ #app{ max-width:1280px; } }
+#admin-titulo-painel{ font-family:var(--serif)!important; font-weight:300!important; font-size:34px!important; letter-spacing:-.02em; font-variation-settings:"opsz" 144; }
+.admin-grid-card,.quicklink,.ar{ font-family:var(--fino); font-weight:600; }
+/* títulos de página (spans antigos em Montserrat) → serifa editorial */
+.screen span[style*="Montserrat"]{ font-family:var(--serif)!important; font-weight:300!important; font-size:clamp(34px,9vw,46px)!important; line-height:1.02!important; letter-spacing:-.03em!important; font-variation-settings:"opsz" 144; color:#fff; margin:8px 0 6px!important; }
+.screen span[style*="Montserrat"] em{ font-style:italic; color:var(--gold); }
+@media (min-width:900px){ .screen span[style*="Montserrat"]{ font-size:56px!important; } #admin-titulo-painel{ font-size:40px!important; } }
+
+/* ---------- Calendário e Eventos: tiles de data coloridos ---------- */
+.c0{ --tc:#0026B7; --tc2:#3355ff; } .c1{ --tc:#c98f00; --tc2:#F9BD00; } .c2{ --tc:#d9483b; --tc2:#ff7a63; } .c3{ --tc:#0f9d73; --tc2:#27d19b; } .c4{ --tc:#6a3fd1; --tc2:#9a7bff; }
+#cal-grade-mes{ gap:6px!important; }
+#cal-dias-semana span{ color:var(--gold); font:800 11px var(--fino); letter-spacing:.14em; }
+.cal-dia{ position:relative; aspect-ratio:1; border-radius:14px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.04); color:#fff; font:700 14px var(--fino); cursor:pointer; transition:transform .35s cubic-bezier(.22,1,.36,1), background .3s, border-color .3s; }
+.cal-dia i{ position:absolute; bottom:6px; left:50%; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:var(--gold); box-shadow:0 0 8px var(--gold); }
+.cal-dia.tem{ background:linear-gradient(160deg,rgba(51,85,255,.4),rgba(0,38,183,.25)); border-color:rgba(51,85,255,.6); }
+.cal-dia.hoje{ border-color:var(--gold); box-shadow:0 0 0 3px rgba(249,189,0,.18); color:var(--gold); }
+@media (hover:hover){ .cal-dia:hover{ transform:translateY(-3px) scale(1.06); background:rgba(249,189,0,.2); border-color:var(--gold); } }
+.cal-dia:active{ transform:scale(.92); }
+.cal-item,.ev-v8{ display:flex; align-items:center; gap:14px; padding:12px; margin-bottom:10px; border-radius:22px; cursor:pointer; }
+.cal-item{ background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.1); transition:transform .4s cubic-bezier(.22,1,.36,1), border-color .3s; animation:rvIn .7s both; }
+@media (hover:hover){ .cal-item:hover{ transform:translateX(5px); border-color:var(--tc2); } }
+.dt{ flex:none; width:62px; height:68px; border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(150deg,var(--tc2),var(--tc)); box-shadow:0 12px 26px -12px var(--tc); color:#fff; }
+.dt b{ font-family:var(--serif); font-weight:400; font-size:30px; line-height:1; font-variation-settings:"opsz" 144; }
+.dt small{ font:800 10px/1 var(--fino); letter-spacing:.16em; margin-top:4px; opacity:.9; }
+.cal-item .tx{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+.cal-item .tx span{ font-family:var(--serif); font-size:20px; line-height:1.1; font-weight:400; }
+.cal-item .tx em{ font-style:normal; font-size:12px; color:rgba(255,255,255,.62); }
+.ev-v8 .info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.ev-v8 .info b{ font-family:var(--serif); font-weight:400; font-size:22px; line-height:1.08; letter-spacing:-.01em; }
+.ev-v8 .info span{ font-size:12.5px; color:rgba(255,255,255,.65); }
+.ev-v8 .info .vagas{ color:var(--gold); font-weight:700; }
+.ev-v8 > img{ flex:none; width:72px; height:72px; border-radius:16px; object-fit:cover; }
+.ev-v8 .info b{ color:#fff!important; }
+.cal-month-nav,#cal-mes-titulo,#cal-mes-titulo{ font-family:var(--serif); }
+#intro-aurora{ position:absolute; inset:0; width:100%; height:100%; z-index:0; opacity:.9; pointer-events:none; }
+#intro-overlay.sai .intro-centro{ transition:transform .9s cubic-bezier(.7,0,.2,1), opacity .6s; transform:scale(1.25); opacity:0; }
+
+/* ---------- criar em passos ---------- */
+.wz-step{ display:none; } .wz-step.on{ display:block; animation:rvIn .6s cubic-bezier(.22,1,.36,1) both; }
+.wz-trilho{ display:flex; gap:8px; margin:6px 0 14px; }
+.wz-p{ flex:1; display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:99px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); cursor:pointer; transition:.35s; min-width:0; }
+.wz-p i{ flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font:800 11px var(--fino); font-style:normal; background:rgba(255,255,255,.12); color:#fff; }
+.wz-p b{ font:700 11.5px var(--fino); color:rgba(255,255,255,.65); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wz-p.on{ background:rgba(249,189,0,.16); border-color:var(--gold); } .wz-p.on i{ background:var(--gold); color:#241a00; } .wz-p.on b{ color:#fff; }
+.wz-p.ok i{ background:#27d19b; color:#04281d; }
+.wz-prev{ margin-bottom:16px; }
+.wz-prev-eye{ display:block; font:800 10px var(--fino); letter-spacing:.22em; text-transform:uppercase; color:var(--gold); margin:0 0 8px 4px; }
+.wz-prev-card{ display:flex; align-items:center; gap:14px; padding:12px; border-radius:22px; background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.03)); border:1px dashed rgba(249,189,0,.5); }
+.wz-prev-card .tx{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.wz-prev-card .tx b{ font-family:var(--serif); font-weight:400; font-size:21px; line-height:1.1; color:#fff; word-break:break-word; }
+.wz-prev-card .tx span{ font-size:12.5px; color:rgba(255,255,255,.65); }
+.wz-prev-card .pi{ display:none; width:100%; max-height:120px; object-fit:cover; border-radius:12px; margin-top:8px; }
+.wz-nav{ display:flex; gap:10px; margin-top:6px; }
+.wz-nav .btn{ flex:1; }
+
+/* ---------- efeitos ---------- */
+.v8-prog{ position:fixed; top:0; left:0; right:0; height:3px; z-index:9990; background:linear-gradient(90deg,var(--gold),#ff7a63,#3355ff); transform-origin:0 50%; transform:scaleX(0); pointer-events:none; box-shadow:0 0 12px rgba(249,189,0,.6); }
+.v8-dot,.v8-ring{ position:fixed; top:0; left:0; z-index:99999; pointer-events:none; display:none; }
+.v8-cursor .v8-dot,.v8-cursor .v8-ring{ display:block; }
+.v8-dot::after{ content:""; display:block; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:var(--gold); }
+.v8-ring::after{ content:""; display:block; width:38px; height:38px; margin:-19px 0 0 -19px; border-radius:50%; border:1px solid rgba(255,255,255,.55); transition:width .35s cubic-bezier(.22,1,.36,1),height .35s,margin .35s,background .3s,border-color .3s; }
+.v8-ring.on::after{ width:64px; height:64px; margin:-32px 0 0 -32px; background:rgba(249,189,0,.14); border-color:var(--gold); }
+.v8-cursor *{ cursor:none!important; }
+.v8-mag,.v8-tilt{ transition:transform .25s cubic-bezier(.22,1,.36,1)!important; }
+@media (prefers-reduced-motion:reduce){ .v8-prog{ display:none; } }
+.screen h2[style*="Montserrat"]{ font-family:var(--serif)!important; font-weight:300!important; font-size:clamp(34px,9vw,46px)!important; letter-spacing:-.03em; line-height:1.02; font-variation-settings:"opsz" 144; }
+
+/* ---------- Bíblia: leitura editorial ---------- */
+#biblia-lista-capitulos{ grid-template-columns:repeat(auto-fill,minmax(54px,1fr))!important; gap:10px!important; }
+#biblia-lista-capitulos .chip{ aspect-ratio:1; display:grid; place-items:center; padding:0; border-radius:50%; font:400 22px var(--serif); font-variation-settings:"opsz" 72; background:rgba(255,255,255,.05); transition:transform .35s cubic-bezier(.22,1,.36,1),background .3s,border-color .3s; }
+@media (hover:hover){ #biblia-lista-capitulos .chip:hover{ transform:scale(1.14); background:var(--gold); color:#241a00; border-color:var(--gold); } }
+#biblia-nome-livro{ font-family:var(--serif)!important; font-weight:300!important; font-size:40px!important; letter-spacing:-.03em; font-variation-settings:"opsz" 144; }
+#biblia-view-texto .card:first-of-type{ background:linear-gradient(180deg,rgba(246,241,231,.08),rgba(246,241,231,.03)); padding:26px 22px 28px; }
+#biblia-referencia{ font-family:var(--serif)!important; font-weight:300!important; font-size:34px!important; font-style:italic; color:var(--gold); letter-spacing:-.02em; font-variation-settings:"opsz" 144; }
+#biblia-versiculos{ font-family:var(--serif); font-weight:300; font-size:20px!important; line-height:1.85!important; letter-spacing:.005em; color:rgba(255,255,255,.92); font-variation-settings:"opsz" 24; }
+#biblia-versiculos sup{ font:800 10.5px var(--fino); color:var(--gold)!important; margin-right:4px; vertical-align:.5em; }
+#biblia-versiculos > span{ border-radius:6px; transition:background .3s; }
+#biblia-versiculos > span:first-child::first-letter{ font-size:2.4em; float:left; line-height:.8; padding:6px 8px 0 0; color:var(--gold); font-style:italic; }
+@media (hover:hover){ #biblia-versiculos > span:hover{ background:rgba(249,189,0,.12); } }
+@media (min-width:900px){ #biblia-versiculos{ font-size:23px!important; } #biblia-view-texto{ max-width:760px; margin:0 auto; } }
+
+/* ---------- Louvor ---------- */
+.cal-item.card{ margin-bottom:10px; } .cal-item .tx em.gold{ color:var(--gold); font-weight:700; }
+[data-abrir-musica-louvor] b{ font-family:var(--serif); font-weight:400; font-size:20px!important; letter-spacing:-.01em; }
+[data-abrir-musica-louvor] img,[data-abrir-musica-louvor] > div:first-child:not([style*="flex:1"]){ border-radius:14px!important; box-shadow:0 10px 24px -10px rgba(0,0,0,.8); }
+
+/* ---------- Grupos / álbuns: cartazes ---------- */
+.albuns-lista{ display:grid!important; grid-template-columns:repeat(2,1fr); gap:12px; }
+.album-card{ display:block!important; padding:0!important; aspect-ratio:4/5; border-radius:26px!important; cursor:pointer; }
+.album-card > img{ position:absolute; inset:0; width:100%!important; height:100%!important; object-fit:cover; border-radius:0!important; transition:transform .9s cubic-bezier(.22,1,.36,1); }
+.album-card > img[src$="logo.png"]{ object-fit:contain; padding:26%; background:radial-gradient(circle at 50% 35%,#16206a,#05070f); }
+.album-card::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg,transparent 35%,rgba(5,7,15,.92)); pointer-events:none; }
+.album-card .info{ position:absolute!important; left:0; right:0; bottom:0; z-index:2; padding:14px 16px 16px!important; background:none!important; display:flex; flex-direction:column; gap:3px; }
+.album-card .info b{ font-family:var(--serif); font-weight:400; font-size:23px; line-height:1.05; letter-spacing:-.02em; color:#fff; }
+.album-card .info span{ font-size:11.5px; color:var(--gold); font-weight:700; letter-spacing:.04em; }
+@media (hover:hover){ .album-card:hover > img{ transform:scale(1.08); } }
+@media (min-width:900px){ .albuns-lista{ grid-template-columns:repeat(4,1fr); gap:16px; } }
+
+/* ---------- Chat ---------- */
+#chat-mensagens{ gap:10px!important; padding:18px 18px!important; }
+#chat-mensagens > div{ font-family:var(--fino); font-size:14.5px!important; line-height:1.45!important; padding:11px 15px!important; border-radius:22px!important; border:1px solid rgba(255,255,255,.1); animation:rvIn .5s cubic-bezier(.22,1,.36,1) both; background:rgba(255,255,255,.08)!important; color:#fff!important; backdrop-filter:blur(10px); }
+#chat-mensagens > div[style*="align-self:flex-end"]{ background:linear-gradient(135deg,#1239e0,#0026B7)!important; border-color:rgba(255,255,255,.2); box-shadow:0 12px 26px -12px rgba(0,38,183,.9); border-bottom-right-radius:6px!important; }
+#chat-mensagens > div[style*="align-self:flex-start"]{ border-bottom-left-radius:6px!important; }
+#form-chat-enviar{ background:rgba(5,7,15,.7)!important; backdrop-filter:blur(18px); border-top:1px solid rgba(255,255,255,.1)!important; }
+#chat-input-texto{ background:rgba(255,255,255,.08)!important; border-radius:99px!important; color:#fff; }
+#chat-input-texto:focus{ border-color:var(--gold)!important; outline:none; }
+#form-chat-enviar .btn{ border-radius:99px!important; }
+#chat-nome-titulo{ font-family:var(--serif); font-weight:400; font-size:22px!important; }
+
+/* ---------- Contatos / diretório / mensagens ---------- */
+.contato-item{ border-radius:22px; padding:14px 16px; }
+.contato-item b,.contato-item .nome{ font-family:var(--serif); font-weight:400; font-size:20px; }
+
+/* ---------- Fotos: mosaico ---------- */
+.fotos-grid{ display:block!important; column-count:2; column-gap:10px; }
+.foto-item{ break-inside:avoid; margin-bottom:10px; border-radius:20px!important; border:1px solid rgba(255,255,255,.1); box-shadow:0 16px 36px -20px rgba(0,0,0,.9); cursor:pointer; }
+.foto-item img{ height:auto!important; min-height:110px; transition:transform .8s cubic-bezier(.22,1,.36,1); }
+.foto-item:nth-child(3n+1) img{ aspect-ratio:3/4; } .foto-item:nth-child(3n+2) img{ aspect-ratio:1; } .foto-item:nth-child(3n) img{ aspect-ratio:4/5; }
+@media (hover:hover){ .foto-item:hover img{ transform:scale(1.07); } }
+@media (min-width:900px){ .fotos-grid{ column-count:4; column-gap:14px; } }
+
+/* ---------- Livros ---------- */
+[data-abrir-livro]{ gap:16px!important; padding:16px!important; }
+[data-abrir-livro] > img{ width:76px!important; height:114px!important; border-radius:6px 12px 12px 6px!important; box-shadow:-6px 10px 22px -6px rgba(0,0,0,.9), inset 4px 0 6px rgba(255,255,255,.18)!important; transform:perspective(500px) rotateY(-9deg); transition:transform .6s cubic-bezier(.22,1,.36,1); }
+@media (hover:hover){ [data-abrir-livro]:hover > img{ transform:perspective(500px) rotateY(0) scale(1.06); } }
+[data-abrir-livro] b{ font-family:var(--serif); font-weight:400; font-size:21px!important; letter-spacing:-.01em; }
+[data-abrir-livro] div[style*="height:5px"]{ height:6px!important; background:rgba(255,255,255,.12)!important; }
+[data-abrir-livro] div[style*="height:5px"] > div{ background:linear-gradient(90deg,var(--gold),#ffd54a)!important; box-shadow:0 0 10px rgba(249,189,0,.6); }
+.badge-inline{ background:rgba(249,189,0,.14); color:var(--gold); border:1px solid rgba(249,189,0,.35); border-radius:99px; font-weight:700; }
+
+/* ---------- Painel administrativo e listas de pessoas ---------- */
+.admin-grid{ gap:12px!important; }
+.admin-grid-card{ padding:22px 12px!important; border-radius:24px!important; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.admin-grid-card .icon{ width:28px!important; height:28px!important; padding:11px; box-sizing:content-box; border-radius:18px; background:linear-gradient(150deg,rgba(51,85,255,.5),rgba(0,38,183,.3)); stroke:#fff; box-shadow:0 10px 24px -10px rgba(51,85,255,.9), inset 0 1px 0 rgba(255,255,255,.2); transition:transform .5s cubic-bezier(.22,1,.36,1); }
+.admin-grid-card:nth-child(4n+2) .icon{ background:linear-gradient(150deg,rgba(249,189,0,.55),rgba(201,143,0,.3)); box-shadow:0 10px 24px -10px rgba(249,189,0,.8); }
+.admin-grid-card:nth-child(4n+3) .icon{ background:linear-gradient(150deg,rgba(255,122,99,.55),rgba(217,72,59,.3)); box-shadow:0 10px 24px -10px rgba(255,122,99,.8); }
+.admin-grid-card:nth-child(4n) .icon{ background:linear-gradient(150deg,rgba(39,209,155,.5),rgba(15,157,115,.3)); box-shadow:0 10px 24px -10px rgba(39,209,155,.8); }
+@media (hover:hover){ .admin-grid-card:hover .icon{ transform:translateY(-4px) rotate(-6deg) scale(1.08); } }
+.admin-painel-aba .section-label b{ font-size:26px; }
+.row-avatar{ gap:14px!important; }
+.avatar-ini{ box-shadow:0 0 0 2px var(--night), 0 0 0 4px rgba(249,189,0,.5); }
+.row-avatar .row-info span{ color:rgba(255,255,255,.62); }
+
+/* ---------- admin: detalhes finais ---------- */
+[style*="dashed var(--brand)"]{ border-color:rgba(249,189,0,.5)!important; background:linear-gradient(160deg,rgba(249,189,0,.07),rgba(255,255,255,.02)); }
+.admin-aba-voltar{ display:inline-flex; align-items:center; gap:6px; padding:9px 16px; margin-bottom:12px; font-weight:700; cursor:pointer; }
+.admin-painel-aba .btn-ghost{ border-color:rgba(255,255,255,.16); }
+.empty{ font-family:var(--serif); font-style:italic; font-weight:300; font-size:18px; color:rgba(255,255,255,.6); text-align:center; padding:28px 12px; }
+.loading-dot{ background:var(--gold)!important; }
+.error-msg{ font-weight:700; }
+select option{ background:#0b1030; color:#fff; }
+
+/* ---------- Devocional: leitura editorial ---------- */
+#tela-devocional-detalhe .devo-eyebrow{ color:var(--gold)!important; display:flex; align-items:center; gap:8px; margin-top:6px; }
+#devo-titulo-detalhe{ font-family:var(--serif)!important; font-weight:300!important; font-size:clamp(38px,10vw,58px)!important; line-height:1!important; letter-spacing:-.035em; margin:10px 0 6px!important; font-variation-settings:"opsz" 144; color:#fff; }
+#devo-tema-detalhe{ font-family:var(--serif); font-style:italic; font-weight:300; font-size:20px!important; color:var(--gold)!important; margin-bottom:18px!important; }
+.verse-block{ position:relative; padding:26px 24px!important; border-radius:28px!important; background:linear-gradient(155deg,rgba(249,189,0,.2),rgba(249,189,0,.04))!important; border:1px solid rgba(249,189,0,.4)!important; overflow:hidden; margin:0 0 22px; }
+.verse-block::before{ content:"“"; position:absolute; top:-14px; left:14px; font:300 130px/1 var(--serif); color:rgba(249,189,0,.25); }
+.verse-block p{ position:relative; font-family:var(--serif)!important; font-weight:300!important; font-size:25px!important; line-height:1.3!important; color:#fff; margin:0 0 12px!important; font-variation-settings:"opsz" 72; }
+.verse-block span{ position:relative; font-family:var(--serif); font-style:italic; font-size:19px; color:var(--gold)!important; }
+p.reflect{ font-family:var(--serif); font-weight:300; font-size:20px!important; line-height:1.75!important; color:rgba(255,255,255,.9)!important; letter-spacing:.005em; font-variation-settings:"opsz" 24; white-space:pre-line; }
+p.reflect::first-letter{ float:left; font-size:3.3em; line-height:.82; padding:6px 10px 0 0; color:var(--gold); font-style:italic; }
+#devo-reacoes,.reacao-row{ display:grid!important; grid-template-columns:repeat(3,1fr); gap:10px!important; margin:0!important; padding:0!important; overflow:visible!important; }
+.reacao-btn{ min-width:0!important; width:100%; }
+.reacao-btn.on{ background:var(--gold)!important; color:#241a00!important; border-color:var(--gold)!important; box-shadow:0 12px 30px -10px rgba(249,189,0,.7); }
+@media (min-width:900px){ #tela-devocional-detalhe .scroll > *{ max-width:720px; } #devo-reacoes{ grid-template-columns:repeat(6,1fr); } p.reflect{ font-size:23px!important; } }
+
+/* ---------- menus em lista (Diário, etc.) ---------- */
+.scroll > .btn-ghost:not([style*="dashed"]){ justify-content:flex-start; padding:18px 22px; font-family:var(--serif); font-weight:400; font-size:21px; letter-spacing:-.01em; margin-bottom:10px; border-radius:22px; background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); }
+@media (hover:hover){ .scroll > .btn-ghost:not([style*="dashed"]):hover{ transform:translateX(6px); border-color:var(--gold); } }
