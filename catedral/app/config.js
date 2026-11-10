@@ -11,6 +11,6 @@ window.IGREJA_NOME = "Catedral Pão da Vida";
 // Usa as logos próprias (assets/logo-branca.png etc.) na abertura, no menu e na barra
 window.MARCA_PROPRIA = true;
 // Endereço público do app (troca quando migrar para o domínio da igreja)
-window.APP_URL = "https://www.ddsinovacao.com.br/catedral";
+window.APP_URL = "https://www.ddsinovacao.com.br/catedral/app";
 // Tema de cada domingo do mês (1º, 2º, 3º, 4º). 5º domingo usa o título do culto.
 window.DOMINGOS_TEMATICOS = ["Ceia do Senhor", "Primícias", "Missões", "Culto da Família"];
