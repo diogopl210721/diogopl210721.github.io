@@ -6,6 +6,7 @@ const SB_KEY = "sb_publishable_XCY3BoeUR_jzDSRrtlibyg_Os7lIrVi";
 const META_TOTAL = 100;
 const META_REL = 50;
 const JANELA_DIAS = 5;
+const LIMITE_REAB = 5; // acima disso a comissão cai
 
 const S = {
   token: lsGet("ocv_token"),
@@ -13,12 +14,15 @@ const S = {
   ocs: [],
   clientes: {},       // chave -> edição
   importacoes: [],
+  reabs: [],
   view: "inicio",
   mesMeta: mesKey(new Date()),
   mesFin: new Date().getFullYear() + "-T" + Math.ceil((new Date().getMonth() + 1) / 3),
   filtroFin: { tipo: null, valor: null },
   prazoFiltro: { q: "", cidade: "", sub: "", janela: "todas" },
   rota: new Set(),
+  depth: 0, modalOpen: false,
+  relPeriodo: new Date().getFullYear() + "-T" + Math.ceil((new Date().getMonth() + 1) / 3),
   cliQ: "",
 };
 
@@ -113,12 +117,14 @@ async function carregar() {
   S.ocs = (d.ocorrencias || []).map(o => ({ ...o, _ab: o.abertura ? new Date(o.abertura) : null, _pz: o.prazo ? new Date(o.prazo) : null, _fe: o.fechamento ? new Date(o.fechamento) : null }));
   S.clientes = {}; (d.clientes || []).forEach(c => S.clientes[c.chave] = c);
   S.importacoes = d.importacoes || [];
+  S.reabs = (d.reaberturas || []).map(r => ({ ...r, _em: new Date(r.em) }));
 }
 async function iniciar() {
   document.getElementById("login").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
   try { await carregar(); } catch (e) { if (S.token) toast(e.message); return; }
   if (!S.ocs.length) S.view = "importar";
+  S.depth = 0; try { history.replaceState(snap(), "", "#" + S.view); } catch (e) {}
   render();
 }
 
@@ -196,6 +202,55 @@ function diasUteisRestantes(mk) {
   return n;
 }
 
+/* ---------------- reaberturas ---------------- */
+// Regra: conta no dia em que foi reaberta (registrado pelas importações).
+// Histórico anterior ao registro: estimado pelo mês do fechamento.
+function reabsDoPeriodo(p) {
+  const comEvento = new Set(S.reabs.map(r => r.numero));
+  const porNum = new Map(S.ocs.map(o => [o.numero, o]));
+  const out = [];
+  S.reabs.forEach(r => { if (periodoDe(r._em, p)) out.push({ o: porNum.get(r.numero), em: r._em, fonte: "registrada", motivo: r.motivo }); });
+  S.ocs.forEach(o => { if (o.reabertura > 0 && !comEvento.has(o.numero) && o._fe && periodoDe(o._fe, p)) out.push({ o, em: o._fe, fonte: "estimada" }); });
+  return out.filter(x => x.o).sort((a, b) => b.em - a.em);
+}
+function reabertasAbertas() { return S.ocs.filter(o => o.reabertura > 0 && !isFin(o)); }
+function nivelReab(n) {
+  if (n === 0) return { cls: "green", pill: "p-green", txt: "Perfeito — nenhuma reabertura" };
+  if (n <= LIMITE_REAB - 2) return { cls: "yellow", pill: "p-yellow", txt: `Atenção — restam ${LIMITE_REAB - n} até o limite` };
+  if (n <= LIMITE_REAB) return { cls: "orange", pill: "p-orange", txt: n === LIMITE_REAB ? "No limite! A próxima reduz a comissão" : `Quase no limite — resta ${LIMITE_REAB - n}` };
+  return { cls: "red", pill: "p-red", txt: `Limite estourado (${n}/${LIMITE_REAB}) — comissão reduzida` };
+}
+function vReaberturas() {
+  const mk = S.mesReab || mesKey(new Date());
+  const lista = reabsDoPeriodo(mk), n = lista.length, nv = nivelReab(n);
+  const abertasR = reabertasAbertas();
+  const meses = mesesDisponiveis().slice(0, 12).reverse();
+  const serie = meses.map(m => ({ m, n: reabsDoPeriodo(m).length }));
+  const max = Math.max(LIMITE_REAB + 2, ...serie.map(x => x.n));
+  const abrev = m => MESES[+m.split("-")[1] - 1].slice(0, 3) + "/" + m.slice(2, 4);
+  const inicio = S.reabs.length ? null : true;
+  return `${btnVoltar()}
+  <h2 class="page">Reaberturas</h2>
+  <p class="sub">Limite: <b>${LIMITE_REAB} por mês</b>. Acima disso a comissão cai. O ideal é zero.</p>
+  <div class="month-sel"><select onchange="S.mesReab=this.value;render()">${mesesDisponiveis().map(m => `<option value="${m}" ${m === mk ? "selected" : ""}>${mesNome(m)}</option>`).join("")}</select></div>
+  <div class="card reab-card r-${nv.cls}">
+    <div class="reab-n">${n}<small>/${LIMITE_REAB}</small></div>
+    <div><div style="font-weight:800;font-size:16px">Reaberturas em ${mesNome(mk)}</div>
+      <span class="pill ${nv.pill}" style="margin-top:6px">${nv.txt}</span>
+      <div class="reab-track"><div style="width:${Math.min(100, n / LIMITE_REAB * 100)}%"></div></div></div>
+  </div>
+  ${abertasR.length ? `<div class="section-title">Reabertas ainda em aberto — resolva primeiro <span class="count">${abertasR.length}</span></div>
+    ${abertasR.sort((a, b) => (a._pz || 0) - (b._pz || 0)).map(o => ocCard(o)).join("")}` : ""}
+  <div class="section-title">Histórico mês a mês</div>
+  <div class="card"><div class="reab-chart">
+    ${serie.map(x => { const c = nivelReab(x.n).cls; return `<div class="col" onclick="S.mesReab='${x.m}';render()"><div class="bx"><div class="b b-${c}" style="height:${x.n / max * 100}%"><span>${x.n}</span></div></div><div class="cl ${x.m === mk ? "on" : ""}">${abrev(x.m)}</div></div>`; }).join("")}
+    <div class="lim" style="bottom:calc(24px + ${LIMITE_REAB / max * 120}px)"><span>limite ${LIMITE_REAB}</span></div>
+  </div></div>
+  <div class="section-title">Reabertas em ${mesNome(mk)} <span class="count">${n}</span></div>
+  ${n ? lista.map(x => `<div class="reab-item"><span class="pill ${x.fonte === "registrada" ? "p-red" : "p-gray"}">${x.fonte === "registrada" ? "Reaberta " + fmtDH(x.em) : "Estimada · fechada " + fmtData(x.em)}</span>${ocCard(x.o, { rota: false })}</div>`).join("") : `<div class="card empty">Nenhuma reabertura neste mês. 👏</div>`}
+  <p class="sub" style="margin-top:16px;font-size:12.5px">A data exata é registrada a partir de 11/11/2026: quando a planilha do dia mostra uma ocorrência como reaberta (ou de volta de Finalizada para Aberta), o sistema grava o dia. Antes disso, o mês é estimado pelo fechamento.</p>`;
+}
+
 /* ---------------- render shell ---------------- */
 const ICONS = {
   inicio: '<path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>',
@@ -203,14 +258,34 @@ const ICONS = {
   finalizadas: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   clientes: '<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 100-6M22 21c0-3-2-5-5-5.5"/>',
   importar: '<path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/>',
+  rota: '<circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H17a3.5 3.5 0 000-7H7a3.5 3.5 0 010-7h8.5"/>',
+  reaberturas: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
 };
-const NAV = [["inicio", "Início"], ["prazos", "Prazos"], ["finalizadas", "Finalizadas"], ["clientes", "Clientes"], ["importar", "Importar"]];
+const NAV = [["inicio", "Início"], ["prazos", "Prazos"], ["finalizadas", "Finalizadas"], ["rota", "Rota"], ["reaberturas", "Reaberturas"], ["clientes", "Clientes"], ["importar", "Importar"]];
 function svgI(k) { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`; }
-function go(v) { S.view = v; render(); window.scrollTo(0, 0); }
+function snap() { return { v: S.view, pf: { ...S.prazoFiltro }, mf: S.mesFin, ff: { ...S.filtroFin }, mm: S.mesMeta, rp: S.relPeriodo, d: S.depth }; }
+function aplicar(st) {
+  S.view = st.v || "inicio"; if (st.pf) S.prazoFiltro = { ...st.pf }; if (st.mf) S.mesFin = st.mf;
+  if (st.ff) S.filtroFin = { ...st.ff }; if (st.mm) S.mesMeta = st.mm; if (st.rp) S.relPeriodo = st.rp; S.depth = st.d || 0;
+}
+function go(v, muda) {
+  if (typeof muda === "function") muda();
+  S.view = v; S.depth = (S.depth || 0) + 1;
+  try { history.pushState(snap(), "", "#" + v); } catch (e) {}
+  render(); window.scrollTo(0, 0);
+}
+function voltar() { if (S.depth > 0) history.back(); else go("inicio"); }
+function btnVoltar() { return S.depth > 0 ? `<button class="back no-print" onclick="voltar()">‹ Voltar</button>` : ""; }
+window.addEventListener("popstate", e => {
+  if (S.modalOpen) { fecharModal(true); return; }
+  aplicar(e.state || { v: "inicio", d: 0 }); render(); window.scrollTo(0, 0);
+});
+function abrirPrazos(janela, sub) { go("prazos", () => { S.prazoFiltro = { q: "", cidade: "", sub: sub || "", janela: janela || "todas" }; }); }
+function abrirFinalizadas(periodo, filtro) { go("finalizadas", () => { S.mesFin = periodo || S.mesFin; S.filtroFin = filtro || { tipo: null }; }); }
 function renderNav() {
   const urg = abertas().filter(o => { const s = situacao(o); return s.grupo != null && s.grupo <= 3; }).length;
-  const btn = ([k, l]) => `<button class="tab ${S.view === k ? "on" : ""}" onclick="go('${k}')">${svgI(k)}<span>${l}</span>${k === "prazos" && urg ? `<span class="dot">${urg}</span>` : ""}</button>`;
-  document.getElementById("tabs").innerHTML = NAV.filter(n => n[0] !== "importar").map(btn).join("");
+  const btn = ([k, l]) => `<button class="tab ${S.view === k ? "on" : ""}" onclick="go('${k}'${k === "prazos" ? `,()=>S.prazoFiltro={q:'',cidade:'',sub:'',janela:'todas'}` : ""})">${svgI(k)}<span>${l}</span>${k === "prazos" && urg ? `<span class="dot">${urg}</span>` : ""}${k === "reaberturas" && reabsDoPeriodo(mesKey(new Date())).length ? `<span class="dot">${reabsDoPeriodo(mesKey(new Date())).length}</span>` : ""}</button>`;
+  document.getElementById("tabs").innerHTML = NAV.filter(n => !["importar", "reaberturas"].includes(n[0])).map(btn).join("");
   const ult = S.importacoes[0];
   document.getElementById("side").innerHTML = `<div class="brand">Minhas Ocorrências<small>Pós-Vendas · ${esc(S.user?.nome || "")}</small></div>
     ${NAV.map(btn).join("")}
@@ -220,7 +295,7 @@ function renderNav() {
 function render() {
   renderNav();
   const v = document.getElementById("view");
-  const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar }[S.view] || vInicio;
+  const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar, relatorio: vRelatorio, reaberturas: vReaberturas, rota: vRota }[S.view] || vInicio;
   v.innerHTML = fn();
   if (S.view === "importar") bindImport();
   renderRotaBar();
@@ -258,49 +333,62 @@ function vInicio() {
   const urg = [...venc, ...prox].sort((a, b) => a._pz - b._pz).slice(0, 6);
 
   return `
-  <h2 class="page">${saud}, ${esc(nome)} 👋</h2>
+  <div class="page-head"><h2 class="page">${saud}, ${esc(nome)} 👋</h2><button class="btn sm soft" onclick="go('relatorio')">📄 Relatório PDF</button></div>
   <p class="sub">${atual ? "Seu mês até agora" : "Resultado de " + mesNome(mk)}</p>
   <div class="month-sel"><select onchange="S.mesMeta=this.value;render()">${mesesDisponiveis().map(m => `<option value="${m}" ${m === mk ? "selected" : ""}>${mesNome(m)}</option>`).join("")}</select></div>
 
   <div class="grid g2">
-    <div class="card goal star">
+    <div class="card goal star clk" onclick="abrirPrazos('todas','__REL__')">
       ${ring(relMes, META_REL, "var(--purple)")}
       <div>
         <h3>Visitas de Relacionamento <span class="pill p-purple">gratificação</span></h3>
         <div class="falta">${fR ? `Faltam <b>${fR}</b> para a meta` : "<b>Meta batida!</b>"}</div>
         <div class="hint">${ritmo(fR)}</div>
-        <div class="hint" style="margin-top:6px">Você tem <b>${relAb}</b> aberta${relAb === 1 ? "" : "s"} de relacionamento${relAb ? ` — <a href="#" onclick="S.prazoFiltro.sub='__REL__';go('prazos');return false">ver</a>` : ""}</div>
+        <div class="hint" style="margin-top:6px">Você tem <b>${relAb}</b> aberta${relAb === 1 ? "" : "s"} de relacionamento${relAb ? ` <span class="pill p-purple">ver ›</span>` : ""}</div>
       </div>
     </div>
-    <div class="card goal">
+    <div class="card goal clk" onclick="abrirFinalizadas('${mk}')">
       ${ring(totMes, META_TOTAL, "var(--blue)")}
       <div>
         <h3>Ocorrências finalizadas</h3>
         <div class="falta">${fT ? `Faltam <b>${fT}</b> para a meta` : "<b>Meta batida!</b>"}</div>
         <div class="hint">${ritmo(fT)}</div>
-        <div class="hint" style="margin-top:6px">Meta: ${META_TOTAL} no mês, sendo ${META_REL} de relacionamento</div>
+        <div class="hint" style="margin-top:6px">Ver as finalizadas do mês <span class="pill p-blue">›</span></div>
       </div>
     </div>
   </div>
 
+  ${(() => { const nR = reabsDoPeriodo(mk).length, nv = nivelReab(nR), ra = reabertasAbertas().length;
+    return `<div class="card reab-card r-${nv.cls} clk" style="margin-top:12px" onclick="go('reaberturas',()=>S.mesReab='${mk}')">
+      <div class="reab-n">${nR}<small>/${LIMITE_REAB}</small></div>
+      <div style="flex:1"><div style="font-weight:800;font-size:16px">Reaberturas no mês <span class="pill p-red">penalidade</span></div>
+        <span class="pill ${nv.pill}" style="margin-top:6px">${nv.txt}</span>
+        <div class="reab-track"><div style="width:${Math.min(100, nR / LIMITE_REAB * 100)}%"></div></div>
+        ${ra ? `<div class="hint" style="margin-top:6px">⚠️ <b>${ra}</b> reaberta${ra > 1 ? "s" : ""} ainda em aberto — resolva primeiro ›</div>` : ""}</div></div>`; })()}
+
+  <div class="section-title">🗺️ Rota do dia — para onde você vai hoje?</div>
+  <div class="cid-chips">${cidadesAbertas().slice(0, 8).map(x => `<button class="cid" onclick='go("rota",()=>{S.rotaCidade=${jsArg(x.c)};S.rotaFiltro="todas";S.rotaFora=new Set()})'>
+    <b>${esc(x.c)}</b><span>${x.n} aberta${x.n > 1 ? "s" : ""}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("")}
+    ${cidadesAbertas().length > 8 ? `<button class="cid" onclick="go('rota')"><b>Ver todas ›</b><span>${cidadesAbertas().length} cidades</span></button>` : ""}</div>
+
   <div class="section-title">Situação das ocorrências abertas</div>
   <div class="grid g4">
-    <div class="card kpi red" onclick="S.prazoFiltro.janela='vencidas';go('prazos')"><div class="n">${venc.length}</div><div class="l">Vencidas</div></div>
-    <div class="card kpi orange" onclick="S.prazoFiltro.janela='5dias';go('prazos')"><div class="n">${prox.length}</div><div class="l">Vencem em até ${JANELA_DIAS} dias</div></div>
-    <div class="card kpi" onclick="S.prazoFiltro.janela='todas';go('prazos')"><div class="n">${ab.length}</div><div class="l">Abertas no total</div></div>
-    <div class="card kpi green" onclick="go('finalizadas')"><div class="n">${finalizadas().length}</div><div class="l">Finalizadas (histórico)</div></div>
+    <div class="card kpi red" onclick="abrirPrazos('vencidas')"><div class="n">${venc.length}</div><div class="l">Vencidas</div></div>
+    <div class="card kpi orange" onclick="abrirPrazos('prox')"><div class="n">${prox.length}</div><div class="l">Vencem em até ${JANELA_DIAS} dias</div></div>
+    <div class="card kpi" onclick="abrirPrazos('todas')"><div class="n">${ab.length}</div><div class="l">Abertas no total</div></div>
+    <div class="card kpi green" onclick="abrirFinalizadas('todos')"><div class="n">${finalizadas().length}</div><div class="l">Finalizadas (histórico)</div></div>
   </div>
 
   <div class="section-title">Abertas por subclassificação <span class="count">${ab.length}</span></div>
   <div class="grid g4">${Object.entries(ab.reduce((m, o) => { m[o.subclassificacao] = (m[o.subclassificacao] || 0) + 1; return m; }, {}))
     .sort((a, b) => (isRel({ subclassificacao: b[0] }) - isRel({ subclassificacao: a[0] })) || b[1] - a[1])
     .map(([k, v]) => { const urgN = ab.filter(o => o.subclassificacao === k && situacao(o).grupo <= 3).length;
-      return `<div class="card kpi ${isRel({ subclassificacao: k }) ? "purple" : ""}" onclick='S.prazoFiltro={q:"",cidade:"",sub:${jsArg(k)},janela:"todas"};go("prazos")'>
+      return `<div class="card kpi ${isRel({ subclassificacao: k }) ? "purple" : ""}" onclick='abrirPrazos("todas",${jsArg(k)})'>
       <div class="n">${v}</div><div class="l">${esc(subCurta(k))}</div>${urgN ? `<div style="margin-top:6px"><span class="pill p-red">${urgN} urgente${urgN > 1 ? "s" : ""}</span></div>` : ""}</div>`; }).join("")}</div>
 
   <div class="section-title">Prioridade agora <span class="count">${urg.length}</span></div>
   ${urg.length ? urg.map(ocCard).join("") : `<div class="card empty">Nenhuma ocorrência vencida ou vencendo nos próximos ${JANELA_DIAS} dias. 👏</div>`}
-  ${venc.length + prox.length > urg.length ? `<button class="btn ghost block" onclick="S.prazoFiltro.janela='5dias';go('prazos')">Ver todas (${venc.length + prox.length})</button>` : ""}
+  ${venc.length + prox.length > urg.length ? `<button class="btn ghost block" onclick="abrirPrazos('urgentes')">Ver todas (${venc.length + prox.length})</button>` : ""}
   `;
 }
 
@@ -347,25 +435,27 @@ function vPrazos() {
   let lista = ab.filter(o => {
     const s = situacao(o);
     if (f.janela === "vencidas" && s.grupo !== 0) return false;
-    if (f.janela === "5dias" && !(s.grupo <= 3)) return false;
+    if (f.janela === "urgentes" && !(s.grupo <= 3)) return false;
+    if (f.janela === "prox" && !(s.grupo >= 1 && s.grupo <= 3)) return false;
     if (f.cidade && title(o.cidade) !== f.cidade) return false;
     if (f.sub === "__REL__" && !isRel(o)) return false;
-    if (f.sub && f.sub !== "__REL__" && o.subclassificacao !== f.sub) return false;
+    if (f.sub === "__REAB__" && !(o.reabertura > 0)) return false;
+    if (f.sub && !f.sub.startsWith("__") && o.subclassificacao !== f.sub) return false;
     if (f.q) { const q = norm(f.q), c = cliente(o); if (!norm([o.numero, c.nome, c.codigo, c.bairro, c.cidade, o.ticket].join(" ")).includes(q)) return false; }
     return true;
   }).sort((a, b) => (a._pz || 9e15) - (b._pz || 9e15));
   const grupos = [["Vencidas", 0], ["Vencem hoje", 1], ["Até 2 dias", 2], ["Até 5 dias", 3], ["Mais de 5 dias", 4]];
   const sel = (id, opts, cur, onch) => `<select class="input" onchange="${onch}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
   return `
-  <h2 class="page">Prazos</h2>
-  <p class="sub">${ab.length} ocorrências abertas · marque ☑ para montar a rota do dia</p>
+  ${btnVoltar()}<h2 class="page">Prazos</h2>
+  <p class="sub">Mostrando <b>${lista.length}</b> de ${ab.length} abertas · marque ☑ para montar a rota do dia</p>
   <div class="toolbar">
     <input class="input" placeholder="Buscar cliente, código, nº…" value="${esc(f.q)}" oninput="S.prazoFiltro.q=this.value;debRender()">
-    ${sel("j", [["todas", "Todos os prazos"], ["vencidas", "Só vencidas"], ["5dias", `Vencidas + até ${JANELA_DIAS} dias`]], f.janela, "S.prazoFiltro.janela=this.value;render()")}
+    ${sel("j", [["todas", "Todos os prazos"], ["vencidas", "Só vencidas"], ["prox", `Vencem em até ${JANELA_DIAS} dias`], ["urgentes", `Vencidas + até ${JANELA_DIAS} dias`]], f.janela, "S.prazoFiltro.janela=this.value;render()")}
     ${sel("c", [["", "Todas as cidades"], ...cidades.map(c => [c, c])], f.cidade, "S.prazoFiltro.cidade=this.value;render()")}
-    ${sel("s", [["", "Todas as subclassificações"], ["__REL__", "★ Só Relacionamento"], ...subs.map(s => [s, subCurta(s)])], f.sub, "S.prazoFiltro.sub=this.value;render()")}
+    ${sel("s", [["", "Todas as subclassificações"], ["__REL__", "★ Só Relacionamento"], ["__REAB__", "↺ Só reabertas"], ...subs.map(s => [s, subCurta(s)])], f.sub, "S.prazoFiltro.sub=this.value;render()")}
   </div>
-  ${f.cidade ? `<button class="btn sm soft" style="margin-bottom:10px" onclick="selecionarTodosRota()">☑ Adicionar todas desta lista à rota</button>` : ""}
+  ${f.cidade ? `<button class="btn sm" style="margin-bottom:10px" onclick='go("rota",()=>{S.rotaCidade=${jsArg(f.cidade)};S.rotaFiltro="todas";S.rotaFora=new Set()})'>🗺️ Montar rota de ${esc(f.cidade)}</button>` : ""}
   ${lista.length ? grupos.map(([nome, g]) => {
     const it = lista.filter(o => situacao(o).grupo === g);
     return it.length ? `<div class="section-title">${nome} <span class="count">${it.length}</span></div>${it.map(o => ocCard(o)).join("")}` : "";
@@ -401,6 +491,82 @@ function abrirRota() {
     <ol style="padding-left:20px;font-size:14px">${ends.map(e => `<li style="margin-bottom:6px"><b>${esc(cliente(vistos.get(e)).nome)}</b><br><span style="color:var(--muted)">${esc(e)}</span></li>`).join("")}</ol>
     ${partes.map((p, i) => `<a class="btn block" style="margin-top:8px" href="${url(p)}" target="_blank" rel="noopener">🗺️ Abrir no Google Maps${partes.length > 1 ? ` (parte ${i + 1} de ${partes.length})` : ""}</a>`).join("")}
     <p class="sub" style="margin-top:12px;font-size:12.5px">Dica: no Google Maps, toque em “⋮ → Otimizar ordem das paradas” se disponível.</p>`);
+}
+
+/* ---------------- ROTA POR CIDADE ---------------- */
+function urlRota(ends) {
+  return "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + encodeURIComponent(ends[ends.length - 1]) +
+    (ends.length > 1 ? "&waypoints=" + encodeURIComponent(ends.slice(0, -1).join("|")) : "");
+}
+function cidadesAbertas() {
+  const m = {};
+  abertas().forEach(o => { const c = title(o.cidade) || "Sem cidade"; m[c] = m[c] || { c, n: 0, urg: 0, rel: 0 }; m[c].n++; if (situacao(o).grupo <= 3) m[c].urg++; if (isRel(o)) m[c].rel++; });
+  return Object.values(m).sort((a, b) => b.urg - a.urg || b.n - a.n);
+}
+function paradasCidade(cidade, filtro) {
+  let ocs = abertas().filter(o => (title(o.cidade) || "Sem cidade") === cidade);
+  if (filtro === "urgentes") ocs = ocs.filter(o => situacao(o).grupo <= 3);
+  if (filtro === "rel") ocs = ocs.filter(isRel);
+  // agrupa por endereço (mesmo cliente/bairro vira 1 parada) e ordena por bairro, bairros mais urgentes primeiro
+  const paradas = new Map();
+  ocs.forEach(o => { const c = cliente(o), k = enderecoTexto(c); if (!paradas.has(k)) paradas.set(k, { k, c, ocs: [] }); paradas.get(k).ocs.push(o); });
+  const arr = [...paradas.values()];
+  arr.forEach(p => { p.pz = Math.min(...p.ocs.map(o => o._pz ? +o._pz : 9e15)); p.bairro = norm(p.c.bairro); });
+  const pzBairro = {}; arr.forEach(p => pzBairro[p.bairro] = Math.min(pzBairro[p.bairro] ?? 9e15, p.pz));
+  arr.sort((a, b) => pzBairro[a.bairro] - pzBairro[b.bairro] || a.bairro.localeCompare(b.bairro) || a.pz - b.pz);
+  return arr;
+}
+function vRota() {
+  const cids = cidadesAbertas();
+  const sel = S.rotaCidade && cids.some(x => x.c === S.rotaCidade) ? S.rotaCidade : null;
+  const filtro = S.rotaFiltro || "todas";
+  let corpo = "";
+  if (sel) {
+    const paradas = paradasCidade(sel, filtro);
+    S._paradas = paradas;
+    if (!S.rotaFora) S.rotaFora = new Set();
+    const ativas = paradas.filter(p => !S.rotaFora.has(p.k));
+    const ends = ativas.map(p => p.k);
+    const partes = []; for (let i = 0; i < ends.length; i += 10) partes.push(ends.slice(i, i + 10));
+    const aprox = ativas.filter(p => !enderecoCompleto(p.c)).length;
+    corpo = `
+    <div class="toolbar" style="margin-top:4px">
+      ${[["todas", "Todas abertas"], ["urgentes", `Só urgentes (até ${JANELA_DIAS} dias)`], ["rel", "★ Só relacionamento"]].map(([v, l]) => `<button class="btn sm ${filtro === v ? "" : "ghost"}" onclick="S.rotaFiltro='${v}';S.rotaFora=new Set();render()">${l}</button>`).join("")}
+    </div>
+    ${paradas.length ? `
+    <div class="card rota-go">
+      <div><b style="font-size:17px">${ativas.length} parada${ativas.length === 1 ? "" : "s"} em ${esc(sel)}</b>
+        <div class="hint">${ativas.reduce((a, p) => a + p.ocs.length, 0)} ocorrências · partindo da sua localização · ordem por bairro, urgentes primeiro</div></div>
+      ${partes.map((p, i) => `<a class="btn block" style="margin-top:10px" href="${urlRota(p)}" target="_blank" rel="noopener">🗺️ Abrir rota no Google Maps${partes.length > 1 ? ` (parte ${i + 1} de ${partes.length})` : ""}</a>`).join("")}
+      ${ativas[0] ? `<a class="btn block ghost" style="margin-top:8px" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">🚗 Ir para a 1ª parada no Waze</a>` : ""}
+      ${aprox ? `<div class="info-box" style="margin-bottom:0">${aprox} parada${aprox > 1 ? "s estão" : " está"} só com o bairro (sem rua e número). Toque em ✏️ para completar e a rota fica exata.</div>` : ""}
+    </div>
+    <div class="section-title">Paradas <span class="count">${paradas.length}</span> <span style="text-transform:none;font-weight:500;letter-spacing:0">· desmarque para tirar da rota</span></div>
+    ${paradas.map((p, i) => { const fora = S.rotaFora.has(p.k); const pior = p.ocs.map(o => situacao(o)).sort((a, b) => (a.grupo ?? 9) - (b.grupo ?? 9))[0];
+      return `<div class="parada ${fora ? "fora" : ""}">
+        <input type="checkbox" class="chk" ${fora ? "" : "checked"} onchange="toggleParada(${i},this.checked)">
+        <div class="pn">${fora ? "–" : ativas.indexOf(p) + 1}</div>
+        <div class="body"><div class="name" onclick="abrirFicha(${jsArg(p.ocs[0].chave_cliente)})">${esc(p.c.nome)}</div>
+          <div class="meta">📍 ${esc(enderecoTexto(p.c))}${enderecoCompleto(p.c) ? "" : ' <span class="pill p-gray">aprox.</span>'}</div>
+          <div class="top" style="margin-top:6px">${p.ocs.map(o => { const st = situacao(o); return `<span class="pill ${st.pill}">${st.txt}</span><span class="pill ${isRel(o) ? "p-purple" : "p-blue"}">${esc(subCurta(o.subclassificacao))}</span>`; }).join("")}</div>
+          <div class="actions">
+            <a class="btn sm soft" href="${linkMaps(p.c)}" target="_blank" rel="noopener">🗺️ Maps</a>
+            <a class="btn sm soft" href="${linkWaze(p.c)}" target="_blank" rel="noopener">🚗 Waze</a>
+            ${linkZap(p.c.telefone1) ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${linkZap(p.c.telefone1)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+            <button class="btn sm ghost" onclick="abrirFicha(${jsArg(p.ocs[0].chave_cliente)},true)">✏️ Editar</button>
+          </div></div></div>`; }).join("")}` : `<div class="card empty">Nenhuma ocorrência aberta em ${esc(sel)} com esse filtro.</div>`}`;
+  }
+  return `${btnVoltar()}
+  <h2 class="page">Rota do dia</h2>
+  <p class="sub">${sel ? "Toque em outra cidade para trocar." : "Para onde você vai hoje? Escolha a cidade."}</p>
+  <div class="cid-chips">${cids.map(x => `<button class="cid ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();render()">
+    <b>${esc(x.c)}</b><span>${x.n} aberta${x.n > 1 ? "s" : ""}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("") || '<div class="card empty">Nenhuma ocorrência aberta.</div>'}</div>
+  ${corpo}`;
+}
+function toggleParada(i, on) {
+  const p = S._paradas[i]; if (!p) return;
+  on ? S.rotaFora.delete(p.k) : S.rotaFora.add(p.k);
+  const y = window.scrollY; render(); window.scrollTo(0, y);
 }
 
 /* ---------------- FINALIZADAS ---------------- */
@@ -459,12 +625,13 @@ function vFinalizadas() {
       ${subs.map(sb => `<tr ${sb === REL ? 'style="background:var(--purple-soft)"' : ""}><td style="position:sticky;left:0;background:${sb === REL ? "var(--purple-soft)" : "#fff"};padding-left:14px;font-weight:600">${esc(sb)}</td>
         ${mesesP.map(m => `<td style="text-align:right">${cnt[sb + "|" + m] || '<span style="color:#cbd5e1">·</span>'}</td>`).join("")}<td style="text-align:right;font-weight:800;padding-right:14px">${porSub[sb]}</td></tr>`).join("")}
       <tr style="font-weight:800"><td style="position:sticky;left:0;background:#fff;padding-left:14px">Total do mês</td>${mesesP.map(m => { const t = totM(m); return `<td style="text-align:right;color:${t >= META_TOTAL ? "var(--green)" : "inherit"}">${t}</td>`; }).join("")}<td style="text-align:right;padding-right:14px">${base.length}</td></tr>
+      <tr style="font-weight:700"><td style="position:sticky;left:0;background:#fff;padding-left:14px;color:var(--red)">↺ Reaberturas (máx ${LIMITE_REAB})</td>${mesesP.map(m => { const q = reabsDoPeriodo(m).length; return `<td style="text-align:right;color:${q > LIMITE_REAB ? "var(--red)" : q ? "var(--orange)" : "var(--green)"}">${q}</td>`; }).join("")}<td style="text-align:right;padding-right:14px">${mesesP.reduce((a, m) => a + reabsDoPeriodo(m).length, 0)}</td></tr>
       <tr style="font-weight:700;color:var(--muted)"><td style="position:sticky;left:0;background:#fff;padding-left:14px">Meta relac. (${META_REL})</td>${mesesP.map(m => { const r = relM(m); return `<td style="text-align:right;color:${r >= META_REL ? "var(--green)" : "var(--red)"}">${r}</td>`; }).join("")}<td style="text-align:right;padding-right:14px">${rel}</td></tr>
       </tbody></table></div>`;
-    S._matriz = { mesesP, subs, cnt, porSub, totM: mesesP.map(totM), relM: mesesP.map(relM), total: base.length, periodo: periodoNome(pk) };
+    S._matriz = { mesesP, subs, cnt, porSub, totM: mesesP.map(totM), relM: mesesP.map(relM), reabM: mesesP.map(m => reabsDoPeriodo(m).length), total: base.length, periodo: periodoNome(pk) };
   }
   return `
-  <h2 class="page">Finalizadas</h2>
+  ${btnVoltar()}<div class="page-head"><h2 class="page">Finalizadas</h2><button class="btn sm soft" onclick="go('relatorio',()=>S.relPeriodo=S.mesFin)">📄 Relatório PDF</button></div>
   <p class="sub">Escolha o período · toque numa barra para ver as ocorrências</p>
   <div class="month-sel"><select onchange="S.mesFin=this.value;S.filtroFin={tipo:null};render()">
     <option value="todos" ${pk === "todos" ? "selected" : ""}>Todo o histórico</option>
@@ -493,6 +660,7 @@ function exportarMatriz() {
   M.subs.forEach(sb => linhas.push([q(sb), ...M.mesesP.map(m => M.cnt[sb + "|" + m] || 0), M.porSub[sb]].join(";")));
   linhas.push([q("Total do mês"), ...M.totM, M.total].join(";"));
   linhas.push([q("Visitas de relacionamento"), ...M.relM, M.relM.reduce((a, b) => a + b, 0)].join(";"));
+  linhas.push([q("Reaberturas"), ...M.reabM, M.reabM.reduce((a, b) => a + b, 0)].join(";"));
   const blob = new Blob(["﻿" + linhas.join("\r\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = "ocorrencias-" + M.periodo.replace(/\W+/g, "-").toLowerCase() + ".csv"; a.click();
@@ -521,18 +689,15 @@ function vClientes() {
   l.sort((a, b) => b.ab - a.ab || a.c.nome.localeCompare(b.c.nome));
   const semEnd = l.filter(e => !enderecoCompleto(e.c)).length;
   return `
-  <h2 class="page">Clientes</h2>
+  ${btnVoltar()}<h2 class="page">Clientes</h2>
   <p class="sub">${l.length} clientes · ${semEnd} sem rua/número cadastrados</p>
   <div class="toolbar"><input class="input" placeholder="Buscar por código, nome, bairro, cidade ou telefone" value="${esc(S.cliQ)}" oninput="S.cliQ=this.value;debRender()"></div>
-  <div class="card" style="padding:4px 14px">
-  <table class="t"><thead><tr><th>Código</th><th>Cliente</th><th class="hide-sm">Cidade</th><th>Oc.</th><th></th></tr></thead><tbody>
-  ${l.slice(0, 200).map(e => `<tr style="cursor:pointer" onclick="abrirFicha(${jsArg(e.chave)})">
-    <td><b>${esc(e.c.codigo || "—")}</b></td>
-    <td>${esc(e.c.nome)}${e.c.telefone1 ? ' <span title="Telefone cadastrado">📞</span>' : ""}${enderecoCompleto(e.c) ? ' <span title="Endereço completo">📍</span>' : ""}</td>
-    <td>${esc(e.c.cidade)}</td>
-    <td>${e.ocs.length}${e.ab ? ` <span class="pill p-orange">${e.ab} aberta${e.ab > 1 ? "s" : ""}</span>` : ""}</td>
-    <td style="text-align:right">›</td></tr>`).join("")}
-  </tbody></table></div>
+  <div class="card" style="padding:2px 4px">
+  ${l.slice(0, 200).map(e => `<div class="cli-row" onclick="abrirFicha(${jsArg(e.chave)})">
+    <div class="cli-main"><div class="cli-nome">${esc(e.c.nome)}${e.c.telefone1 ? " 📞" : ""}${enderecoCompleto(e.c) ? " 📍" : ""}</div>
+      <div class="cli-sub">${e.c.codigo ? "Cód. <b>" + esc(e.c.codigo) + "</b>" : "sem código"} · ${esc(e.c.cidade || "")} · ${e.ocs.length} ocorrência${e.ocs.length > 1 ? "s" : ""}</div></div>
+    ${e.ab ? `<span class="pill p-orange">${e.ab} aberta${e.ab > 1 ? "s" : ""}</span>` : ""}<span class="chev">›</span></div>`).join("")}
+  </div>
   ${l.length > 200 ? `<p class="sub" style="text-align:center">Mostrando 200 de ${l.length}. Use a busca.</p>` : ""}`;
 }
 
@@ -595,12 +760,119 @@ async function salvarFicha(chave, codigo) {
   } catch (e) { toast(e.message); btn.disabled = false; btn.textContent = "Salvar"; }
 }
 
+
+/* ---------------- RELATÓRIO (PDF para diretoria) ---------------- */
+function vRelatorio() {
+  const pk = S.relPeriodo;
+  const base = finalizadas().filter(o => periodoDe(o._fe, pk));
+  const P = periodosDisponiveis();
+  const opt = v => `<option value="${v}" ${v === pk ? "selected" : ""}>${esc(periodoNome(v))}</option>`;
+  const REL = subCurta("VISIT RELACIONAMENTO");
+  const rel = base.filter(isRel).length;
+  const comPrazo = base.filter(o => o._pz);
+  const noPrazo = comPrazo.filter(o => o._fe <= o._pz).length;
+  const pctPrazo = comPrazo.length ? Math.round(100 * noPrazo / comPrazo.length) : 0;
+  const durs = base.filter(o => o._ab).map(o => (o._fe - o._ab) / 864e5).sort((a, b) => a - b);
+  const media = durs.length ? durs.reduce((a, b) => a + b, 0) / durs.length : 0;
+  const clientes = new Set(base.map(o => o.chave_cliente)).size;
+  const cidadesObj = {}, subObj = {};
+  base.forEach(o => { const c = title(o.cidade) || "Sem cidade"; cidadesObj[c] = (cidadesObj[c] || 0) + 1; const sb = subCurta(o.subclassificacao); subObj[sb] = (subObj[sb] || 0) + 1; });
+  const meses = [...new Set(base.map(o => mesKey(o._fe)))].sort();
+  const porMes = meses.map(m => { const it = base.filter(o => mesKey(o._fe) === m); return { m, t: it.length, r: it.filter(isRel).length }; });
+  const maxM = Math.max(META_TOTAL, ...porMes.map(x => x.t)) * 1.15;
+  const abrev = m => MESES[+m.split("-")[1] - 1].slice(0, 3) + "/" + m.slice(2, 4);
+  const pct = (v, t) => t ? (100 * v / t).toFixed(1).replace(".", ",") + "%" : "—";
+  const subs = Object.entries(subObj).sort((a, b) => (b[0] === REL) - (a[0] === REL) || b[1] - a[1]);
+  const cids = Object.entries(cidadesObj).sort((a, b) => b[1] - a[1]);
+  const cidTop = cids.slice(0, 12), cidOutros = cids.slice(12).reduce((a, b) => a + b[1], 0);
+  const cnt = {}; base.forEach(o => { const k = subCurta(o.subclassificacao) + "|" + mesKey(o._fe); cnt[k] = (cnt[k] || 0) + 1; });
+  const ab = abertas(), venc = ab.filter(o => situacao(o).grupo === 0).length, prox = ab.filter(o => { const g = situacao(o).grupo; return g >= 1 && g <= 3; }).length;
+  const mesesBatidosT = porMes.filter(x => x.t >= META_TOTAL).length, mesesBatidosR = porMes.filter(x => x.r >= META_REL).length;
+  const hoje = new Date();
+  return `
+  <div class="no-print">${btnVoltar()}
+    <div class="page-head"><h2 class="page">Relatório para apresentação</h2></div>
+    <p class="sub">Escolha o período e toque em <b>Gerar PDF</b>. No celular, use “Salvar em PDF” ou “Compartilhar” na tela de impressão.</p>
+    <div class="toolbar"><select class="input" style="flex:1 1 220px" onchange="S.relPeriodo=this.value;render()">
+      <optgroup label="Trimestres">${P.tri.map(opt).join("")}</optgroup>
+      <optgroup label="Meses">${P.meses.map(opt).join("")}</optgroup>
+      <optgroup label="Anos">${P.anos.map(opt).join("")}</optgroup>
+      <option value="todos" ${pk === "todos" ? "selected" : ""}>Todo o histórico</option></select>
+      <button class="btn" onclick="gerarPDF()">📄 Gerar PDF</button></div>
+  </div>
+
+  <div class="rel" id="rel">
+    <div class="rel-head">
+      <div><div class="rel-kicker">Consigaz · Pós-Vendas</div>
+        <h1>Relatório de Ocorrências</h1>
+        <div class="rel-meta">${esc(S.user?.nome || "")} · Consultor de Pós-Vendas · <b>${esc(periodoNome(pk))}</b></div></div>
+      <div class="rel-date">Gerado em<br><b>${hoje.toLocaleDateString("pt-BR")}</b></div>
+    </div>
+
+    <div class="rel-kpis">
+      <div><b>${base.length}</b><span>Ocorrências finalizadas</span></div>
+      <div class="pu"><b>${rel}</b><span>Visitas de relacionamento (${pct(rel, base.length)})</span></div>
+      <div><b>${pctPrazo}%</b><span>Fechadas dentro do prazo</span></div>
+      <div><b>${media.toFixed(1).replace(".", ",")}</b><span>Dias em média para fechar</span></div>
+      <div><b>${clientes}</b><span>Clientes atendidos</span></div>
+      <div><b>${cids.length}</b><span>Cidades atendidas</span></div>
+      <div class="rd"><b>${reabsDoPeriodo(pk).length}</b><span>Reaberturas (limite ${LIMITE_REAB}/mês)</span></div>
+      <div class="rd"><b>${pct(base.filter(o => o.reabertura > 0).length, base.length)}</b><span>Taxa de reabertura</span></div>
+      <div class="or"><b>${reabertasAbertas().length}</b><span>Reabertas ainda em aberto</span></div>
+    </div>
+
+    ${porMes.length ? `<h3>Evolução mensal e metas</h3>
+    <div class="rel-chart">
+      ${porMes.map(x => `<div class="col"><div class="bars2"><div class="bt" style="height:${(x.t / maxM) * 100}%"><span>${x.t}</span></div><div class="br" style="height:${(x.r / maxM) * 100}%"><span>${x.r}</span></div></div><div class="cl">${abrev(x.m)}</div></div>`).join("")}
+      <div class="meta-line" style="bottom:calc(26px + ${(META_TOTAL / maxM) * 150}px)"><span>meta ${META_TOTAL}</span></div>
+      <div class="meta-line pu" style="bottom:calc(26px + ${(META_REL / maxM) * 150}px)"><span>meta relac. ${META_REL}</span></div>
+    </div>
+    <div class="legend"><span><i class="lb"></i>Total finalizadas</span><span><i class="lp"></i>Visitas de relacionamento</span></div>
+    <table class="rt"><thead><tr><th>Mês</th><th class="r">Finalizadas</th><th class="r">Meta ${META_TOTAL}</th><th class="r">Relacionamento</th><th class="r">Meta ${META_REL}</th><th class="r">Reaberturas</th></tr></thead><tbody>
+      ${porMes.map(x => `<tr><td>${mesNome(x.m)}</td><td class="r"><b>${x.t}</b></td><td class="r">${x.t >= META_TOTAL ? '<span class="ok">✔ batida</span>' : `<span class="no">${Math.round(100 * x.t / META_TOTAL)}%</span>`}</td><td class="r"><b>${x.r}</b></td><td class="r">${x.r >= META_REL ? '<span class="ok">✔ batida</span>' : `<span class="no">${Math.round(100 * x.r / META_REL)}%</span>`}</td><td class="r">${(() => { const q = reabsDoPeriodo(x.m).length; return `<span class="${q > LIMITE_REAB ? "no" : q === 0 ? "ok" : ""}">${q}${q > LIMITE_REAB ? " ✖" : ""}</span>`; })()}</td></tr>`).join("")}
+      <tr class="tot"><td>Total</td><td class="r">${base.length}</td><td class="r">${mesesBatidosT}/${porMes.length} meses</td><td class="r">${rel}</td><td class="r">${mesesBatidosR}/${porMes.length} meses</td><td class="r">${reabsDoPeriodo(pk).length}</td></tr>
+    </tbody></table>` : `<p class="sub">Nenhuma ocorrência finalizada neste período.</p>`}
+
+    <div class="rel-2col">
+      <div><h3>Por subclassificação</h3>
+        <table class="rt"><tbody>${subs.map(([k, v]) => `<tr${k === REL ? ' class="hl"' : ""}><td>${esc(k)}</td><td class="r"><b>${v}</b></td><td class="r mu">${pct(v, base.length)}</td></tr>`).join("")}</tbody></table></div>
+      <div><h3>Por cidade</h3>
+        <table class="rt"><tbody>${cidTop.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="r"><b>${v}</b></td><td class="r mu">${pct(v, base.length)}</td></tr>`).join("")}
+        ${cidOutros ? `<tr><td>Outras ${cids.length - 12} cidades</td><td class="r"><b>${cidOutros}</b></td><td class="r mu">${pct(cidOutros, base.length)}</td></tr>` : ""}</tbody></table></div>
+    </div>
+
+    ${meses.length > 1 ? `<h3>Mês a mês por subclassificação</h3>
+    <div class="mtx-wrap"><table class="rt mtx"><thead><tr><th>Subclassificação</th>${meses.map(m => `<th class="r">${abrev(m)}</th>`).join("")}<th class="r">Total</th></tr></thead><tbody>
+      ${subs.map(([sb, v]) => `<tr${sb === REL ? ' class="hl"' : ""}><td>${esc(sb)}</td>${meses.map(m => `<td class="r">${cnt[sb + "|" + m] || '<span class="mu">·</span>'}</td>`).join("")}<td class="r"><b>${v}</b></td></tr>`).join("")}
+      <tr class="tot"><td>Total</td>${porMes.map(x => `<td class="r">${x.t}</td>`).join("")}<td class="r">${base.length}</td></tr>
+    </tbody></table></div>` : ""}
+
+    <h3>Situação atual da carteira <span class="mu" style="font-weight:500;font-size:12px">(em ${hoje.toLocaleDateString("pt-BR")})</span></h3>
+    <div class="rel-kpis k3">
+      <div><b>${ab.length}</b><span>Ocorrências abertas</span></div>
+      <div class="rd"><b>${venc}</b><span>Vencidas</span></div>
+      <div class="or"><b>${prox}</b><span>Vencem em até ${JANELA_DIAS} dias</span></div>
+    </div>
+    <div class="rel-foot">Reaberturas: data registrada pelas importações diárias a partir de 11/11/2026; antes disso, estimada pelo mês do fechamento. Fonte: exportação “Minhas Ocorrências Pós-Vendas” · ${S.importacoes[0] ? "última atualização " + fmtDH(S.importacoes[0].em) : ""} · Minhas Ocorrências — DDS Inovação</div>
+  </div>`;
+}
+function gerarPDF() {
+  const t = document.title;
+  document.title = "Relatorio-Ocorrencias-" + periodoNome(S.relPeriodo).replace(/\W+/g, "-");
+  window.print();
+  setTimeout(() => document.title = t, 1500);
+}
+
 /* ---------------- modal ---------------- */
 function modal(html) {
+  if (!S.modalOpen) { S.modalOpen = true; try { history.pushState({ ...snap(), modal: true }, ""); } catch (e) {} }
   document.getElementById("modalRoot").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)fecharModal()"><div class="modal">${html}</div></div>`;
   document.body.style.overflow = "hidden";
 }
-function fecharModal() { document.getElementById("modalRoot").innerHTML = ""; document.body.style.overflow = ""; }
+function fecharModal(doHistorico) {
+  document.getElementById("modalRoot").innerHTML = ""; document.body.style.overflow = "";
+  if (S.modalOpen) { S.modalOpen = false; if (!doHistorico) history.back(); }
+}
 document.addEventListener("keydown", e => { if (e.key === "Escape") fecharModal(); });
 
 async function trocarPin() {
@@ -618,14 +890,14 @@ async function confirmarPin() {
 /* ---------------- IMPORTAR ---------------- */
 function vImportar() {
   return `
-  <h2 class="page">Importar planilha</h2>
+  ${btnVoltar()}<h2 class="page">Importar planilha</h2>
   <p class="sub">Exporte “Minhas Ocorrências Pós-Vendas” e envie aqui todo dia. Só o que é novo ou mudou é atualizado — suas edições de endereço e telefone nunca são apagadas.</p>
   <label class="drop" id="drop"><input type="file" id="fileIn" accept=".xls,.xlsx,.csv,.html,.htm" class="hidden">
     <b>📄 Toque para escolher o arquivo</b><span style="color:var(--muted);font-size:14px">ou arraste aqui (.xls / .xlsx)</span></label>
   <div id="impRes"></div>
   <div class="section-title">Histórico de importações</div>
-  <div class="card" style="padding:4px 14px">${S.importacoes.length ? `<table class="t"><thead><tr><th>Quando</th><th>Novas</th><th>Atualizadas</th><th>Iguais</th></tr></thead><tbody>
-    ${S.importacoes.map(i => `<tr><td>${fmtDH(i.em)}</td><td><b>${i.novas}</b></td><td>${i.atualizadas}</td><td style="color:var(--muted)">${i.iguais}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">Nenhuma importação ainda.</div>'}</div>
+  <div class="card" style="padding:4px 14px">${S.importacoes.length ? `<table class="t"><thead><tr><th>Quando</th><th>Novas</th><th>Atualiz.</th><th>Iguais</th><th>Reab.</th></tr></thead><tbody>
+    ${S.importacoes.map(i => `<tr><td>${fmtDH(i.em)}</td><td><b>${i.novas}</b></td><td>${i.atualizadas}</td><td style="color:var(--muted)">${i.iguais}</td><td style="color:${i.reabertas ? "var(--red)" : "var(--muted)"};font-weight:700">${i.reabertas || 0}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">Nenhuma importação ainda.</div>'}</div>
   <p class="sub" style="margin-top:20px;text-align:center"><a href="#" onclick="trocarPin();return false">Trocar PIN</a> · <a href="#" onclick="sair();return false">Sair</a></p>`;
 }
 function bindImport() {
@@ -706,11 +978,11 @@ async function importarArquivo(file) {
     }
     if (!linhas.length) throw new Error("Nenhuma ocorrência encontrada no arquivo.");
     out.querySelector("p").textContent = `Enviando ${linhas.length} ocorrências…`;
-    let tot = { novas: 0, atualizadas: 0, iguais: 0, total: 0 };
+    let tot = { novas: 0, atualizadas: 0, iguais: 0, total: 0, reabertas: 0 };
     // envia em blocos para não estourar o limite
     for (let i = 0; i < linhas.length; i += 400) {
       const r = await rpc("ocv_importar", { p_token: S.token, p_arquivo: file.name + (linhas.length > 400 ? ` [${i / 400 + 1}]` : ""), p_linhas: linhas.slice(i, i + 400) });
-      ["novas", "atualizadas", "iguais", "total"].forEach(k => tot[k] += r[k]);
+      ["novas", "atualizadas", "iguais", "total", "reabertas"].forEach(k => tot[k] += (r[k] || 0));
     }
     const antesAb = new Set(abertas().map(o => o.numero));
     await carregar();
@@ -718,7 +990,7 @@ async function importarArquivo(file) {
     render();
     document.getElementById("impRes").innerHTML = `<div class="card" style="margin-top:12px">
       <b style="font-size:16px">✅ Importação concluída</b>
-      <div class="stats"><span class="pill p-green">${tot.novas} novas</span><span class="pill p-blue">${tot.atualizadas} atualizadas</span><span class="pill p-gray">${tot.iguais} sem mudança (ignoradas)</span>${fechadasAgora ? `<span class="pill p-purple">${fechadasAgora} fecharam desde a última</span>` : ""}</div>
+      <div class="stats"><span class="pill p-green">${tot.novas} novas</span><span class="pill p-blue">${tot.atualizadas} atualizadas</span><span class="pill p-gray">${tot.iguais} sem mudança (ignoradas)</span>${tot.reabertas ? `<span class="pill p-red">↺ ${tot.reabertas} reabertura${tot.reabertas > 1 ? "s" : ""} detectada${tot.reabertas > 1 ? "s" : ""}</span>` : ""}${fechadasAgora ? `<span class="pill p-purple">${fechadasAgora} fecharam desde a última</span>` : ""}</div>
       <button class="btn block" onclick="go('inicio')">Ver meu painel</button></div>`;
   } catch (e) {
     out.innerHTML = `<div class="card" style="margin-top:12px;color:var(--red)">⚠️ ${esc(e.message)}</div>`;
