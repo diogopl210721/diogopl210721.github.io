@@ -8792,7 +8792,8 @@ async function verificarNovaVersao() {
     const resp = await fetch(`${enderecoDoApp()}/index.html?t=${Date.now()}`, { cache: "no-store" });
     const html = await resp.text();
     const match = html.match(/app\.js\?v=(\d+)/);
-    if (match && window.APP_VERSION && match[1] !== window.APP_VERSION) {
+    const atual = (document.querySelector('script[src*="app.js?v="]')?.getAttribute("src").match(/v=(\d+)/) || [])[1] || window.APP_VERSION;
+    if (match && atual && match[1] !== atual) {
       mostrarBannerNovaVersao();
     }
   } catch (e) { /* sem internet ou falha de rede - nao interrompe o uso normal do app */ }
