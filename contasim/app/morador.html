@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Cadastro do morador — Conta Sim Digital</title>
 <link rel="stylesheet" href="assets/css/style.css?v=78">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-js.min.js?v=2119"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -34,6 +34,7 @@
     <div id="etapaErro" style="display:none;" class="center-text">
       <h2>Link inválido</h2>
       <p id="mensagemErro">Este link não é mais válido. Peça um novo link ao consultor responsável.</p>
+      <button type="button" class="btn btn-primary btn-block" id="btnTentarNovamente" style="display:none; margin-top:12px;" onclick="location.reload()">Tentar novamente</button>
     </div>
 
     <!-- ETAPA: já concluído -->
@@ -242,7 +243,7 @@ let docBase64 = null, docMediaType = null, docUrl = null;
 let selfieBase64 = null, selfieMediaType = null;
 let verificacaoNome = {};
 
-const ETAPAS = ['carregando','localizar','cpf','cadastroZero','confirmar','documento','selfie','concluido','jaConcluido','avisoNaoMorador'];
+const ETAPAS = ['carregando','localizar','cpf','cadastroZero','confirmar','documento','selfie','concluido','jaConcluido','avisoNaoMorador','erro'];
 function mostrarEtapa(nome, passoVisual) {
   ETAPAS.forEach(e => document.getElementById('etapa' + e.charAt(0).toUpperCase() + e.slice(1)).style.display = (e === nome ? 'block' : 'none'));
   if (passoVisual) atualizarDial(passoVisual);
@@ -286,7 +287,15 @@ async function iniciar() {
   if (!token) { mostrarErro('Link não informado.'); return; }
   if (restaurarProgresso()) return;
 
-  const { data, error } = await sb.rpc('csd_rpc_resolver_link', { p_token: token });
+  let resp;
+  try { resp = await sb.rpc('csd_rpc_resolver_link', { p_token: token }); }
+  catch (e) { resp = { error: e }; }
+  const { data, error } = resp;
+  // Falha de rede (sinal fraco, bloqueio) não é "link inválido": avisa e deixa tentar de novo
+  if (error && (!error.code || /fetch|network|timeout|load failed/i.test(String(error.message)))) {
+    mostrarErro('Não consegui carregar. Confira sua internet e toque em "Tentar novamente".', true);
+    return;
+  }
   if (error || data?.erro) {
     const mensagens = {
       link_expirado: 'Este link expirou. Peça um novo ao consultor.',
@@ -315,7 +324,10 @@ async function iniciar() {
   }
 }
 
-function mostrarErro(msg) {
+function mostrarErro(msg, falhaDeRede) {
+  const dial = document.querySelector('.medidor-dial'); if (dial) dial.style.display = 'none';
+  document.querySelector('#etapaErro h2').textContent = falhaDeRede ? 'Sem conexão' : 'Link inválido';
+  document.getElementById('btnTentarNovamente').style.display = falhaDeRede ? 'block' : 'none';
   document.getElementById('mensagemErro').textContent = msg;
   mostrarEtapa('erro');
 }
@@ -926,7 +938,12 @@ ligarCalendario('confNascimento');
 ligarCalendario('zeroNascimento');
 ligarMascaraData('confNascimento');
 ligarMascaraData('zeroNascimento');
-iniciar();
+// Se travar em "Carregando..." (internet lenta/bloqueada), mostra opção de tentar de novo
+setTimeout(() => {
+  const c = document.getElementById('etapaCarregando');
+  if (c && c.style.display !== 'none') mostrarErro('A página está demorando para carregar. Confira sua internet e toque em "Tentar novamente".', true);
+}, 15000);
+iniciar().catch(() => mostrarErro('Não consegui carregar. Confira sua internet e toque em "Tentar novamente".', true));
 </script>
 </body>
 </html>
