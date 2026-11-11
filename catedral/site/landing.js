@@ -246,7 +246,7 @@ document.querySelectorAll("img[data-opc]").forEach(i => { const f = () => i.clas
   });
   heroTL
     .to('#heroText', { y: -90, opacity: 0, ease: 'power1.in', duration: .3 }, 0)
-    .to('#cue', { opacity: 0, duration: .1 }, 0)
+    .to('#cueOut', { opacity: 0, duration: .1 }, 0)
     .to(logo3d, { scale: .42, ease: 'power2.inOut', duration: .55 }, .04)
     .to('#sunrays', { scale: 1.6, opacity: 0, duration: .6, ease: 'none' }, 0)
     .fromTo('#portalImg', { clipPath: () => `circle(0% at ${center()})` }, { clipPath: () => `circle(90% at ${center()})`, ease: 'power3.inOut', duration: .62 }, .3)
@@ -277,7 +277,7 @@ document.querySelectorAll("img[data-opc]").forEach(i => { const f = () => i.clas
       prog.style.transform = `scaleX(${self.progress})`;
       nav.classList.toggle('solid', y > 40);
       nav.classList.toggle('away', self.direction === 1 && y > innerHeight * 1.2 && !document.body.classList.contains('menu-open'));
-      dock.classList.toggle('show', y > innerHeight * .8);
+      dock.classList.toggle('show', y > innerHeight * .35);
     }
   });
   const navLinks = $$('.links a');
