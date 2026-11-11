@@ -2,559 +2,341 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Catedral Pão da Vida · Balneário Ipanema</title>
-<meta name="description" content="Igreja do Evangelho Quadrangular em Balneário Ipanema, Pontal do Paraná. Cultos às terças, quartas e domingos. Pr. Ismair e Pra. Débora.">
-<meta name="theme-color" content="#071318">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Catedral Pão da Vida · Igreja do Evangelho Quadrangular · Balneário Ipanema</title>
+<meta name="description" content="Igreja do Evangelho Quadrangular Catedral Pão da Vida, em Balneário Ipanema, Pontal do Paraná. Terça da Vitória às 20h, Tarde da Bênção quarta às 15h e Culto de Celebração domingo às 20h.">
+<meta name="theme-color" content="#14110E">
 <meta property="og:title" content="Catedral Pão da Vida · Balneário Ipanema">
-<meta property="og:description" content="Uma igreja à beira-mar no litoral do Paraná. Venha nos visitar.">
-<meta property="og:image" content="site/logo-branca.png">
-<link rel="icon" href="app/assets/icone-app.png">
-<link rel="apple-touch-icon" href="app/assets/icone-app.png">
+<meta property="og:description" content="Cultos às terças, quartas e domingos no litoral do Paraná. Venha como você está.">
+<meta property="og:image" content="https://www.ddsinovacao.com.br/catedral/site/logo-preta.png">
+<link rel="icon" href="app/assets/icone-igreja.png">
 <link rel="preload" href="site/fontes/fraunces-latin-full-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="site/fontes/fraunces-latin-full-italic.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="site/fontes/bricolage-grotesque-latin-standard-normal.woff2" as="font" type="font/woff2" crossorigin>
-<style>
-/* ============================================================
-   Direção: "Maré e Trigo"
-   O mar de Ipanema ao amanhecer + o trigo do Pão da Vida.
-   Fraunces (serifada viva, com eixos SOFT/WONK) para a voz,
-   Bricolage Grotesque para a leitura e a interface.
-   ============================================================ */
-@font-face{ font-family:"Fraunces"; src:url("site/fontes/fraunces-latin-full-normal.woff2") format("woff2"); font-weight:100 900; font-display:swap; }
-@font-face{ font-family:"Fraunces"; src:url("site/fontes/fraunces-latin-full-italic.woff2") format("woff2"); font-weight:100 900; font-style:italic; font-display:swap; }
-@font-face{ font-family:"Bricolage"; src:url("site/fontes/bricolage-grotesque-latin-standard-normal.woff2") format("woff2"); font-weight:200 800; font-stretch:75% 100%; font-display:swap; }
-:root{
-  --abismo:#071318; --mare:#0F3340; --mare-2:#174A5A; --espuma:#DCEBE6;
-  --areia:#F2E8D8; --areia-2:#E8D9C1; --tinta:#1D150D; --tinta-2:rgba(29,21,13,.68);
-  --trigo:#E0A93E; --trigo-escuro:#8F600F; --brasa:#D2643A;
-  --s-cruz:#E5322B; --s-pomba:#F5C518; --s-calice:#3B6FD1; --s-coroa:#B23AA0;
-  --voz:"Fraunces", Georgia, serif; --ui:"Bricolage", system-ui, sans-serif;
-  --g:clamp(18px, 4.5vw, 56px);
-  --ease:cubic-bezier(.22,1,.36,1);
-}
-*{ box-sizing:border-box; }
-html.lenis, html.lenis body{ height:auto; }
-.lenis.lenis-smooth{ scroll-behavior:auto!important; }
-body{ font-optical-sizing:auto; margin:0; background:var(--abismo); color:var(--areia); font:400 17.5px/1.6 var(--ui); -webkit-font-smoothing:antialiased; overflow-x:hidden; }
-img{ max-width:100%; display:block; }
-a{ color:inherit; }
-::selection{ background:var(--trigo); color:var(--tinta); }
-:focus-visible{ outline:2px solid var(--trigo); outline-offset:4px; border-radius:8px; }
-.wrap{ width:min(1240px, 100%); margin:0 auto; padding:0 var(--g); }
-.voz{ font-family:var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.02em; }
-.ital{ font-style:italic; font-variation-settings:"SOFT" 100, "WONK" 1; }
-
-/* ---------- botões ---------- */
-.btn{ --c:var(--trigo); position:relative; display:inline-flex; align-items:center; gap:12px; min-height:56px; padding:0 10px 0 26px; border-radius:999px; text-decoration:none; font:600 16px var(--ui); letter-spacing:.005em; color:var(--tinta); background:var(--c); border:0; cursor:pointer; overflow:hidden; isolation:isolate; white-space:nowrap; transition:transform .4s var(--ease); }
-.btn::before{ content:""; position:absolute; inset:0; z-index:-1; background:#fff; transform:translateY(101%); transition:transform .5s var(--ease); }
-.btn:hover::before{ transform:none; }
-.btn .seta{ width:38px; height:38px; border-radius:50%; display:grid; place-items:center; background:var(--tinta); color:var(--trigo); transition:transform .5s var(--ease); }
-.btn:hover .seta{ transform:rotate(-45deg); }
-.btn .seta svg{ width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
-.btn-claro{ --c:var(--areia); }
-.btn-pequeno{ min-height:44px; padding:0 6px 0 18px; font-size:14.5px; gap:8px; }
-.btn-pequeno .seta{ width:32px; height:32px; }
-
-/* ---------- navegação ---------- */
-.nav{ position:fixed; z-index:50; top:14px; left:50%; transform:translateX(-50%); width:min(calc(100% - 24px), 1240px); display:flex; align-items:center; justify-content:space-between; gap:14px; padding:8px 8px 8px 14px; border-radius:999px; transition:background .5s, box-shadow .5s, backdrop-filter .5s; }
-.nav.vidro{ background:rgba(7,19,24,.86); -webkit-backdrop-filter:blur(18px) saturate(1.4); backdrop-filter:blur(18px) saturate(1.4); box-shadow:inset 0 0 0 1px rgba(242,232,216,.1), 0 20px 40px -20px rgba(0,0,0,.6); }
-.nav-marca{ display:flex; align-items:center; gap:10px; text-decoration:none; }
-.nav-marca img{ height:38px; width:auto; }
-.nav-links{ display:flex; gap:4px; }
-.nav-links a{ padding:10px 14px; border-radius:999px; text-decoration:none; font:500 14.5px var(--ui); color:rgba(242,232,216,.82); transition:background .3s, color .3s; }
-.nav-links a:hover{ background:rgba(242,232,216,.1); color:var(--areia); }
-@media (max-width:820px){ .nav-links{ display:none; } }
-
-/* ---------- herói ---------- */
-.heroi{ position:relative; height:230svh; }
-.palco{ position:sticky; top:0; height:100svh; overflow:hidden; }
-#mar{ position:absolute; inset:0; width:100%; height:100%; }
-.horizonte{ position:absolute; left:0; right:0; top:62%; }
-.titulo-mar{ position:absolute; left:0; right:0; bottom:0; text-align:center; margin:0; color:var(--areia); line-height:.8; padding-bottom:.06em; }
-.titulo-mar .pre{ display:block; font:italic 400 clamp(26px, 4.4vw, 58px)/1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 1; color:#F6D38A; margin-bottom:.25em; letter-spacing:0; }
-.titulo-mar .nome{ display:block; font:340 clamp(66px, 17.5vw, 260px)/.82 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.03em; white-space:nowrap; text-shadow:0 10px 60px rgba(0,0,0,.35); }
-.titulo-mar .nome em{ font-style:italic; font-weight:300; font-variation-settings:"SOFT" 100, "WONK" 1; }
-.l{ display:inline-block; }
-.reflexo{ position:absolute; left:0; right:0; top:0; text-align:center; transform:scaleY(-1); transform-origin:50% 50%; pointer-events:none; filter:url(#ondula) blur(.6px); opacity:.26;
-  -webkit-mask:linear-gradient(to top, #000 0%, transparent 62%); mask:linear-gradient(to top, #000 0%, transparent 62%); }
-.reflexo .nome{ display:block; font:340 clamp(66px, 17.5vw, 260px)/.82 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.03em; white-space:nowrap; color:#F6D38A; }
-.reflexo .nome em{ font-style:italic; font-weight:300; font-variation-settings:"SOFT" 100, "WONK" 1; }
-.heroi-rodape{ position:absolute; left:0; right:0; bottom:0; padding:0 var(--g) calc(26px + env(safe-area-inset-bottom)); display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap; }
-.heroi-rodape p{ margin:0; max-width:34ch; font:400 clamp(15px,1.5vw,17px)/1.5 var(--ui); color:rgba(242,232,216,.82); }
-.proximo{ display:inline-flex; align-items:center; gap:12px; padding:10px 18px 10px 12px; border-radius:999px; background:rgba(7,19,24,.5); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); box-shadow:inset 0 0 0 1px rgba(242,232,216,.16); font:500 14.5px var(--ui); }
-.proximo i{ width:10px; height:10px; border-radius:50%; background:var(--brasa); animation:pulso 2s infinite; }
-.proximo b{ font-weight:700; color:#F6D38A; }
-@keyframes pulso{ 0%{ box-shadow:0 0 0 0 rgba(210,100,58,.7);} 70%{ box-shadow:0 0 0 12px rgba(210,100,58,0);} 100%{ box-shadow:0 0 0 0 rgba(210,100,58,0);} }
-.heroi-acoes{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-@media (max-width:640px){ .heroi-rodape{ flex-direction:column; align-items:stretch; } .heroi-acoes .btn{ justify-content:space-between; } .heroi-rodape p{ display:none; } }
-
-/* ---------- faixa em movimento ---------- */
-.faixa{ position:relative; z-index:2; background:var(--trigo); color:var(--tinta); overflow:hidden; transform:rotate(-2deg) scale(1.04); margin:-30px 0 0; box-shadow:0 30px 60px -30px rgba(0,0,0,.6); }
-.faixa-trilho{ display:flex; width:max-content; animation:corre 34s linear infinite; }
-.faixa-trilho span{ display:inline-flex; align-items:center; gap:22px; padding:18px 22px; font:400 clamp(26px,3.6vw,46px)/1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 1; font-style:italic; white-space:nowrap; }
-.faixa-trilho svg{ width:.9em; height:.9em; flex:none; }
-@keyframes corre{ to{ transform:translateX(-50%); } }
-
-/* ---------- versículo revelado ---------- */
-.verso{ position:relative; min-height:200svh; background:var(--abismo); }
-.verso-fixo{ position:sticky; top:0; min-height:100svh; display:flex; flex-direction:column; justify-content:center; padding:120px 0; }
-.verso blockquote{ margin:0; font:300 clamp(36px, 6.6vw, 104px)/1.08 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.012em; word-spacing:.04em; max-width:16ch; }
-.verso blockquote em{ font-style:italic; font-variation-settings:"SOFT" 100, "WONK" 1; color:#F6D38A; }
-.verso .w{ opacity:.14; transition:opacity .25s linear; }
-.verso cite{ display:flex; align-items:center; gap:14px; margin-top:34px; font:500 15px var(--ui); font-style:normal; color:rgba(242,232,216,.65); }
-.verso cite::before{ content:""; width:48px; height:1px; background:var(--trigo); }
-
-/* ---------- cultos (rolagem horizontal) ---------- */
-.cultos{ position:relative; background:var(--areia); color:var(--tinta); }
-.cultos-pin{ height:100svh; overflow:hidden; display:flex; flex-direction:column; justify-content:center; }
-.cultos-cab{ display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap; padding-top:90px; }
-.titulo-sec{ margin:0; font:340 clamp(44px, 8vw, 128px)/.95 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.025em; }
-.titulo-sec em{ font-style:italic; font-variation-settings:"SOFT" 100, "WONK" 1; }
-.cultos .titulo-sec em{ color:var(--trigo-escuro); }
-.sub{ margin:0; max-width:36ch; font:400 clamp(16px,1.6vw,18.5px)/1.55 var(--ui); color:var(--tinta-2); }
-.trilho{ display:flex; gap:clamp(16px,2.5vw,32px); padding:34px var(--g) 30px; width:max-content; will-change:transform; }
-.painel{ position:relative; flex:none; width:min(82vw, 720px); height:min(58svh, 520px); border-radius:34px; overflow:hidden; isolation:isolate; color:var(--areia); display:flex; flex-direction:column; justify-content:flex-end; padding:clamp(22px,3vw,36px); }
-.painel .foto{ position:absolute; inset:-6%; z-index:-2; background:var(--foto) center/cover; filter:sepia(.25) saturate(.9) contrast(1.05); will-change:transform; }
-.painel::after{ content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(200deg, rgba(7,19,24,.05) 20%, rgba(7,19,24,.9) 85%); }
-.painel .dia{ position:absolute; top:-.12em; right:-.04em; z-index:-1; font:300 clamp(120px, 20vw, 300px)/1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 1; font-style:italic; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px rgba(246,211,138,.75); }
-.painel .tag{ align-self:flex-start; display:inline-flex; align-items:center; gap:8px; margin-bottom:auto; padding:8px 14px; border-radius:999px; background:rgba(7,19,24,.55); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); font:600 13.5px var(--ui); box-shadow:inset 0 0 0 1px rgba(242,232,216,.18); }
-.painel .tag.hoje{ background:var(--brasa); box-shadow:none; }
-.painel h3{ margin:0; font:340 clamp(38px, 5.4vw, 74px)/.95 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.035em; }
-.painel .hora{ display:flex; align-items:baseline; gap:12px; margin-top:12px; font:500 16px var(--ui); color:rgba(242,232,216,.85); }
-.painel .hora b{ font:400 clamp(30px,3.6vw,44px)/1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 1; font-style:italic; color:#F6D38A; }
-.painel .tema{ margin-top:8px; font:500 15px var(--ui); color:#F6D38A; }
-.painel.domingos-painel{ background:var(--tinta); justify-content:space-between; }
-.painel.domingos-painel h3{ font-size:clamp(34px,4.4vw,58px); }
-.dom-grade{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-.dom{ padding:16px; border-radius:20px; background:rgba(242,232,216,.06); box-shadow:inset 0 0 0 1px rgba(242,232,216,.1); }
-.dom b{ display:block; font:300 44px/1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 1; font-style:italic; color:#F6D38A; }
-.dom span{ font:600 15.5px var(--ui); }
-.dom.agora{ background:var(--trigo); color:var(--tinta); }
-.dom.agora b{ color:var(--tinta); }
-.cultos-rodape{ display:flex; align-items:center; gap:14px; padding:0 var(--g); font:500 14px var(--ui); color:var(--tinta-2); }
-.barra{ flex:1; max-width:240px; height:2px; background:rgba(29,21,13,.12); border-radius:2px; overflow:hidden; }
-.barra i{ display:block; height:100%; width:0; background:var(--trigo-escuro); }
-
-/* ---------- quem somos ---------- */
-.somos{ background:var(--areia); color:var(--tinta); padding:clamp(80px,12vw,160px) 0; }
-.somos-grade{ display:grid; grid-template-columns:5fr 7fr; gap:clamp(30px,6vw,90px); align-items:start; }
-@media (max-width:900px){ .somos-grade{ grid-template-columns:1fr; } }
-.somos .titulo-sec em{ color:var(--trigo-escuro); }
-.historia p{ margin:0 0 18px; font:400 clamp(17px,1.55vw,19.5px)/1.75 var(--ui); color:var(--tinta-2); max-width:56ch; }
-.historia p.abre{ font:340 clamp(24px,2.4vw,32px)/1.35 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; color:var(--tinta); letter-spacing:-.01em; }
-.pastores{ display:flex; align-items:center; gap:18px; margin-top:34px; padding-top:28px; border-top:1px solid rgba(29,21,13,.12); }
-.mono{ display:flex; }
-.mono span{ width:70px; height:70px; border-radius:50%; display:grid; place-items:center; font:300 34px/1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 1; font-style:italic; color:var(--areia); background:var(--tinta); border:3px solid var(--areia); }
-.mono span + span{ margin-left:-18px; background:var(--trigo-escuro); }
-.pastores b{ display:block; font:400 26px/1.1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; }
-.pastores small{ font:400 15px var(--ui); color:var(--tinta-2); }
-
-/* ---------- 4 colunas (os símbolos, como as colunas do templo) ---------- */
-.colunas{ background:var(--areia); color:var(--tinta); padding:0 0 clamp(80px,12vw,160px); }
-.colunas-cab{ display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap; margin-bottom:34px; }
-.colunas .titulo-sec em{ color:var(--trigo-escuro); }
-.col-grade{ display:flex; gap:12px; height:min(78svh, 620px); }
-.col{ --c:#000; position:relative; flex:1; min-width:0; border-radius:28px; overflow:hidden; background:var(--tinta); color:var(--areia); padding:22px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; transition:flex .8s var(--ease); isolation:isolate; border:0; text-align:left; font:inherit; }
-.col::before{ content:""; position:absolute; inset:0; z-index:-1; background:radial-gradient(120% 70% at 50% 110%, color-mix(in srgb, var(--c) 70%, transparent), transparent 70%); opacity:.55; transition:opacity .8s var(--ease); }
-.col.on{ flex:3.2; }
-.col.on::before{ opacity:1; }
-.col .num{ font:300 15px var(--ui); color:rgba(242,232,216,.6); }
-.col svg{ width:clamp(40px,5vw,64px); height:clamp(40px,5vw,64px); }
-.col h3{ margin:0; font:340 clamp(28px,3vw,46px)/.95 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.03em; }
-.col h3 em{ display:block; font-style:italic; font-variation-settings:"SOFT" 100, "WONK" 1; color:var(--c); filter:brightness(1.25); }
-.col p{ margin:12px 0 0; max-width:30ch; font:400 16px/1.55 var(--ui); color:rgba(242,232,216,.8); opacity:0; transform:translateY(12px); transition:all .6s var(--ease); }
-.col.on p{ opacity:1; transform:none; transition-delay:.25s; }
-@media (max-width:760px){ .col-grade{ flex-direction:column; height:auto; } .col{ min-height:96px; } .col.on{ min-height:300px; } .col h3{ font-size:30px; } }
-
-/* ---------- app: celular que troca de tela ---------- */
-.app{ position:relative; background:var(--abismo); padding:clamp(80px,12vw,150px) 0; }
-.app-grade{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(30px,6vw,90px); }
-@media (max-width:900px){ .app-grade{ grid-template-columns:1fr; } }
-.app .titulo-sec em{ color:#F6D38A; }
-.app .sub{ color:rgba(242,232,216,.72); margin-top:20px; }
-.passos{ margin:40px 0 0; padding:0; list-style:none; }
-.passo{ padding:clamp(26px,5vh,48px) 0; border-top:1px solid rgba(242,232,216,.12); opacity:.32; transition:opacity .5s; }
-.passo.on{ opacity:1; }
-.passo small{ font:500 13.5px var(--ui); color:#F6D38A; }
-.passo h3{ margin:6px 0 8px; font:340 clamp(30px,3.4vw,46px)/1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.03em; }
-.passo p{ margin:0; max-width:40ch; font:400 16.5px/1.6 var(--ui); color:rgba(242,232,216,.75); }
-.fone-coluna{ position:relative; }
-.fone-fixo{ position:sticky; top:12svh; height:76svh; display:grid; place-items:center; perspective:1200px; }
-.fone{ position:relative; width:min(78vw, 340px, calc(70svh * .4623)); aspect-ratio:540/1168; border-radius:48px; padding:10px; background:linear-gradient(160deg,#4a3d2e,#120e0a 60%); box-shadow:0 60px 100px -50px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.18), 0 0 0 1px rgba(255,255,255,.04); transform:rotateY(var(--ry,-12deg)) rotateX(var(--rx,6deg)); transition:transform .6s var(--ease); }
-.fone::before{ content:""; position:absolute; top:18px; left:50%; width:84px; height:24px; margin-left:-42px; border-radius:14px; background:#050505; z-index:3; }
-.tela{ position:absolute; inset:10px; border-radius:38px; overflow:hidden; }
-.tela img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transform:scale(1.04); transition:opacity .7s var(--ease), transform .9s var(--ease); }
-.tela img.on{ opacity:1; transform:none; }
-.fone-luz{ position:absolute; width:140%; aspect-ratio:1; border-radius:50%; background:radial-gradient(closest-side, rgba(224,169,62,.32), transparent 70%); }
-.fone-coluna .btn{ margin-top:24px; }
-@media (max-width:900px){ .fone-fixo{ position:relative; top:0; height:auto; padding:30px 0; } .app-grade{ display:flex; flex-direction:column-reverse; } }
-
-/* ---------- visite ---------- */
-.visite{ background:var(--areia-2); color:var(--tinta); padding:clamp(80px,12vw,150px) 0; }
-.visite .titulo-sec em{ color:var(--trigo-escuro); }
-.visite-grade{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(30px,5vw,70px); margin-top:40px; }
-@media (max-width:900px){ .visite-grade{ grid-template-columns:1fr; } }
-.links{ list-style:none; margin:0; padding:0; border-top:1px solid rgba(29,21,13,.15); }
-.links a{ position:relative; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:22px 4px; border-bottom:1px solid rgba(29,21,13,.15); text-decoration:none; overflow:hidden; }
-.links a::before{ content:""; position:absolute; inset:0; z-index:0; background:var(--tinta); transform:scaleY(0); transform-origin:bottom; transition:transform .55s var(--ease); }
-.links a:hover::before{ transform:scaleY(1); }
-.links a > *{ position:relative; z-index:1; transition:color .4s, transform .55s var(--ease); }
-.links a:hover > *{ color:var(--areia); }
-.links a:hover .l-nome{ transform:translateX(16px); }
-.l-nome{ font:340 clamp(30px,3.6vw,48px)/1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; letter-spacing:-.03em; }
-.l-info{ font:500 15px var(--ui); color:var(--tinta-2); text-align:right; }
-.mapa{ position:relative; min-height:460px; border-radius:34px; overflow:hidden; background:#cdbd9f; box-shadow:0 40px 70px -40px rgba(40,25,5,.7); }
-.mapa iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; filter:sepia(.3) saturate(.85) contrast(1.05); }
-.mapa-selo{ position:absolute; left:16px; bottom:16px; right:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 14px 14px 20px; border-radius:22px; background:rgba(29,21,13,.86); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:var(--areia); }
-.mapa-selo b{ display:block; font:400 21px/1.1 var(--voz); font-variation-settings:"SOFT" 100, "WONK" 0; }
-.mapa-selo small{ font:400 13.5px var(--ui); color:rgba(242,232,216,.7); }
-
-/* ---------- final ---------- */
-.final{ position:relative; background:var(--abismo); padding:clamp(90px,14vw,180px) 0 40px; overflow:hidden; text-align:center; }
-.final .titulo-sec{ max-width:14ch; margin:0 auto; }
-.final .titulo-sec em{ color:#F6D38A; }
-.final .sub{ margin:22px auto 34px; color:rgba(242,232,216,.72); }
-.assinatura{ margin:clamp(70px,10vw,130px) auto 0; width:min(100%, 1200px); padding:0 var(--g); }
-.assinatura img{ width:100%; height:auto; opacity:.95; }
-.quatro{ display:flex; justify-content:center; gap:8px; margin:34px 0 0; }
-.quatro i{ width:40px; height:3px; border-radius:3px; }
-footer{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:16px; margin-top:50px; padding:24px var(--g) 0; border-top:1px solid rgba(242,232,216,.1); font:500 14px var(--ui); color:rgba(242,232,216,.55); text-align:left; }
-footer img{ height:56px; width:auto; }
-footer a{ color:#F6D38A; }
-
-/* ---------- luz do farol seguindo o cursor ---------- */
-.farol-cursor{ position:fixed; z-index:40; left:0; top:0; width:520px; height:520px; margin:-260px 0 0 -260px; border-radius:50%; pointer-events:none; background:radial-gradient(closest-side, rgba(246,211,138,.12), transparent 70%); mix-blend-mode:screen; opacity:0; transition:opacity .5s; }
-@media (hover:hover) and (pointer:fine){ .farol-cursor.on{ opacity:1; } }
-
-/* ---------- entradas ---------- */
-.sobe{ opacity:0; transform:translateY(40px); }
-.reduz .sobe{ opacity:1; transform:none; }
-@media (prefers-reduced-motion: reduce){ .faixa-trilho{ animation:none; } .proximo i{ animation:none; } .heroi{ height:100svh; } .verso{ min-height:auto; } .verso .w{ opacity:1; } }
-</style>
+<link rel="stylesheet" href="site/base.css?v=1">
+<link rel="stylesheet" href="site/extra.css?v=2">
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <filter id="ondula"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012 0.09" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="7"/></filter>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.030-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm5.82 14.13c-.25.69-1.44 1.32-1.98 1.37-.51.05-1 .24-3.36-.7-2.84-1.12-4.63-4.030-4.77-4.22-.14-.19-1.14-1.52-1.14-2.9 0-1.38.72-2.06.98-2.34.25-.28.55-.35.74-.35l.53.01c.17.01.4-.06.63.48.25.58.83 2.01.9 2.16.07.14.12.31.02.5-.09.19-.14.31-.28.48-.14.17-.3.37-.42.5-.14.14-.29.29-.12.57.17.28.73 1.2 1.56 1.94 1.07.95 1.97 1.25 2.25 1.39.28.14.44.12.61-.07.17-.19.7-.82.89-1.1.19-.28.37-.23.63-.14.25.09 1.62.76 1.9.9.28.14.46.21.53.33.07.12.07.69-.18 1.37Z"/></symbol>
+  <symbol id="i-app" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></g></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></g></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M8 7h9v9"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></g></symbol>
+  <symbol id="i-nav" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m3 11 18-8-8 18-2-8-8-2Z"/></symbol>
+  <symbol id="i-waze" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5.2 16.2C3.4 15.4 2.6 13.7 3 12c.4-4.6 4.3-8 9-8 5 0 9 3.8 9 8.4 0 3.4-2.2 6-5.4 7"/><path d="M5.2 16.2c.5.8 1.6 1.6 2.9 2"/><path d="M11 19.5h2.6"/><circle cx="9.6" cy="19.6" r="1.6"/><circle cx="15.4" cy="19.6" r="1.6"/><path d="M9 10h.01M15 10h.01M9.5 13.5c1.4 1.2 3.6 1.2 5 0"/></g></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></g><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-fb" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.4V14h2.8v8h3.3Z"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24"><path fill="currentColor" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8ZM10 15V9l5.2 3L10 15Z"/></symbol>
 </svg>
-<div class="farol-cursor" id="farol"></div>
 
-<nav class="nav" id="nav" aria-label="Principal">
-  <a class="nav-marca" href="#topo" aria-label="Catedral Pão da Vida, início"><img src="site/logo-branca.png" alt=""></a>
-  <div class="nav-links"><a href="#cultos">Cultos</a><a href="#somos">Quem somos</a><a href="#app">App</a><a href="#visite">Visite</a></div>
-  <a class="btn btn-pequeno" href="app/">Abrir o app<span class="seta"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
-</nav>
+<div class="grain" aria-hidden="true"></div>
 
-<header class="heroi" id="topo">
-  <div class="palco">
-    <canvas id="mar" aria-hidden="true"></canvas>
-    <div class="horizonte">
-      <h1 class="titulo-mar"><span class="pre">Catedral</span><span class="nome" id="nome">Pão da <em>Vida</em></span></h1>
-      <div class="reflexo" aria-hidden="true"><span class="nome">Pão da <em>Vida</em></span></div>
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader-rays" id="lRays"></div>
+  <div class="loader-logo">
+    <img id="lBadge" src="site/logo-branca.png" alt="">
+  </div>
+  <div class="loader-count" id="lCount">0</div>
+  <div class="loader-tag">Igreja do Evangelho Quadrangular<br>Balneário Ipanema · PR</div>
+</div>
+
+<div class="cursor" id="cursor"><span id="cursorTxt">Ver</span></div>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="progress" id="progress"></div>
+
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#inicio" aria-label="Catedral Pão da Vida — início">
+      <img src="site/logo-branca.png" alt="" width="50" height="50">
+      <span><img class="nome" src="site/nome-script-branco.png" alt="Catedral Pão da Vida" width="219" height="24"><small>Quadrangular · Ipanema</small></span>
+    </a>
+    <nav class="links" aria-label="Principal">
+      <a href="#cultos">Cultos</a>
+      <a href="#ministerios">Ministérios</a>
+      <a href="#app">App</a>
+      <a href="#visite">Como chegar</a>
+    </nav>
+    <div class="ctas">
+      <a class="pill wa magnetic" href="https://wa.me/5541991133734?text=Ol%C3%A1%21%20Gostaria%20de%20saber%20mais%20sobre%20a%20Catedral%20P%C3%A3o%20da%20Vida" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>WhatsApp</a>
+      <a class="pill bnb magnetic" href="app/"><svg><use href="#i-app"/></svg>Abrir o app</a>
     </div>
-    <div class="heroi-rodape">
-      <p>Igreja do Evangelho Quadrangular em Balneário Ipanema, Pontal do Paraná. Pr. Ismair e Pra. Débora.</p>
-      <div class="heroi-acoes">
-        <span class="proximo" id="proximo" hidden><i></i><span></span></span>
-        <a class="btn" href="app/">Abrir o app da igreja<span class="seta"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
-      </div>
-    </div>
+    <button class="burger" id="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="sheet"><i></i><i></i></button>
   </div>
 </header>
 
-<div class="faixa" aria-hidden="true">
-  <div class="faixa-trilho" id="faixa"></div>
+<div class="sheet" id="sheet" aria-hidden="true">
+  <a class="big" href="#cultos">Os <em>cultos</em></a>
+  <a class="big" href="#ministerios">Ministérios</a>
+  <a class="big" href="#app">O <em>app</em> da igreja</a>
+  <a class="big" href="#visite">Como chegar</a>
+  <div class="row">
+    <a class="pill wa" href="https://wa.me/5541991133734" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>WhatsApp</a>
+    <a class="pill bnb" href="app/"><svg><use href="#i-app"/></svg>Abrir o app</a>
+  </div>
 </div>
 
-<section class="verso" aria-label="Versículo">
-  <div class="verso-fixo wrap">
-    <blockquote id="verso">Eu sou o <em>pão da vida;</em> aquele que vem a mim não terá fome, e quem crê em mim nunca terá sede.</blockquote>
-    <cite>João 6:35</cite>
-  </div>
-</section>
+<main>
+<!-- ===================== HERO + PORTAL ===================== -->
+<section class="hero" id="inicio">
+  <div class="sunrays" id="sunrays" aria-hidden="true"></div>
+  <div class="sunglow" aria-hidden="true"></div>
+  <canvas class="flies" id="flies" aria-hidden="true"></canvas>
 
-<section class="cultos" id="cultos" aria-labelledby="t-cultos">
-  <div class="cultos-pin" id="cultos-pin">
-    <div class="wrap cultos-cab">
-      <h2 class="titulo-sec" id="t-cultos">Toda semana, <em>três encontros</em></h2>
-      <p class="sub">Louvor, Palavra e oração. Chegue alguns minutos antes, tem sempre alguém na porta pra te receber.</p>
+  <div class="hero-stage" id="heroStage">
+    <div class="logo3d" id="logo3d">
+      <div class="logo3d-in" id="logo3dIn">
+        <img class="l-badge" src="site/logo-branca.png" alt="" width="995" height="1000">
+        <div class="l-sheen" id="sheen"></div>
+      </div>
+      <span class="sr">Igreja do Evangelho Quadrangular Catedral Pão da Vida</span>
     </div>
-    <div class="trilho" id="trilho"></div>
-    <div class="cultos-rodape"><span>Arraste ou role</span><span class="barra"><i id="barra"></i></span></div>
+    <div id="heroText">
+      <span class="eyebrow hero-in">Balneário Ipanema · Pontal do Paraná</span>
+      <h1 class="split" id="heroTitle">Tem pão na mesa e <em>lugar pra você.</em></h1>
+      <p class="hero-lead hero-in">Igreja do Evangelho Quadrangular no litoral do Paraná. Cultos às terças, quartas e domingos — e o app da igreja na palma da mão.</p>
+      <div class="hero-ctas hero-in">
+        <a class="btn amber magnetic" href="#cultos" data-cursor="Cultos"><svg><use href="#i-cal"/></svg>Ver os cultos</a>
+        <a class="btn bnb magnetic" href="app/" data-cursor="Entrar" data-cursor-bnb><svg><use href="#i-app"/></svg>Abrir o app</a>
+      </div>
+    </div>
   </div>
-</section>
+  <div class="scroll-cue" id="cue"><i></i>Role para entrar</div>
 
-<section class="somos" id="somos" aria-labelledby="t-somos">
-  <div class="wrap somos-grade">
-    <h2 class="titulo-sec sobe" id="t-somos">Uma igreja <em>à beira-mar</em></h2>
-    <div class="historia sobe">
-      <p class="abre">Entre o mar e a Serra do Mar, em Balneário Ipanema, uma família se reúne pra adorar a Deus e repartir o pão da vida com quem chega.</p>
-      <p>A Catedral Pão da Vida nasceu do desejo de levar a Palavra a quem vive e a quem passa pelo litoral do Paraná: moradores, pescadores, famílias que chegam no verão e quem procura um recomeço.</p>
-      <p>Divulgamos a Palavra do Senhor em testemunho de vida, palavras de encorajamento, aconselhamento e nas atividades da nossa cidade.</p>
-      <div class="pastores">
-        <div class="mono" aria-hidden="true"><span>I</span><span>D</span></div>
-        <div><b>Pr. Ismair e Pra. Débora</b><small>Pastores da Catedral Pão da Vida</small></div>
+  <div class="portal" id="portal">
+    <div class="portal-img" id="portalImg">
+      <svg id="portalPic" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Amanhecer no mar de Balneário Ipanema, com a Ilha do Mel e o farol no horizonte">
+        <defs>
+          <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2033"/><stop offset=".35" stop-color="#5a3446"/><stop offset=".62" stop-color="#d9773f"/><stop offset=".72" stop-color="#f6c27a"/></linearGradient>
+          <linearGradient id="mar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d6a73"/><stop offset=".2" stop-color="#2f4855"/><stop offset="1" stop-color="#0b1d22"/></linearGradient>
+          <radialGradient id="brilho" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe2a0" stop-opacity=".95"/><stop offset=".4" stop-color="#ffb648" stop-opacity=".35"/><stop offset="1" stop-color="#ffb648" stop-opacity="0"/></radialGradient>
+          <linearGradient id="trilha" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd590" stop-opacity=".9"/><stop offset="1" stop-color="#ffd590" stop-opacity="0"/></linearGradient>
+          <clipPath id="acima"><rect width="1600" height="640"/></clipPath>
+        </defs>
+        <rect width="1600" height="640" fill="url(#ceu)"/>
+        <circle cx="800" cy="640" r="420" fill="url(#brilho)"/>
+        <circle cx="800" cy="640" r="96" fill="#ffd98c" clip-path="url(#acima)"/>
+        <path d="M0 640 C 120 600 210 560 300 566 C 380 572 430 610 520 640 Z" fill="#2b2230"/>
+        <path d="M340 566 l7 -46 h8 l7 46 Z" fill="#2b2230"/><rect x="344" y="512" width="14" height="10" fill="#ffd98c"/>
+        <path d="M351 517 L 0 470 L 0 520 Z" fill="#ffe2a0" opacity=".12"/>
+        <path d="M1220 640 C 1330 616 1440 604 1600 610 V 640 Z" fill="#2b2230"/>
+        <rect y="640" width="1600" height="360" fill="url(#mar)"/>
+        <rect x="740" y="640" width="120" height="360" fill="url(#trilha)" opacity=".55"/>
+        <g stroke="#ffe2a0" stroke-linecap="round" opacity=".55">
+          <path d="M720 666h160M760 690h80M700 716h200M770 744h60M730 776h140M790 812h20M710 850h180M760 900h80" stroke-width="3"/>
+        </g>
+        <g stroke="#f3e7d3" stroke-linecap="round" opacity=".12" stroke-width="2">
+          <path d="M80 700h220M420 740h160M1100 720h260M1250 790h200M150 830h300M980 880h240M60 940h200M1300 950h220"/>
+        </g>
+        <g fill="none" stroke="#2b2230" stroke-width="3" stroke-linecap="round">
+          <path d="M1000 380 q12 -10 24 0 q12 -10 24 0"/><path d="M1080 340 q9 -8 18 0 q9 -8 18 0"/><path d="M560 420 q8 -7 16 0 q8 -7 16 0"/>
+        </g>
+      </svg>
+      <div class="portal-txt">
+        <span class="eyebrow">João 6:35</span>
+        <h2 class="split" id="portalTitle">Quem vem a mim <em>nunca terá fome.</em></h2>
       </div>
     </div>
   </div>
 </section>
 
-<section class="colunas" aria-labelledby="t-col">
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-t" id="marquee">
+    <span>Terça da Vitória</span><span>Tarde da Bênção</span><span>Culto de Celebração</span><span>Ceia do Senhor</span><span>Primícias</span><span>Missões</span><span>Família</span>
+    <span>Terça da Vitória</span><span>Tarde da Bênção</span><span>Culto de Celebração</span><span>Ceia do Senhor</span><span>Primícias</span><span>Missões</span><span>Família</span>
+  </div>
+</div>
+
+<!-- ===================== CAMINHOS ===================== -->
+<section class="sec" id="caminhos">
   <div class="wrap">
-    <div class="colunas-cab sobe">
-      <h2 class="titulo-sec" id="t-col">Quatro colunas, <em>um evangelho</em></h2>
-      <p class="sub">Somos uma Igreja do Evangelho Quadrangular. Os quatro símbolos da nossa logo contam no que cremos.</p>
+    <div class="paths-head">
+      <div>
+        <span class="kicker rv">Dois jeitos de chegar</span>
+        <h2 class="h2 rv">Venha para o culto.<br><em>Fique para a família.</em></h2>
+      </div>
+      <p class="rv">Se é a sua primeira vez, a gente te espera na porta. Se já é da casa, a agenda, as escalas e os pedidos de oração estão no app.</p>
     </div>
-    <div class="col-grade sobe" id="col-grade">
-      <button class="col on" style="--c:var(--s-cruz)" aria-expanded="true"><span class="num">I</span><div><svg viewBox="0 0 24 24" fill="none" stroke="#E5322B" stroke-width="1.6" stroke-linecap="round"><path d="M12 2.5v19M6 8h12"/></svg><h3>Jesus <em>salva</em></h3><p>A cruz lembra que a salvação vem pela graça, por meio de Jesus Cristo.</p></div></button>
-      <button class="col" style="--c:var(--s-pomba)" aria-expanded="false"><span class="num">II</span><div><svg viewBox="0 0 24 24" fill="rgba(245,197,24,.25)" stroke="#F5C518" stroke-width="1.5" stroke-linejoin="round"><path d="M3 13c3-3 6-3 8-6 1-2 4-3 6-1-1 1-2 2-2 4 3 0 5 2 6 4-5 1-10 1-14 0z"/></svg><h3>Jesus <em>batiza</em></h3><p>A pomba fala do batismo com o Espírito Santo, que dá poder pra testemunhar.</p></div></button>
-      <button class="col" style="--c:var(--s-calice)" aria-expanded="false"><span class="num">III</span><div><svg viewBox="0 0 24 24" fill="rgba(59,111,209,.25)" stroke="#5E8FE8" stroke-width="1.5" stroke-linejoin="round"><path d="M6 3.5h12c0 5-2.5 8-6 8s-6-3-6-8zM12 11.5v6M8 20.5h8"/></svg><h3>Jesus <em>cura</em></h3><p>O cálice anuncia a cura divina, pra corpo, alma e família.</p></div></button>
-      <button class="col" style="--c:var(--s-coroa)" aria-expanded="false"><span class="num">IV</span><div><svg viewBox="0 0 24 24" fill="rgba(178,58,160,.25)" stroke="#D45CC2" stroke-width="1.5" stroke-linejoin="round"><path d="M3.5 8 7.5 12l4.5-7 4.5 7 4-4-1.5 10.5h-14z"/></svg><h3>Jesus <em>voltará</em></h3><p>A coroa aponta pra esperança: Ele virá outra vez como Rei.</p></div></button>
+    <div class="paths" id="paths">
+      <a class="path food rv" href="#cultos" data-cursor="Visitar">
+        <div class="path-media"><img class="marca" src="site/logo-branca.png" alt=""></div>
+        <span class="tag"><svg><use href="#i-pin"/></svg>Primeira vez</span>
+        <span class="path-time"><i><svg><use href="#i-sun"/></svg></i>Ter · Qua · Dom</span>
+        <h3>Venha do jeito que você está</h3>
+        <p>Três cultos por semana em Balneário Ipanema, com ministério infantil para os pequenos de 0 a 5 anos.</p>
+        <span class="go"><i><svg><use href="#i-arrow"/></svg></i>Ver horários dos cultos</span>
+      </a>
+      <a class="path app rv" href="app/" data-cursor="Entrar" data-cursor-bnb>
+        <div class="path-media"><div class="fone-mini"><img src="site/tela-hoje.jpg" alt="Tela inicial do app da Catedral" loading="lazy"></div></div>
+        <span class="tag"><svg><use href="#i-app"/></svg>Já é da casa</span>
+        <span class="path-time"><i><svg><use href="#i-moon"/></svg></i>Todos os dias</span>
+        <h3>O app da Catedral</h3>
+        <p>Agenda, escalas do louvor e do diaconato, Bíblia, pedidos de oração e ofertas por Pix. Abre direto no navegador.</p>
+        <span class="go"><i><svg><use href="#i-arrow"/></svg></i>Abrir o app</span>
+      </a>
     </div>
   </div>
 </section>
 
-<section class="app" id="app" aria-labelledby="t-app">
-  <div class="wrap app-grade">
+<!-- ===================== CULTOS ===================== -->
+<section class="rest sec" id="cultos">
+  <div class="wrap">
+    <div class="rest-head">
+      <div>
+        <span class="kicker rv">Os cultos</span>
+        <h2 class="h2 rv">Três encontros<br>toda <em>semana.</em></h2>
+      </div>
+      <p class="lead rv">Na terça à noite, na quarta à tarde e no domingo com toda a família. Chegue uns minutinhos antes: tem sempre alguém para te receber.</p>
+    </div>
+    <div class="stack" id="stack">
+      <article class="card" style="--i:0">
+        <div class="card-media"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/cultos/avivamento.jpg" alt="" loading="lazy"><div class="hora-gde"><small>Terças-feiras</small>20h</div></div>
+        <div class="card-body"><span class="card-num">Terça</span><div><h3>Terça da Vitória</h3><p>Um culto de fé no meio da semana, para orar, ouvir a Palavra e sair com a vitória nas mãos.</p></div><span class="prox" data-prox="terca">Toda terça, às 20h</span></div>
+      </article>
+      <article class="card" style="--i:1">
+        <div class="card-media"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/cultos/cha-com-jesus.jpg" alt="" loading="lazy"><div class="hora-gde"><small>Quartas-feiras</small>15h</div></div>
+        <div class="card-body"><span class="card-num">Quarta</span><div><h3>Tarde da Bênção</h3><p>Uma pausa no meio da tarde para quem quer estar na presença de Deus com calma, oração e louvor.</p></div><span class="prox" data-prox="quarta">Toda quarta, às 15h</span></div>
+      </article>
+      <article class="card" style="--i:2">
+        <div class="card-media"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/cultos/celebracao.jpg" alt="" loading="lazy"><div class="hora-gde"><small>Domingos</small>20h</div></div>
+        <div class="card-body"><span class="card-num">Domingo</span><div><h3>Culto de Celebração e da Família</h3><p>Cada domingo do mês tem um tema:</p></div>
+          <div class="temas"><div><b>1º</b>Ceia do Senhor</div><div><b>2º</b>Primícias</div><div><b>3º</b>Missões</div><div><b>4º</b>Família</div></div>
+          <span class="prox" data-prox="domingo">Todo domingo, às 20h</span></div>
+      </article>
+      <article class="card" style="--i:3">
+        <div class="card-media"><img class="logo-card" src="site/logo-branca.png" alt=""></div>
+        <div class="card-body"><span class="card-num">Vem?</span><div><h3>A gente guarda um lugar pra você</h3><p>A igreja fica em Balneário Ipanema, Pontal do Paraná. Abra a rota direto no seu aplicativo de mapa.</p></div>
+          <div class="card-ctas">
+            <a class="btn amber magnetic" href="https://maps.app.goo.gl/zCku6d5157yh9fba7?g_st=ic" target="_blank" rel="noopener"><svg><use href="#i-pin"/></svg>Google Maps</a>
+            <a class="btn waze magnetic" href="https://waze.com/ul?q=Igreja%20do%20Evangelho%20Quadrangular%20Catedral%20P%C3%A3o%20da%20Vida%2C%20Balne%C3%A1rio%20Ipanema%2C%20Pontal%20do%20Paran%C3%A1&navigate=yes" target="_blank" rel="noopener"><svg><use href="#i-waze"/></svg>Waze</a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="story" aria-label="Nossa história">
+  <div class="wrap">
+    <p class="big" id="story">Uma igreja Quadrangular à beira-mar, em Balneário Ipanema, onde a mesa está posta, a Palavra é pão, e quem chega encontra lugar e uma família para caminhar junto.</p>
+    <div class="stats">
+      <div class="stat rv"><b><span class="count" data-to="3">3</span></b><span>cultos por semana</span></div>
+      <div class="stat rv"><b><span class="count" data-to="4">4</span></b><span>domingos com tema a cada mês</span></div>
+      <div class="stat rv"><b><span class="count" data-to="15">15</span></b><span>ministérios e grupos</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MINISTÉRIOS ===================== -->
+<section class="nat" id="ministerios">
+  <div class="wrap nat-head">
+    <span class="kicker rv">Ministérios</span>
+    <h2 class="h2 rv">Tem lugar pra<br><em>cada idade.</em></h2>
+    <p class="lead rv">Dos pequenos de 0 a 5 anos aos casais: cada grupo tem líderes, agenda e conversa própria dentro do app.</p>
+  </div>
+  <div class="hz" id="hz">
+    <div class="hz-in" id="hzIn">
+      <figure class="ph"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/grupos/1788312170621_4a5v620xh8q.png" alt="" loading="lazy"><figcaption><small>De 0 a 5 anos</small>Ministério Infantil</figcaption></figure>
+      <figure class="ph"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/grupos/1788312234381_ajnp9s1sk67.png" alt="" loading="lazy"><figcaption><small>Crianças maiores</small>Juniores</figcaption></figure>
+      <figure class="ph"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/grupos/1788312322578_wxy3mlws6a.png" alt="" loading="lazy"><figcaption><small>Grupo</small>Adolescentes</figcaption></figure>
+      <figure class="ph"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/grupos/1788312302242_2ptb7mkzf5.png" alt="" loading="lazy"><figcaption><small>Família</small>Casais</figcaption></figure>
+      <figure class="ph"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/grupos/1788312322578_wxy3mlws6a.png" alt="" loading="lazy"><figcaption><small>Grupo</small>Jovens</figcaption></figure>
+      <figure class="ph sem"><img class="ph-marca" src="site/logo-branca.png" alt=""><figcaption><small>Oração</small>Intercessão</figcaption></figure>
+      <figure class="ph"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/grupos/1788312260704_tmm0tytwzln.png" alt="" loading="lazy"><figcaption><small>Grupo</small>Mulheres</figcaption></figure>
+      <figure class="ph"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/grupos/1788312248442_jppwuq4u6po.png" alt="" loading="lazy"><figcaption><small>Grupo</small>Homens</figcaption></figure>
+      <figure class="ph sem"><img class="ph-marca" src="site/logo-branca.png" alt=""><figcaption><small>Ministério</small>Louvor</figcaption></figure>
+      <figure class="ph"><img data-opc src="https://arffptuclrrzuzdrcmuc.supabase.co/storage/v1/object/public/igreja-arquivos/grupos/1788312286290_7sygaj4tf7i.png" alt="" loading="lazy"><figcaption><small>Servir</small>Diaconato</figcaption></figure>
+      <div class="hz-end"><h3>E quando o culto <em>termina…</em></h3><p class="lead">…a igreja continua no seu bolso.</p></div>
+    </div>
+    <div class="hz-bar"><i id="hzBar"></i></div>
+  </div>
+</section>
+
+<!-- ===================== APP (noite) ===================== -->
+<section class="night sec" id="app">
+  <div class="sky" aria-hidden="true">
+    <div class="sky-day" id="skyDay"></div>
+    <div class="sky-dusk" id="skyDusk"></div>
+    <div class="sky-night" id="skyNight"></div>
+    <canvas class="stars" id="stars"></canvas>
+    <div class="celestial c-sun" id="sun"></div>
+    <div class="celestial c-moon" id="moon"></div>
+  </div>
+  <div class="wrap bnb-grid">
     <div>
-      <h2 class="titulo-sec sobe" id="t-app">A igreja <em>no seu celular</em></h2>
-      <p class="sub sobe">Funciona direto no navegador, sem baixar nada. É só abrir e entrar.</p>
-      <ol class="passos" id="passos">
-        <li class="passo on" data-tela="0"><small>Hoje</small><h3>O próximo culto, com contagem regressiva</h3><p>E um passo a passo do seu dia com Deus: a palavra do dia, como você está e uma mensagem pra você.</p></li>
-        <li class="passo" data-tela="1"><small>Servir</small><h3>Louvor, Diaconato e Reuniões</h3><p>Escalas, repertório, o VS pro culto e a liderança alinhada num só lugar.</p></li>
-        <li class="passo" data-tela="2"><small>Escalas</small><h3>Confirme quando vai servir</h3><p>O diácono confirma no app. Se não puder, avisa o líder com um toque.</p></li>
-        <li class="passo" data-tela="3"><small>Do seu jeito</small><h3>Claro ou escuro</h3><p>Cada um escolhe a aparência que prefere.</p></li>
-      </ol>
-    </div>
-    <div class="fone-coluna">
-      <div class="fone-fixo">
-        <div class="fone-luz"></div>
-        <div class="fone" id="fone"><div class="tela">
-          <img class="on" src="site/tela-hoje.jpg" alt="Tela Hoje do app">
-          <img src="site/tela-servir.jpg" alt="Tela Servir do app" loading="lazy">
-          <img src="site/tela-diaconato.jpg" alt="Tela do Diaconato" loading="lazy">
-          <img src="site/tela-hoje-claro.jpg" alt="App no tema claro" loading="lazy">
-        </div></div>
+      <div class="bnb-badge rv"><b><svg><use href="#i-app"/></svg></b>App da Catedral</div>
+      <span class="kicker rv">Na palma da mão</span>
+      <h2 class="h2 rv">O culto termina.<br><em>A comunhão continua.</em></h2>
+      <p class="lead rv">Tudo o que acontece na igreja num lugar só: para quem visita, para quem serve e para quem lidera.</p>
+      <div class="steps">
+        <div class="step rv"><div><strong>Agenda, cultos e avisos</strong><span>O tema de cada domingo e a contagem para o próximo culto.</span></div></div>
+        <div class="step rv"><div><strong>Escalas do louvor e do diaconato</strong><span>Você vê quando serve, e o líder monta a escala em minutos.</span></div></div>
+        <div class="step rv"><div><strong>Oração, Bíblia e ofertas</strong><span>Pedidos chegam aos líderes e à intercessão; ofertas por Pix.</span></div></div>
       </div>
+      <a class="btn bnb magnetic rv" href="app/" data-cursor="Entrar" data-cursor-bnb><svg><use href="#i-app"/></svg>Abrir o app<svg><use href="#i-arrow"/></svg></a>
+      <p class="note rv">Funciona direto no navegador do celular, sem baixar nada.</p>
+    </div>
+    <div class="collage" id="collage">
+      <figure class="c2" data-depth="-0.12"><img src="site/tela-servir.jpg" alt="Tela Servir do app, com louvor e diaconato" loading="lazy"></figure>
+      <figure class="c1" data-depth="0.06"><img src="site/tela-hoje.jpg" alt="Tela Hoje do app, com o próximo culto" loading="lazy"></figure>
+      <figure class="c3" data-depth="0.2"><img src="site/tela-diaconato.jpg" alt="Tela da escala do diaconato" loading="lazy"></figure>
+      <div class="c-card" data-depth="0.3"><img src="site/logo-preta.png" alt=""><div><strong>Catedral Pão da Vida</strong><span id="proxTag">App oficial da igreja</span></div></div>
     </div>
   </div>
 </section>
 
-<section class="visite" id="visite" aria-labelledby="t-vis">
-  <div class="wrap">
-    <h2 class="titulo-sec sobe" id="t-vis">Venha <em>como você está</em></h2>
-    <div class="visite-grade">
-      <ul class="links sobe">
-        <li><a href="https://wa.me/5541991133734" target="_blank" rel="noopener"><span class="l-nome">WhatsApp</span><span class="l-info">(41) 99113-3734</span></a></li>
-        <li><a href="https://www.instagram.com/ieqipanemacatedral/" target="_blank" rel="noopener"><span class="l-nome">Instagram</span><span class="l-info">@ieqipanemacatedral</span></a></li>
-        <li><a href="https://www.youtube.com/catedralpaodavida" target="_blank" rel="noopener"><span class="l-nome">YouTube</span><span class="l-info">Cultos e mensagens</span></a></li>
-        <li><a href="https://m.facebook.com/CatedralPaodaVida/" target="_blank" rel="noopener"><span class="l-nome">Facebook</span><span class="l-info">Catedral Pão da Vida</span></a></li>
-        <li><a href="app/"><span class="l-nome">Ofertas</span><span class="l-info">Pix e cartão no app</span></a></li>
-      </ul>
-      <div class="mapa sobe">
-        <iframe title="Mapa: Catedral Pão da Vida em Balneário Ipanema" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-          src="https://www.google.com/maps?q=Igreja%20do%20Evangelho%20Quadrangular%20Catedral%20P%C3%A3o%20da%20Vida%20Balne%C3%A1rio%20Ipanema%20Pontal%20do%20Paran%C3%A1&output=embed"></iframe>
-        <div class="mapa-selo"><div><b>Balneário Ipanema</b><small>Pontal do Paraná · PR</small></div>
-          <a class="btn btn-pequeno btn-claro" href="https://g.co/kgs/Qmhpz9" target="_blank" rel="noopener">Como chegar<span class="seta"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a></div>
+<!-- ===================== VISITE ===================== -->
+<section class="visit sec" id="visite">
+  <div class="wrap visit-grid">
+    <div>
+      <span class="kicker rv">Venha nos visitar</span>
+      <h2 class="h2 rv">Seu lugar à mesa<br><em>está guardado.</em></h2>
+      <p class="lead rv">Trace a rota pelo Google Maps ou pelo Waze, chame a gente no WhatsApp ou acompanhe os cultos nas redes.</p>
+      <div class="endereco rv"><svg><use href="#i-pin"/></svg><div><b>Catedral Pão da Vida</b>Igreja do Evangelho Quadrangular · Balneário Ipanema, Pontal do Paraná – PR</div></div>
+      <div class="cards">
+        <a class="tile rv" href="https://maps.app.goo.gl/zCku6d5157yh9fba7?g_st=ic" target="_blank" rel="noopener"><i style="background:#b4561e"><svg><use href="#i-pin"/></svg></i><strong>Google Maps</strong><span>Abrir a rota</span></a>
+        <a class="tile rv" href="https://waze.com/ul?q=Igreja%20do%20Evangelho%20Quadrangular%20Catedral%20P%C3%A3o%20da%20Vida%2C%20Balne%C3%A1rio%20Ipanema%2C%20Pontal%20do%20Paran%C3%A1&navigate=yes" target="_blank" rel="noopener"><i style="background:#2d9fd8"><svg><use href="#i-waze"/></svg></i><strong>Waze</strong><span>Navegar até aqui</span></a>
+        <a class="tile rv" href="https://wa.me/5541991133734" target="_blank" rel="noopener"><i style="background:#1f9d55"><svg><use href="#i-wa"/></svg></i><strong>WhatsApp</strong><span>(41) 99113-3734</span></a>
+        <a class="tile rv" href="https://www.instagram.com/ieqipanemacatedral/" target="_blank" rel="noopener"><i style="background:linear-gradient(45deg,#f9a03f,#d6246e,#7a2fd0)"><svg><use href="#i-ig"/></svg></i><strong>Instagram</strong><span>@ieqipanemacatedral</span></a>
+        <a class="tile rv" href="https://www.youtube.com/catedralpaodavida" target="_blank" rel="noopener"><i style="background:#e62117"><svg><use href="#i-yt"/></svg></i><strong>YouTube</strong><span>Cultos e mensagens</span></a>
+        <a class="tile rv" href="https://m.facebook.com/CatedralPaodaVida/" target="_blank" rel="noopener"><i style="background:#1877f2"><svg><use href="#i-fb"/></svg></i><strong>Facebook</strong><span>Catedral Pão da Vida</span></a>
       </div>
+    </div>
+    <div class="map rv">
+      <iframe loading="lazy" title="Localização da Catedral Pão da Vida" src="https://www.google.com/maps?q=Igreja%20do%20Evangelho%20Quadrangular%20Catedral%20P%C3%A3o%20da%20Vida%20Balne%C3%A1rio%20Ipanema%20Pontal%20do%20Paran%C3%A1&output=embed" referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>
   </div>
 </section>
+</main>
 
-<section class="final" aria-labelledby="t-fim">
+<footer class="foot">
   <div class="wrap">
-    <h2 class="titulo-sec sobe" id="t-fim">Tem um lugar <em>guardado</em> pra você</h2>
-    <p class="sub sobe">Abra o app, veja o próximo culto e chame alguém pra vir junto.</p>
-    <div class="sobe"><a class="btn" href="app/">Abrir o app da igreja<span class="seta"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a></div>
+    <div class="foot-cta">
+      <img class="foot-logo rv" src="site/logo-branca.png" alt="Igreja do Evangelho Quadrangular Catedral Pão da Vida" loading="lazy">
+      <h2 class="rv">Tem pão na mesa.<br>Tem lugar <em>pra você.</em></h2>
+      <div class="foot-ctas rv">
+        <a class="btn bnb magnetic" href="app/"><svg><use href="#i-app"/></svg>Abrir o app</a>
+        <a class="btn ghost magnetic" href="https://wa.me/5541991133734" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>(41) 99113-3734</a>
+      </div>
+    </div>
+    <div class="foot-word" aria-hidden="true"><img src="site/nome-script-branco.png" alt="" loading="lazy"></div>
+    <div class="foot-bottom">
+      <span>© <span id="yr">2026</span> Igreja do Evangelho Quadrangular Catedral Pão da Vida · Balneário Ipanema, Pontal do Paraná – PR</span>
+      <nav aria-label="Rodapé"><a href="#cultos">Cultos</a><a href="#ministerios">Ministérios</a><a href="app/">App</a><a href="#visite">Como chegar</a></nav>
+      <a href="https://www.ddsinovacao.com.br" target="_blank" rel="noopener">Experiência digital por DDS Inovação</a>
+    </div>
   </div>
-  <div class="assinatura sobe"><img src="site/nome-script-branco.png" alt="Catedral Pão da Vida"></div>
-  <div class="quatro" aria-hidden="true"><i style="background:var(--s-cruz)"></i><i style="background:var(--s-pomba)"></i><i style="background:var(--s-calice)"></i><i style="background:var(--s-coroa)"></i></div>
-  <footer class="wrap">
-    <img src="site/logo-branca.png" alt="Logo Catedral Pão da Vida">
-    <span>Igreja do Evangelho Quadrangular · Balneário Ipanema, Pontal do Paraná</span>
-    <span>© 2026 · <a href="https://ddsinovacao.com.br" target="_blank" rel="noopener">DDS Inovação</a></span>
-  </footer>
-</section>
+</footer>
+
+<nav class="dock" id="dock" aria-label="Ações rápidas">
+  <a class="d1" href="https://maps.app.goo.gl/zCku6d5157yh9fba7?g_st=ic" target="_blank" rel="noopener"><svg><use href="#i-pin"/></svg>Como chegar</a>
+  <a class="d2" href="app/"><svg><use href="#i-app"/></svg>Abrir o app</a>
+</nav>
 
 <script src="site/vendor/gsap.min.js"></script>
 <script src="site/vendor/ScrollTrigger.min.js"></script>
 <script src="site/vendor/lenis.min.js"></script>
-<script>
-(function () {
-  const reduz = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduz) document.documentElement.classList.add("reduz");
-  const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
-  const temGsap = !!(window.gsap && window.ScrollTrigger);
-  if (temGsap) gsap.registerPlugin(ScrollTrigger);
-
-  /* ---------- rolagem suave ---------- */
-  let lenis = null;
-  if (!reduz && window.Lenis) {
-    lenis = new Lenis({ lerp: .09, smoothWheel: true });
-    if (temGsap) { lenis.on("scroll", ScrollTrigger.update); gsap.ticker.add(t => lenis.raf(t * 1000)); gsap.ticker.lagSmoothing(0); }
-    else (function r(t) { lenis.raf(t); requestAnimationFrame(r); })(0);
-    $$('a[href^="#"]').forEach(a => a.addEventListener("click", e => { const alvo = $(a.getAttribute("href")); if (alvo) { e.preventDefault(); lenis.scrollTo(alvo, { offset: -10 }); } }));
-  }
-
-  /* ============ Cena: amanhecer no mar, Ilha do Mel e o farol ============ */
-  const cv = $("#mar"), cx = cv.getContext("2d");
-  let W = 0, H = 0, dpr = Math.min(1.6, devicePixelRatio || 1), t0 = performance.now(), sol = reduz ? .6 : 0, solAlvo = .3;
-  const estrelas = Array.from({ length: 110 }, () => ({ x: Math.random(), y: Math.random() * .55, r: Math.random() * 1.3 + .2, f: Math.random() * 6 }));
-  const aves = Array.from({ length: 6 }, (_, i) => ({ x: .08 + i * .06, y: .22 + Math.random() * .08, v: .00010 + Math.random() * .0001, f: Math.random() * 6 }));
-  function dim() { W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); }
-  addEventListener("resize", dim); dim();
-  const mix = (a, b, k) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
-  const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-  function quadro(agora) {
-    const tt = (agora - t0) / 1000;
-    sol += (solAlvo - sol) * .035;
-    const p = Math.max(0, Math.min(1, sol)), hz = H * .62;
-    const k1 = Math.min(1, p / .5), k2 = Math.max(0, (p - .5) / .5);
-    const topo = k2 ? mix([22, 40, 66], [104, 150, 178], k2) : mix([5, 12, 20], [22, 40, 66], k1);
-    const meio = k2 ? mix([218, 118, 78], [232, 196, 160], k2) : mix([14, 28, 42], [218, 118, 78], k1);
-    const base = k2 ? mix([248, 196, 118], [250, 230, 196], k2) : mix([24, 38, 50], [248, 196, 118], k1);
-    let g = cx.createLinearGradient(0, 0, 0, hz); g.addColorStop(0, rgb(topo)); g.addColorStop(.72, rgb(meio)); g.addColorStop(1, rgb(base));
-    cx.fillStyle = g; cx.fillRect(0, 0, W, hz + 1);
-    const ae = Math.max(0, 1 - p * 2.2);
-    if (ae > 0) estrelas.forEach(s => { cx.fillStyle = `rgba(255,246,225,${ae * (.4 + .6 * Math.sin(tt * 1.3 + s.f) ** 2)})`; cx.beginPath(); cx.arc(s.x * W, s.y * hz, s.r, 0, 6.29); cx.fill(); });
-    const sx = W * (W > 700 ? .76 : .74), sy = hz + 50 - p * hz * .6, sr = Math.max(24, Math.min(W, H) * .065);
-    g = cx.createRadialGradient(sx, sy, 0, sx, sy, sr * 8); g.addColorStop(0, `rgba(255,212,140,${.5 + p * .25})`); g.addColorStop(.3, "rgba(255,160,90,.16)"); g.addColorStop(1, "rgba(255,160,90,0)");
-    cx.fillStyle = g; cx.fillRect(0, 0, W, hz);
-    cx.save(); cx.beginPath(); cx.rect(0, 0, W, hz); cx.clip(); cx.fillStyle = `rgba(255,232,182,${.8 + p * .2})`; cx.beginPath(); cx.arc(sx, sy, sr, 0, 6.29); cx.fill(); cx.restore();
-    const serra = (alt, cor, fase, esc) => { cx.fillStyle = cor; cx.beginPath(); cx.moveTo(0, hz);
-      for (let x = 0; x <= W * .5; x += 8) { const k = x / (W * .5); cx.lineTo(x, hz - alt * (1 - k) * (.6 + .4 * Math.sin(x * esc + fase) * Math.sin(x * esc * .37 + fase * 2))); }
-      cx.lineTo(W * .5, hz); cx.closePath(); cx.fill(); };
-    serra(H * .15, rgb(mix([18, 32, 42], [112, 134, 146], p), .9), 1.3, .012);
-    serra(H * .09, rgb(mix([12, 24, 32], [80, 106, 112], p), .95), 4.1, .02);
-    const ix = W * .9, iw = Math.max(150, W * .2);
-    cx.fillStyle = rgb(mix([10, 20, 26], [66, 92, 92], p)); cx.beginPath(); cx.moveTo(ix - iw * .5, hz);
-    cx.bezierCurveTo(ix - iw * .35, hz - 20, ix - iw * .15, hz - 28, ix, hz - 32); cx.bezierCurveTo(ix + iw * .15, hz - 44, ix + iw * .3, hz - 24, ix + iw * .55, hz); cx.closePath(); cx.fill();
-    const fx = ix - iw * .02, fy = hz - 38;
-    cx.fillStyle = rgb(mix([230, 222, 210], [250, 246, 238], p)); cx.fillRect(fx - 3, fy - 16, 6, 16); cx.fillStyle = "#E5322B"; cx.fillRect(fx - 3, fy - 10, 6, 3);
-    const af = Math.max(0, .55 - p * .75);
-    if (af > 0) { const ang = tt * .8, len = W * .9;
-      [ang, ang + Math.PI].forEach(a => { const dx = Math.cos(a), dy = Math.sin(a) * .16;
-        g = cx.createLinearGradient(fx, fy - 14, fx + dx * len, fy - 14 + dy * len); g.addColorStop(0, `rgba(255,240,190,${af})`); g.addColorStop(1, "rgba(255,240,190,0)");
-        cx.fillStyle = g; cx.beginPath(); cx.moveTo(fx, fy - 14); cx.lineTo(fx + dx * len, fy - 14 + (dy - .045) * len); cx.lineTo(fx + dx * len, fy - 14 + (dy + .045) * len); cx.closePath(); cx.fill(); });
-      cx.fillStyle = `rgba(255,244,200,${af + .3})`; cx.beginPath(); cx.arc(fx, fy - 14, 4, 0, 6.29); cx.fill(); }
-    aves.forEach(a => { a.x += a.v; if (a.x > 1.1) a.x = -.1; const x = a.x * W, y = a.y * hz + Math.sin(tt + a.f) * 6, s = 7, b = Math.sin(tt * 5 + a.f) * 3;
-      cx.strokeStyle = rgb(mix([230, 220, 200], [50, 44, 36], p), .75); cx.lineWidth = 1.3; cx.beginPath(); cx.moveTo(x - s, y - b); cx.quadraticCurveTo(x - s / 2, y - 4 - b, x, y); cx.quadraticCurveTo(x + s / 2, y - 4 - b, x + s, y - b); cx.stroke(); });
-    const marT = mix([8, 22, 30], [32, 88, 106], p), marB = mix([4, 12, 18], [14, 50, 62], p);
-    g = cx.createLinearGradient(0, hz, 0, H); g.addColorStop(0, rgb(marT)); g.addColorStop(1, rgb(marB)); cx.fillStyle = g; cx.fillRect(0, hz, W, H - hz);
-    for (let i = 0; i < 28; i++) { const y = hz + 4 + i * i * .5, w = (12 + i * 5) * (.6 + .4 * Math.sin(tt * 2 + i));
-      cx.fillStyle = `rgba(255,214,150,${(.5 - i / 62) * (.3 + p * .7)})`; cx.fillRect(sx - w / 2 + Math.sin(tt * 1.3 + i) * 6, y, w, 2); }
-    for (let k = 0; k < 4; k++) { const yb = hz + (H - hz) * (.2 + k * .2), amp = 4 + k * 3, vel = .6 + k * .25;
-      cx.fillStyle = rgb(mix(marT, [6, 16, 22], .15 + k * .1), .5 + k * .12); cx.beginPath(); cx.moveTo(0, H);
-      for (let x = 0; x <= W; x += 10) cx.lineTo(x, yb + Math.sin(x * .012 + tt * vel + k) * amp + Math.sin(x * .031 - tt * vel * 1.3) * amp * .5);
-      cx.lineTo(W, H); cx.closePath(); cx.fill(); }
-    g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "rgba(4,10,14,.45)"); g.addColorStop(.35, "rgba(4,10,14,.05)"); g.addColorStop(1, "rgba(4,10,14,.55)"); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-    // reflexo do título ondulando
-    if (turb) turb.setAttribute("baseFrequency", `${(.010 + Math.sin(tt * .7) * .002).toFixed(4)} ${(.085 + Math.sin(tt * .9) * .012).toFixed(4)}`);
-    if (!reduz) requestAnimationFrame(quadro);
-  }
-  const turb = document.getElementById("turb");
-  requestAnimationFrame(quadro);
-
-  // título: letras entram, depois o sol sobe com a rolagem
-  const nome = $("#nome");
-  if (temGsap && !reduz) {
-    const pal = []; nome.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent.split("").forEach(ch => pal.push([ch, false])); else n.textContent.split("").forEach(ch => pal.push([ch, true])); });
-    nome.innerHTML = pal.map(([c, it]) => c === " " ? " " : `<span class="l">${it ? `<em>${c}</em>` : c}</span>`).join("");
-    gsap.from(".titulo-mar .l", { yPercent: 110, opacity: 0, duration: 1.2, stagger: .05, ease: "expo.out", delay: .2 });
-    gsap.from(".titulo-mar .pre", { y: 20, opacity: 0, duration: 1, delay: .6, ease: "power3.out" });
-    gsap.from(".reflexo", { opacity: 0, duration: 1.6, delay: .9 });
-    gsap.from(".heroi-rodape > *", { y: 30, opacity: 0, duration: 1, stagger: .12, delay: 1, ease: "power3.out" });
-    ScrollTrigger.create({ trigger: ".heroi", start: "top top", end: "bottom bottom", scrub: true,
-      onUpdate: s => { solAlvo = .3 + s.progress * .7;
-        gsap.set(".horizonte", { yPercent: -s.progress * 60 }); gsap.set(".heroi-rodape", { opacity: 1 - s.progress * 1.8 });
-        gsap.set(".reflexo", { opacity: .26 * (1 - s.progress) }); } });
-  }
-  const nav = $("#nav");
-  const navCheca = () => nav.classList.toggle("vidro", scrollY > 40);
-  addEventListener("scroll", navCheca, { passive: true }); navCheca();
-
-  /* ---------- faixa: quatro verdades ---------- */
-  const F = [["Jesus salva", "#E5322B", '<path d="M12 2.5v19M6 8h12"/>', "none"], ["Jesus batiza", "#9A6A00", '<path d="M3 13c3-3 6-3 8-6 1-2 4-3 6-1-1 1-2 2-2 4 3 0 5 2 6 4-5 1-10 1-14 0z"/>', "rgba(245,197,24,.6)"], ["Jesus cura", "#2D5BB8", '<path d="M6 3.5h12c0 5-2.5 8-6 8s-6-3-6-8zM12 11.5v6M8 20.5h8"/>', "rgba(59,111,209,.35)"], ["Jesus voltará", "#9A2A88", '<path d="M3.5 8 7.5 12l4.5-7 4.5 7 4-4-1.5 10.5h-14z"/>', "rgba(178,58,160,.35)"]];
-  const um = F.map(([t, c, d, f]) => `<span><svg viewBox="0 0 24 24" fill="${f}" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>${t}</span>`).join("");
-  $("#faixa").innerHTML = um + um + um + um;
-
-  /* ---------- versículo: palavras acendem com a rolagem ---------- */
-  const v = $("#verso");
-  const partes = []; v.childNodes.forEach(n => { const t = n.textContent.trim().split(/\s+/); const it = n.nodeType === 1; t.forEach(w => w && partes.push(it ? `<em class="w">${w}</em>` : `<span class="w">${w}</span>`)); });
-  v.innerHTML = partes.join(" ");
-  if (temGsap && !reduz) {
-    const ws = $$("#verso .w");
-    ScrollTrigger.create({ trigger: ".verso", start: "top 60%", end: "bottom bottom", scrub: true,
-      onUpdate: s => { const n = s.progress * ws.length * 1.15; ws.forEach((w, i) => w.style.opacity = Math.max(.14, Math.min(1, n - i))); } });
-  }
-
-  /* ============ Cultos: dados reais do app ============ */
-  const SB = "https://arffptuclrrzuzdrcmuc.supabase.co", KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyZmZwdHVjbHJyenV6ZHJjbXVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MTcxMDAsImV4cCI6MjEwMTI5MzEwMH0.n3AqYrMwv2ayVa4la6vesVJOfd_LkdmY-ikp8P8uFAg";
-  const DIAS = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"], NOME = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-  const TEMAS = ["Ceia do Senhor", "Primícias", "Missões", "Família"];
-  const PADRAO = [
-    { titulo: "Terça da Vitória", dia_semana: "terca", horario: "20:00", imagem_url: SB + "/storage/v1/object/public/igreja-arquivos/cultos/avivamento.jpg" },
-    { titulo: "Tarde da Bênção", dia_semana: "quarta", horario: "15:00", imagem_url: SB + "/storage/v1/object/public/igreja-arquivos/cultos/cha-com-jesus.jpg" },
-    { titulo: "Culto de Celebração", dia_semana: "domingo", horario: "20:00", imagem_url: SB + "/storage/v1/object/public/igreja-arquivos/cultos/celebracao.jpg" } ];
-  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const hora = h => String(h || "").slice(0, 5).replace(":00", "h").replace(":", "h");
-  function proxima(c) { const agora = new Date(), [h, m] = String(c.horario || "0:0").split(":").map(Number);
-    for (let i = 0; i < 8; i++) { const d = new Date(agora); d.setDate(agora.getDate() + i); d.setHours(h || 0, m || 0, 0, 0); if (DIAS[d.getDay()] === c.dia_semana && d > agora - 7.2e6) return d; } return null; }
-  function falta(d) { const ms = d - new Date(); if (ms <= 0) return "acontecendo agora"; const mi = Math.round(ms / 6e4), h = Math.floor(mi / 60), dd = Math.floor(h / 24);
-    if (dd >= 2) return `em ${dd} dias`; if (h >= 18) return "amanhã"; if (h >= 1) return `em ${h}h${String(mi % 60).padStart(2, "0")}`; return `em ${mi} min`; }
-  function montar(cultos) {
-    const lista = cultos.filter(c => !c.data && c.dia_semana).sort((a, b) => ((DIAS.indexOf(a.dia_semana) + 6) % 7) - ((DIAS.indexOf(b.dia_semana) + 6) % 7));
-    const hoje = DIAS[new Date().getDay()];
-    const proxDom = new Date(); proxDom.setDate(proxDom.getDate() + ((7 - proxDom.getDay()) % 7)); const nDom = Math.min(4, Math.ceil(proxDom.getDate() / 7));
-    $("#trilho").innerHTML = lista.map(c => { const d = proxima(c), dom = c.dia_semana === "domingo";
-      return `<article class="painel"><div class="foto" style="--foto:url('${esc(c.imagem_url || "")}')"></div>
-        <span class="dia" aria-hidden="true">${NOME[DIAS.indexOf(c.dia_semana)]}</span>
-        <span class="tag ${c.dia_semana === hoje ? "hoje" : ""}">${c.dia_semana === hoje ? "Hoje" : NOME[DIAS.indexOf(c.dia_semana)]}${d ? " · " + falta(d) : ""}</span>
-        <h3>${esc(c.titulo)}</h3>
-        <div class="hora"><b>${hora(c.horario)}</b>${NOME[DIAS.indexOf(c.dia_semana)]}s · Templo principal</div>
-        ${dom ? `<div class="tema">Próximo domingo: ${TEMAS[nDom - 1]}</div>` : ""}
-      </article>`; }).join("") +
-      `<article class="painel domingos-painel"><h3>Os domingos <em class="ital">do mês</em></h3><div class="dom-grade">${TEMAS.map((t, i) => `<div class="dom ${i + 1 === nDom ? "agora" : ""}"><b>${i + 1}º</b><span>${t}</span></div>`).join("")}</div></article>`;
-    const px = lista.map(c => ({ c, d: proxima(c) })).filter(x => x.d).sort((a, b) => a.d - b.d)[0];
-    if (px) { const el = $("#proximo"); el.hidden = false; el.querySelector("span").innerHTML = `${esc(px.c.titulo)} <b>${falta(px.d)}</b>`; }
-    horizontal();
-  }
-  function horizontal() {
-    const tr = $("#trilho"), pin = $("#cultos-pin");
-    if (!temGsap || reduz) { tr.style.width = "auto"; tr.style.flexWrap = "wrap"; return; }
-    const dist = () => Math.max(0, tr.scrollWidth - innerWidth);
-    const anim = gsap.to(tr, { x: () => -dist(), ease: "none" });
-    ScrollTrigger.create({ trigger: pin, start: "top top", end: () => "+=" + dist(), pin: true, scrub: .6, animation: anim, invalidateOnRefresh: true,
-      onUpdate: s => { $("#barra").style.width = (s.progress * 100) + "%"; } });
-    $$(".painel .foto").forEach(f => gsap.fromTo(f, { xPercent: -6 }, { xPercent: 6, ease: "none", scrollTrigger: { trigger: f.parentElement, containerAnimation: anim, start: "left right", end: "right left", scrub: true } }));
-    ScrollTrigger.refresh();
-  }
-  fetch(`${SB}/rest/v1/igr_igrejas?slug=eq.catedral-pao-da-vida&select=id`, { headers: { apikey: KEY, Authorization: "Bearer " + KEY } })
-    .then(r => r.json()).then(ig => fetch(`${SB}/rest/v1/igr_cultos?igreja_id=eq.${ig[0].id}&select=*&order=ordem`, { headers: { apikey: KEY, Authorization: "Bearer " + KEY } }))
-    .then(r => r.json()).then(c => montar(Array.isArray(c) && c.length ? c : PADRAO)).catch(() => montar(PADRAO));
-
-  /* ---------- colunas dos símbolos ---------- */
-  const cols = $$(".col");
-  cols.forEach(c => { const ativa = () => { cols.forEach(x => { x.classList.toggle("on", x === c); x.setAttribute("aria-expanded", String(x === c)); }); };
-    c.addEventListener("click", ativa); c.addEventListener("mouseenter", () => matchMedia("(hover:hover)").matches && ativa()); });
-
-  /* ---------- app: o celular troca de tela conforme a rolagem ---------- */
-  const imgs = $$(".tela img"), passos = $$(".passo");
-  function telaN(n) { imgs.forEach((im, i) => im.classList.toggle("on", i === n)); passos.forEach((p, i) => p.classList.toggle("on", i === n)); }
-  if (temGsap) passos.forEach((p, i) => ScrollTrigger.create({ trigger: p, start: "top 60%", end: "bottom 60%", onToggle: s => s.isActive && telaN(i) }));
-  const fone = $("#fone");
-  addEventListener("pointermove", e => { if (!fone) return; const r = fone.getBoundingClientRect(); const dx = (e.clientX - (r.left + r.width / 2)) / innerWidth, dy = (e.clientY - (r.top + r.height / 2)) / innerHeight;
-    fone.style.setProperty("--ry", (-12 + dx * 24).toFixed(1) + "deg"); fone.style.setProperty("--rx", (6 - dy * 14).toFixed(1) + "deg"); }, { passive: true });
-
-  /* ---------- luz do farol no cursor ---------- */
-  const farol = $("#farol");
-  addEventListener("pointermove", e => { farol.classList.add("on"); farol.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`; }, { passive: true });
-  document.addEventListener("pointerleave", () => farol.classList.remove("on"));
-
-  /* ---------- entradas ---------- */
-  if (temGsap && !reduz) $$(".sobe").forEach(el => gsap.to(el, { opacity: 1, y: 0, duration: 1.1, ease: "expo.out", scrollTrigger: { trigger: el, start: "top 85%" } }));
-  else $$(".sobe").forEach(el => { el.style.opacity = 1; el.style.transform = "none"; });
-})();
-</script>
+<script src="site/landing.js?v=1"></script>
 </body>
 </html>
