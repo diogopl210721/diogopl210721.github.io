@@ -15,5 +15,5 @@ window.APP_URL = "https://www.ddsinovacao.com.br/catedral/app";
 // Tema de cada domingo do mês (1º, 2º, 3º, 4º). 5º domingo usa o título do culto.
 window.DOMINGOS_TEMATICOS = ["Ceia do Senhor", "Primícias", "Missões", "Culto da Família"];
 // Localização oficial da igreja (todo "Como chegar" usa estes links)
-window.MAPS_URL = "https://maps.app.goo.gl/zCku6d5157yh9fba7?g_st=ic";
-window.WAZE_URL = "https://waze.com/ul?q=" + encodeURIComponent("Igreja do Evangelho Quadrangular Catedral Pão da Vida, Balneário Ipanema, Pontal do Paraná") + "&navigate=yes";
+window.MAPS_URL = "https://maps.app.goo.gl/6CyENZtTDSnsPy1B7?g_st=ic";
+window.WAZE_URL = "https://waze.com/ul/h6gmw1ddc1";
