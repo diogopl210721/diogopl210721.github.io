@@ -604,6 +604,7 @@ async function compartilharCulto(culto) {
   const temaC = temaDoCulto(culto);
   let texto = `📖 ${culto.titulo}${temaC ? " · " + temaC.tema : ""}\n${quando}${culto.horario ? " às " + culto.horario : ""}`;
   if (culto.local) texto += `\n📍 ${culto.local}`;
+  if (window.MAPS_URL) texto += `\n🗺️ Como chegar: ${window.MAPS_URL}`;
   texto += `\n\nVem com a gente! App da ${state.igreja?.nome || "igreja"}: ${link}${linhaVisiteSite()}`;
   if (navigator.share) {
     try {
@@ -650,7 +651,7 @@ async function carregarCultos() {
         <div class="cc-meta">
           ${dEsp ? `<span class="cc-chip esp">Especial · ${formatarData(c.data)}</span>` : (nomeDia ? `<span class="cc-chip">${nomeDia}</span>` : "")}
           ${c.horario ? `<span class="cc-chip"><svg class="ic8"><use href="#k-clock"/></svg>${c.horario}</span>` : ""}
-          ${c.local ? `<span class="cc-chip"><svg class="ic8"><use href="#k-pin"/></svg>${c.local}</span>` : ""}
+          ${c.local ? `<a class="cc-chip" href="${window.MAPS_URL || "#"}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg class="ic8"><use href="#k-pin"/></svg>${c.local}</a>` : ""}
         </div>
         ${(() => { const t = temaDoCulto(c); return t ? `<p class="hint cc-periodo">Próximo: ${t.n}º domingo · <b>${t.tema}</b></p>` : ""; })()}
         ${(window.DOMINGOS_TEMATICOS && c.dia_semana === "domingo" && !c.data) ? `<p class="hint" style="margin:2px 0 0;font-size:12px;">${window.DOMINGOS_TEMATICOS.map((t, i) => `${i + 1}º ${t}`).join(" · ")}</p>` : ""}
@@ -1705,13 +1706,20 @@ async function enviarPedidoOracao(ev) {
     darPontosUmaVezPorDia("pedido_oracao");
     await carregarPedidosOracao();
     const meusGrupos = state.membro.grupoIds || (state.membro.grupo_id ? [state.membro.grupo_id] : []);
+    const destinatarios = new Set();
     if (meusGrupos.length) {
       const { data: lideres } = await sb.from("igr_membros").select("id")
         .in("grupo_id", meusGrupos).eq("eh_lider", true);
-      if (lideres && lideres.length) {
-        enviarPush({ tipo: "membros", membro_ids: lideres.map(l => l.id) },
-          "Novo pedido de oração 🙏", `${state.membro.nome_completo.split(" ")[0]} enviou um pedido de oração.`);
-      }
+      (lideres || []).forEach(l => destinatarios.add(l.id));
+    }
+    // Catedral: todo pedido também vai para o(s) líder(es) do ministério de Intercessão
+    try {
+      for (const id of await lideresIntercessao()) destinatarios.add(id);
+    } catch (e) { console.warn("Intercessão:", e); }
+    destinatarios.delete(state.membro.id);
+    if (destinatarios.size) {
+      enviarPush({ tipo: "membros", membro_ids: [...destinatarios] },
+        "Novo pedido de oração 🙏", `${state.membro.nome_completo.split(" ")[0]} enviou um pedido de oração.`);
     }
   } catch (e) {
     console.error("Erro ao enviar pedido de oração:", e);
@@ -2066,16 +2074,18 @@ function montarItensContato() {
   const ig = state.igreja || {};
   const itens = [];
 
-  if (ig.endereco) {
-    const q = encodeURIComponent(ig.endereco);
+  if (ig.endereco || window.MAPS_URL) {
+    const q = encodeURIComponent(ig.endereco || ig.nome || "");
+    const mapsUrl = window.MAPS_URL || `https://www.google.com/maps/search/?api=1&query=${q}`;
+    const wazeUrl = window.WAZE_URL || `https://waze.com/ul?q=${q}&navigate=yes`;
     itens.push(`
-      <a class="contato-item" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">
+      <a class="contato-item" href="${mapsUrl}" target="_blank" rel="noopener">
         <span class="ic"><svg class="icon"><use href="#i-mappin"/></svg></span>
-        <div class="txt"><b>Endereço</b><span>${ig.endereco}</span></div>
+        <div class="txt"><b>Endereço</b><span>${ig.endereco || "Ver no mapa"}</span></div>
       </a>
       <div class="contato-sub-links" style="margin:-4px 0 14px;">
-        <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">📍 Google Maps</a>
-        <a href="https://waze.com/ul?q=${q}&navigate=yes" target="_blank" rel="noopener">🚗 Waze</a>
+        <a href="${mapsUrl}" target="_blank" rel="noopener">📍 Google Maps</a>
+        <a href="${wazeUrl}" target="_blank" rel="noopener">🚗 Waze</a>
       </div>`);
   }
   if (ig.whatsapp_contato) {
@@ -2155,9 +2165,11 @@ function abrirGrupoDetalhe(grupoId) {
     document.getElementById("grupo-bloco-editar-info").style.display = "none";
     document.getElementById("btn-toggle-grupo-aviso").style.display = podePostarAvisos ? "block" : "none";
     document.getElementById("grupo-bloco-avisos").style.display = "none";
-    document.getElementById("grupo-bloco-oracao").style.display = permissoes.includes("gerenciar_oracao") ? "block" : "none";
+    // líder da Intercessão sempre vê os pedidos da igreja
+    const veOracao = permissoes.includes("gerenciar_oracao") || (/intercess/i.test(grupo.nome || "") && !!state.membro?.eh_lider);
+    document.getElementById("grupo-bloco-oracao").style.display = veOracao ? "block" : "none";
     document.getElementById("gi-descricao").value = grupo.descricao || "";
-    if (permissoes.includes("gerenciar_oracao")) carregarOracaoDoGrupo(grupo.id);
+    if (veOracao) carregarOracaoDoGrupo(grupo.id);
     carregarCelulasDoGrupo(grupo.id, "");
   }
 
@@ -2165,9 +2177,31 @@ function abrirGrupoDetalhe(grupoId) {
   carregarAvisosDoGrupoDetalhe(grupo.id);
 }
 
+// ---------- Intercessão (Catedral): recebe todos os pedidos da igreja ----------
+async function grupoIntercessaoId() {
+  const g = (state.grupos || []).find(x => /intercess/i.test(x.nome || ""));
+  if (g) return g.id;
+  const { data } = await sb.from("igr_grupos").select("id").eq("igreja_id", state.igreja.id).ilike("nome", "intercess%").limit(1);
+  return data && data[0] ? data[0].id : null;
+}
+async function lideresIntercessao() {
+  const gid = await grupoIntercessaoId();
+  if (!gid) return [];
+  const [{ data: diretos }, { data: vinc }] = await Promise.all([
+    sb.from("igr_membros").select("id").eq("grupo_id", gid).eq("eh_lider", true),
+    sb.from("igr_membros_grupos").select("igr_membros!inner(id, eh_lider)").eq("grupo_id", gid).eq("igr_membros.eh_lider", true),
+  ]);
+  const ids = new Set((diretos || []).map(m => m.id));
+  (vinc || []).forEach(v => v.igr_membros && ids.add(v.igr_membros.id));
+  return [...ids];
+}
+
 async function carregarOracaoDoGrupo(grupoId) {
-  const { data } = await sb.from("igr_pedidos_oracao").select("*, igr_membros!inner(nome_completo, grupo_id)")
-    .eq("igreja_id", state.igreja.id).eq("igr_membros.grupo_id", grupoId).order("created_at", { ascending: false });
+  const ehIntercessao = grupoId && grupoId === await grupoIntercessaoId();
+  let q = ehIntercessao
+    ? sb.from("igr_pedidos_oracao").select("*, igr_membros(nome_completo, grupo_id)").eq("igreja_id", state.igreja.id)
+    : sb.from("igr_pedidos_oracao").select("*, igr_membros!inner(nome_completo, grupo_id)").eq("igreja_id", state.igreja.id).eq("igr_membros.grupo_id", grupoId);
+  const { data } = await q.order("created_at", { ascending: false });
   const el = document.getElementById("grupo-detalhe-oracao");
   el.innerHTML = (data || []).map(p => `
     <div class="card">
@@ -2182,7 +2216,7 @@ async function carregarOracaoDoGrupo(grupoId) {
         <button class="chip ${p.status === "respondido" ? "on" : ""}" data-status-oracao-grupo="${p.id}" data-status="respondido">Respondido</button>
       </div>
     </div>
-  `).join("") || `<div class="empty">Nenhum pedido de oração do grupo ainda.</div>`;
+  `).join("") || `<div class="empty">${ehIntercessao ? "Nenhum pedido de oração na igreja ainda." : "Nenhum pedido de oração do grupo ainda."}</div>`;
 
   el.querySelectorAll("[data-status-oracao-grupo]").forEach(btn => {
     btn.addEventListener("click", async () => {
@@ -2748,7 +2782,7 @@ function renderizarCardProximoCulto(resultado) {
         <p class="culto-quando">${quandoTexto}${c.horario ? " · " + c.horario : ""}</p>
         <h3>${c.titulo}</h3>
         ${(() => { const t = c.dia_semana === "domingo" && !c.data ? temaDoDomingo(data) : null; return t ? `<p class="culto-local" style="font-weight:600;">${t.n}º domingo · ${t.tema}</p>` : ""; })()}
-        ${c.local ? `<p class="culto-local">📍 ${c.local}</p>` : ""}
+        ${c.local ? `<p class="culto-local"><a href="${window.MAPS_URL || "#"}" target="_blank" rel="noopener" style="color:inherit">📍 ${c.local}</a> · <a href="${window.WAZE_URL || "#"}" target="_blank" rel="noopener" style="color:inherit">Waze</a></p>` : ""}
       </div>
     </div>
   `;

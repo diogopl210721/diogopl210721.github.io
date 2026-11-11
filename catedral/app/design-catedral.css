@@ -551,3 +551,4 @@ html.cpv.cpv-claro .dt-sw i{ transform:none!important; }
 html.cpv .drawer-tema{ color:var(--miolo); background:var(--casca)!important; border:1px solid var(--line)!important; }
 html.cpv .dt-ic svg{ stroke:var(--trigo-claro)!important; }
 html.cpv .cpv-sec, html.cpv .cpv-saudacao h1, html.cpv .cpv-dia-cab h2, html.cpv .cpv-g-c h2, html.cpv .cpv-oferta-cab h2, html.cpv .cpv-marca h1{ color:var(--miolo)!important; }
+.cpv-agora-acoes .cpv-btn{ gap:6px; padding:0 8px; font-size:13px; }

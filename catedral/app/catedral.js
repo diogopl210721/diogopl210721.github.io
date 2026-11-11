@@ -43,6 +43,7 @@
     "c-crianca": '<circle class="d" cx="12" cy="7" r="3.5"/><circle cx="12" cy="7" r="3.5"/><path class="d" d="M7 21v-4.5a5 5 0 0 1 10 0V21z"/><path d="M7 21v-4.5a5 5 0 0 1 10 0V21M4 12.5l3 2M20 12.5l-3 2"/>',
     "c-pin": '<path class="d" d="M12 21s-7-6-7-11.5a7 7 0 0 1 14 0C19 15 12 21 12 21z"/><path d="M12 21s-7-6-7-11.5a7 7 0 0 1 14 0C19 15 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
     "c-convidar": '<circle class="d" cx="9.5" cy="8" r="3.5"/><circle cx="9.5" cy="8" r="3.5"/><path d="M3 20c.6-3.4 3.2-5.5 6.5-5.5 1.6 0 3 .4 4.1 1.2M18.5 13v7M15 16.5h7"/>',
+    "c-waze": '<path class="d" d="M5 13.5a7 7 0 1 1 13.5 2.6c-.6 1.6-2.4 2.9-4.5 2.9H11c-1.4 1.3-3 1.6-4.2 1.1.8-.7 1.1-1.5 1-2.4A7 7 0 0 1 5 13.5z"/><path d="M5 13.5a7 7 0 1 1 13.5 2.6c-.6 1.6-2.4 2.9-4.5 2.9H11c-1.4 1.3-3 1.6-4.2 1.1.8-.7 1.1-1.5 1-2.4A7 7 0 0 1 5 13.5z"/><circle class="p" cx="10" cy="11.5" r="1"/><circle class="p" cx="14.5" cy="11.5" r="1"/><path d="M10 14.5c1.2 1 3.3 1 4.5 0"/>',
     "c-relogio": '<circle class="d" cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
   };
   function injetarIcones() {
@@ -283,8 +284,9 @@ gl_FragColor=vec4(col,1.);}`;
         ${p.tema ? `<p class="cpv-agora-tema">${p.tema.n}º domingo do mês: ${esc(p.tema.tema)}</p>` : ""}
         <p class="cpv-agora-info">${ci("c-relogio")} ${dia} às ${esc(String(c.horario || "").slice(0, 5))}${c.local ? ` · ${esc(c.local)}` : ""}</p>
         <div class="cpv-agora-acoes">
-          <a class="cpv-btn claro" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((state.igreja?.nome || "") + " " + (state.igreja?.endereco || ""))}" target="_blank" rel="noopener">${ci("c-pin")} Como chegar</a>
-          <button class="cpv-btn vidro" type="button" data-cpv-share>${ci("c-convidar")} Convidar alguém</button>
+          <a class="cpv-btn claro" href="${window.MAPS_URL}" target="_blank" rel="noopener">${ci("c-pin")} Maps</a>
+          <a class="cpv-btn vidro" href="${window.WAZE_URL}" target="_blank" rel="noopener">${ci("c-waze")} Waze</a>
+          <button class="cpv-btn vidro" type="button" data-cpv-share>${ci("c-convidar")} Convidar</button>
         </div>
       </article>`;
   }
