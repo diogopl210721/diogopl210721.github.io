@@ -35,6 +35,7 @@ const S = {
   reabs: [],
   notas: [],
   guias: {},
+  visitas: {},
   fotos: [],
   fotoUrls: {},
   view: "inicio",
@@ -144,6 +145,7 @@ async function carregar() {
   S.notas = d.notas || [];
   S.fotos = d.fotos || [];
   S.guias = {}; (d.guias || []).forEach(g => S.guias[g.sub] = g);
+  S.visitas = {}; (d.visitas || []).forEach(v => S.visitas[v.numero] = v);
 }
 async function iniciar() {
   document.getElementById("login").classList.add("hidden");
@@ -402,8 +404,8 @@ function vInicio() {
   <div class="grid g4">
     <div class="card kpi red" onclick="abrirPrazos('vencidas')"><div class="n">${venc.length}</div><div class="l">Vencidas</div></div>
     <div class="card kpi orange" onclick="abrirPrazos('prox')"><div class="n">${prox.length}</div><div class="l">Vencem em até ${JANELA_DIAS} dias</div></div>
-    <div class="card kpi" onclick="abrirPrazos('todas')"><div class="n">${ab.length}</div><div class="l">Abertas no total</div></div>
-    <div class="card kpi green" onclick="abrirFinalizadas('todos')"><div class="n">${finalizadas().length}</div><div class="l">Finalizadas (histórico)</div></div>
+    <div class="card kpi green" onclick="abrirPrazos('visitadas')"><div class="n">${visitadasAFechar().length}</div><div class="l">✅ Visitadas — falta fechar no Salesforce</div></div>
+    <div class="card kpi" onclick="abrirPrazos('todas')"><div class="n">${ab.length}</div><div class="l">Abertas no total · ${ab.length - visitadasAFechar().length} sem visita</div></div>
   </div>
 
   <div class="section-title">Abertas por subclassificação <span class="count">${ab.length}</span></div>
@@ -426,7 +428,8 @@ function ocCard(o, opts = {}) {
   const s = situacao(o), c = cliente(o), cd = contagem(o), fin = isFin(o);
   const z = linkZap(c.telefone1), tel = linkTel(c.telefone1);
   const aprox = !enderecoCompleto(c);
-  return `<div class="oc ${s.cls}">
+  const vis = !fin && visitada(o);
+  return `<div class="oc ${s.cls} ${vis ? "visitada" : ""}">
     ${!fin && opts.rota !== false ? `<input type="checkbox" class="chk" title="Adicionar à rota" ${S.rota.has(o.numero) ? "checked" : ""} onchange="toggleRota(${o.numero},this.checked)">` : ""}
     <div class="body">
       <div class="top">
@@ -434,6 +437,7 @@ function ocCard(o, opts = {}) {
         ${isRel(o) ? '<span class="pill p-purple">★ Relacionamento</span>' : ""}
         <span class="pill p-blue">${esc(subCurta(o.subclassificacao))}</span>
         ${o.reabertura ? '<span class="pill p-orange">Reaberta</span>' : ""}
+        ${vis ? `<span class="pill p-green">✅ Visitada ${fmtData(vis.visitada_em)} · fechar no Salesforce</span>` : ""}
         ${(() => { const ns = S.notas.filter(n => n.numero === o.numero); return ns.length ? `<span class="pill p-gray">📝 ${ns.length}</span>${ns.some(n => n.irregularidade) ? '<span class="pill p-red">⚠ Irregularidade</span>' : ""}` : ""; })()}
       </div>
       <div class="name" onclick="abrirFicha(${jsArg(o.chave_cliente)})">${esc(c.nome)}</div>
@@ -450,6 +454,7 @@ function ocCard(o, opts = {}) {
         ${z ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
         ${tel ? `<a class="btn sm soft" href="${tel}">📞 Ligar</a>` : ""}
         ${!fin ? `<button class="btn sm" style="background:#0b1f3a" onclick="abrirGuia(${o.numero})">📘 Como fechar</button>` : ""}
+        ${!fin ? (vis ? `<button class="btn sm ghost" onclick="if(confirm('Desmarcar a visita desta ocorrência?'))marcarVisita(${o.numero},false)">↩ Desmarcar visita</button>` : `<button class="btn sm" style="background:var(--green)" onclick="marcarVisita(${o.numero},true)">✅ Marcar visitada</button>`) : ""}
         <button class="btn sm ghost" onclick="abrirNota(${o.numero})">📝 Anotar</button>
         <button class="btn sm ghost" onclick="abrirFotos(${jsArg(o.chave_cliente)},${o.numero})">📷 Fotos${(() => { const st = statusFotos(o.chave_cliente); return st.n ? ` ${st.ok}/${st.total}` : ""; })()}</button>
         <button class="btn sm ghost" onclick="abrirFicha(${jsArg(o.chave_cliente)},true)">✏️ Editar</button>
@@ -470,6 +475,8 @@ function vPrazos() {
     if (f.janela === "vencidas" && s.grupo !== 0) return false;
     if (f.janela === "urgentes" && !(s.grupo <= 3)) return false;
     if (f.janela === "prox" && !(s.grupo >= 1 && s.grupo <= 3)) return false;
+    if (f.janela === "visitadas" && !visitada(o)) return false;
+    if (f.janela === "naovisitadas" && visitada(o)) return false;
     if (f.cidade && title(o.cidade) !== f.cidade) return false;
     if (f.sub === "__REL__" && !isRel(o)) return false;
     if (f.sub === "__REAB__" && !(o.reabertura > 0)) return false;
@@ -484,7 +491,7 @@ function vPrazos() {
   <p class="sub">Mostrando <b>${lista.length}</b> de ${ab.length} abertas · marque ☑ para montar a rota do dia</p>
   <div class="toolbar">
     <input class="input" placeholder="Buscar cliente, código, nº…" value="${esc(f.q)}" oninput="S.prazoFiltro.q=this.value;debRender()">
-    ${sel("j", [["todas", "Todos os prazos"], ["vencidas", "Só vencidas"], ["prox", `Vencem em até ${JANELA_DIAS} dias`], ["urgentes", `Vencidas + até ${JANELA_DIAS} dias`]], f.janela, "S.prazoFiltro.janela=this.value;render()")}
+    ${sel("j", [["todas", "Todos os prazos"], ["vencidas", "Só vencidas"], ["prox", `Vencem em até ${JANELA_DIAS} dias`], ["urgentes", `Vencidas + até ${JANELA_DIAS} dias`], ["visitadas", "✅ Visitadas — falta fechar no Salesforce"], ["naovisitadas", "Ainda não visitadas"]], f.janela, "S.prazoFiltro.janela=this.value;render()")}
     ${sel("c", [["", "Todas as cidades"], ...cidades.map(c => [c, c])], f.cidade, "S.prazoFiltro.cidade=this.value;render()")}
     ${sel("s", [["", "Todas as subclassificações"], ["__REL__", "★ Só Relacionamento"], ["__REAB__", "↺ Só reabertas"], ...subs.map(s => [s, subCurta(s)])], f.sub, "S.prazoFiltro.sub=this.value;render()")}
   </div>
@@ -1107,6 +1114,19 @@ async function exportarFotos(chaves) {
   } catch (e) { toast(e.message, 4500); }
 }
 
+/* ---------------- VISITADAS ---------------- */
+function visitada(o) { const v = S.visitas[o.numero]; return v && v.visitada_em ? v : null; }
+function visitadasAFechar() { return abertas().filter(o => visitada(o)); }
+async function marcarVisita(numero, sim, texto) {
+  try {
+    const r = await rpc("ocv_salvar_visita", { p_token: S.token, p_numero: numero, p_visitada: !!sim, p_texto: texto ?? null });
+    if (!r.ok) throw new Error(r.erro);
+    S.visitas[numero] = r.visita;
+    toast(sim ? "✅ Marcada como visitada — falta fechar no Salesforce" : "Marcação de visita removida", 3500);
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  } catch (e) { toast(e.message, 4000); }
+}
+
 /* ---------------- GUIA DE FECHAMENTO ---------------- */
 // Modelos de texto no padrão usado nos fechamentos. s = Sim/Não, t = texto curto, l = texto longo, art = (x) Sim ( ) Não
 const MOD_VISITA = [
@@ -1204,9 +1224,11 @@ function vGuia() {
       ${temFotos || r.__fotos ? `<label class="chk-line full"><input type="checkbox" ${r.__fotos === false ? "" : "checked"} onchange="guiaSet('__fotos',this.checked)"> Incluir “Fotos da visita em anexo.”</label>` : ""}
     </div>
     <div class="section-title">Texto pronto (pode ajustar antes de copiar)</div>
-    <textarea class="input" id="guiaTxt" rows="10">${esc(montarTexto(sub, { ...pre, ...r }, temFotos))}</textarea>
+    ${(() => { const v = o && S.visitas[o.numero]; return v && v.texto ? `<div class="salvo">💾 Texto salvo no sistema em ${fmtDH(v.atualizado_em)}${v.visitada_em ? " · ✅ visitada" : ""} — aparece em qualquer aparelho</div>` : ""; })()}
+    <textarea class="input" id="guiaTxt" rows="10">${esc((() => { const v = o && S.visitas[o.numero]; const rascMaisNovo = r.__t && (!v || r.__t > Date.parse(v.atualizado_em)); return v && v.texto && !rascMaisNovo ? v.texto : montarTexto(sub, { ...pre, ...r }, temFotos); })())}</textarea>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn" style="flex:1" onclick="copiar(document.getElementById('guiaTxt').value)">📋 Copiar texto</button>
+      ${o && !isFin(o) ? `<button class="btn" style="flex:1 1 100%;background:var(--green)" onclick="marcarVisita(${o.numero},true,document.getElementById('guiaTxt').value)">✅ Salvar texto e marcar como visitada</button>` : ""}
       <button class="btn ghost" onclick="if(confirm('Limpar o que foi preenchido?')){lsSet(rascKey(S.guiaNumero,S.guiaSub),null);render()}">Limpar</button>
     </div>
     <p class="sub" style="margin:8px 0 0;font-size:12.5px">O que você preenche fica salvo neste aparelho até limpar.</p>
@@ -1235,7 +1257,7 @@ function montarTexto(sub, v, temFotos) {
   return linhas.join("\n");
 }
 function guiaSet(k, v, digitando) {
-  const r = rascLer(S.guiaNumero, S.guiaSub); r[k] = v; lsSet(rascKey(S.guiaNumero, S.guiaSub), JSON.stringify(r));
+  const r = rascLer(S.guiaNumero, S.guiaSub); r[k] = v; r.__t = Date.now(); lsSet(rascKey(S.guiaNumero, S.guiaSub), JSON.stringify(r));
   const o = S.guiaNumero ? S.ocs.find(x => x.numero === S.guiaNumero) : null;
   const temFotos = o && S.fotos.some(f => f.chave_cliente === o.chave_cliente);
   if (digitando) {
