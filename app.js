@@ -34,6 +34,7 @@ const S = {
   importacoes: [],
   reabs: [],
   notas: [],
+  guias: {},
   fotos: [],
   fotoUrls: {},
   view: "inicio",
@@ -142,6 +143,7 @@ async function carregar() {
   S.reabs = (d.reaberturas || []).map(r => ({ ...r, _em: new Date(r.em) }));
   S.notas = d.notas || [];
   S.fotos = d.fotos || [];
+  S.guias = {}; (d.guias || []).forEach(g => S.guias[g.sub] = g);
 }
 async function iniciar() {
   document.getElementById("login").classList.add("hidden");
@@ -283,9 +285,10 @@ const ICONS = {
   clientes: '<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 100-6M22 21c0-3-2-5-5-5.5"/>',
   importar: '<path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/>',
   rota: '<circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H17a3.5 3.5 0 000-7H7a3.5 3.5 0 010-7h8.5"/>',
+  guia: '<path d="M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5z"/><path d="M4 19.5A2.5 2.5 0 006.5 22H20v-5"/>',
   reaberturas: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
 };
-const NAV = [["inicio", "Início"], ["prazos", "Prazos"], ["finalizadas", "Finalizadas"], ["rota", "Rota"], ["reaberturas", "Reaberturas"], ["clientes", "Clientes"], ["importar", "Importar"]];
+const NAV = [["inicio", "Início"], ["prazos", "Prazos"], ["finalizadas", "Finalizadas"], ["rota", "Rota"], ["guia", "Guia"], ["reaberturas", "Reaberturas"], ["clientes", "Clientes"], ["importar", "Importar"]];
 function svgI(k) { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`; }
 function snap() { return { v: S.view, pf: { ...S.prazoFiltro }, mf: S.mesFin, ff: { ...S.filtroFin }, mm: S.mesMeta, rp: S.relPeriodo, d: S.depth }; }
 function aplicar(st) {
@@ -308,8 +311,8 @@ function abrirPrazos(janela, sub) { go("prazos", () => { S.prazoFiltro = { q: ""
 function abrirFinalizadas(periodo, filtro) { go("finalizadas", () => { S.mesFin = periodo || S.mesFin; S.filtroFin = filtro || { tipo: null }; }); }
 function renderNav() {
   const urg = abertas().filter(o => { const s = situacao(o); return s.grupo != null && s.grupo <= 3; }).length;
-  const btn = ([k, l]) => `<button class="tab ${S.view === k ? "on" : ""}" onclick="go('${k}'${k === "prazos" ? `,()=>S.prazoFiltro={q:'',cidade:'',sub:'',janela:'todas'}` : ""})">${svgI(k)}<span>${l}</span>${k === "prazos" && urg ? `<span class="dot">${urg}</span>` : ""}${k === "reaberturas" && reabsDoPeriodo(mesKey(new Date())).length ? `<span class="dot">${reabsDoPeriodo(mesKey(new Date())).length}</span>` : ""}</button>`;
-  document.getElementById("tabs").innerHTML = NAV.filter(n => !["importar", "reaberturas"].includes(n[0])).map(btn).join("");
+  const btn = ([k, l]) => `<button class="tab ${S.view === k ? "on" : ""}" onclick="go('${k}'${k === "guia" ? `,()=>{S.guiaSub=null;S.guiaNumero=null}` : k === "prazos" ? `,()=>S.prazoFiltro={q:'',cidade:'',sub:'',janela:'todas'}` : ""})">${svgI(k)}<span>${l}</span>${k === "prazos" && urg ? `<span class="dot">${urg}</span>` : ""}${k === "reaberturas" && reabsDoPeriodo(mesKey(new Date())).length ? `<span class="dot">${reabsDoPeriodo(mesKey(new Date())).length}</span>` : ""}</button>`;
+  document.getElementById("tabs").innerHTML = NAV.filter(n => !["importar", "reaberturas", "guia"].includes(n[0])).map(btn).join("");
   const ult = S.importacoes[0];
   document.getElementById("side").innerHTML = `<div class="brand">Minhas Ocorrências<small>Pós-Vendas · ${esc(S.user?.nome || "")}</small></div>
     ${NAV.map(btn).join("")}
@@ -319,7 +322,7 @@ function renderNav() {
 function render() {
   renderNav();
   const v = document.getElementById("view");
-  const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar, relatorio: vRelatorio, reaberturas: vReaberturas, rota: vRota, fotos: vFotos }[S.view] || vInicio;
+  const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar, relatorio: vRelatorio, reaberturas: vReaberturas, rota: vRota, fotos: vFotos, guia: vGuia }[S.view] || vInicio;
   v.innerHTML = fn();
   if (S.view === "importar") bindImport();
   renderRotaBar();
@@ -410,6 +413,8 @@ function vInicio() {
       return `<div class="card kpi ${isRel({ subclassificacao: k }) ? "purple" : ""}" onclick='abrirPrazos("todas",${jsArg(k)})'>
       <div class="n">${v}</div><div class="l">${esc(subCurta(k))}</div>${urgN ? `<div style="margin-top:6px"><span class="pill p-red">${urgN} urgente${urgN > 1 ? "s" : ""}</span></div>` : ""}</div>`; }).join("")}</div>
 
+  <button class="card guia-cta clk" onclick="go('guia',()=>{S.guiaSub=null;S.guiaNumero=null})"><span>📘</span><div><b>Guia de fechamento</b><small>O que fazer em cada ocorrência, modelo de texto pronto e exemplos reais</small></div><em>›</em></button>
+
   <div class="section-title">Prioridade agora <span class="count">${urg.length}</span></div>
   ${urg.length ? urg.map(ocCard).join("") : `<div class="card empty">Nenhuma ocorrência vencida ou vencendo nos próximos ${JANELA_DIAS} dias. 👏</div>`}
   ${venc.length + prox.length > urg.length ? `<button class="btn ghost block" onclick="abrirPrazos('urgentes')">Ver todas (${venc.length + prox.length})</button>` : ""}
@@ -444,6 +449,7 @@ function ocCard(o, opts = {}) {
         <a class="btn sm soft" href="${linkWaze(c)}" target="_blank" rel="noopener">🚗 Waze${aprox ? "*" : ""}</a>
         ${z ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
         ${tel ? `<a class="btn sm soft" href="${tel}">📞 Ligar</a>` : ""}
+        ${!fin ? `<button class="btn sm" style="background:#0b1f3a" onclick="abrirGuia(${o.numero})">📘 Como fechar</button>` : ""}
         <button class="btn sm ghost" onclick="abrirNota(${o.numero})">📝 Anotar</button>
         <button class="btn sm ghost" onclick="abrirFotos(${jsArg(o.chave_cliente)},${o.numero})">📷 Fotos${(() => { const st = statusFotos(o.chave_cliente); return st.n ? ` ${st.ok}/${st.total}` : ""; })()}</button>
         <button class="btn sm ghost" onclick="abrirFicha(${jsArg(o.chave_cliente)},true)">✏️ Editar</button>
@@ -859,10 +865,10 @@ function vRelatorio() {
       <div class="meta-line pu" style="bottom:calc(26px + ${(META_REL / maxM) * 150}px)"><span>meta relac. ${META_REL}</span></div>
     </div>
     <div class="legend"><span><i class="lb"></i>Total finalizadas</span><span><i class="lp"></i>Visitas de relacionamento</span></div>
-    <table class="rt"><thead><tr><th>Mês</th><th class="r">Finalizadas</th><th class="r">Meta ${META_TOTAL}</th><th class="r">Relacionamento</th><th class="r">Meta ${META_REL}</th><th class="r">Reaberturas</th></tr></thead><tbody>
+    <div class="mtx-wrap"><table class="rt"><thead><tr><th>Mês</th><th class="r">Finalizadas</th><th class="r">Meta ${META_TOTAL}</th><th class="r">Relacionamento</th><th class="r">Meta ${META_REL}</th><th class="r">Reaberturas</th></tr></thead><tbody>
       ${porMes.map(x => `<tr><td>${mesNome(x.m)}</td><td class="r"><b>${x.t}</b></td><td class="r">${x.t >= META_TOTAL ? '<span class="ok">✔ batida</span>' : `<span class="no">${Math.round(100 * x.t / META_TOTAL)}%</span>`}</td><td class="r"><b>${x.r}</b></td><td class="r">${x.r >= META_REL ? '<span class="ok">✔ batida</span>' : `<span class="no">${Math.round(100 * x.r / META_REL)}%</span>`}</td><td class="r">${(() => { const q = reabsDoPeriodo(x.m).length; return `<span class="${q > LIMITE_REAB ? "no" : q === 0 ? "ok" : ""}">${q}${q > LIMITE_REAB ? " ✖" : ""}</span>`; })()}</td></tr>`).join("")}
       <tr class="tot"><td>Total</td><td class="r">${base.length}</td><td class="r">${mesesBatidosT}/${porMes.length} meses</td><td class="r">${rel}</td><td class="r">${mesesBatidosR}/${porMes.length} meses</td><td class="r">${reabsDoPeriodo(pk).length}</td></tr>
-    </tbody></table>` : `<p class="sub">Nenhuma ocorrência finalizada neste período.</p>`}
+    </tbody></table></div>` : `<p class="sub">Nenhuma ocorrência finalizada neste período.</p>`}
 
     <div class="rel-2col">
       <div><h3>Por subclassificação</h3>
@@ -1101,6 +1107,166 @@ async function exportarFotos(chaves) {
   } catch (e) { toast(e.message, 4500); }
 }
 
+/* ---------------- GUIA DE FECHAMENTO ---------------- */
+// Modelos de texto no padrão usado nos fechamentos. s = Sim/Não, t = texto curto, l = texto longo, art = (x) Sim ( ) Não
+const MOD_VISITA = [
+  ["s", "Equipamentos de acordo com o contrato vigente?"], ["t", "Frequência cadastrada?"],
+  ["s", "Consumo mensal atual de acordo com o contrato vigente?"], ["art", "Laudo ART emitido?"],
+  ["s", "Central atende as normas?"], ["t", "Quais equipamentos disponíveis no cliente?"],
+];
+// Roteiro oficial de visita (sai completo, com todas as linhas, mesmo em branco)
+const ROTEIRO_VISITA = [...MOD_VISITA, ["t", "Qual a vazão exigida pelo cliente?"], ["br"],
+  ["t", "Indicação de novos negócios do cliente:"], ["s", "Cliente está satisfeito com o atendimento da Consigaz?"],
+  ["l", "Ao indicar o Facilita, qual foi a devolutiva do cliente?"], ["l", "Resumo da visita (opcional)", "opc"]];
+const ROTEIRO_ATIVO = [["l", "Motivo:"]];
+const ROTEIROS_COMPLETOS = [ROTEIRO_VISITA, ROTEIRO_ATIVO];
+const MODELOS = {
+  "VISIT RELACIONAMENTO": ROTEIRO_VISITA,
+  "VISITA DE TRANSFERÊNCIA": ROTEIRO_VISITA,
+  "VISITA PARA CANCELAMENTO DE CONTRATO": [["s", "Contrato e multa entregues em mãos?"], ["l", "Motivo do cancelamento"], ["l", "Tentativa de reversão e resultado"], ["s", "Cliente já trocou os tanques?"], ["t", "Solicitação de retirada nº"], ["l", "Próximos passos"]],
+  "RENEG DE PREÇO": [["t", "Preço atual (R$/kg)"], ["t", "Proposta da concorrência"], ["t", "Preço negociado (R$/kg)"], ["t", "Solicitação de alteração de preço nº"], ["s", "Necessário novo contrato?"], ["l", "Motivo / fatores de insatisfação"], ["l", "Resultado da negociação"]],
+  "RENEGOCIAÇÃO DE PREÇO MEDIANTE A REG DE CONTRATO": [["t", "Contrato nº"], ["t", "Status da assinatura"], ["t", "Enviado ao Pós-Vendas interno em"], ["l", "Observações"]],
+  "REGULARIZAÇÃO CONTRATO": [["t", "Contrato nº"], ["t", "Status da assinatura"], ["t", "Enviado ao Pós-Vendas interno em"], ["l", "Observações"]],
+  "VISITA PÓS VENDAS ATIVO": ROTEIRO_ATIVO,
+  "COMODATO INATIVO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["s", "Previsão de voltar a consumir?"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
+  "REDIMENS COMODATO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
+  "REDIMENSIONAMENTO - GIRO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
+  "ENTREGA / RET DE DOCS": [["t", "Documento entregue"], ["s", "Entregue impresso e em mãos?"], ["l", "Motivo da solicitação"], ["s", "Risco de cancelamento?"], ["l", "Encaminhamento"]],
+  "VISITA - RECUSA DE ABASTECIMENTO": [["l", "Motivo da recusa"], ["t", "Estoque no dia da recusa (%)"], ["s", "Frequência cadastrada está correta?"], ["t", "Ação tomada (ajuste / OC nº)"], ["s", "Risco de cancelamento?"], ["l", "Resumo"]],
+  "VISITA - ANIVERSÁRIO DE CONTRATO": [["s", "Contrato possui cláusula de reajuste por aniversário?"], ["s", "Reajustes anteriores foram repassados?"], ["t", "Índice aplicado"], ["t", "Preço anterior (R$/kg)"], ["t", "Preço alterado (R$/kg)"], ["t", "Solicitação de alteração de preço nº"], ["l", "Conclusão"]],
+  "PEND FINANCEIRA": [["l", "Motivo do atraso"], ["t", "Valor / títulos em aberto"], ["l", "Acordo / condição proposta"], ["s", "Cliente ciente do bloqueio de abastecimento?"], ["l", "Encaminhamento"]],
+  "PESQUISA DE SATISF": [["t", "Nota dada pelo cliente"], ["l", "Motivo da nota"], ["l", "Ação tomada"], ["l", "Percepção do cliente após o contato"]],
+  "FOLLOW UP DE VENDA DE PEÇAS": [["t", "Orçamento / pedido nº"], ["t", "Status da instalação"], ["s", "Testes de vazamento ok?"], ["l", "Observações"]],
+  "IMPLANT - CONTA SIM": [["t", "Nº de unidades / apartamentos"], ["s", "Viável tecnicamente?"], ["l", "Avaliação"], ["l", "Próximo passo"]],
+  "VISITA - LIMITAÇÃO DE ABASTECIMENTO": [["l", "Motivo da limitação"], ["s", "Cliente orientado sobre multa e abastecimento de emergência?"], ["t", "Ajuste realizado (frequência / OC nº)"], ["l", "Resumo"]],
+  "VISITA CONSULTOR MATRIX": [["s", "Cliente tem interesse?"], ["t", "Consumo médio de energia"], ["l", "Próximo passo"]],
+};
+const MOD_GENERICO = [["l", "Motivo / descrição"], ["l", "O que foi feito"], ["t", "Ocorrência(s) / solicitação(ões) nº"], ["l", "Encaminhamento"]];
+function nomeSub(sub) { return String(sub || "").replace(/^\[[^\]]+\]\s*/, "").trim(); }
+function modeloDe(sub) { return MODELOS[nomeSub(sub)] || MODELOS[nomeSub(sub).toUpperCase()] || MOD_GENERICO; }
+function guiaDe(sub) { return S.guias[sub] || null; }
+function rascKey(numero, sub) { return "ocv_rasc_" + (numero || "lib_" + nomeSub(sub)); }
+function rascLer(numero, sub) { try { return JSON.parse(lsGet(rascKey(numero, sub)) || "{}"); } catch (e) { return {}; } }
+function abrirGuia(numero, sub) { go("guia", () => { S.guiaNumero = numero || null; S.guiaSub = sub || (S.ocs.find(o => o.numero === numero) || {}).subclassificacao; }); }
+function exemplosDe(sub, max = 3) {
+  return S.ocs.filter(o => o.subclassificacao === sub && isFin(o) && o.solucao && o.solucao.length > 120 && o.solucao.length < 1400)
+    .sort((a, b) => (b._fe || 0) - (a._fe || 0)).slice(0, max);
+}
+function vGuiaLista() {
+  const subsDados = {}; S.ocs.forEach(o => { subsDados[o.subclassificacao] = (subsDados[o.subclassificacao] || 0) + 1; });
+  const todos = [...new Set([...Object.keys(S.guias), ...abertas().map(o => o.subclassificacao)])];
+  todos.sort((a, b) => (isRel({ subclassificacao: b }) - isRel({ subclassificacao: a })) || (abertas().filter(o => o.subclassificacao === b).length - abertas().filter(o => o.subclassificacao === a).length) || a.localeCompare(b));
+  return `${btnVoltar()}<h2 class="page">📘 Guia de fechamento</h2>
+  <p class="sub">O que fazer em cada tipo de ocorrência, com modelo de texto e exemplos reais.</p>
+  <div class="guia-lista">${todos.map(sb => { const g = guiaDe(sb), ab = abertas().filter(o => o.subclassificacao === sb).length;
+    return `<button class="guia-item" onclick='go("guia",()=>{S.guiaNumero=null;S.guiaSub=${jsArg(sb)}})'>
+      <b>${isRel({ subclassificacao: sb }) ? "★ " : ""}${esc(subCurta(sb))}</b>
+      <span>${g && g.prazo_du ? `Prazo ${g.prazo_du} dias úteis` : "Sem orientação cadastrada"}${ab ? ` · <em>${ab} aberta${ab > 1 ? "s" : ""}</em>` : ""}</span></button>`; }).join("")}</div>`;
+}
+function vGuia() {
+  const sub = S.guiaSub;
+  if (!sub) return vGuiaLista();
+  const o = S.guiaNumero ? S.ocs.find(x => x.numero === S.guiaNumero) : null;
+  const g = guiaDe(sub) || { sub, nome: nomeSub(sub) };
+  const mod = modeloDe(sub);
+  const r = rascLer(S.guiaNumero, sub);
+  // pré-preenche contato a partir da última anotação / ficha
+  let pre = {};
+  if (o) {
+    const n = S.notas.find(x => x.numero === o.numero) || S.notas.find(x => x.chave_cliente === o.chave_cliente);
+    const c = cliente(o);
+    pre = { Contato: n?.recebido_por || (c.contato || "").split(" — ")[0] || "", "Sobrenome ou departamento": n?.cargo || (c.contato || "").split(" — ")[1] || "", Telefone: n?.telefone || c.telefone1 || "", "E-mail": "" };
+  }
+  const val = k => r[k] ?? pre[k] ?? "";
+  const ex = exemplosDe(sub);
+  const temFotos = o && S.fotos.some(f => f.chave_cliente === o.chave_cliente);
+  const campo = ([t, l], i) => {
+    if (t === "br") return "";
+    if (t === "s" || t === "art") return `<div class="gq"><label>${esc(l)}</label><div class="seg sm">${["Sim", "Não"].map(v => `<button type="button" class="${val(l) === v ? "on" : ""}" onclick="guiaSet(${jsArg(l)},'${v}')">${v}</button>`).join("")}</div></div>`;
+    if (t === "l") return `<div class="gq full"><label>${esc(l)}</label><textarea class="input" rows="3" oninput="guiaSet(${jsArg(l)},this.value,true)">${esc(val(l))}</textarea></div>`;
+    return `<div class="gq"><label>${esc(l)}</label><input class="input" value="${esc(val(l))}" oninput="guiaSet(${jsArg(l)},this.value,true)"></div>`;
+  };
+  return `${btnVoltar()}
+  <div class="page-head"><h2 class="page">📘 ${esc(subCurta(sub))}</h2><button class="btn sm ghost" onclick="go('guia',()=>{S.guiaSub=null;S.guiaNumero=null})">Todos os guias</button></div>
+  <p class="sub">${o ? `Oc. <b>${o.numero}</b> · ${esc(cliente(o).nome)} · ` : ""}${g.prazo_du ? `Prazo padrão <b>${g.prazo_du} dias úteis</b>` : "Prazo padrão não cadastrado"}${g.origem ? ` · Quem abre: ${esc(g.origem)}` : ""}</p>
+
+  <div class="card guia-acao">
+    <div class="section-title" style="margin-top:0">O que fazer <button class="lnk" style="margin-left:auto" onclick="editarGuia(${jsArg(sub)})">✏️ editar</button></div>
+    <div>${g.acao ? esc(g.acao) : '<span class="mu">Ainda não há orientação para esta subclassificação. Toque em editar para escrever.</span>'}</div>
+    ${g.dicas ? `<div class="dicas">💡 ${esc(g.dicas)}</div>` : ""}
+  </div>
+
+  <div class="section-title">✍️ Montar texto de fechamento</div>
+  <div class="card">
+    <div class="gform">
+      ${["Contato", "Sobrenome ou departamento", "Telefone", "E-mail"].map((l, i) => campo(["t", l], "c" + i)).join("")}
+      ${mod.map(campo).join("")}
+      ${temFotos || r.__fotos ? `<label class="chk-line full"><input type="checkbox" ${r.__fotos === false ? "" : "checked"} onchange="guiaSet('__fotos',this.checked)"> Incluir “Fotos da visita em anexo.”</label>` : ""}
+    </div>
+    <div class="section-title">Texto pronto (pode ajustar antes de copiar)</div>
+    <textarea class="input" id="guiaTxt" rows="10">${esc(montarTexto(sub, { ...pre, ...r }, temFotos))}</textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn" style="flex:1" onclick="copiar(document.getElementById('guiaTxt').value)">📋 Copiar texto</button>
+      <button class="btn ghost" onclick="if(confirm('Limpar o que foi preenchido?')){lsSet(rascKey(S.guiaNumero,S.guiaSub),null);render()}">Limpar</button>
+    </div>
+    <p class="sub" style="margin:8px 0 0;font-size:12.5px">O que você preenche fica salvo neste aparelho até limpar.</p>
+  </div>
+
+  ${ex.length ? `<div class="section-title">📄 Exemplos reais seus <span class="count">${ex.length}</span></div>
+    ${ex.map(e => `<details class="card ex"><summary><b>${esc(cliente(e).nome)}</b> · fechada ${fmtData(e.fechamento)}</summary>
+      <div class="sol" style="color:var(--ink);margin-top:8px">${esc(e.solucao)}</div>
+      <button class="btn sm soft" style="margin-top:8px" onclick='copiar(${jsArg(e.solucao)})'>📋 Copiar exemplo</button></details>`).join("")}` : ""}`;
+}
+function montarTexto(sub, v, temFotos) {
+  const linhas = [], completo = ROTEIROS_COMPLETOS.includes(modeloDe(sub));
+  const val = x => (x == null ? "" : String(x).trim());
+  const linha = (l, x) => /[?:]$/.test(l) ? `${l} ${val(x)}`.trimEnd() : `${l}: ${val(x)}`.trimEnd();
+  const add = (l, x) => { if (completo || val(x) !== "") linhas.push(linha(l, x)); };
+  ["Contato", "Sobrenome ou departamento", "Telefone", "E-mail"].forEach(l => add(l, v[l]));
+  modeloDe(sub).forEach(([t, l, opc]) => {
+    if (t === "br") { if (completo) linhas.push(""); return; }
+    const x = v[l];
+    if (t === "art") { if (completo || val(x)) linhas.push(`${l} ${x === "Sim" ? "(x) Sim ( ) Não" : x === "Não" ? "( ) Sim (x) Não" : "( ) Sim ( ) Não"}`); return; }
+    const lab = l.replace(/\s*\(.*\)$/, "");
+    if (opc) { if (val(x)) linhas.push(linha(lab, x)); return; }
+    add(lab, x);
+  });
+  if ((temFotos && v.__fotos !== false) || v.__fotos === true) linhas.push("Fotos da visita em anexo.");
+  return linhas.join("\n");
+}
+function guiaSet(k, v, digitando) {
+  const r = rascLer(S.guiaNumero, S.guiaSub); r[k] = v; lsSet(rascKey(S.guiaNumero, S.guiaSub), JSON.stringify(r));
+  const o = S.guiaNumero ? S.ocs.find(x => x.numero === S.guiaNumero) : null;
+  const temFotos = o && S.fotos.some(f => f.chave_cliente === o.chave_cliente);
+  if (digitando) {
+    const n = o ? (S.notas.find(x => x.numero === o.numero) || S.notas.find(x => x.chave_cliente === o.chave_cliente)) : null; const c = o ? cliente(o) : {};
+    const pre = o ? { Contato: n?.recebido_por || (c.contato || "").split(" — ")[0] || "", "Sobrenome ou departamento": n?.cargo || (c.contato || "").split(" — ")[1] || "", Telefone: n?.telefone || c.telefone1 || "" } : {};
+    document.getElementById("guiaTxt").value = montarTexto(S.guiaSub, { ...pre, ...r }, temFotos);
+  } else { const y = window.scrollY; render(); window.scrollTo(0, y); }
+}
+async function copiar(t) {
+  try { await navigator.clipboard.writeText(t); }
+  catch (e) { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); }
+  toast("Copiado ✓ — cole no Salesforce");
+}
+function editarGuia(sub) {
+  const g = guiaDe(sub) || { sub, nome: nomeSub(sub) };
+  modal(`<button class="x" onclick="fecharModal()">×</button><h3>✏️ Editar guia</h3><p class="sub">${esc(subCurta(sub))}</p>
+    <div class="form-grid">
+      <div class="field"><label>Prazo padrão (dias úteis)</label><input class="input" id="gp" inputmode="numeric" value="${esc(g.prazo_du ?? "")}"></div>
+      <div class="field"><label>Quem abre</label><input class="input" id="go" value="${esc(g.origem || "")}"></div>
+      <div class="field full"><label>O que fazer</label><textarea class="input" id="ga" rows="6">${esc(g.acao || "")}</textarea></div>
+      <div class="field full"><label>Dicas (opcional)</label><textarea class="input" id="gd" rows="3" placeholder="Ex.: sempre levar o contrato impresso; conferir CRM antes">${esc(g.dicas || "")}</textarea></div>
+    </div>
+    <button class="btn block" style="margin-top:12px" onclick="salvarGuia(${jsArg(sub)})">Salvar</button>`);
+}
+async function salvarGuia(sub) {
+  const g = id => document.getElementById(id).value.trim();
+  const r = await rpc("ocv_salvar_guia", { p_token: S.token, p: { sub, nome: nomeSub(sub), prazo_du: g("gp"), origem: g("go"), acao: g("ga"), dicas: g("gd") } }).catch(e => ({ ok: false, erro: e.message }));
+  if (!r.ok) return toast(r.erro);
+  S.guias[sub] = r.guia; fecharModal(); toast("Guia salvo ✓"); setTimeout(render, 80);
+}
+
 /* ---------------- modal ---------------- */
 function modal(html) {
   if (!S.modalOpen) { S.modalOpen = true; try { history.pushState({ ...snap(), modal: true }, ""); } catch (e) {} }
@@ -1194,49 +1360,101 @@ function parseEndereco(raw) {
   return { codigo, ponto, bairro, cidade, uf };
 }
 function chaveCliente(codigo, nome) { return codigo ? "C" + codigo : "N:" + norm(nome).replace(/[^A-Z0-9]+/g, " ").trim(); }
+// Converte texto exportado (HTML da planilha .xls ou CSV) em linhas/colunas
+function linhasDeTexto(txt) {
+  const t = String(txt || "").replace(/^﻿/, "");
+  if (/<table/i.test(t.slice(0, 5000))) {
+    const doc = new DOMParser().parseFromString(t, "text/html");
+    return [...doc.querySelectorAll("tr")].map(tr => [...tr.children].map(td => td.textContent.trim()));
+  }
+  const sep = (t.split("\n")[0].match(/;/g) || []).length > (t.split("\n")[0].match(/,/g) || []).length ? ";" : ",";
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) { if (ch === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === sep) { row.push(cur.trim()); cur = ""; }
+    else if (ch === "\n" || ch === "\r") { if (ch === "\r" && t[i + 1] === "\n") i++; row.push(cur.trim()); rows.push(row); row = []; cur = ""; }
+    else cur += ch;
+  }
+  if (cur || row.length) { row.push(cur.trim()); rows.push(row); }
+  return rows.filter(r => r.some(c => c));
+}
+function rowsParaLinhas(rows) {
+  const hi = rows.findIndex(r => r.some(c => norm(c) === "NUMERO DA OCORRENCIA"));
+  if (hi < 0) throw new Error("Não encontrei a coluna “Número da ocorrência”. É a planilha certa?");
+  const hdr = rows[hi].map(norm);
+  const idx = {}; for (const [k, names] of Object.entries(COLS)) idx[k] = hdr.findIndex(h => names.includes(h));
+  const g = (r, k) => idx[k] >= 0 ? (r[idx[k]] ?? "").trim() : "";
+  const linhas = [];
+  for (const r of rows.slice(hi + 1)) {
+    const num = digits(g(r, "numero")); if (!num) continue;
+    const e = parseEndereco(g(r, "endereco"));
+    const nome = g(r, "cliente");
+    linhas.push({
+      numero: +num, estabelecimento: g(r, "estabelecimento"), ticket: g(r, "ticket").replace(/\.0+$/, "") || null,
+      cliente_nome: nome, cliente_codigo: e.codigo || null, chave_cliente: chaveCliente(e.codigo, nome),
+      endereco_raw: g(r, "endereco"), ponto_entrega: e.ponto, bairro: e.bairro, cidade: e.cidade, uf: e.uf,
+      subclassificacao: g(r, "sub"), abertura: parseDataBR(g(r, "abertura")), prazo: parseDataBR(g(r, "prazo")),
+      fechamento: parseDataBR(g(r, "fechamento")), reabertura: +digits(g(r, "reabertura")) || 0, reincidencia: +digits(g(r, "reincidencia")) || 0,
+      solucao: g(r, "solucao") || null, proprietario: g(r, "proprietario"), status: g(r, "status"),
+    });
+  }
+  if (!linhas.length) throw new Error("Nenhuma ocorrência encontrada no arquivo.");
+  return linhas;
+}
+async function enviarLinhas(linhas, nome, progresso) {
+  let tot = { novas: 0, atualizadas: 0, iguais: 0, total: 0, reabertas: 0 };
+  for (let i = 0; i < linhas.length; i += 400) {
+    progresso && progresso(`Enviando ${Math.min(i + 400, linhas.length)} de ${linhas.length} ocorrências…`);
+    const r = await rpc("ocv_importar", { p_token: S.token, p_arquivo: nome + (linhas.length > 400 ? ` [${i / 400 + 1}]` : ""), p_linhas: linhas.slice(i, i + 400) });
+    ["novas", "atualizadas", "iguais", "total", "reabertas"].forEach(k => tot[k] += (r[k] || 0));
+  }
+  const antesAb = new Set(abertas().map(o => o.numero));
+  await carregar();
+  tot.fechadas = finalizadas().filter(o => antesAb.has(o.numero)).length;
+  return tot;
+}
+function resumoImport(tot) {
+  return `<div class="stats"><span class="pill p-green">${tot.novas} novas</span><span class="pill p-blue">${tot.atualizadas} atualizadas</span><span class="pill p-gray">${tot.iguais} sem mudança (ignoradas)</span>${tot.reabertas ? `<span class="pill p-red">↺ ${tot.reabertas} reabertura${tot.reabertas > 1 ? "s" : ""} detectada${tot.reabertas > 1 ? "s" : ""}</span>` : ""}${tot.fechadas ? `<span class="pill p-purple">${tot.fechadas} fecharam desde a última</span>` : ""}</div>`;
+}
 async function importarArquivo(file) {
   const out = document.getElementById("impRes");
   out.innerHTML = `<div class="card" style="margin-top:12px"><div class="spinner"></div><p style="text-align:center">Lendo ${esc(file.name)}…</p></div>`;
   try {
-    const rows = await lerTabela(file);
-    const hi = rows.findIndex(r => r.some(c => norm(c) === "NUMERO DA OCORRENCIA"));
-    if (hi < 0) throw new Error("Não encontrei a coluna “Número da ocorrência”. É a planilha certa?");
-    const hdr = rows[hi].map(norm);
-    const idx = {}; for (const [k, names] of Object.entries(COLS)) idx[k] = hdr.findIndex(h => names.includes(h));
-    const g = (r, k) => idx[k] >= 0 ? (r[idx[k]] ?? "").trim() : "";
-    const linhas = [];
-    for (const r of rows.slice(hi + 1)) {
-      const num = digits(g(r, "numero")); if (!num) continue;
-      const e = parseEndereco(g(r, "endereco"));
-      const nome = g(r, "cliente");
-      linhas.push({
-        numero: +num, estabelecimento: g(r, "estabelecimento"), ticket: g(r, "ticket").replace(/\.0+$/, "") || null,
-        cliente_nome: nome, cliente_codigo: e.codigo || null, chave_cliente: chaveCliente(e.codigo, nome),
-        endereco_raw: g(r, "endereco"), ponto_entrega: e.ponto, bairro: e.bairro, cidade: e.cidade, uf: e.uf,
-        subclassificacao: g(r, "sub"), abertura: parseDataBR(g(r, "abertura")), prazo: parseDataBR(g(r, "prazo")),
-        fechamento: parseDataBR(g(r, "fechamento")), reabertura: +digits(g(r, "reabertura")) || 0, reincidencia: +digits(g(r, "reincidencia")) || 0,
-        solucao: g(r, "solucao") || null, proprietario: g(r, "proprietario"), status: g(r, "status"),
-      });
-    }
-    if (!linhas.length) throw new Error("Nenhuma ocorrência encontrada no arquivo.");
-    out.querySelector("p").textContent = `Enviando ${linhas.length} ocorrências…`;
-    let tot = { novas: 0, atualizadas: 0, iguais: 0, total: 0, reabertas: 0 };
-    // envia em blocos para não estourar o limite
-    for (let i = 0; i < linhas.length; i += 400) {
-      const r = await rpc("ocv_importar", { p_token: S.token, p_arquivo: file.name + (linhas.length > 400 ? ` [${i / 400 + 1}]` : ""), p_linhas: linhas.slice(i, i + 400) });
-      ["novas", "atualizadas", "iguais", "total", "reabertas"].forEach(k => tot[k] += (r[k] || 0));
-    }
-    const antesAb = new Set(abertas().map(o => o.numero));
-    await carregar();
-    const fechadasAgora = finalizadas().filter(o => antesAb.has(o.numero)).length;
+    const linhas = rowsParaLinhas(await lerTabela(file));
+    const tot = await enviarLinhas(linhas, file.name, m => { const p = out.querySelector("p"); if (p) p.textContent = m; });
     render();
     document.getElementById("impRes").innerHTML = `<div class="card" style="margin-top:12px">
-      <b style="font-size:16px">✅ Importação concluída</b>
-      <div class="stats"><span class="pill p-green">${tot.novas} novas</span><span class="pill p-blue">${tot.atualizadas} atualizadas</span><span class="pill p-gray">${tot.iguais} sem mudança (ignoradas)</span>${tot.reabertas ? `<span class="pill p-red">↺ ${tot.reabertas} reabertura${tot.reabertas > 1 ? "s" : ""} detectada${tot.reabertas > 1 ? "s" : ""}</span>` : ""}${fechadasAgora ? `<span class="pill p-purple">${fechadasAgora} fecharam desde a última</span>` : ""}</div>
+      <b style="font-size:16px">✅ Importação concluída</b>${resumoImport(tot)}
       <button class="btn block" onclick="go('inicio')">Ver meu painel</button></div>`;
   } catch (e) {
     out.innerHTML = `<div class="card" style="margin-top:12px;color:var(--red)">⚠️ ${esc(e.message)}</div>`;
   }
+}
+
+/* ---------------- importação automática (Salesforce → sistema) ----------------
+   A aba do Salesforce abre esta página com #receber e envia o relatório exportado
+   por postMessage. Só aceita mensagens vindas de domínios do Salesforce e com login ativo. */
+const ORIGENS_SF = /^https:\/\/[a-z0-9.-]+\.(salesforce|force|visualforce|salesforce-setup|lightning\.force)\.com$/i;
+S.ultimoAuto = null;
+window.addEventListener("message", async ev => {
+  const d = ev.data || {};
+  if (d.tipo !== "ocv-planilha" || !ORIGENS_SF.test(ev.origin)) return;
+  const responder = msg => { try { ev.source && ev.source.postMessage({ tipo: "ocv-resultado", ...msg }, ev.origin); } catch (e) {} };
+  if (!S.token) return responder({ ok: false, erro: "Sistema sem login neste navegador. Entre em www.ddsinovacao.com.br/ocorrencias." });
+  try {
+    const linhas = rowsParaLinhas(linhasDeTexto(d.texto));
+    const nome = "Salesforce automático " + new Date().toLocaleString("pt-BR");
+    const tot = await enviarLinhas(linhas, nome);
+    S.ultimoAuto = { em: new Date(), ...tot };
+    render(); toast(`Atualizado pelo Salesforce: ${tot.novas} novas, ${tot.atualizadas} atualizadas`, 5000);
+    responder({ ok: true, ...tot, linhas: linhas.length });
+  } catch (e) { responder({ ok: false, erro: e.message }); }
+});
+if (location.hash === "#receber" && window.opener) {
+  const avisar = () => { try { window.opener.postMessage({ tipo: "ocv-pronto", logado: !!S.token }, "*"); } catch (e) {} };
+  setTimeout(avisar, 1500); setTimeout(avisar, 4000);
 }
 
 /* ---------------- boot ---------------- */
