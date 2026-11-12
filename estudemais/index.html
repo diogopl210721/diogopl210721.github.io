@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=17">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -132,15 +132,15 @@
     <div class="brand side"><img class="marca-s" src="marca/simbolo-256.webp" alt="" width="40" height="34">Estude<span class="up">Up</span></div>
     <span class="sidebar-tagline">seu próximo nível começa aqui</span>
     <nav class="sidebar-nav">
-      <button class="nav-item side-item" data-s="home" onclick="verHoje()"><svg class="ico"><use class="ic-l" href="#i-hoje"/><use class="ic-f" href="#i-hoje-f"/></svg><span>Hoje</span></button>
-      <button class="nav-item side-item" data-s="materias" onclick="verMaterias()"><svg class="ico"><use class="ic-l" href="#i-materias"/><use class="ic-f" href="#i-materias-f"/></svg><span>Matérias</span></button>
-      <button class="nav-item side-item" data-s="tutor" onclick="verTutor()"><svg class="ico"><use class="ic-l" href="#i-tutor"/><use class="ic-f" href="#i-tutor-f"/></svg><span>Tutor</span></button>
-      <button class="nav-item side-item" data-s="biblioteca" onclick="verBiblioteca()"><svg class="ico"><use class="ic-l" href="#i-biblioteca"/><use class="ic-f" href="#i-biblioteca-f"/></svg><span>Biblioteca</span></button>
-      <button class="nav-item side-item" data-s="comunidade" onclick="verComunidade()"><svg class="ico"><use class="ic-l" href="#i-comunidade"/><use class="ic-f" href="#i-comunidade-f"/></svg><span>Comunidade</span></button>
-      <span class="grupo-nav">praticar</span>
-      <button class="nav-item side-item" data-s="enem" onclick="verEnem()"><svg class="ico"><use href="#i-enem"/></svg><span>ENEM e redação</span></button>
-      <button class="nav-item side-item" data-s="ingles" onclick="verIngles()"><svg class="ico"><use href="#i-site"/></svg><span>Aprenda Inglês</span></button>
-      <button class="nav-item side-item" data-s="liga" onclick="verLiga()"><svg class="ico"><use href="#i-liga"/></svg><span>Liga</span></button>
+      <button class="nav-item side-item so-aluno" data-s="home" onclick="verHoje()"><svg class="ico"><use class="ic-l" href="#i-hoje"/><use class="ic-f" href="#i-hoje-f"/></svg><span>Hoje</span></button>
+      <button class="nav-item side-item so-aluno" data-s="materias" onclick="verMaterias()"><svg class="ico"><use class="ic-l" href="#i-materias"/><use class="ic-f" href="#i-materias-f"/></svg><span>Matérias</span></button>
+      <button class="nav-item side-item so-aluno" data-s="tutor" onclick="verTutor()"><svg class="ico"><use class="ic-l" href="#i-tutor"/><use class="ic-f" href="#i-tutor-f"/></svg><span>Tutor</span></button>
+      <button class="nav-item side-item so-aluno" data-s="biblioteca" onclick="verBiblioteca()"><svg class="ico"><use class="ic-l" href="#i-biblioteca"/><use class="ic-f" href="#i-biblioteca-f"/></svg><span>Biblioteca</span></button>
+      <button class="nav-item side-item so-aluno" data-s="comunidade" onclick="verComunidade()"><svg class="ico"><use class="ic-l" href="#i-comunidade"/><use class="ic-f" href="#i-comunidade-f"/></svg><span>Comunidade</span></button>
+      <span class="grupo-nav so-aluno">praticar</span>
+      <button class="nav-item side-item so-aluno" data-s="enem" onclick="verEnem()"><svg class="ico"><use href="#i-enem"/></svg><span>ENEM e redação</span></button>
+      <button class="nav-item side-item so-aluno" data-s="ingles" onclick="verIngles()"><svg class="ico"><use href="#i-site"/></svg><span>Aprenda Inglês</span></button>
+      <button class="nav-item side-item so-aluno" data-s="liga" onclick="verLiga()"><svg class="ico"><use href="#i-liga"/></svg><span>Liga</span></button>
       <button class="nav-item side-item" data-s="grupos" onclick="verGrupos()"><svg class="ico"><use href="#i-grupos"/></svg><span>Turmas e grupos</span></button>
       <span class="grupo-nav">escolas</span>
       <button class="nav-item side-item" data-s="oportunidades" onclick="verOportunidades()"><svg class="ico"><use href="#i-vitrine"/></svg><span>Oportunidades</span></button>
@@ -149,7 +149,7 @@
       <button class="nav-item side-item" data-s="criador" id="side-criador" hidden onclick="verCriador()"><svg class="ico"><use href="#i-estrela"/></svg><span>Painel do criador</span></button>
     </nav>
     <div class="sidebar-foot">
-      <div class="energy-pill" id="sidebar-energia" title="gerações de IA restantes hoje">7</div>
+      <div class="energy-pill so-aluno" id="sidebar-energia" title="gerações de IA restantes hoje">7</div>
       <div class="sidebar-credit">© 2026 Diogo Soares · DDS Inovação</div>
     </div>
   </aside>
@@ -868,6 +868,7 @@
     <div class="sheet">
       <div class="topbar"><button class="back-btn" onclick="voltar(voltarDaMinhaEscola)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2 id="me-nome">Minha escola</h2><span class="hand muted small" id="me-meta"></span></div>
         <div class="acoes"><button class="back-btn" onclick="verPaginaDaMinhaEscola()" aria-label="ver a página da escola"><svg class="ico"><use href="#i-olho"/></svg></button></div></div>
+      <div class="so-gestor gestor-nav"><button class="ghost-btn" onclick="verGrupos()"><svg class="ico"><use href="#i-grupos"/></svg>Turmas</button><button class="ghost-btn" onclick="verOportunidades()"><svg class="ico"><use href="#i-vitrine"/></svg>Vitrine</button><button class="ghost-btn" onclick="verPerfil()"><svg class="ico"><use href="#i-perfil"/></svg>Perfil</button></div>
       <div id="me-escolhe"></div>
       <div class="chips-rolam abas-escola" id="me-abas" role="tablist" aria-label="partes do painel da escola"></div>
       <div id="me-conteudo"><div class="loading">carregando...</div></div>
@@ -924,9 +925,9 @@
         <div class="big-avatar" id="perfil-avatar">?</div>
         <div><h1 id="perfil-nome">carregando...</h1><span class="hand" id="perfil-meta">—</span></div>
       </div>
-      <div class="xp-row"><span id="perfil-xp">0 XP</span><span id="perfil-proximo-nivel">—</span></div>
-      <div class="xp-track grande"><div class="xp-fill" id="perfil-xp-fill" style="width:0%;"></div></div>
-      <div class="stat-row">
+      <div class="xp-row so-aluno"><span id="perfil-xp">0 XP</span><span id="perfil-proximo-nivel">—</span></div>
+      <div class="xp-track grande so-aluno"><div class="xp-fill" id="perfil-xp-fill" style="width:0%;"></div></div>
+      <div class="stat-row so-aluno">
         <div class="stat-box"><div class="n" id="perfil-streak">0</div><div class="l">sequência</div></div>
         <div class="stat-box"><div class="n" id="perfil-maior">0</div><div class="l">maior sequência</div></div>
         <div class="stat-box"><div class="n" id="perfil-divisao">🥉</div><div class="l">divisão</div></div>
@@ -952,12 +953,12 @@
         <label for="ce-codigo">código de professor</label><input type="text" id="ce-codigo" class="codigo-input" maxlength="8" placeholder="KX9F2A">
         <button class="go-btn" id="btn-ce-codigo" onclick="entrarEscolaCodigo()">Entrar na escola</button>
       </div>
-      <div class="new-group-row"><button class="ghost-btn" onclick="abrirAutor(estado.usuarioId)"><svg class="ico"><use href="#i-biblioteca"/></svg>meu perfil público</button></div>
+      <div class="new-group-row so-aluno"><button class="ghost-btn" onclick="abrirAutor(estado.usuarioId)"><svg class="ico"><use href="#i-biblioteca"/></svg>meu perfil público</button></div>
 
-      <div class="section-title"><h2>Conquistas</h2><span class="hand" id="perfil-album-n"></span></div>
-      <div class="badges" id="perfil-badges"></div>
+      <div class="section-title so-aluno"><h2>Conquistas</h2><span class="hand" id="perfil-album-n"></span></div>
+      <div class="badges so-aluno" id="perfil-badges"></div>
 
-      <div class="card">
+      <div class="card so-aluno">
         <h3>Minha rotina de estudo</h3>
         <div class="step-label">dias que eu estudo</div>
         <div class="chip-toggle" id="perfil-dias"></div>
@@ -1074,18 +1075,18 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=16"></script>
-<script src="efeitos.js?v=16"></script>
-<script src="app.js?v=16"></script>
-<script src="voz.js?v=16"></script>
-<script src="biblioteca.js?v=16"></script>
-<script src="tutor.js?v=16"></script>
-<script src="comunidade.js?v=16"></script>
-<script src="criador.js?v=16"></script>
-<script src="vitrine.js?v=16"></script>
-<script src="escolas.js?v=16"></script>
-<script src="patrocinio.js?v=16"></script>
-<script src="ingles-conteudo.js?v=16"></script>
-<script src="ingles.js?v=16"></script>
+<script src="config.js?v=17"></script>
+<script src="efeitos.js?v=17"></script>
+<script src="app.js?v=17"></script>
+<script src="voz.js?v=17"></script>
+<script src="biblioteca.js?v=17"></script>
+<script src="tutor.js?v=17"></script>
+<script src="comunidade.js?v=17"></script>
+<script src="criador.js?v=17"></script>
+<script src="vitrine.js?v=17"></script>
+<script src="escolas.js?v=17"></script>
+<script src="patrocinio.js?v=17"></script>
+<script src="ingles-conteudo.js?v=17"></script>
+<script src="ingles.js?v=17"></script>
 </body>
 </html>

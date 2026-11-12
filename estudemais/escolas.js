@@ -136,8 +136,21 @@ async function carregarMinhasEscolas() {
   try { ESC.minhas = await rpc('be_minhas_escolas'); } catch (_) { ESC.minhas = []; }
   const side = $('side-escola');
   if (side) side.hidden = !ESC.minhas.length;
+  aplicarModoGestor();
   return ESC.minhas;
 }
+
+/* coordenação da escola: o app abre no painel da escola e esconde o que é de aluno (plano, sequência, lições).
+   Professor e a conta do criador continuam com o app completo. */
+function escolaQueGere() { return (ESC.minhas || []).find((e) => e.papel === 'gestor') || null; }
+function modoGestor() { return !!escolaQueGere() && !estado.criador && estado.papel !== 'aluno'; }
+function aplicarModoGestor() {
+  const ativo = modoGestor();
+  document.body.classList.toggle('modo-gestor', ativo);
+  if (ativo && (telaAtual() === 'home' || !telaAtual())) verMinhaEscola(escolaQueGere().id);
+}
+const verHojeDoAluno = verHoje;
+verHoje = function () { if (modoGestor()) return verMinhaEscola(escolaQueGere().id); return verHojeDoAluno(); };
 
 async function carregarEscolasPerfil() {
   const alvo = $('perfil-escola');
@@ -300,7 +313,41 @@ function caixaNumero(v, um, varios, destaque) {
   return `<div class="num-box${destaque ? ' destaque' : ''}"><b>${Number(v || 0).toLocaleString('pt-BR')}</b><span>${Number(v) === 1 ? um : varios}</span></div>`;
 }
 
+async function carregarVisaoEscola(instId) {
+  const alvo = $('visao-escola');
+  if (!alvo) return;
+  let v;
+  try { v = await rpc('be_escola_visao', { p_inst: instId }); } catch (err) { alvo.innerHTML = ''; return; }
+  const maior = Math.max(1, ...v.series.map((x) => x.alunos));
+  alvo.innerHTML = `
+    <div class="nums-grupo"><div class="rot">Sua escola no app</div><div class="nums-grade">
+      ${caixaNumero(v.alunos, 'aluno', 'alunos', true)}
+      ${caixaNumero(v.ativos_7d, 'estudou na semana', 'estudaram na semana')}
+      ${caixaNumero(v.turmas, 'turma', 'turmas')}
+      ${caixaNumero(v.professores, 'professor', 'professores')}
+    </div></div>
+    ${v.series.length ? `<div class="card"><div class="card-head"><h3>Alunos por série</h3><span class="hand">estudaram na semana</span></div>
+      <div class="visao-series">${v.series.map((x) => `<div class="visao-serie"><b>${esc(x.serie)}</b>
+        <span class="barra"><i style="width:${Math.round(100 * x.alunos / maior)}%"></i></span><small>${x.ativos_7d} de ${x.alunos}</small></div>`).join('')}</div>
+      <p class="small muted" style="margin:10px 0 0">Só números. A escola não vê o que cada aluno estuda nem os dados pessoais dele.</p></div>` : ''}`;
+}
+
+function tabelaTurmasResumo(p) {
+  const t = p.turmas || [];
+  if (!t.length) return `<div class="card"><h3>Turmas</h3><p class="small muted">Nenhuma turma ainda. Os professores criam as turmas da escola com o código de professor.</p></div>`;
+  return `<div class="card"><div class="card-head"><h3>Turmas</h3><button class="link-btn" onclick="abaEscola('turmas')">ver todas</button></div>
+    <table class="tabela-escola"><thead><tr><th>Turma</th><th>Professor</th><th>Alunos</th><th>Ativos 7d</th></tr></thead><tbody>
+    ${t.map((x) => `<tr><td>${esc(x.nome)}</td><td>${esc(x.professor || '')}</td><td>${x.alunos}</td><td>${x.ativos_7d}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
 function abaResumo(p) {
+  setTimeout(() => carregarVisaoEscola(p.id), 0);
+  const topo = `<div id="visao-escola"><div class="loading">carregando...</div></div>${tabelaTurmasResumo(p)}`;
+  if (p.modo === 'exclusiva') return topo; // app exclusivo: a escola não está na vitrine, então não há números de vitrine
+  return topo + abaResumoVitrine(p);
+}
+
+function abaResumoVitrine(p) {
   const m = p.metricas || {};
   const ativas = (p.oportunidades || []).filter((o) => o.status === 'publicada' && !o.vencida).length;
   const porOp = (m.por_oportunidade || []).filter((o) => o.ver || o.cliques);
@@ -324,10 +371,8 @@ function abaResumo(p) {
     ${porOp.length ? `<div class="card"><div class="card-head"><h3>Por oportunidade</h3><span class="hand">no período</span></div>
       <table class="tabela-escola"><thead><tr><th>Oportunidade</th><th>Abertas</th><th>Cliques</th></tr></thead><tbody>
       ${porOp.map((o) => `<tr><td>${esc(o.titulo)}</td><td>${o.ver}</td><td>${o.cliques}</td></tr>`).join('')}</tbody></table></div>` : ''}
-    <div class="nums-grupo"><div class="rot">Escola no EstudeUp</div><div class="nums-grade">
-      ${caixaNumero(p.alunos_total, 'aluno nas turmas', 'alunos nas turmas', true)}
-      ${caixaNumero((p.turmas || []).length, 'turma', 'turmas')}
-      ${caixaNumero(ativas, 'oportunidade no ar', 'oportunidades no ar')}
+    <div class="nums-grupo"><div class="rot">Oportunidades</div><div class="nums-grade">
+      ${caixaNumero(ativas, 'oportunidade no ar', 'oportunidades no ar', true)}
     </div></div>`;
 }
 

@@ -365,6 +365,7 @@ async function entrarComEmailSenha() {
     await criarPerfilSeNaoExistir(data.user);
     await carregarCriador();
     if (typeof aplicarMarca === 'function') await aplicarMarca();
+    if (typeof carregarMinhasEscolas === 'function') await carregarMinhasEscolas();
     verHoje();
   } catch (err) {
     const msg = err.message === 'Invalid login credentials' ? 'e-mail ou senha errados'
@@ -1992,7 +1993,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
       await criarPerfilSeNaoExistir(data.session.user);
       await carregarCriador();
     if (typeof aplicarMarca === 'function') await aplicarMarca();
-      if (typeof carregarMinhasEscolas === 'function') carregarMinhasEscolas();
+      if (typeof carregarMinhasEscolas === 'function') await carregarMinhasEscolas();
       verHoje();
     } catch (err) {
       falhou(err, 'Não consegui carregar sua conta');

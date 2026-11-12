@@ -1531,3 +1531,16 @@ body.marca-escola .greet .brand .marca-com { display: none; }
   body.marca-escola .brand.side .marca-esc { width: 34px; height: 34px; }
   body.marca-escola .sidebar-tagline { margin-bottom: 14px; }
 }
+/* ===== coordenação da escola: só administra, não estuda ===== */
+.so-gestor { display: none !important; }
+body.modo-gestor .so-gestor { display: flex !important; }
+body.modo-gestor .so-aluno { display: none !important; }
+body.modo-gestor .navbar, body.modo-gestor .gota-nav { display: none !important; }
+body.modo-gestor #screen-minha-escola .topbar > .back-btn { visibility: hidden; width: 0; padding: 0; margin: 0; border: 0; }
+.gestor-nav { gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+@media (min-width: 1024px) { body.modo-gestor .gestor-nav { display: none !important; } }
+.visao-series { display: flex; flex-direction: column; gap: 8px; }
+.visao-serie { display: grid; grid-template-columns: 110px 1fr 70px; gap: 10px; align-items: center; font-size: 14px; }
+.visao-serie .barra { height: 12px; border-radius: 999px; background: var(--borda); overflow: hidden; }
+.visao-serie .barra i { display: block; height: 100%; background: var(--marca); border-radius: 999px; }
+.visao-serie small { color: var(--texto-2); text-align: right; }
