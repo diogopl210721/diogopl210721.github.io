@@ -6,11 +6,11 @@ const Voz = (() => {
 
   function podeOuvir() { return !!Reconhecedor; }
 
-  function ouvir({ onParcial, onFim, onErro } = {}) {
+  function ouvir({ onParcial, onFim, onErro, lang = 'pt-BR' } = {}) {
     if (!Reconhecedor) { if (onErro) onErro(new Error('esse navegador não reconhece voz, responde digitando')); return null; }
     parar();
     rec = new Reconhecedor();
-    rec.lang = 'pt-BR';
+    rec.lang = lang;
     rec.interimResults = true;
     rec.continuous = false;
     rec.maxAlternatives = 1;
@@ -42,11 +42,13 @@ const Voz = (() => {
   // ---------- leitura em voz alta ----------
   let falando = null;
   function podeFalar() { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'; }
-  function vozPt() {
+  function vozDe(lang) {
     const vozes = speechSynthesis.getVoices();
-    return vozes.find((v) => /pt[-_]BR/i.test(v.lang)) || vozes.find((v) => /^pt/i.test(v.lang)) || null;
+    const base = lang.slice(0, 2);
+    const re = new RegExp(lang.replace('-', '[-_]'), 'i');
+    return vozes.find((v) => re.test(v.lang)) || vozes.find((v) => v.lang.toLowerCase().startsWith(base)) || null;
   }
-  function falar(texto, { onFim } = {}) {
+  function falar(texto, { onFim, lang = 'pt-BR', rate = 1.03 } = {}) {
     if (!podeFalar()) return false;
     pararFala();
     const limpo = String(texto || '').replace(/[#*_>`|]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -60,10 +62,10 @@ const Voz = (() => {
       if (falando !== sessao) return;
       if (i >= pedacos.length) { falando = null; if (onFim) onFim(); return; }
       const u = new SpeechSynthesisUtterance(pedacos[i++].trim());
-      u.lang = 'pt-BR';
-      const v = vozPt();
+      u.lang = lang;
+      const v = vozDe(lang);
       if (v) u.voice = v;
-      u.rate = 1.03;
+      u.rate = rate;
       u.onend = proximo;
       u.onerror = proximo;
       speechSynthesis.speak(u);

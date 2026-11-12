@@ -20,7 +20,7 @@
     if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=15">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -139,6 +139,7 @@
       <button class="nav-item side-item" data-s="comunidade" onclick="verComunidade()"><svg class="ico"><use class="ic-l" href="#i-comunidade"/><use class="ic-f" href="#i-comunidade-f"/></svg><span>Comunidade</span></button>
       <span class="grupo-nav">praticar</span>
       <button class="nav-item side-item" data-s="enem" onclick="verEnem()"><svg class="ico"><use href="#i-enem"/></svg><span>ENEM e redação</span></button>
+      <button class="nav-item side-item" data-s="ingles" onclick="verIngles()"><svg class="ico"><use href="#i-site"/></svg><span>Aprenda Inglês</span></button>
       <button class="nav-item side-item" data-s="liga" onclick="verLiga()"><svg class="ico"><use href="#i-liga"/></svg><span>Liga</span></button>
       <button class="nav-item side-item" data-s="grupos" onclick="verGrupos()"><svg class="ico"><use href="#i-grupos"/></svg><span>Turmas e grupos</span></button>
       <span class="grupo-nav">escolas</span>
@@ -246,6 +247,7 @@
         </div>
       </header>
 
+      <div id="home-parceiras"></div>
       <div id="install-wrap"></div>
 
       <section class="streak-card missao" aria-label="sua sequência e o dia de hoje">
@@ -268,6 +270,7 @@
         <button class="atalho" onclick="novaRedacao()"><img class="adesivo" src="adesivos/lapis.webp" alt="">Redação</button>
         <button class="atalho" onclick="verLiga()"><img class="adesivo" src="adesivos/trofeu.webp" alt="">Liga</button>
         <button class="atalho" onclick="verGrupos()"><img class="adesivo" src="adesivos/escola.webp" alt="">Turmas</button>
+        <button class="atalho" onclick="verIngles()"><img class="adesivo" src="adesivos/globo.webp" alt="">Inglês</button>
       </nav>
 
       <div class="card" id="home-plano">
@@ -438,6 +441,41 @@
     </div>
   </section>
 
+  <section class="screen" id="screen-ingles">
+    <div class="sheet">
+      <div class="topbar"><button class="back-btn" onclick="voltar(verHoje)" aria-label="voltar"><svg class="ico"><use href="#i-voltar"/></svg></button><div><h2>Aprenda Inglês</h2><span class="hand muted small">um pouquinho por dia</span></div></div>
+      <div class="ing-resumo" id="ing-resumo"></div>
+      <div class="stack-gap" id="ing-acoes"></div>
+      <div id="ing-trilha"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-ingles-licao">
+    <div class="sheet ing-sheet">
+      <div class="ing-topo">
+        <button class="back-btn" onclick="sairIngles()" aria-label="sair da lição">✕</button>
+        <div class="ing-barra"><div id="ing-progresso"></div></div>
+        <span class="ing-vidas" id="ing-vidas"></span>
+      </div>
+      <p class="muted small ing-titulo-licao" id="ing-titulo-licao"></p>
+      <div id="ing-corpo"></div>
+      <div class="ing-rodape" id="ing-rodape"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-ingles-fim">
+    <div class="sheet">
+      <div class="done-hero"><img class="adesivo heroi" src="adesivos/globo.webp" alt=""><h2 id="ingfim-titulo">Lição completa!</h2><p class="hand muted" id="ingfim-sub"></p></div>
+      <div class="stat-row three">
+        <div class="stat-box"><div class="n" id="ingfim-acertos">0</div><div class="l">acertos</div></div>
+        <div class="stat-box"><div class="n" id="ingfim-pct">0%</div><div class="l">aproveitamento</div></div>
+        <div class="stat-box"><div class="n" id="ingfim-xp">0</div><div class="l">XP ganho</div></div>
+      </div>
+      <div id="inglesfim-patrocinio"></div>
+      <div class="stack-gap" id="ingfim-botoes"></div>
+    </div>
+  </section>
+
   <section class="screen" id="screen-quiz">
     <div class="sheet">
       <div class="topbar"><button class="back-btn" onclick="sairDoQuiz()" aria-label="sair do quiz"><svg class="ico"><use href="#i-voltar"/></svg></button><h2 id="quiz-titulo">Quiz</h2></div>
@@ -460,6 +498,7 @@
         <div class="stat-box"><div class="n" id="quizfim-xp">0</div><div class="l">XP ganho</div></div>
       </div>
       <div class="card" id="quizfim-erros-wrap" hidden><h3>Pra revisar</h3><div id="quizfim-erros"></div></div>
+      <div id="quizfim-patrocinio"></div>
       <div class="stack-gap">
         <button class="btn coral full" onclick="refazerQuiz()">Fazer de novo</button>
         <button class="btn full" onclick="abrirMateria(estado.materiaId, 'plano')">Voltar pra matéria</button>
@@ -508,6 +547,7 @@
         <div class="stat-box"><div class="n" id="cardsfim-lembrou">0%</div><div class="l">lembrou</div></div>
         <div class="stat-box"><div class="n" id="cardsfim-xp">0</div><div class="l">XP ganho</div></div>
       </div>
+      <div id="cardsfim-patrocinio"></div>
       <div class="stack-gap"><button class="btn coral full" onclick="verHoje()">Voltar pro Hoje</button></div>
     </div>
   </section>
@@ -1034,15 +1074,18 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=14"></script>
-<script src="efeitos.js?v=14"></script>
-<script src="app.js?v=14"></script>
-<script src="voz.js?v=14"></script>
-<script src="biblioteca.js?v=14"></script>
-<script src="tutor.js?v=14"></script>
-<script src="comunidade.js?v=14"></script>
-<script src="criador.js?v=14"></script>
-<script src="vitrine.js?v=14"></script>
-<script src="escolas.js?v=14"></script>
+<script src="config.js?v=15"></script>
+<script src="efeitos.js?v=15"></script>
+<script src="app.js?v=15"></script>
+<script src="voz.js?v=15"></script>
+<script src="biblioteca.js?v=15"></script>
+<script src="tutor.js?v=15"></script>
+<script src="comunidade.js?v=15"></script>
+<script src="criador.js?v=15"></script>
+<script src="vitrine.js?v=15"></script>
+<script src="escolas.js?v=15"></script>
+<script src="patrocinio.js?v=15"></script>
+<script src="ingles-conteudo.js?v=15"></script>
+<script src="ingles.js?v=15"></script>
 </body>
 </html>

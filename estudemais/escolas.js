@@ -779,6 +779,12 @@ function htmlEscolaAdm(e) {
       <span class="small muted">${esc(Vitrine.TIPOS[e.tipo] || '')}${e.cidade ? ' · ' + esc(e.cidade) + (e.uf ? '-' + esc(e.uf) : '') : ''} · /${esc(e.slug)}</span></div>
       <span class="tag ${st === 'aprovada' ? 'ok' : st === 'pendente' ? 'leve' : ''}">${esc(STATUS_ESCOLA[st] || st)}</span></div>
     ${e.demo ? '<span class="selo-vitrine demo">demonstração</span>' : ''}
+    <div class="modo-escola">
+      <b>Modelo</b>
+      <label><input type="radio" name="modo-${e.id}" ${e.modo !== 'exclusiva' ? 'checked' : ''} onchange="modoEscolaAdm('${e.id}', 'parceira')"> Patrocinadora <small>aparece pra todos os alunos do EstudeUp</small></label>
+      <label><input type="radio" name="modo-${e.id}" ${e.modo === 'exclusiva' ? 'checked' : ''} onchange="modoEscolaAdm('${e.id}', 'exclusiva')"> App exclusivo <small>marca da escola pros alunos dela, sem outras escolas</small></label>
+      ${e.modo === 'exclusiva' ? `<span class="small">Link dos alunos: <a href="?escola=${esc(e.slug)}" target="_blank">${esc(location.origin + location.pathname)}?escola=${esc(e.slug)}</a></span>` : ''}
+    </div>
     <dl class="escola-dados compacto">
       <dt>Gestor</dt><dd>${(e.gestores || []).map((g) => `${esc(g.nome)}${g.email ? ` · <a href="mailto:${esc(g.email)}">${esc(g.email)}</a>` : ''}`).join('<br>') || 'nenhum'}</dd>
       <dt>Contato</dt><dd>${[e.whatsapp && `WhatsApp ${esc(e.whatsapp)}`, e.email && esc(e.email)].filter(Boolean).join(' · ') || '—'}</dd>
@@ -802,6 +808,16 @@ function htmlEscolaAdm(e) {
     </div>
     <div id="adm-extra-${e.id}"></div>
   </div>`;
+}
+
+async function modoEscolaAdm(id, modo) {
+  const e = ESC.com.escolasLista.find((x) => x.id === id) || {};
+  const ok = await confirmar(modo === 'exclusiva'
+    ? `Passar ${e.nome} pra app exclusivo?\nOs alunos dela vão ver a marca da escola e nenhuma outra escola. Ela sai da vitrine pública.`
+    : `Passar ${e.nome} pra patrocinadora?\nEla volta pra vitrine e aparece pra todos os alunos.`, { sim: 'Trocar' });
+  if (!ok) return verComercial('escolas');
+  try { await rpc('be_comercial_modo_escola', { p_inst: id, p_modo: modo, p_nome_app: null }); toast('Modelo trocado'); ESC.filtros = null; ESC.home = null; if (typeof PAT !== 'undefined') PAT.escolas = null; verComercial('escolas'); }
+  catch (err) { falhou(err); verComercial('escolas'); }
 }
 
 async function statusEscolaAdm(id, status, btn) {

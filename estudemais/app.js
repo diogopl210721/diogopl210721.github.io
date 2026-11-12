@@ -138,14 +138,16 @@ const NAV_DE = {
   biblioteca: 'biblioteca', resumo: 'biblioteca', publicar: 'biblioteca', autor: 'biblioteca',
   comunidade: 'comunidade', sala: 'comunidade', grupos: 'comunidade', painel: 'comunidade', criador: 'home',
   oportunidades: 'home', escola: 'home', 'minha-escola': 'home', comercial: 'home',
+  ingles: 'home', 'ingles-licao': 'home', 'ingles-fim': 'home',
 };
 const LADO_DE = {
   ...NAV_DE, enem: 'enem', simulado: 'enem', 'simulado-fim': 'enem', redacao: 'enem',
   liga: 'liga', grupos: 'grupos', painel: 'grupos', perfil: 'perfil', criador: 'criador',
   oportunidades: 'oportunidades', escola: 'oportunidades', 'minha-escola': 'minha-escola', comercial: 'criador',
+  ingles: 'ingles', 'ingles-licao': 'ingles', 'ingles-fim': 'ingles',
 };
 const SEM_NAV = ['login', 'cadastro', 'recuperar', 'codigo'];
-const TELAS_CHAT = ['tutor-chat', 'sala'];
+const TELAS_CHAT = ['ingles-licao', 'tutor-chat', 'sala'];
 
 function telaAtual() {
   const a = document.querySelector('.screen.active');
@@ -154,6 +156,7 @@ function telaAtual() {
 
 // profundidade de cada tela: entrar mais fundo desliza da direita, voltar desliza da esquerda, trocar de aba só funde
 const NIVEL_TELA = {
+  ingles: 1, 'ingles-licao': 2, 'ingles-fim': 3,
   estudo: 2,
   login: 0, cadastro: 1, recuperar: 1, codigo: 2,
   home: 0, materias: 0, tutor: 0, biblioteca: 0, comunidade: 0,
@@ -165,7 +168,7 @@ const NIVEL_TELA = {
 
 // histórico de telas: o "voltar" volta UM passo (a tela de onde a pessoa veio), não pro início
 const ABAS = ['home', 'materias', 'tutor', 'biblioteca', 'comunidade'];
-const TELAS_DE_PASSAGEM = ['upload', 'pronto', 'quiz', 'quiz-fim', 'cards', 'cards-fim', 'simulado', 'simulado-fim', 'publicar'];
+const TELAS_DE_PASSAGEM = ['ingles-licao', 'ingles-fim', 'upload', 'pronto', 'quiz', 'quiz-fim', 'cards', 'cards-fim', 'simulado', 'simulado-fim', 'publicar'];
 const pilha = [];
 function lembrarTela(de, nome, opts) {
   if (opts.voltando || !de || de === nome) return;
@@ -210,6 +213,7 @@ function go(nome, opts = {}) {
   if (nome !== 'sala' && window.pararSala) window.pararSala();
   if (typeof Voz !== 'undefined') Voz.pararFala();
   moverGota();
+  if (typeof aoMostrarTela === 'function') aoMostrarTela(nome);
 }
 
 // a "gota" atrás da aba ativa desliza até a aba tocada
@@ -360,6 +364,7 @@ async function entrarComEmailSenha() {
     if (error) throw error;
     await criarPerfilSeNaoExistir(data.user);
     await carregarCriador();
+    if (typeof aplicarMarca === 'function') await aplicarMarca();
     verHoje();
   } catch (err) {
     const msg = err.message === 'Invalid login credentials' ? 'e-mail ou senha errados'
@@ -461,6 +466,7 @@ async function carregarHoje() {
     pintarAvatarHome();
     if (typeof carregarHomeBiblio === 'function') { carregarHomeBiblio(); contarNaoLidas(); }
     if (typeof carregarHomeOportunidades === 'function') carregarHomeOportunidades();
+    if (typeof carregarCarrosselParceiras === 'function') carregarCarrosselParceiras();
 
     const pend = r.cards_pendentes || 0;
     const novos = Math.min(r.cards_novos || 0, 20);
@@ -597,6 +603,7 @@ function recarregarTelaAtual() {
     sala: () => com.salaId && abrirSala(com.salaId), painel: () => estado.grupoId && abrirPainel(estado.grupoId),
     criador: () => verCriador(), 'minha-escola': () => verMinhaEscola(), comercial: () => verComercial(),
     estudo: () => estado.estudoTopico && abrirEstudoTopico(estado.estudoTopico.id),
+    ingles: () => typeof verIngles === 'function' && verIngles(),
     tutor: () => typeof verTutor === 'function' && verTutor(), comunidade: () => typeof verComunidade === 'function' && verComunidade(),
     oportunidades: () => typeof verOportunidades === 'function' && verOportunidades(),
   };
@@ -1984,6 +1991,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     try {
       await criarPerfilSeNaoExistir(data.session.user);
       await carregarCriador();
+    if (typeof aplicarMarca === 'function') await aplicarMarca();
       if (typeof carregarMinhasEscolas === 'function') carregarMinhasEscolas();
       verHoje();
     } catch (err) {
