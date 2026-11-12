@@ -1524,3 +1524,10 @@ body.marca-escola .brand .marca-com { flex-basis: 100%; margin-top: 6px; }
 body.marca-escola .greet .brand { display: flex; font-size: 15px; margin-bottom: 6px; }
 body.marca-escola .greet .brand .marca-esc { width: 26px; height: 26px; border-radius: 7px; }
 body.marca-escola .greet .brand .marca-com { display: none; }
+/* barra lateral nunca passa da altura da tela (senão a página inteira rola e o conteúdo some embaixo) */
+@media (min-width: 1024px) {
+  .sidebar { position: sticky; top: 0; height: 100dvh; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+  body.marca-escola .brand.side { font-size: 19px; line-height: 1.15; }
+  body.marca-escola .brand.side .marca-esc { width: 34px; height: 34px; }
+  body.marca-escola .sidebar-tagline { margin-bottom: 14px; }
+}
