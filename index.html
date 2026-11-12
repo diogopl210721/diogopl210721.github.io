@@ -1,388 +1,83 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Minhas Ocorrências · Pós-Vendas</title>
-<meta name="theme-color" content="#0b1f3a">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Ocorrências">
-<style>
-:root{
-  --bg:#f3f5f9; --card:#fff; --ink:#0f1b2d; --muted:#64748b; --line:#e3e8ef;
-  --navy:#0b1f3a; --blue:#1d4ed8; --blue-soft:#e8efff;
-  --red:#dc2626; --red-soft:#fde8e8; --orange:#ea580c; --orange-soft:#fff0e5;
-  --yellow:#ca8a04; --yellow-soft:#fef7d6; --green:#16a34a; --green-soft:#e4f6ea;
-  --purple:#7c3aed; --purple-soft:#f1eaff;
-  --r:14px; --shadow:0 1px 2px rgba(15,27,45,.05),0 4px 14px rgba(15,27,45,.06);
-}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
-button,input,select,textarea{font:inherit;color:inherit}
-a{color:inherit}
-.hidden{display:none!important}
-
-/* ---------- login ---------- */
-#login{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(1200px 600px at 20% -10%,#1d4ed8 0,#0b1f3a 55%)}
-.login-card{width:100%;max-width:380px;background:#fff;border-radius:20px;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
-.login-card h1{margin:0 0 4px;font-size:22px}
-.login-card p{margin:0 0 20px;color:var(--muted);font-size:14px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
-.input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;outline:none;transition:border .15s}
-.input:focus{border-color:var(--blue)}
-.pin-row{display:flex;gap:10px}
-.pin-box{width:56px;height:60px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--line);border-radius:12px;outline:none;-webkit-text-security:disc}
-.pin-box:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
-.err{color:var(--red);font-size:13.5px;min-height:20px;margin:4px 0 10px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:12px 16px;font-weight:650;cursor:pointer;background:var(--blue);color:#fff;text-decoration:none;white-space:nowrap}
-.btn.block{width:100%}
-.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
-.btn.soft{background:var(--blue-soft);color:var(--blue)}
-.btn.sm{padding:8px 11px;font-size:13px;border-radius:10px}
-.btn:disabled{opacity:.6;cursor:default}
-
-/* ---------- layout ---------- */
-#app{min-height:100vh}
-.topbar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:12px}
-.topbar .brand{font-weight:750;font-size:16px;letter-spacing:.01em;flex:1;min-width:0}
-.topbar .brand small{display:block;font-weight:500;font-size:12px;opacity:.7}
-.topbar .btn{background:rgba(255,255,255,.12);color:#fff}
-.side{display:none}
-main{padding:16px 14px calc(96px + env(safe-area-inset-bottom));max-width:1180px;margin:0 auto}
-.tabs{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
-.tab{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--muted);padding:6px 0;cursor:pointer;position:relative}
-.tab svg{width:23px;height:23px}
-.tab.on{color:var(--blue)}
-.tab .dot{position:absolute;top:2px;left:calc(50% + 6px);background:var(--red);color:#fff;font-size:10px;border-radius:9px;padding:0 5px;line-height:16px;min-width:16px}
-@media (min-width:900px){
-  .topbar{display:none}
-  .tabs{display:none}
-  #app{display:grid;grid-template-columns:240px 1fr}
-  .side{display:flex;flex-direction:column;position:sticky;top:0;height:100vh;align-self:start;background:var(--navy);color:#fff;padding:22px 14px}
-  .side .brand{font-weight:800;font-size:17px;padding:0 10px 20px}
-  .side .brand small{display:block;font-weight:500;font-size:12px;opacity:.65;margin-top:2px}
-  .side .tab{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;font-size:14.5px;color:rgba(255,255,255,.72);padding:11px 12px;border-radius:10px}
-  .side .tab.on{background:rgba(255,255,255,.12);color:#fff}
-  .side .tab .dot{position:static;margin-left:auto}
-  .side .foot{margin-top:auto;font-size:12.5px;opacity:.7;padding:10px}
-  .side .foot button{background:none;border:0;color:#fff;text-decoration:underline;cursor:pointer;padding:0;font-size:12.5px}
-  main{padding:28px 32px 48px}
-}
-
-/* ---------- common ---------- */
-h2.page{font-size:22px;margin:4px 0 4px}
-.sub{color:var(--muted);font-size:14px;margin:0 0 16px}
-.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
-.grid{display:grid;gap:12px}
-.g2{grid-template-columns:1fr}
-.g4{grid-template-columns:1fr 1fr}
-@media (min-width:700px){.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}}
-.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:22px 2px 10px;display:flex;align-items:center;gap:8px}
-.section-title .count{background:var(--line);color:var(--ink);border-radius:20px;padding:0 8px;font-size:12px}
-.pill{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:2px 9px;font-size:12px;font-weight:650;white-space:nowrap}
-.p-red{background:var(--red-soft);color:var(--red)} .p-orange{background:var(--orange-soft);color:var(--orange)}
-.p-yellow{background:var(--yellow-soft);color:var(--yellow)} .p-green{background:var(--green-soft);color:var(--green)}
-.p-blue{background:var(--blue-soft);color:var(--blue)} .p-purple{background:var(--purple-soft);color:var(--purple)}
-.p-gray{background:#eef1f5;color:#475569}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.toolbar .input{flex:1 1 180px;padding:10px 12px}
-.toolbar select.input{flex:0 1 200px}
-.empty{text-align:center;color:var(--muted);padding:30px 10px}
-
-/* ---------- metas ---------- */
-.goal{display:flex;gap:16px;align-items:center}
-.ring{position:relative;width:118px;height:118px;flex:none}
-.ring svg{transform:rotate(-90deg)}
-.ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring .big{font-size:28px;font-weight:800;line-height:1}
-.ring .of{font-size:12.5px;color:var(--muted);margin-top:3px}
-.goal h3{margin:0 0 4px;font-size:16px}
-.goal .falta{font-size:15px;margin:2px 0}
-.goal .falta b{font-size:20px}
-.goal .hint{color:var(--muted);font-size:13px}
-.goal.star{background:linear-gradient(135deg,#fff 0,#fff 55%,#f4efff 100%)}
-.kpi{padding:14px}
-.kpi .n{font-size:28px;font-weight:800;line-height:1.1}
-.kpi .l{font-size:13px;color:var(--muted);font-weight:600}
-.kpi.red .n{color:var(--red)} .kpi.orange .n{color:var(--orange)} .kpi.green .n{color:var(--green)} .kpi.purple .n{color:var(--purple)}
-.kpi{cursor:pointer;transition:transform .12s}
-.kpi:active{transform:scale(.98)}
-.month-sel{display:flex;align-items:center;gap:8px;margin:0 0 14px}
-.month-sel select{padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-weight:650}
-
-/* ---------- ocorrência cards ---------- */
-.oc{display:flex;gap:12px;background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:14px;margin-bottom:10px;border-left:5px solid var(--line)}
-.oc.s-red{border-left-color:var(--red)} .oc.s-orange{border-left-color:var(--orange)} .oc.s-yellow{border-left-color:var(--yellow)} .oc.s-green{border-left-color:var(--green)} .oc.s-done{border-left-color:#94a3b8}
-.oc .body{flex:1;min-width:0}
-.oc .top{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:4px}
-.oc .name{font-weight:700;font-size:15.5px;margin:2px 0;overflow-wrap:anywhere;cursor:pointer}
-.oc .meta{color:var(--muted);font-size:13px;display:flex;gap:4px 12px;flex-wrap:wrap}
-.oc .meta b{color:var(--ink);font-weight:650}
-.oc .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.oc .due{text-align:right;flex:none;min-width:74px}
-.oc .due .d{font-size:22px;font-weight:800;line-height:1}
-.oc .due .u{font-size:11.5px;color:var(--muted);font-weight:600}
-.oc .chk{width:22px;height:22px;accent-color:var(--blue);margin-top:2px;flex:none}
-.ico{width:16px;height:16px;flex:none}
-
-/* ---------- bars ---------- */
-.bars .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 6px;border-radius:10px;cursor:pointer}
-.bars .row:hover{background:#f6f8fb}
-.bars .row.on{background:var(--blue-soft)}
-.bars .lbl{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bars .val{font-weight:800;font-size:14px}
-.bars .track{grid-column:1/-1;height:8px;background:#eef1f5;border-radius:6px;overflow:hidden}
-.bars .fill{height:100%;background:var(--blue);border-radius:6px}
-.bars .row.rel .fill{background:var(--purple)}
-
-/* ---------- modal ---------- */
-.modal-bg{position:fixed;inset:0;background:rgba(11,31,58,.55);z-index:50;display:flex;align-items:flex-end;justify-content:center}
-.modal{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}
-@media (min-width:700px){.modal-bg{align-items:center}.modal{border-radius:20px}}
-.modal h3{margin:0 0 2px;font-size:19px}
-.modal .x{float:right;border:0;background:#eef1f5;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form-grid .full{grid-column:1/-1}
-.form-grid .field{margin:0}
-.info-box{background:var(--yellow-soft);color:#7a5a00;border-radius:12px;padding:10px 12px;font-size:13.5px;margin:10px 0}
-.hist{border-top:1px solid var(--line);padding:10px 0;font-size:13.5px}
-.hist:first-child{border-top:0}
-.sol{color:var(--muted);font-size:13px;margin-top:4px;white-space:pre-wrap}
-
-/* ---------- import ---------- */
-.drop{border:2px dashed #b9c4d4;border-radius:16px;padding:28px 16px;text-align:center;background:#fff;cursor:pointer}
-.drop.over{border-color:var(--blue);background:var(--blue-soft)}
-.drop b{display:block;font-size:16px;margin-bottom:4px}
-.stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-table.t{width:100%;border-collapse:collapse;font-size:13.5px}
-table.t td,table.t th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
-table.t th{color:var(--muted);font-weight:650;font-size:12px;text-transform:uppercase}
-
-.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 18px;border-radius:12px;z-index:60;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.25);max-width:92vw}
-.loading{display:grid;place-items:center;min-height:60vh;color:var(--muted)}
-.spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:sp 0.8s linear infinite;margin:0 auto 10px}
-@keyframes sp{to{transform:rotate(360deg)}}
-.route-bar{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:35;background:var(--navy);color:#fff;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
-.route-bar .btn{background:#fff;color:var(--navy)}
-@media (min-width:900px){.route-bar{left:272px;right:32px;bottom:20px;max-width:900px}}
-
-/* ---------- correções / navegação ---------- */
-html,body{overflow-x:clip}
-main{min-width:0;overflow-x:clip}
-.drop{display:block}
-.drop b{font-size:16px}
-.back{border:0;background:none;color:var(--blue);font-weight:700;font-size:15px;padding:4px 0 8px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
-.page-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.clk{cursor:pointer;transition:transform .12s}
-.clk:active{transform:scale(.985)}
-@media (max-width:699px){
-  .toolbar .input,.toolbar select.input{flex:1 1 100%}
-  .goal{gap:12px}.ring{width:96px;height:96px}.ring svg{width:96px;height:96px}
-  .oc{padding:12px 10px}
-}
-.cli-row{display:flex;align-items:center;gap:10px;padding:12px 10px;border-bottom:1px solid var(--line);cursor:pointer}
-.cli-row:last-child{border-bottom:0}
-.cli-row:active{background:#f6f8fb}
-.cli-main{flex:1;min-width:0}
-.cli-nome{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
-.cli-sub{color:var(--muted);font-size:13px;margin-top:2px}
-.cli-sub b{color:var(--ink)}
-.chev{color:#94a3b8;font-size:20px}
-
-/* ---------- relatório ---------- */
-.rel{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:28px 26px;margin-top:8px;color:#0f1b2d}
-.rel h1{margin:2px 0 4px;font-size:26px}
-.rel h3{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#334155;margin:26px 0 10px;border-bottom:2px solid #0b1f3a;padding-bottom:6px}
-.rel-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:4px solid #0b1f3a;padding-bottom:14px}
-.rel-kicker{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#1d4ed8}
-.rel-meta{color:#475569;font-size:14px}
-.rel-date{text-align:right;font-size:12px;color:#64748b}
-.rel-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
-.rel-kpis.k3{margin-top:0}
-.rel-kpis div{border:1px solid #e3e8ef;border-left:4px solid #1d4ed8;border-radius:10px;padding:10px 12px}
-.rel-kpis div.pu{border-left-color:#7c3aed}.rel-kpis div.rd{border-left-color:#dc2626}.rel-kpis div.or{border-left-color:#ea580c}
-.rel-kpis b{display:block;font-size:26px;line-height:1.1}
-.rel-kpis span{font-size:12px;color:#64748b;font-weight:600}
-.rel-chart{position:relative;display:flex;gap:10px;align-items:flex-end;height:176px;padding:0 4px;border-bottom:1px solid #cbd5e1;margin-bottom:6px}
-.rel-chart .col{flex:1;display:flex;flex-direction:column;align-items:center;max-width:90px}
-.rel-chart .bars2{height:150px;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:4px}
-.rel-chart .bt,.rel-chart .br{width:42%;border-radius:5px 5px 0 0;position:relative;min-height:2px}
-.rel-chart .bt{background:#1d4ed8}.rel-chart .br{background:#7c3aed}
-.rel-chart .bt span,.rel-chart .br span{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:#0f1b2d}
-.rel-chart .cl{height:26px;line-height:26px;font-size:11.5px;font-weight:700;color:#475569}
-.meta-line{position:absolute;left:0;right:0;border-top:2px dashed #1d4ed8;opacity:.55}
-.meta-line.pu{border-color:#7c3aed}
-.meta-line span{position:absolute;right:0;top:-15px;background:#fff;padding:0 4px;font-size:10px;font-weight:800;color:#1d4ed8}
-.meta-line.pu span{color:#7c3aed}
-.legend{display:flex;gap:16px;font-size:12px;color:#475569;margin:8px 0 12px}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.lb{background:#1d4ed8}.lp{background:#7c3aed}
-.rt{width:100%;border-collapse:collapse;font-size:12.5px}
-.rt th{font-size:11px;text-transform:uppercase;color:#64748b;text-align:left;padding:6px 6px;border-bottom:1px solid #cbd5e1}
-.rt td{padding:5px 6px;border-bottom:1px solid #eef1f5}
-.rt .r{text-align:right}
-.rt .mu,.mu{color:#94a3b8}
-.rt tr.hl td{background:#f1eaff}
-.rt tr.tot td{font-weight:800;border-top:2px solid #0b1f3a;border-bottom:0}
-.ok{color:#16a34a;font-weight:800}.no{color:#dc2626;font-weight:700}
-.rel-2col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.rel-foot{margin-top:24px;padding-top:10px;border-top:1px solid #e3e8ef;font-size:11px;color:#94a3b8}
-.mtx-wrap{overflow-x:auto}
-@media (max-width:699px){
-  .rel{padding:18px 14px}.rel h1{font-size:21px}
-  .rel-kpis{grid-template-columns:1fr 1fr}.rel-kpis.k3{grid-template-columns:repeat(3,1fr)}
-  .rel-2col{grid-template-columns:1fr;gap:0}
-  .rel .mtx{font-size:10.5px}.rel .mtx td,.rel .mtx th{padding:4px 3px}
-}
-@media print{
-  @page{size:A4;margin:12mm}
-  html,body{background:#fff!important}
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  .side,.topbar,.tabs,.no-print,#rotaBar,.toast,#modalRoot{display:none!important}
-  #app{display:block!important}
-  main{padding:0!important;max-width:none!important;overflow:visible!important}
-  .rel{box-shadow:none;border-radius:0;padding:0;margin:0}
-  .rel-kpis{grid-template-columns:repeat(3,1fr)!important}
-  .rel-kpis.k3{grid-template-columns:repeat(3,1fr)!important}
-  .rel-2col{grid-template-columns:1fr 1fr!important;gap:20px!important}
-  .rel .mtx{font-size:10px!important}
-  h3,.rel-chart,table tr,.rel-kpis{break-inside:avoid}
-  h3{break-after:avoid}
-  h3.pb{break-before:page}
-}
-
-/* ---------- reaberturas ---------- */
-.reab-card{display:flex;gap:16px;align-items:center;border-left:6px solid var(--green)}
-.reab-card.r-yellow{border-left-color:var(--yellow)}.reab-card.r-orange{border-left-color:var(--orange);background:linear-gradient(90deg,#fff 60%,#fff4ea)}
-.reab-card.r-red{border-left-color:var(--red);background:linear-gradient(90deg,#fff 50%,#fdeaea)}
-.reab-n{font-size:40px;font-weight:900;line-height:1;min-width:84px;text-align:center}
-.reab-n small{font-size:16px;color:var(--muted);font-weight:700}
-.r-green .reab-n{color:var(--green)}.r-yellow .reab-n{color:var(--yellow)}.r-orange .reab-n{color:var(--orange)}.r-red .reab-n{color:var(--red)}
-.reab-track{height:8px;background:#eef1f5;border-radius:6px;overflow:hidden;margin-top:8px;max-width:320px}
-.reab-track div{height:100%;background:currentColor}
-.r-green .reab-track div{background:var(--green)}.r-yellow .reab-track div{background:var(--yellow)}.r-orange .reab-track div{background:var(--orange)}.r-red .reab-track div{background:var(--red)}
-.reab-chart{position:relative;display:flex;gap:6px;align-items:flex-end;height:150px;padding-top:6px}
-.reab-chart .col{flex:1;display:flex;flex-direction:column;align-items:center;cursor:pointer;min-width:0}
-.reab-chart .bx{height:120px;width:100%;display:flex;align-items:flex-end;justify-content:center}
-.reab-chart .b{width:70%;max-width:34px;border-radius:5px 5px 0 0;position:relative;min-height:3px}
-.reab-chart .b span{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800}
-.b-green{background:var(--green)}.b-yellow{background:#eab308}.b-orange{background:var(--orange)}.b-red{background:var(--red)}
-.reab-chart .cl{height:24px;line-height:24px;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}
-.reab-chart .cl.on{color:var(--ink);text-decoration:underline}
-.reab-chart .lim{position:absolute;left:0;right:0;border-top:2px dashed var(--red);opacity:.7;pointer-events:none}
-.reab-chart .lim span{position:absolute;right:0;top:-15px;font-size:10px;font-weight:800;color:var(--red);background:#fff;padding:0 4px}
-.reab-item>.pill{margin:6px 0 4px}
-.rel-kpis div.rd b{color:#dc2626}
-
-/* ---------- rota por cidade ---------- */
-.cid-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.cid{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}
-.cid b{font-size:14.5px}.cid span{font-size:12.5px;color:var(--muted)}.cid em{font-style:normal;color:var(--red);font-weight:700}
-.cid.on{border-color:var(--blue);background:var(--blue-soft)}
-.cid:active{transform:scale(.98)}
-.rota-go{margin-top:12px;border-left:5px solid var(--blue)}
-.parada{display:flex;gap:10px;background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:12px;margin-bottom:10px;align-items:flex-start}
-.parada.fora{opacity:.45}
-.parada .pn{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;flex:none}
-.parada .body{flex:1;min-width:0}
-.parada .name{font-weight:700;font-size:15px;cursor:pointer;overflow-wrap:anywhere}
-.parada .meta{color:var(--muted);font-size:13px;margin-top:2px}
-.parada .top{display:flex;flex-wrap:wrap;gap:4px}
-.parada .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-
-/* ---------- anotações e fotos ---------- */
-.ficha-acts{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.nota{border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
-.nota.irr{border-left-color:var(--red);background:#fffafa}
-.nota-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.nota .lnk{margin-left:auto;border:0;background:none;color:var(--blue);font-weight:700;cursor:pointer}
-.irr-d{color:var(--red);font-weight:600}
-.chk-line{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--muted)}
-.chk-line input{width:20px;height:20px;accent-color:var(--blue)}
-.seg{display:flex;background:#eef1f5;border-radius:12px;padding:3px;gap:3px;flex-wrap:wrap}
-.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:9px 4px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;min-width:0;white-space:nowrap}
-.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.seg button.on.red{color:var(--red)}
-.foto-prog{margin-top:12px;font-size:14px}
-.slots{display:grid;grid-template-columns:1fr;gap:10px}
-@media (min-width:700px){.slots{grid-template-columns:1fr 1fr}}
-.slot{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:12px;border-left:5px solid var(--line)}
-.slot.tem{border-left-color:var(--green)}
-.slot-h{display:flex;justify-content:space-between;font-weight:700;font-size:14.5px;margin-bottom:8px}
-.slot-h small{background:var(--line);border-radius:10px;padding:0 8px}
-.thumbs{display:flex;gap:8px;flex-wrap:wrap}
-.thumb{position:relative;width:96px;height:96px;border-radius:10px;overflow:hidden;background:#eef1f5}
-.thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.thumb .ph{display:grid;place-items:center;height:100%;font-size:22px}
-.thumb .del{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:16px;line-height:1;cursor:pointer}
-.thumb .exp{position:absolute;left:0;right:0;bottom:0;background:rgba(22,163,74,.85);color:#fff;font-size:10px;font-weight:700;text-align:center;padding:2px}
-.add{width:96px;height:96px;border:2px dashed #b9c4d4;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--blue);background:#f8faff}
-.add span{font-size:26px}.add small{font-weight:700;font-size:12px}
-.add.mais{border-style:solid;border-color:var(--blue-soft);background:var(--blue-soft)}
-.add.mais span{font-size:30px;font-weight:300}
-
-/* ---------- guia ---------- */
-.guia-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
-.guia-item{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px;box-shadow:var(--shadow)}
-.guia-item b{font-size:14.5px}.guia-item span{font-size:12.5px;color:var(--muted)}.guia-item em{font-style:normal;color:var(--orange);font-weight:700}
-.guia-acao{border-left:5px solid #0b1f3a;font-size:14.5px;line-height:1.55}
-.guia-acao .lnk,.lnk{border:0;background:none;color:var(--blue);font-weight:700;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px}
-.dicas{margin-top:10px;background:var(--yellow-soft);color:#7a5a00;border-radius:10px;padding:8px 10px;font-size:13.5px}
-.gform{display:grid;grid-template-columns:1fr;gap:10px}
-@media (min-width:700px){.gform{grid-template-columns:1fr 1fr}}
-.gform .full{grid-column:1/-1}
-.gq label{display:block;font-size:12.5px;font-weight:650;color:var(--muted);margin-bottom:5px}
-.seg.sm button{padding:7px 4px}
-#guiaTxt{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.5}
-details.ex{margin-bottom:8px}
-details.ex summary{cursor:pointer;font-size:14px}
-.guia-cta{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;border:0;text-align:left;background:linear-gradient(90deg,#0b1f3a,#1d4ed8);color:#fff}
-.guia-cta span{font-size:28px}.guia-cta b{display:block;font-size:15.5px}.guia-cta small{opacity:.85;font-size:12.5px}.guia-cta em{margin-left:auto;font-style:normal;font-size:22px}
-.mu{color:var(--muted)}
-</style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDS — Uma nova perspectiva | Sites, sistemas e design</title>
+<meta name="description" content="Sou Diogo. Transformo ideias em sites, sistemas para sua rotina, design e conteúdo para redes sociais. Conte seu desafio para a DDS.">
+<meta name="theme-color" content="#070d1a">
+<meta property="og:title" content="DDS — Ideias que viram soluções"><meta property="og:description" content="Sites, sistemas, design e conteúdo. Tecnologia com criatividade para fazer sua ideia acontecer."><meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="experience.css"><script src="config.js" defer></script><script src="script.js" defer></script><script type="module" src="experience.js"></script>
 </head>
 <body>
-
-<!-- LOGIN -->
-<section id="login" class="hidden">
-  <form class="login-card" id="loginForm" autocomplete="off">
-    <h1>Minhas Ocorrências</h1>
-    <p>Pós-Vendas · entre com seu celular e PIN</p>
-    <div class="field"><label>Celular com DDD</label>
-      <input class="input" id="lgTel" inputmode="tel" autocomplete="off" placeholder="(41) 9 0000-0000"></div>
-    <div class="field"><label>PIN de 4 números</label>
-      <div class="pin-row" id="pinRow">
-        <input class="pin-box" inputmode="numeric" maxlength="1" autocomplete="off">
-        <input class="pin-box" inputmode="numeric" maxlength="1" autocomplete="off">
-        <input class="pin-box" inputmode="numeric" maxlength="1" autocomplete="off">
-        <input class="pin-box" inputmode="numeric" maxlength="1" autocomplete="off">
-      </div></div>
-    <div class="err" id="lgErr"></div>
-    <button class="btn block" id="lgBtn" type="submit">Entrar</button>
-  </form>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="header"><a class="brand" href="#inicio" aria-label="DDS, início"><img class="brand-full" src="logo-branca.png" width="2000" height="1125" alt="DDS Sites & Sistemas — logo com lente colorida"></a><nav aria-label="Principal"><a href="#solucoes">O que eu faço</a><a class="nav-highlight" href="#sistemas">Meus sistemas ↗</a><a href="#sobre">Quem cria</a><a href="#redes">Redes sociais</a></nav><a class="nav-cta" href="#contato">Vamos conversar <span>↗</span></a></header>
+<section class="promo-plaq promo-plaq-top wrap reveal" aria-labelledby="promo-plaq-title">
+<a class="promo-plaq-link" href="/plaquinhas/">
+<div class="promo-plaq-stage" aria-hidden="true"><div class="promo-plaq-glow"></div><img src="plaquinhas/placa-google.png" width="1181" height="1181" alt=""></div>
+<div class="promo-plaq-copy"><p class="eyebrow">NOVIDADE · DDS INOVAÇÃO</p><h2 id="promo-plaq-title">Plaquinha de avaliações Google.<br><span class="serif">QR Code + NFC, num toque.</span></h2><p>Seu cliente aproxima o celular ou escaneia o QR Code e cai direto na sua avaliação do Google. Fabricada e vendida pela DDS Inovação.</p><span class="promo-plaq-cta">Conhecer a plaquinha <span>↗</span></span></div>
+</a>
 </section>
-
-<!-- APP -->
-<div id="app" class="hidden">
-  <aside class="side" id="side"></aside>
-  <div>
-    <header class="topbar">
-      <div class="brand">Minhas Ocorrências<small id="topSub">Pós-Vendas</small></div>
-      <button class="btn sm" onclick="go('importar')">
-        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>Importar</button>
-    </header>
-    <main id="view"><div class="loading"><div><div class="spinner"></div>Carregando…</div></div></main>
-  </div>
-  <nav class="tabs" id="tabs"></nav>
+<main id="conteudo">
+<section class="experience" id="inicio" aria-label="Uma nova perspectiva — apresentação dos serviços DDS">
+<div class="experience-stage">
+<div id="lens-stage" aria-hidden="true"><img class="lens-fallback" src="lente-original.png" alt="" width="2000" height="1125"></div>
+<div class="scene-vignette" aria-hidden="true"></div>
+<div class="scene-copy">
+<article class="scene-panel scene-active" data-scene="0"><p class="eyebrow"><span class="status-dot"></span> DDS / CRIATIVIDADE EM OUTRA DIMENSÃO</p><h1>Uma nova<br><span>perspectiva.</span></h1><p class="scene-description"><strong>Criação de site e artes para o seu negócio.</strong> Tecnologia para dar vida às suas ideias e simplificar a sua rotina.</p><a class="button primary" href="#contato">Vamos criar algo incrível <span>↗</span></a><a class="scene-explore" href="#solucoes">Conheça minhas soluções ↓</a></article>
+<article class="scene-panel" data-scene="1"><p class="eyebrow">01 / SITES & LANDING PAGES</p><h2>Seu negócio.<br><span>Em destaque.</span></h2><p class="scene-description">Páginas que apresenta seu valor, funciona no celular e leva a pessoa até o próximo passo.</p><a class="scene-service" href="#contato" data-service="Sites e landing pages">Quero um site assim ↗</a></article>
+<article class="scene-panel" data-scene="2"><p class="eyebrow">02 / SISTEMAS & AUTOMAÇÕES</p><h2>Menos tarefas.<br><span>Mais tempo.</span></h2><p class="scene-description">Transformação de processos complicados em ferramentas feitas por sua rotina.</p><a class="scene-service" href="#contato" data-service="Sistemas e automações">Vamos simplificar minha rotina ↗</a></article>
+<article class="scene-panel" data-scene="3"><p class="eyebrow">03 / DESIGN & CONTEÚDO</p><h2>Da sua ideia.<br><span>Para o mundo.</span></h2><p class="scene-description">Artes para redes sociais, banners, cartões, folders e copy. Sua marca com presença, do papel à tela.</p><a class="scene-service" href="#contato" data-service="Design e materiais gráficos">Quero destacar minha marca ↗</a></article>
+<article class="scene-panel" data-scene="4"><p class="eyebrow">TECNOLOGIA COM UM TOQUE HUMANO</p><h2>Sua ideia.<br><span>Em foco.</span></h2><p class="scene-description">Meu hobby é encontrar soluções. Vamos descobrir o que posso criar para você?</p><a class="button primary" href="#contato">Coloque sua ideia em foco <span>↗</span></a></article>
 </div>
-
-<div id="modalRoot"></div>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="app.js"></script>
-</body>
-</html>
+<div class="scene-topline" aria-hidden="true"><span>DDS® — UMA NOVA PERSPECTIVA</span><span>DESIGN × TECNOLOGIA × CRIATIVIDADE</span></div>
+<div class="scene-bottom"><span class="scroll-cue"><i></i> Role para explorar</span><nav class="scene-progress" aria-label="Etapas da experiência"><button type="button" data-progress="0" aria-label="Cena 1: a lente DDS"><span></span></button><button type="button" data-progress="0.33" aria-label="Cena 2: sites e landing pages"><span></span></button><button type="button" data-progress="0.54" aria-label="Cena 3: sistemas e automações"><span></span></button><button type="button" data-progress="0.73" aria-label="Cena 4: design e conteúdo"><span></span></button><button type="button" data-progress="0.98" aria-label="Cena 5: sua ideia em foco"><span></span></button></nav><span class="scene-counter" aria-hidden="true">01 / 05</span></div>
+<button class="motion-toggle" type="button" aria-pressed="false">Reduzir movimento</button>
+</div>
+</section>
+<div class="ticker" aria-hidden="true"><div>SITES & LANDING PAGES <span>✳</span> SISTEMAS QUE SIMPLIFICAM <span>✳</span> ARTES PARA SEU NEGÓCIO <span>✳</span> IDEIAS QUE ACONTECEM <span>✳</span> SITES QUE CONECTAM <span>✳</span> SISTEMAS QUE SIMPLIFICAM <span>✳</span> DESIGN QUE MARCA <span>✳</span></div></div>
+<section class="section wrap" id="solucoes"><div class="section-heading reveal"><div><p class="eyebrow">01 / O QUE EU FAÇO</p><h2>Uma boa ideia merece<br>uma <span class="serif">boa execução.</span></h2></div><p>Do primeiro clique à tarefa que finalmente ficou mais fácil. Vamos encontrar o formato certo para o que você precisa.</p></div>
+<div class="services">
+<a class="service reveal" href="#contato" data-service="Sites e landing pages"><div class="service-top"><span class="service-icon">&lt;/&gt;</span><span>01</span></div><h3>Seu lugar<br>no digital.</h3><p>Sites e landing pages que apresentam seu negócio com clareza, personalidade e um caminho simples até o contato.</p><div class="service-foot"><span>SITES & LANDING PAGES</span><span>↗</span></div></a>
+<a class="service reveal" href="#contato" data-service="Sistemas e automações"><div class="service-top"><span class="service-icon">⌘</span><span>02</span></div><h3>Menos trabalho.<br>Mais fluidez.</h3><p>Sistemas e automações pensados para a sua rotina. Organize informações e simplifique tarefas repetitivas.</p><div class="service-foot"><span>SISTEMAS & AUTOMAÇÕES</span><span>↗</span></div></a>
+<a class="service reveal" href="#contato" data-service="Design e materiais gráficos"><div class="service-top"><span class="service-icon">✳</span><span>03</span></div><h3>Visual que<br>fica na memória.</h3><p>Artes para cartões, banners, folders e materiais digitais. Sua mensagem com uma apresentação que faz sentido.</p><div class="service-foot"><span>DESIGN DIGITAL & IMPRESSO</span><span>↗</span></div></a>
+<a class="service reveal" href="#contato" data-service="Conteúdo e copy para redes sociais"><div class="service-top"><span class="service-icon">↗</span><span>04</span></div><h3>Palavras certas.<br>Conexões reais.</h3><p>Copy, legendas e peças para redes sociais. Conteúdo que traduz o seu valor e convida as pessoas a conversar.</p><div class="service-foot"><span>CONTEÚDO & REDES SOCIAIS</span><span>↗</span></div></a>
+</div></section>
+<section class="possibilities section" id="possibilidades"><div class="wrap"><div class="section-heading reveal"><div><p class="eyebrow">02 / IMAGINE AS POSSIBILIDADES</p><h2>O que podemos<br><span class="serif">colocar no mundo.</span></h2></div><p>Alguns exemplos do que dá para criar juntos. Conceitos ilustrativos para inspirar o seu próximo projeto.</p></div>
+<div class="showcase"><article class="show-item reveal"><div class="mockup mock-web"><div class="browser-bar"><i></i><i></i><i></i><span>seu próximo site</span></div><div class="web-interior"><span class="mini-logo">studio<span> / </span>essência</span><span class="mini-menu">ESPAÇOS PARA VIVER ↗</span><h3>Seu espaço.<br>Seu <em>universo.</em></h3><div class="arch"><div></div></div><span class="mini-pill">Conheça o projeto ↗</span><span class="mini-note">ARQUITETURA COM IDENTIDADE.</span></div></div><div class="show-label"><h3>Uma presença que chama atenção</h3><span>SITE / CONCEITO</span></div></article>
+<article class="show-item reveal"><div class="mockup mock-system"><div class="dashboard"><div class="dash-sidebar">d.<span>▦</span><span>≡</span><span>◷</span></div><div class="dash-main"><div class="dash-title">Sua rotina, organizada.<span>● Tudo em dia</span></div><p>Uma visão simples do que importa.</p><div class="dash-stats"><div>Tarefas da semana<strong>12 <small>organizadas</small></strong></div><div>Próximo passo<strong>Focar <small>no essencial</small></strong></div></div><div class="chart"><span style="--h:40%"></span><span style="--h:55%"></span><span style="--h:45%"></span><span style="--h:72%"></span><span style="--h:60%"></span><span style="--h:88%"></span><span style="--h:95%"></span></div><div class="dash-row">✓ Informações em um só lugar <span>Organizado</span></div><div class="dash-row">✓ Menos tarefas manuais <span>Mais simples</span></div></div></div></div><div class="show-label"><h3>Uma rotina com mais espaço</h3><span>SISTEMA / CONCEITO</span></div></article>
+<article class="show-item show-wide reveal"><div class="mockup mock-design"><div class="poster"><span>IDEIAS BOAS<br>MERECEM ESPAÇO.</span><strong>Faça<br>acon<span>tecer.</span></strong><span>CRIATIVIDADE EM MOVIMENTO ↗</span></div><div class="business-card"><span class="card-brand">sua<br>marca<span>®</span></span><span>PEQUENO NO FORMATO.<br>GRANDE NA PRESENÇA. ↗</span></div><div class="social-card"><span>CONTEÚDO COM PROPÓSITO</span><strong>Não é só<br>aparecer.<br><em>É conectar.</em></strong><span>DESIGN + MENSAGEM + PERSONALIDADE</span></div></div><div class="show-label"><h3>Sua marca, do papel à tela</h3><span>DESIGN & CONTEÚDO / CONCEITOS</span></div></article></div>
+</div></section>
+<section class="section wrap" id="sistemas"><div class="section-heading reveal"><div><p class="eyebrow">03 / SISTEMAS QUE JÁ CRIEI</p><h2>Projetos no ar,<br><span class="serif">rodando de verdade.</span></h2></div><p>Alguns dos sites e sistemas que já desenvolvi. Cada capa abre direto o projeto — os marcados como "sistema interno" ficam fechados ao público, só com a capa, sem cadastro aberto.</p></div>
+<div class="sys-grid">
+<a class="sys-card reveal" href="/estudemais/" target="_blank" rel="noopener" style="--c1:#2f6bff;--c2:#c43bd6"><div class="sys-cover has-img"><img class="sys-cover-img" src="capas/estudeup.jpg" alt="Tela do EstudeUp" width="760" height="183" loading="lazy"><div class="sys-chrome"><i></i><i></i><i></i></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>EstudeUp</h3><p>App de estudos: tira foto do caderno e ganha resumo, quiz, flashcards e um plano até a prova. Tutor de IA e turmas.</p><div class="sys-foot"><span>ESTUDOS · COMUNIDADE</span><span>↗</span></div></div></a>
+<a class="sys-card reveal" href="/forex/" target="_blank" rel="noopener" style="--c1:#0ea67a;--c2:#0ea5e9"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">$</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>DDS Finance</h3><p>Dashboard de performance de trading: lucro, retorno e cotação do dólar, com acesso por telefone e PIN.</p><div class="sys-foot"><span>FINANÇAS · DASHBOARD</span><span>↗</span></div></div></a>
+<a class="sys-card reveal" href="/vs/" target="_blank" rel="noopener" style="--c1:#6d28d9;--c2:#c026d3"><div class="sys-cover has-img"><img class="sys-cover-img" src="capas/dds-multitrack.jpg" alt="Tela do DDS MultiTrack" width="760" height="300" loading="lazy"><div class="sys-chrome"><i></i><i></i><i></i></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>DDS<br>MultiTrack.</h3><p>App de multitracks para o louvor: sincroniza o repertório e acompanha a execução ao vivo no culto.</p><div class="sys-foot"><span>MÚSICA · IGREJA</span><span>↗</span></div></div></a>
+<a class="sys-card reveal" href="https://www.ieqvilareal.com.br" target="_blank" rel="noopener" style="--c1:#0026B7;--c2:#F9BD00"><div class="sys-cover has-img"><img class="sys-cover-img" src="capas/ieq-vila-real.jpg" alt="Tela do site IEQ Vila Real" width="760" height="278" loading="lazy"><div class="sys-chrome"><i></i><i></i><i></i></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>App IEQ<br>Vila Real.</h3><p>PWA de cuidado pastoral: devocionais com IA, escalas de louvor, diário de leitura e mensagens entre membros.</p><div class="sys-foot"><span>COMUNIDADE</span><span>↗</span></div></div></a>
+<a class="sys-card reveal" href="https://www.escoladatora.com.br/" target="_blank" rel="noopener" style="--c1:#1b2a6b;--c2:#c9a227"><div class="sys-cover has-img"><img class="sys-cover-img" src="capas/escola-da-tora.jpg" alt="Tela do Escola da Torá" width="760" height="311" loading="lazy"><div class="sys-chrome"><i></i><i></i><i></i></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>Escola<br>da Torá.</h3><p>Estudo bíblico com IA: segundo cérebro, cruzamento de versículos, hebraico e mesa rabínica.</p><div class="sys-foot"><span>ESTUDO BÍBLICO</span><span>↗</span></div></div></a>
+<a class="sys-card reveal" href="/chacara-ormelez/" target="_blank" rel="noopener" style="--c1:#2f6b3f;--c2:#a8c66c"><div class="sys-cover has-img"><img class="sys-cover-img" src="capas/chacara-ormelez.jpg" alt="Tela do site Chácara Ormelez" width="760" height="361" loading="lazy"><div class="sys-chrome"><i></i><i></i><i></i></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>Chácara<br>Ormelez.</h3><p>Site de reservas para espaço de retiro rural, com calendário de disponibilidade em tempo real.</p><div class="sys-foot"><span>RESERVAS · CALENDÁRIO</span><span>↗</span></div></div></a>
+<a class="sys-card reveal" href="/sitemelhoropcao/" target="_blank" rel="noopener" style="--c1:#6b8f3e;--c2:#d9a441"><div class="sys-cover has-img"><img class="sys-cover-img" src="capas/melhor-opcao.jpg" alt="Tela do site Melhor Opção" width="760" height="289" loading="lazy"><div class="sys-chrome"><i></i><i></i><i></i></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>Melhor<br>Opção.</h3><p>Site do Restaurante e Chácara Melhor Opção em Bateias, Campo Largo: almoço com lago e jardins, e o Chalé das Araucárias no Airbnb.</p><div class="sys-foot"><span>RESTAURANTE · HOSPEDAGEM</span><span>↗</span></div></div></a>
+<a class="sys-card reveal" href="/dds-avaliacoes/" target="_blank" rel="noopener" style="--c1:#399cff;--c2:#66e0ff"><div class="sys-cover has-img"><img class="sys-cover-img" src="capas/dds-avaliacoes.jpg" alt="Tela do DDS Avaliações" width="760" height="311" loading="lazy"><div class="sys-chrome"><i></i><i></i><i></i></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>Mini Site<br>para negócios.</h3><p>Mini site profissional pra quem ainda não tem presença online — pronto em poucos dias, direto pelo DDS Inovação.</p><div class="sys-foot"><span>SITE · NEGÓCIOS</span><span>↗</span></div></div></a>
+<a class="sys-card reveal" href="/dds-avaliacoes/" target="_blank" rel="noopener" style="--c1:#2563eb;--c2:#fbbf24"><div class="sys-cover has-img"><img class="sys-cover-img" src="capas/dds-avaliacoes.jpg" alt="Tela do DDS Avaliações" width="760" height="311" loading="lazy"><div class="sys-chrome"><i></i><i></i><i></i></div><span class="sys-cover-cta">Acessar <span>↗</span></span></div><div class="sys-body"><h3>Plaquinha de<br>Avaliações.</h3><p>QR Code + NFC: seu cliente aproxima o celular ou escaneia e cai direto na sua avaliação 5 estrelas no Google.</p><div class="sys-foot"><span>DDS INOVAÇÃO</span><span>↗</span></div></div></a>
+</div>
+<p class="sys-internal-note reveal">Os sistemas abaixo são de uso interno — ficam fora do ar para o público, mostro só a capa.</p>
+<div class="sys-grid sys-grid-locked">
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#6366f1"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">✚</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>App IEQ<br>Três Pinheiros.</h3><p>PWA de cuidado pastoral: devocionais, escalas de louvor e mensagens — acesso restrito aos membros da igreja.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#ec4899"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">✓</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>Tarefa<br>Diária.</h3><p>Gestão de demandas do dia a dia: lista única, prazos e atualização direto na tela — uso interno.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#0ea5e9"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">⌘</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>Conta Sim<br>Digital.</h3><p>Cadastro digital de medidores e verificação de moradores.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#22c55e"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">⟲</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>Renova+<br>Pós-venda.</h3><p>Inteligência de renovação de contratos: importação de planilhas, tancagem e dossiê com IA.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#a78bfa"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">▤</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>Controle de<br>Clientes.</h3><p>CRM de atendimentos com dashboard, indicadores clicáveis e linha do tempo por cliente.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#f97316"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">◎</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>Leitura de<br>Medidor.</h3><p>App de campo que captura número de série e leitura do medidor pela câmera, com extração por IA.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#ef4444"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">◈</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>Telemetria<br>GLP.</h3><p>Painel de monitoramento de nível de tanques em bases e clientes, para apresentação a stakeholders.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#14b8a6"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">➜</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>Logística<br>& Rotas.</h3><p>Plataforma de operações logísticas para gestão de rotas de entrega.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#eab308"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">Σ</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>Planilha<br>Financeira.</h3><p>Controle financeiro em sistema, substituindo planilhas manuais.</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+<div class="sys-card locked reveal" style="--c1:#334155;--c2:#f43f5e"><div class="sys-cover"><div class="sys-chrome"><i></i><i></i><i></i></div><div class="sys-mock"><div class="sys-mock-top"><span class="sys-mock-badge" aria-hidden="true">✛</span><span class="sys-mock-bar sys-mock-bar-a"></span></div><span class="sys-mock-bar sys-mock-bar-b"></span><span class="sys-mock-bar sys-mock-bar-c"></span><span class="sys-mock-chip"></span></div><span class="sys-lock" aria-hidden="true">🔒</span></div><div class="sys-body"><h3>CRL.</h3><p>Sistema de acompanhamento interno, com controle de acesso por perfil (administração e monitoria).</p><div class="sys-foot"><span>SISTEMA INTERNO</span></div></div></div>
+</div>
+</section>
+<section class="about section wrap" id="sobre"><div class="about-art reveal"><span>POR TRÁS DA DDS</span><strong>Curioso<br>por natureza.<br><em>Criador</em><br>por escolha.</strong><div class="signature">Diogo <span>↗</span></div><span class="about-star" aria-hidden="true">✳</span></div><div class="about-copy reveal"><p class="eyebrow">04 / PRAZER, EU SOU O DIOGO</p><h2>Meu hobby é<br>encontrar <span class="serif">soluções.</span></h2><p class="lead">A tecnologia é como eu faço acontecer.</p><p>Gosto de olhar para uma dificuldade e pensar: “como isso poderia ser mais simples?”. É dessa curiosidade que nasce a DDS.</p><p>Crio sites, sistemas, artes e conteúdos que aproximam uma ideia da vida real. Cada projeto começa com uma conversa para entender o que você precisa e o que faz sentido para a sua rotina.</p><div class="about-values"><span>✦ Criatividade com propósito</span><span>↗ Tecnologia na prática</span><span>◎ Conversa sem complicação</span></div><img class="original-logo" src="logo-dds.png" alt="Marca DDS Sites & Sistemas com lente colorida" width="1138" height="610" loading="lazy"></div></section>
+<section class="social-section wrap" id="redes" aria-labelledby="redes-title"><div><p class="eyebrow">VAMOS NOS CONECTAR</p><h2 id="redes-title">Ideias também<br>acontecem <span class="serif">por aqui.</span></h2><p>Acompanhe minhas ideias e vamos trocar experiências.</p></div><div class="social-cards"><a class="social-card-link" data-social="instagram" href="https://www.instagram.com/diogo.ctba/" target="_blank" rel="noopener noreferrer"><span class="social-icon"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span><span><strong>Instagram</strong><small>@diogo.ctba</small></span><span>↗</span></a><div class="social-card-link social-pending" data-social="linkedin"><span class="social-icon">in</span><span><strong>LinkedIn</strong><small>Em breve</small></span><span class="social-soon">EM BREVE</span></div></div></section><section class="process wrap section"><p class="eyebrow reveal">05 / DO “TENHO UMA IDEIA” AO “FICOU PRONTO”</p><h2 class="reveal">Simples desde <span class="serif">o começo.</span></h2><div class="steps"><article class="reveal"><span>01 —</span><h3>Você me conta.</h3><p>Qual é a ideia, o desafio ou aquela tarefa que está tomando seu tempo?</p></article><article class="reveal"><span>02 —</span><h3>A gente desenha.</h3><p>Alinhamos a solução, o escopo, os valores e o prazo antes de começar.</p></article><article class="reveal"><span>03 —</span><h3>Eu faço acontecer.</h3><p>Criação, ajustes combinados e entrega. Você acompanha o projeto de perto.</p></article></div></section>
+<section class="contact section" id="contato"><div class="wrap contact-grid"><div class="contact-copy reveal"><p class="eyebrow">06 / O PRÓXIMO PASSO É SEU</p><h2>Tem uma ideia<br>aí? <span class="serif">Bora<br>dar vida.</span><span class="contact-star">✳</span></h2><p>Me conte um pouco do que você precisa.<br>A conversa já começa no caminho certo.</p><div class="contact-note"><span>↗</span><p>Você fala direto comigo.<br><strong>Sem complicação, de pessoa para pessoa.</strong></p></div></div>
+<form id="briefing" class="briefing reveal"><h3>Vamos começar pelo básico.</h3><p class="form-intro">Um minuto para entender sua ideia.</p><label for="nome">Como posso te chamar? <span>*</span></label><input id="nome" name="nome" autocomplete="given-name" placeholder="Seu nome" required maxlength="80"><label for="servico">O que você precisa? <span>*</span></label><select id="servico" name="servico" required><option value="">Escolha uma opção</option><option>Sites e landing pages</option><option>Sistemas e automações</option><option>Design e materiais gráficos</option><option>Conteúdo e copy para redes sociais</option><option>Preciso de ajuda para definir</option></select><label for="mensagem">Me conta um pouco da sua ideia <span>*</span></label><textarea id="mensagem" name="mensagem" placeholder="Ex.: quero um site para apresentar meus serviços e receber pedidos de orçamento." required minlength="10" maxlength="1500" rows="3"></textarea><label for="prazo">Tem algum prazo em mente? <span class="optional">opcional</span></label><select id="prazo" name="prazo"><option value="Ainda não defini">Ainda não defini</option><option>O quanto antes</option><option>Nas próximas semanas</option><option>Nos próximos meses</option></select><button class="button dark" type="submit">Continuar no WhatsApp <span>↗</span></button><p class="privacy">Seus dados apenas compõem a mensagem. Nada é salvo neste site. Você revisa e envia no WhatsApp.</p><p id="form-status" role="status" aria-live="polite"></p><noscript><p>Para usar o formulário, ative o JavaScript. Você também pode entrar em contato pelo <a href="https://wa.me/5541991542931">WhatsApp: (41) 99154-2931</a>.</p></noscript></form></div></section>
+<section class="faq section wrap"><p class="eyebrow">ANTES DE COMEÇAR</p><h2>Dúvidas <span class="serif">rápidas.</span></h2><details><summary>Minha ideia ainda não está pronta. Posso conversar?<span>+</span></summary><p>Claro. Pode chegar com um problema, uma referência ou só uma vontade de melhorar alguma coisa. A conversa ajuda a encontrar um caminho.</p></details><details><summary>Você faz projetos pequenos também?<span>+</span></summary><p>Sim. Pode ser uma arte, um banner, uma página ou uma melhoria na sua rotina. O escopo é definido de acordo com a sua necessidade.</p></details><details><summary>Quanto custa e quanto tempo leva?<span>+</span></summary><p>Depende do que será criado, da complexidade e dos materiais disponíveis. Depois de entender sua ideia, combinamos valores, entregas e prazo antes de iniciar.</p></details><details><summary>O atendimento pode ser online?<span>+</span></summary><p>Sim. Podemos conversar e alinhar seu projeto online, com referências e materiais compartilhados durante o processo.</p></details></section>
+</main>
+<footer class="footer wrap"><div><a class="brand" href="#inicio"><img class="brand-full" src="logo-branca.png" width="2000" height="1125" alt="DDS Sites & Sistemas — logo com lente colorida"></a><p>Ideias que viram soluções.</p></div><div class="footer-links"><a href="#contato">Vamos conversar ↗</a><a href="tel:+5541991542931">(41) 99154-2931</a><div id="social-links" hidden></div></div><div class="footer-bottom"><span>© <span id="year">2026</span> DDS Sites & Sistemas.</span><span>Feito com curiosidade, criatividade e tecnologia. ✳</span></div></footer><a class="floating-contact" href="#contato" aria-label="Conte sua ideia e fale comigo"><span>↗</span> Vamos criar?</a>
+</body></html>
