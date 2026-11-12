@@ -7,6 +7,24 @@ const META_TOTAL = 100;
 const META_REL = 50;
 const JANELA_DIAS = 5;
 const LIMITE_REAB = 5; // acima disso a comissão cai
+const FN_FOTOS = SB_URL + "/functions/v1/ocv-fotos";
+// Padrão de fotos por tipo de cliente. multi = pode ter várias.
+const FOTOS_BASE = [
+  { k: "fachada", l: "Fachada" },
+  { k: "estacionamento_bobtail", l: "Onde o bobtail estaciona" },
+  { k: "caminho_mangueira", l: "Caminho da mangueira do bobtail" },
+  { k: "frente_central", l: "Frente da central" },
+  { k: "lateral_esquerda", l: "Lateral esquerda" },
+  { k: "lateral_direita", l: "Lateral direita" },
+];
+const FOTOS_TIPO = {
+  comercio: [{ k: "equipamentos", l: "Equipamentos", multi: true }],
+  industria: [{ k: "equipamentos", l: "Equipamentos", multi: true }],
+  condominio: [{ k: "abrigo_medidor", l: "Abrigo do medidor" }, { k: "corredor", l: "Corredor" }, { k: "medidor", l: "Medidor" }, { k: "regulador", l: "Regulador" }],
+  residencia: [],
+};
+const TIPOS = [["comercio", "Comércio"], ["industria", "Indústria"], ["condominio", "Condomínio"], ["residencia", "Residência"]];
+const FOTO_OUTRAS = { k: "outras", l: "Outras fotos", multi: true, opcional: true };
 
 const S = {
   token: lsGet("ocv_token"),
@@ -15,6 +33,9 @@ const S = {
   clientes: {},       // chave -> edição
   importacoes: [],
   reabs: [],
+  notas: [],
+  fotos: [],
+  fotoUrls: {},
   view: "inicio",
   mesMeta: mesKey(new Date()),
   mesFin: new Date().getFullYear() + "-T" + Math.ceil((new Date().getMonth() + 1) / 3),
@@ -39,6 +60,7 @@ function mesNome(k) { const [y, m] = k.split("-"); return MESES[+m - 1] + " " + 
 function fmtData(d) { if (!d) return "—"; d = new Date(d); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }); }
 function fmtDH(d) { if (!d) return "—"; d = new Date(d); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
 function toast(msg, ms = 2600) {
+  document.querySelectorAll(".toast").forEach(x => x.remove());
   const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
   document.body.appendChild(t); setTimeout(() => t.remove(), ms);
 }
@@ -118,6 +140,8 @@ async function carregar() {
   S.clientes = {}; (d.clientes || []).forEach(c => S.clientes[c.chave] = c);
   S.importacoes = d.importacoes || [];
   S.reabs = (d.reaberturas || []).map(r => ({ ...r, _em: new Date(r.em) }));
+  S.notas = d.notas || [];
+  S.fotos = d.fotos || [];
 }
 async function iniciar() {
   document.getElementById("login").classList.add("hidden");
@@ -295,7 +319,7 @@ function renderNav() {
 function render() {
   renderNav();
   const v = document.getElementById("view");
-  const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar, relatorio: vRelatorio, reaberturas: vReaberturas, rota: vRota }[S.view] || vInicio;
+  const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar, relatorio: vRelatorio, reaberturas: vReaberturas, rota: vRota, fotos: vFotos }[S.view] || vInicio;
   v.innerHTML = fn();
   if (S.view === "importar") bindImport();
   renderRotaBar();
@@ -405,6 +429,7 @@ function ocCard(o, opts = {}) {
         ${isRel(o) ? '<span class="pill p-purple">★ Relacionamento</span>' : ""}
         <span class="pill p-blue">${esc(subCurta(o.subclassificacao))}</span>
         ${o.reabertura ? '<span class="pill p-orange">Reaberta</span>' : ""}
+        ${(() => { const ns = S.notas.filter(n => n.numero === o.numero); return ns.length ? `<span class="pill p-gray">📝 ${ns.length}</span>${ns.some(n => n.irregularidade) ? '<span class="pill p-red">⚠ Irregularidade</span>' : ""}` : ""; })()}
       </div>
       <div class="name" onclick="abrirFicha(${jsArg(o.chave_cliente)})">${esc(c.nome)}</div>
       <div class="meta">
@@ -419,6 +444,8 @@ function ocCard(o, opts = {}) {
         <a class="btn sm soft" href="${linkWaze(c)}" target="_blank" rel="noopener">🚗 Waze${aprox ? "*" : ""}</a>
         ${z ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
         ${tel ? `<a class="btn sm soft" href="${tel}">📞 Ligar</a>` : ""}
+        <button class="btn sm ghost" onclick="abrirNota(${o.numero})">📝 Anotar</button>
+        <button class="btn sm ghost" onclick="abrirFotos(${jsArg(o.chave_cliente)},${o.numero})">📷 Fotos${(() => { const st = statusFotos(o.chave_cliente); return st.n ? ` ${st.ok}/${st.total}` : ""; })()}</button>
         <button class="btn sm ghost" onclick="abrirFicha(${jsArg(o.chave_cliente)},true)">✏️ Editar</button>
       </div>
     </div>
@@ -719,6 +746,10 @@ function abrirFicha(chave, editar) {
       ${z2 ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z2}" target="_blank" rel="noopener">WhatsApp 2</a>` : ""}
     </div>
     <div style="font-size:14px;margin-bottom:6px">📍 ${esc(enderecoTexto(c))}</div>
+    ${(() => { const st = statusFotos(chave); return `<div class="ficha-acts">
+      <button class="btn sm" onclick="fecharModal(true);abrirFotos(${jsArg(chave)})">📷 Fotos ${st.ok}/${st.total}${st.n > st.ok ? ` (+${st.n - st.ok})` : ""}</button>
+      <button class="btn sm soft" onclick="abrirNota(${ocs[0].numero})">📝 Nova anotação de visita</button></div>`; })()}
+    ${(() => { const ns = S.notas.filter(n => n.chave_cliente === chave); return ns.length ? `<div class="section-title">Anotações de visita <span class="count">${ns.length}</span></div>${ns.map(notaHTML).join("")}` : ""; })()}
     ${!enderecoCompleto(c) ? `<div class="info-box">A planilha traz só bairro e cidade. Preencha rua e número para o Maps e o Waze levarem até a porta.</div>` : ""}
 
     <details ${editar ? "open" : ""} style="margin:12px 0">
@@ -863,6 +894,212 @@ function gerarPDF() {
   setTimeout(() => document.title = t, 1500);
 }
 
+/* ---------------- ANOTAÇÕES DE VISITA ---------------- */
+function notaHTML(n) {
+  return `<div class="nota ${n.irregularidade ? "irr" : ""}">
+    <div class="nota-top"><b>${fmtDH(n.criado_em)}</b>${n.numero ? ` · Oc. ${n.numero}` : ""}${n.irregularidade ? ' <span class="pill p-red">⚠ Irregularidade</span>' : ""}
+      <button class="lnk" onclick="abrirNota(${n.numero || "null"},${jsArg(n.id)})">editar</button></div>
+    ${n.recebido_por || n.cargo || n.telefone ? `<div>👤 ${esc([n.recebido_por, n.cargo].filter(Boolean).join(" — "))}${n.telefone ? ` · 📞 <a href="${linkTel(n.telefone)}">${esc(n.telefone)}</a>` : ""}</div>` : ""}
+    ${n.irregularidade && n.irregularidade_desc ? `<div class="irr-d">⚠ ${esc(n.irregularidade_desc)}</div>` : ""}
+    ${n.obs ? `<div class="sol" style="color:var(--ink)">${esc(n.obs)}</div>` : ""}
+  </div>`;
+}
+function abrirNota(numero, id) {
+  const o = S.ocs.find(x => x.numero === numero);
+  const n = id ? S.notas.find(x => x.id === id) : null;
+  const chave = n ? n.chave_cliente : o.chave_cliente;
+  const c = o ? cliente(o) : { nome: "", telefone1: "" };
+  const v = k => esc(n ? n[k] || "" : "");
+  modal(`<button class="x" onclick="fecharModal()">×</button>
+    <h3>📝 ${n ? "Editar anotação" : "Anotação da visita"}</h3>
+    <p class="sub">${esc(c.nome)}${numero ? " · Oc. " + numero : ""}${o ? " · " + esc(subCurta(o.subclassificacao)) : ""}</p>
+    <div class="form-grid">
+      <div class="field full"><label>Quem me recebeu</label><input class="input" id="n_rec" value="${v("recebido_por")}" placeholder="Nome"></div>
+      <div class="field"><label>Cargo / função</label><input class="input" id="n_cargo" value="${v("cargo")}" placeholder="Síndico, gerente…"></div>
+      <div class="field"><label>Telefone</label><input class="input" id="n_tel" value="${v("telefone")}" inputmode="tel" placeholder="(41) 9 0000-0000"></div>
+      <label class="full chk-line"><input type="checkbox" id="n_salvatel" ${c.telefone1 ? "" : "checked"}> Salvar este telefone na ficha do cliente</label>
+      <div class="field full"><label>Teve alguma irregularidade?</label>
+        <div class="seg"><button type="button" class="${n && n.irregularidade ? "" : "on"}" onclick="segIrr(false)">Não</button><button type="button" class="${n && n.irregularidade ? "on red" : ""}" onclick="segIrr(true)">⚠ Sim</button></div>
+        <input type="hidden" id="n_irr" value="${n && n.irregularidade ? "1" : ""}"></div>
+      <div class="field full ${n && n.irregularidade ? "" : "hidden"}" id="n_irr_box"><label>Qual irregularidade?</label><textarea class="input" id="n_irr_d" rows="2" placeholder="Ex.: central sem extintor, mangueira passando por área de circulação…">${v("irregularidade_desc")}</textarea></div>
+      <div class="field full"><label>Observações da visita</label><textarea class="input" id="n_obs" rows="4" placeholder="O que foi tratado, combinados, pendências…">${v("obs")}</textarea></div>
+    </div>
+    <div class="err" id="n_err"></div>
+    <button class="btn block" id="n_btn" onclick="salvarNota(${numero || "null"},${jsArg(chave)},${jsArg(n ? n.id : "")})">Salvar anotação</button>
+    ${n ? `<button class="btn block ghost" style="margin-top:8px;color:var(--red)" onclick="excluirNota(${jsArg(n.id)})">Excluir anotação</button>` : ""}`);
+}
+function segIrr(sim) {
+  document.getElementById("n_irr").value = sim ? "1" : "";
+  const b = document.querySelectorAll(".seg button"); b[0].className = sim ? "" : "on"; b[1].className = sim ? "on red" : "";
+  document.getElementById("n_irr_box").classList.toggle("hidden", !sim);
+}
+async function salvarNota(numero, chave, id) {
+  const g = i => (document.getElementById(i)?.value || "").trim();
+  const o = S.ocs.find(x => x.numero === numero);
+  const p = { id, numero, chave_cliente: chave, codigo: o?.cliente_codigo || "", recebido_por: g("n_rec"), cargo: g("n_cargo"), telefone: g("n_tel"),
+    irregularidade: !!g("n_irr"), irregularidade_desc: g("n_irr_d"), obs: g("n_obs"), salvar_telefone: document.getElementById("n_salvatel").checked };
+  if (!p.recebido_por && !p.telefone && !p.obs && !p.irregularidade) { document.getElementById("n_err").textContent = "Preencha pelo menos um campo."; return; }
+  const btn = document.getElementById("n_btn"); btn.disabled = true; btn.textContent = "Salvando…";
+  try {
+    const r = await rpc("ocv_salvar_nota", { p_token: S.token, p });
+    if (!r.ok) throw new Error(r.erro);
+    S.notas = [r.nota, ...S.notas.filter(x => x.id !== r.nota.id)];
+    if (r.cliente) S.clientes[chave] = r.cliente;
+    fecharModal(); toast("Anotação salva ✓"); setTimeout(render, 80);
+  } catch (e) { document.getElementById("n_err").textContent = e.message; btn.disabled = false; btn.textContent = "Salvar anotação"; }
+}
+async function excluirNota(id) {
+  if (!confirm("Excluir esta anotação? Não dá para desfazer.")) return;
+  await rpc("ocv_excluir_nota", { p_token: S.token, p_id: id });
+  S.notas = S.notas.filter(n => n.id !== id); fecharModal(); toast("Anotação excluída"); setTimeout(render, 80);
+}
+
+/* ---------------- FOTOS ---------------- */
+function tipoCliente(chave) {
+  const ed = S.clientes[chave]; if (ed && ed.tipo) return ed.tipo;
+  const o = S.ocs.find(x => x.chave_cliente === chave);
+  return /CONDOMINIO|EDIFICIO|EDIF\.|RESIDENCIAL|CONDOMINIUM/.test(norm(o?.cliente_nome)) ? "condominio" : "comercio";
+}
+function slotsDe(chave) { return [...FOTOS_BASE, ...(FOTOS_TIPO[tipoCliente(chave)] || []), FOTO_OUTRAS]; }
+function statusFotos(chave) {
+  const fs = S.fotos.filter(f => f.chave_cliente === chave);
+  const obrig = slotsDe(chave).filter(s => !s.opcional);
+  const ok = obrig.filter(s => fs.some(f => f.slot === s.k)).length;
+  return { n: fs.length, ok, total: obrig.length };
+}
+async function fotosApi(body) {
+  const r = await fetch(FN_FOTOS, { method: "POST", headers: { "Content-Type": "application/json", apikey: SB_KEY, Authorization: "Bearer " + SB_KEY }, body: JSON.stringify({ token: S.token, ...body }) });
+  const d = await r.json().catch(() => ({ ok: false, erro: "Falha de rede" }));
+  if (d.erro === "SESSAO_INVALIDA") { sair(true); throw new Error("Sessão expirada. Entre novamente."); }
+  if (!d.ok) throw new Error(d.erro || "Erro ao processar fotos");
+  return d;
+}
+async function carregarUrls(chave) {
+  if (!S.fotos.some(f => f.chave_cliente === chave)) { S.fotoUrls[chave] = { t: Date.now(), m: {} }; return; }
+  const d = await fotosApi({ acao: "listar", chave });
+  const m = {}; d.fotos.forEach(f => m[f.id] = f.url);
+  S.fotoUrls[chave] = { t: Date.now(), m };
+}
+function abrirFotos(chave, numero) {
+  go("fotos", () => { S.fotoChave = chave; S.fotoNumero = numero || null; });
+  const c = S.fotoUrls[chave];
+  if (!c || Date.now() - c.t > 45 * 60e3) carregarUrls(chave).then(() => S.view === "fotos" && render()).catch(e => toast(e.message));
+}
+function vFotos() {
+  const chave = S.fotoChave;
+  const o = S.ocs.find(x => x.chave_cliente === chave); if (!o) return `${btnVoltar()}<div class="card empty">Cliente não encontrado.</div>`;
+  const c = cliente(o), tipo = tipoCliente(chave), st = statusFotos(chave);
+  const fs = S.fotos.filter(f => f.chave_cliente === chave);
+  const urls = (S.fotoUrls[chave] || {}).m || {};
+  const naoExp = fs.filter(f => !f.exportada_em).length;
+  return `${btnVoltar()}
+  <h2 class="page">📷 Fotos</h2>
+  <p class="sub"><b>${esc(c.nome)}</b>${c.codigo ? " · Cód. " + esc(c.codigo) : ""} · ${esc(c.cidade)}</p>
+  <div class="card" style="margin-bottom:12px">
+    <div class="field" style="margin:0"><label>Tipo do cliente (define o padrão de fotos)</label>
+      <div class="seg">${TIPOS.map(([k, l]) => `<button class="${k === tipo ? "on" : ""}" onclick="mudarTipo(${jsArg(chave)},'${k}')">${l}</button>`).join("")}</div></div>
+    <div class="foto-prog"><b>${st.ok}/${st.total}</b> fotos do padrão${st.ok === st.total ? " ✅ completo" : ""}<div class="reab-track" style="max-width:none"><div style="width:${st.total ? st.ok / st.total * 100 : 0}%;background:var(--green)"></div></div></div>
+  </div>
+  <div class="slots">
+  ${slotsDe(chave).map(sl => { const lista = fs.filter(f => f.slot === sl.k);
+    return `<div class="slot ${lista.length ? "tem" : ""}">
+      <div class="slot-h"><span>${lista.length ? "✅" : sl.opcional ? "➕" : "⬜"} ${esc(sl.l)}</span>${sl.multi && lista.length ? `<small>${lista.length}</small>` : ""}</div>
+      <div class="thumbs">${lista.map(f => `<div class="thumb">${urls[f.id] ? `<a href="${urls[f.id]}" target="_blank" rel="noopener"><img src="${urls[f.id]}" loading="lazy" alt=""></a>` : `<div class="ph">⏳</div>`}
+        <button class="del" title="Apagar" onclick="apagarFotos([${jsArg(f.id)}],true)">×</button>${f.exportada_em ? '<span class="exp">exportada</span>' : ""}</div>`).join("")}
+      ${!lista.length || sl.multi ? `<label class="add"><input type="file" accept="image/*" class="hidden" ${sl.multi ? "multiple" : ""} onchange="enviarFotos(this,${jsArg(chave)},'${sl.k}')"><span>📷</span><small>${lista.length ? "Adicionar" : "Tirar foto"}</small></label>` : `<label class="add mini"><input type="file" accept="image/*" class="hidden" onchange="enviarFotos(this,${jsArg(chave)},'${sl.k}',true)"><small>Refazer</small></label>`}
+      </div></div>`; }).join("")}
+  </div>
+  <div class="card" style="margin-top:14px">
+    <b>📦 Exportar e liberar espaço</b>
+    <p class="sub" style="margin:4px 0 10px">Gera um .zip com as fotos nomeadas no padrão. No iPhone, escolha <b>OneDrive</b> ou <b>Salvar em Arquivos</b>. Depois você pode apagar do sistema.</p>
+    <button class="btn block" ${fs.length ? "" : "disabled"} onclick="exportarFotos([${jsArg(chave)}])">📦 Exportar ${fs.length} foto${fs.length === 1 ? "" : "s"} deste cliente</button>
+    ${fs.length && naoExp < fs.length ? `<button class="btn block ghost" style="margin-top:8px;color:var(--red)" onclick="apagarFotos(${jsArg(fs.filter(f => f.exportada_em).map(f => f.id))})">🗑️ Apagar do sistema as ${fs.length - naoExp} já exportadas</button>` : ""}
+  </div>`;
+}
+async function mudarTipo(chave, tipo) {
+  const o = S.ocs.find(x => x.chave_cliente === chave);
+  const r = await rpc("ocv_salvar_tipo", { p_token: S.token, p_chave: chave, p_codigo: o?.cliente_codigo || "", p_tipo: tipo }).catch(e => ({ ok: false, erro: e.message }));
+  if (!r.ok) return toast(r.erro);
+  S.clientes[chave] = { ...(S.clientes[chave] || {}), ...r.cliente }; render();
+}
+async function comprimir(file, max = 1600, q = 0.8) {
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch (e) { bmp = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(file); }); }
+  const w = bmp.width, h = bmp.height, k = Math.min(1, max / Math.max(w, h));
+  const cv = document.createElement("canvas"); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+  cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+  return cv.toDataURL("image/jpeg", q);
+}
+async function enviarFotos(inp, chave, slot, substituir) {
+  const files = [...inp.files]; if (!files.length) return;
+  const antigas = substituir ? S.fotos.filter(f => f.chave_cliente === chave && f.slot === slot).map(f => f.id) : [];
+  let n = 0;
+  for (const f of files) {
+    toast(`Enviando foto ${++n} de ${files.length}…`, 1800);
+    try {
+      const data = await comprimir(f);
+      const d = await fotosApi({ acao: "upload", chave, slot, numero: S.fotoNumero, data });
+      S.fotos.push(d.foto);
+      const m = (S.fotoUrls[chave] = S.fotoUrls[chave] || { t: Date.now(), m: {} }).m; m[d.foto.id] = data; // mostra a prévia local na hora
+    } catch (e) { toast("Erro: " + e.message, 4000); }
+    render();
+  }
+  if (antigas.length) await apagarFotos(antigas, false, true);
+  toast("Foto salva ✓");
+}
+async function apagarFotos(ids, perguntar, silencioso) {
+  if (!ids.length) return;
+  if (perguntar !== false && !confirm(ids.length === 1 ? "Apagar esta foto do sistema? Não dá para desfazer." : `Apagar ${ids.length} fotos do sistema? Não dá para desfazer.`)) return;
+  try {
+    await fotosApi({ acao: "excluir", ids });
+    S.fotos = S.fotos.filter(f => !ids.includes(f.id));
+    if (!silencioso) toast(ids.length === 1 ? "Foto apagada" : `${ids.length} fotos apagadas`);
+    render();
+  } catch (e) { toast(e.message, 4000); }
+}
+function carregarScript(src) { return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("Não consegui carregar o compactador. Verifique a internet.")); document.head.appendChild(s); }); }
+function nomeArq(s) { return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim().slice(0, 70); }
+async function exportarFotos(chaves) {
+  try {
+    if (!window.JSZip) await carregarScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
+    const zip = new JSZip(); const ids = []; let i = 0;
+    const total = S.fotos.filter(f => chaves.includes(f.chave_cliente)).length;
+    for (const chave of chaves) {
+      const fs = S.fotos.filter(f => f.chave_cliente === chave); if (!fs.length) continue;
+      const o = S.ocs.find(x => x.chave_cliente === chave), c = o ? cliente(o) : { nome: chave, codigo: "" };
+      const pasta = zip.folder(nomeArq(`${c.codigo ? c.codigo + " - " : ""}${c.nome}`));
+      const d = await fotosApi({ acao: "listar", chave });
+      const ordem = slotsDe(chave).map(s => s.k), cont = {};
+      for (const f of d.fotos.sort((a, b) => ordem.indexOf(a.slot) - ordem.indexOf(b.slot) || a.criado_em.localeCompare(b.criado_em))) {
+        toast(`Preparando ${++i} de ${total}…`, 1500);
+        const blob = await fetch(f.url).then(r => { if (!r.ok) throw new Error("Falha ao baixar foto"); return r.blob(); });
+        const sl = slotsDe(chave).find(s => s.k === f.slot) || { l: f.slot };
+        cont[f.slot] = (cont[f.slot] || 0) + 1;
+        const idx = String(Math.max(0, ordem.indexOf(f.slot)) + 1).padStart(2, "0");
+        pasta.file(nomeArq(`${idx} ${sl.l}${cont[f.slot] > 1 || sl.multi ? " " + cont[f.slot] : ""} - ${ymd(new Date(f.criado_em))}`) + ".jpg", blob);
+        ids.push(f.id);
+      }
+    }
+    if (!ids.length) return toast("Nenhuma foto para exportar.");
+    const conteudo = await zip.generateAsync({ type: "blob" });
+    const nome = (chaves.length === 1 ? "Fotos " + nomeArq((cliente(S.ocs.find(x => x.chave_cliente === chaves[0])) || {}).nome) : "Fotos clientes") + " " + ymd(new Date()) + ".zip";
+    const file = new File([conteudo], nome, { type: "application/zip" });
+    let ok = false;
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: nome }); ok = true; } catch (e) { if (e.name === "AbortError") return; }
+    }
+    if (!ok) { const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = nome; a.click(); ok = true; }
+    await fotosApi({ acao: "marcar_exportadas", ids });
+    const agora = new Date().toISOString(); S.fotos.forEach(f => { if (ids.includes(f.id)) f.exportada_em = agora; });
+    render();
+    modal(`<button class="x" onclick="fecharModal()">×</button><h3>✅ ${ids.length} foto${ids.length > 1 ? "s" : ""} exportada${ids.length > 1 ? "s" : ""}</h3>
+      <p class="sub">Confira se o arquivo <b>${esc(nome)}</b> chegou no OneDrive (ou na pasta escolhida). Depois disso, você pode apagar do sistema para liberar espaço.</p>
+      <button class="btn block" style="background:var(--red)" onclick='fecharModal();setTimeout(()=>apagarFotos(${jsArg(ids)},false),80)'>🗑️ Já conferi — apagar ${ids.length} foto${ids.length > 1 ? "s" : ""} do sistema</button>
+      <button class="btn block ghost" style="margin-top:8px" onclick="fecharModal()">Manter por enquanto</button>`);
+  } catch (e) { toast(e.message, 4500); }
+}
+
 /* ---------------- modal ---------------- */
 function modal(html) {
   if (!S.modalOpen) { S.modalOpen = true; try { history.pushState({ ...snap(), modal: true }, ""); } catch (e) {} }
@@ -898,6 +1135,10 @@ function vImportar() {
   <div class="section-title">Histórico de importações</div>
   <div class="card" style="padding:4px 14px">${S.importacoes.length ? `<table class="t"><thead><tr><th>Quando</th><th>Novas</th><th>Atualiz.</th><th>Iguais</th><th>Reab.</th></tr></thead><tbody>
     ${S.importacoes.map(i => `<tr><td>${fmtDH(i.em)}</td><td><b>${i.novas}</b></td><td>${i.atualizadas}</td><td style="color:var(--muted)">${i.iguais}</td><td style="color:${i.reabertas ? "var(--red)" : "var(--muted)"};font-weight:700">${i.reabertas || 0}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">Nenhuma importação ainda.</div>'}</div>
+  <div class="section-title">📷 Fotos guardadas no sistema</div>
+  <div class="card">${(() => { const ch = [...new Set(S.fotos.map(f => f.chave_cliente))]; const mb = (S.fotos.reduce((a, f) => a + (f.tamanho || 0), 0) / 1048576).toFixed(1);
+    return S.fotos.length ? `<div><b>${S.fotos.length}</b> fotos de <b>${ch.length}</b> cliente${ch.length > 1 ? "s" : ""} · ${mb.replace(".", ",")} MB · ${S.fotos.filter(f => !f.exportada_em).length} ainda não exportadas</div>
+      <button class="btn block" style="margin-top:10px" onclick='exportarFotos(${jsArg(ch)})'>📦 Exportar todas (um .zip com uma pasta por cliente)</button>` : '<div class="empty" style="padding:10px">Nenhuma foto ainda. Use o botão 📷 Fotos em qualquer ocorrência.</div>'; })()}</div>
   <p class="sub" style="margin-top:20px;text-align:center"><a href="#" onclick="trocarPin();return false">Trocar PIN</a> · <a href="#" onclick="sair();return false">Sair</a></p>`;
 }
 function bindImport() {
