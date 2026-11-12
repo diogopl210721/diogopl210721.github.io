@@ -865,10 +865,10 @@ function vRelatorio() {
       <div class="meta-line pu" style="bottom:calc(26px + ${(META_REL / maxM) * 150}px)"><span>meta relac. ${META_REL}</span></div>
     </div>
     <div class="legend"><span><i class="lb"></i>Total finalizadas</span><span><i class="lp"></i>Visitas de relacionamento</span></div>
-    <table class="rt"><thead><tr><th>Mês</th><th class="r">Finalizadas</th><th class="r">Meta ${META_TOTAL}</th><th class="r">Relacionamento</th><th class="r">Meta ${META_REL}</th><th class="r">Reaberturas</th></tr></thead><tbody>
+    <div class="mtx-wrap"><table class="rt"><thead><tr><th>Mês</th><th class="r">Finalizadas</th><th class="r">Meta ${META_TOTAL}</th><th class="r">Relacionamento</th><th class="r">Meta ${META_REL}</th><th class="r">Reaberturas</th></tr></thead><tbody>
       ${porMes.map(x => `<tr><td>${mesNome(x.m)}</td><td class="r"><b>${x.t}</b></td><td class="r">${x.t >= META_TOTAL ? '<span class="ok">✔ batida</span>' : `<span class="no">${Math.round(100 * x.t / META_TOTAL)}%</span>`}</td><td class="r"><b>${x.r}</b></td><td class="r">${x.r >= META_REL ? '<span class="ok">✔ batida</span>' : `<span class="no">${Math.round(100 * x.r / META_REL)}%</span>`}</td><td class="r">${(() => { const q = reabsDoPeriodo(x.m).length; return `<span class="${q > LIMITE_REAB ? "no" : q === 0 ? "ok" : ""}">${q}${q > LIMITE_REAB ? " ✖" : ""}</span>`; })()}</td></tr>`).join("")}
       <tr class="tot"><td>Total</td><td class="r">${base.length}</td><td class="r">${mesesBatidosT}/${porMes.length} meses</td><td class="r">${rel}</td><td class="r">${mesesBatidosR}/${porMes.length} meses</td><td class="r">${reabsDoPeriodo(pk).length}</td></tr>
-    </tbody></table>` : `<p class="sub">Nenhuma ocorrência finalizada neste período.</p>`}
+    </tbody></table></div>` : `<p class="sub">Nenhuma ocorrência finalizada neste período.</p>`}
 
     <div class="rel-2col">
       <div><h3>Por subclassificação</h3>
@@ -1114,14 +1114,20 @@ const MOD_VISITA = [
   ["s", "Consumo mensal atual de acordo com o contrato vigente?"], ["art", "Laudo ART emitido?"],
   ["s", "Central atende as normas?"], ["t", "Quais equipamentos disponíveis no cliente?"],
 ];
+// Roteiro oficial de visita (sai completo, com todas as linhas, mesmo em branco)
+const ROTEIRO_VISITA = [...MOD_VISITA, ["t", "Qual a vazão exigida pelo cliente?"], ["br"],
+  ["t", "Indicação de novos negócios do cliente:"], ["s", "Cliente está satisfeito com o atendimento da Consigaz?"],
+  ["l", "Ao indicar o Facilita, qual foi a devolutiva do cliente?"], ["l", "Resumo da visita (opcional)", "opc"]];
+const ROTEIRO_ATIVO = [["l", "Motivo:"]];
+const ROTEIROS_COMPLETOS = [ROTEIRO_VISITA, ROTEIRO_ATIVO];
 const MODELOS = {
-  "VISIT RELACIONAMENTO": [...MOD_VISITA, ["s", "Indicação de novos negócios do cliente?"], ["s", "Cliente está satisfeito com o atendimento da Consigaz?"], ["l", "Resumo da visita (necessidades, condições da central, tanques, limpeza)"]],
-  "VISITA DE TRANSFERÊNCIA": [...MOD_VISITA, ["t", "Qual a vazão exigida pelo cliente?"], ["s", "Cliente está satisfeito com o atendimento da Consigaz?"], ["s", "Cliente aceito no Pós-Vendas?"], ["l", "Resumo da visita"]],
+  "VISIT RELACIONAMENTO": ROTEIRO_VISITA,
+  "VISITA DE TRANSFERÊNCIA": ROTEIRO_VISITA,
   "VISITA PARA CANCELAMENTO DE CONTRATO": [["s", "Contrato e multa entregues em mãos?"], ["l", "Motivo do cancelamento"], ["l", "Tentativa de reversão e resultado"], ["s", "Cliente já trocou os tanques?"], ["t", "Solicitação de retirada nº"], ["l", "Próximos passos"]],
   "RENEG DE PREÇO": [["t", "Preço atual (R$/kg)"], ["t", "Proposta da concorrência"], ["t", "Preço negociado (R$/kg)"], ["t", "Solicitação de alteração de preço nº"], ["s", "Necessário novo contrato?"], ["l", "Motivo / fatores de insatisfação"], ["l", "Resultado da negociação"]],
   "RENEGOCIAÇÃO DE PREÇO MEDIANTE A REG DE CONTRATO": [["t", "Contrato nº"], ["t", "Status da assinatura"], ["t", "Enviado ao Pós-Vendas interno em"], ["l", "Observações"]],
   "REGULARIZAÇÃO CONTRATO": [["t", "Contrato nº"], ["t", "Status da assinatura"], ["t", "Enviado ao Pós-Vendas interno em"], ["l", "Observações"]],
-  "VISITA PÓS VENDAS ATIVO": [["t", "Área solicitante"], ["l", "Demanda / motivo"], ["l", "O que foi verificado na visita"], ["l", "Solução / encaminhamento"], ["t", "Ocorrência(s) aberta(s) nº"]],
+  "VISITA PÓS VENDAS ATIVO": ROTEIRO_ATIVO,
   "COMODATO INATIVO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["s", "Previsão de voltar a consumir?"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
   "REDIMENS COMODATO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
   "REDIMENSIONAMENTO - GIRO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
@@ -1169,13 +1175,13 @@ function vGuia() {
   if (o) {
     const n = S.notas.find(x => x.numero === o.numero) || S.notas.find(x => x.chave_cliente === o.chave_cliente);
     const c = cliente(o);
-    pre = { Contato: n?.recebido_por || (c.contato || "").split(" — ")[0] || "", "Departamento/Cargo": n?.cargo || (c.contato || "").split(" — ")[1] || "", Telefone: n?.telefone || c.telefone1 || "", "E-mail": "" };
+    pre = { Contato: n?.recebido_por || (c.contato || "").split(" — ")[0] || "", "Sobrenome ou departamento": n?.cargo || (c.contato || "").split(" — ")[1] || "", Telefone: n?.telefone || c.telefone1 || "", "E-mail": "" };
   }
   const val = k => r[k] ?? pre[k] ?? "";
   const ex = exemplosDe(sub);
   const temFotos = o && S.fotos.some(f => f.chave_cliente === o.chave_cliente);
   const campo = ([t, l], i) => {
-    const id = "g" + i;
+    if (t === "br") return "";
     if (t === "s" || t === "art") return `<div class="gq"><label>${esc(l)}</label><div class="seg sm">${["Sim", "Não"].map(v => `<button type="button" class="${val(l) === v ? "on" : ""}" onclick="guiaSet(${jsArg(l)},'${v}')">${v}</button>`).join("")}</div></div>`;
     if (t === "l") return `<div class="gq full"><label>${esc(l)}</label><textarea class="input" rows="3" oninput="guiaSet(${jsArg(l)},this.value,true)">${esc(val(l))}</textarea></div>`;
     return `<div class="gq"><label>${esc(l)}</label><input class="input" value="${esc(val(l))}" oninput="guiaSet(${jsArg(l)},this.value,true)"></div>`;
@@ -1193,7 +1199,7 @@ function vGuia() {
   <div class="section-title">✍️ Montar texto de fechamento</div>
   <div class="card">
     <div class="gform">
-      ${["Contato", "Departamento/Cargo", "Telefone", "E-mail"].map((l, i) => campo(["t", l], "c" + i)).join("")}
+      ${["Contato", "Sobrenome ou departamento", "Telefone", "E-mail"].map((l, i) => campo(["t", l], "c" + i)).join("")}
       ${mod.map(campo).join("")}
       ${temFotos || r.__fotos ? `<label class="chk-line full"><input type="checkbox" ${r.__fotos === false ? "" : "checked"} onchange="guiaSet('__fotos',this.checked)"> Incluir “Fotos da visita em anexo.”</label>` : ""}
     </div>
@@ -1212,14 +1218,18 @@ function vGuia() {
       <button class="btn sm soft" style="margin-top:8px" onclick='copiar(${jsArg(e.solucao)})'>📋 Copiar exemplo</button></details>`).join("")}` : ""}`;
 }
 function montarTexto(sub, v, temFotos) {
-  const linhas = [];
-  const add = (l, x) => { if (x != null && String(x).trim() !== "") linhas.push(`${l}${/[?:]$/.test(l) ? "" : ":"} ${String(x).trim()}`); };
-  add("Contato", v["Contato"]); add("Departamento/Cargo", v["Departamento/Cargo"]); add("Telefone", v["Telefone"]); add("E-mail", v["E-mail"]);
-  modeloDe(sub).forEach(([t, l]) => {
-    const x = v[l]; if (x == null || x === "") return;
-    if (t === "art") linhas.push(`${l} ${x === "Sim" ? "(x) Sim ( ) Não" : "( ) Sim (x) Não"}`);
-    else if (t === "l") { const lab = l.replace(/\s*\(.*\)$/, ""); linhas.push(`${lab}: ${String(x).trim()}`); }
-    else add(l, x);
+  const linhas = [], completo = ROTEIROS_COMPLETOS.includes(modeloDe(sub));
+  const val = x => (x == null ? "" : String(x).trim());
+  const linha = (l, x) => /[?:]$/.test(l) ? `${l} ${val(x)}`.trimEnd() : `${l}: ${val(x)}`.trimEnd();
+  const add = (l, x) => { if (completo || val(x) !== "") linhas.push(linha(l, x)); };
+  ["Contato", "Sobrenome ou departamento", "Telefone", "E-mail"].forEach(l => add(l, v[l]));
+  modeloDe(sub).forEach(([t, l, opc]) => {
+    if (t === "br") { if (completo) linhas.push(""); return; }
+    const x = v[l];
+    if (t === "art") { if (completo || val(x)) linhas.push(`${l} ${x === "Sim" ? "(x) Sim ( ) Não" : x === "Não" ? "( ) Sim (x) Não" : "( ) Sim ( ) Não"}`); return; }
+    const lab = l.replace(/\s*\(.*\)$/, "");
+    if (opc) { if (val(x)) linhas.push(linha(lab, x)); return; }
+    add(lab, x);
   });
   if ((temFotos && v.__fotos !== false) || v.__fotos === true) linhas.push("Fotos da visita em anexo.");
   return linhas.join("\n");
@@ -1230,7 +1240,7 @@ function guiaSet(k, v, digitando) {
   const temFotos = o && S.fotos.some(f => f.chave_cliente === o.chave_cliente);
   if (digitando) {
     const n = o ? (S.notas.find(x => x.numero === o.numero) || S.notas.find(x => x.chave_cliente === o.chave_cliente)) : null; const c = o ? cliente(o) : {};
-    const pre = o ? { Contato: n?.recebido_por || (c.contato || "").split(" — ")[0] || "", "Departamento/Cargo": n?.cargo || (c.contato || "").split(" — ")[1] || "", Telefone: n?.telefone || c.telefone1 || "" } : {};
+    const pre = o ? { Contato: n?.recebido_por || (c.contato || "").split(" — ")[0] || "", "Sobrenome ou departamento": n?.cargo || (c.contato || "").split(" — ")[1] || "", Telefone: n?.telefone || c.telefone1 || "" } : {};
     document.getElementById("guiaTxt").value = montarTexto(S.guiaSub, { ...pre, ...r }, temFotos);
   } else { const y = window.scrollY; render(); window.scrollTo(0, y); }
 }
