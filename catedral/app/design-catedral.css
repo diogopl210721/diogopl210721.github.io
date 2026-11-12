@@ -552,3 +552,15 @@ html.cpv .drawer-tema{ color:var(--miolo); background:var(--casca)!important; bo
 html.cpv .dt-ic svg{ stroke:var(--trigo-claro)!important; }
 html.cpv .cpv-sec, html.cpv .cpv-saudacao h1, html.cpv .cpv-dia-cab h2, html.cpv .cpv-g-c h2, html.cpv .cpv-oferta-cab h2, html.cpv .cpv-marca h1{ color:var(--miolo)!important; }
 .cpv-agora-acoes .cpv-btn{ gap:6px; padding:0 8px; font-size:13px; }
+
+/* passo "Contar como você está": escolha direto no card */
+.cpv-humor{margin:4px 0 10px;padding:14px;border-radius:18px;background:rgba(var(--tinta),.05);border:1px solid rgba(217,164,65,.28);animation:cpvHumor .28s ease}
+.cpv-humor p{margin:0 0 10px;font-weight:700;font-size:14px}
+.cpv-humor-op{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cpv-humor-op button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:14px;border:1px solid rgba(var(--tinta),.12);background:rgba(var(--tinta),.04);color:inherit;font:600 12.5px inherit;cursor:pointer}
+.cpv-humor-op button svg{width:24px;height:24px;fill:none;stroke:var(--trigo);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cpv-humor-op button.on svg{stroke:#14110E}
+.cpv-humor-op button.on{background:var(--trigo);color:#14110E;border-color:var(--trigo)}
+.cpv-humor-op button:disabled:not(.on){opacity:.45}
+.cpv-humor .cpv-humor-ok{margin:0;font-weight:600}
+@keyframes cpvHumor{from{opacity:0;transform:translateY(-6px)}}

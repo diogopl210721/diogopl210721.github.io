@@ -626,7 +626,7 @@ async function compartilharCulto(culto) {
 
 async function carregarCultos() {
   const { data } = await sb.from("igr_cultos").select("*").eq("igreja_id", state.igreja.id).order("ordem");
-  const hojeISO = new Date().toISOString().slice(0, 10);
+  const hojeISO = isoLocal(new Date());
   const visiveis = (data || []).filter(c => {
     if (c.data_inicio && hojeISO < c.data_inicio) return false;
     if (c.data_fim && hojeISO > c.data_fim) return false;
@@ -725,7 +725,7 @@ async function compartilharAviso(aviso) {
 
 async function carregarAvisos(targetId) {
   const { data } = await sb.from("igr_avisos").select("*").eq("igreja_id", state.igreja.id).eq("visivel_no_mural", true).order("publicado_em", { ascending: false }).limit(8);
-  const hojeISO = new Date().toISOString().slice(0, 10);
+  const hojeISO = isoLocal(new Date());
   const meusGrupos = state.membro?.grupoIds || (state.membro?.grupo_id ? [state.membro.grupo_id] : []);
   const visiveisBrutos = (data || [])
     .filter(a => !a.grupo_id || meusGrupos.includes(a.grupo_id))
@@ -1776,7 +1776,7 @@ async function configurarReacoesDevocional() {
   msgEl.style.display = "none";
   const botoes = document.querySelectorAll("#devo-reacoes .reacao-btn");
   botoes.forEach(b => b.classList.remove("on"));
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = isoLocal(new Date());
 
   if (state.membro) {
     const { data: atual } = await sb.from("igr_devocional_reacoes").select("reacao")
@@ -1808,7 +1808,7 @@ const HUMOR_LABELS = {
 async function configurarCheckinDiario() {
   const box = document.getElementById("checkin-diario-box");
   if (!box || !state.membro) return;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = isoLocal(new Date());
   const { data: existente } = await sb.from("igr_checkins_diarios").select("humor")
     .eq("membro_id", state.membro.id).eq("data", hoje).maybeSingle();
 
@@ -2576,7 +2576,7 @@ async function enviarComentarioCelula(postId, celulaId) {
 
 async function carregarAvisosDoGrupoDetalhe(grupoId) {
   const { data } = await sb.from("igr_avisos").select("*").eq("grupo_id", grupoId).order("publicado_em", { ascending: false }).limit(10);
-  const hojeISO = new Date().toISOString().slice(0, 10);
+  const hojeISO = isoLocal(new Date());
   const visiveis = (data || []).filter(a => !a.data_evento || a.data_evento >= hojeISO);
   const el = document.getElementById("grupo-detalhe-avisos");
   el.innerHTML = visiveis.map(a => `
@@ -2694,7 +2694,7 @@ async function carregarSobreIgreja() {
     proximoBox.style.display = "none";
   }
 
-  const hojeISO = new Date().toISOString().slice(0, 10);
+  const hojeISO = isoLocal(new Date());
   const visiveis = (cultos || []).filter(c => {
     if (c.data_inicio && hojeISO < c.data_inicio) return false;
     if (c.data_fim && hojeISO > c.data_fim) return false;
@@ -2723,9 +2723,12 @@ function indiceDiaSemana(texto) {
   return DIAS_SEMANA_ORDEM.findIndex(dia => normalizado.includes(dia));
 }
 
+// data AAAA-MM-DD no fuso do aparelho (toISOString usa UTC e vira o dia depois das 21h no Brasil)
+function isoLocal(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+
 function proximaOcorrenciaCulto(culto) {
   const hoje = new Date();
-  const hojeISO = hoje.toISOString().slice(0, 10);
+  const hojeISO = isoLocal(hoje);
   if (culto.data) {
     if (culto.data < hojeISO) return null; // data especial que já passou
     return culto.data;
@@ -2737,9 +2740,15 @@ function proximaOcorrenciaCulto(culto) {
   if (alvo === -1) return null;
   const diaAtual = hoje.getDay(); // 0=domingo
   let diasAte = (alvo - diaAtual + 7) % 7;
+  // se o culto de hoje já terminou (horário + 2h), o próximo é na semana que vem
+  if (diasAte === 0 && culto.horario) {
+    const [h, m] = String(culto.horario).split(":").map(Number);
+    const fim = new Date(hoje); fim.setHours((h || 0) + 2, m || 0, 0, 0);
+    if (hoje > fim) diasAte = 7;
+  }
   const data = new Date(hoje);
   data.setDate(hoje.getDate() + diasAte);
-  return data.toISOString().slice(0, 10);
+  return isoLocal(data);
 }
 
 // Tema do domingo conforme a semana do mês (config DOMINGOS_TEMATICOS)
@@ -2768,8 +2777,8 @@ function calcularProximoCulto(cultos) {
 function renderizarCardProximoCulto(resultado) {
   if (!resultado) return "";
   const { culto: c, data } = resultado;
-  const hojeISO = new Date().toISOString().slice(0, 10);
-  const amanhaISO = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const hojeISO = isoLocal(new Date());
+  const amanhaISO = isoLocal(new Date(Date.now() + 86400000));
   const quandoTexto = data === hojeISO ? "Hoje" : data === amanhaISO ? "Amanhã" : formatarData(data);
   return `
     <div class="culto-hero ${c.imagem_url ? "" : "sem-foto"}" ${c.imagem_url ? `style="background-image:url('${c.imagem_url}')"` : ""}>
@@ -3646,7 +3655,7 @@ async function darPontosParaMembro(membroId, igrejaId, tipo, referencia_id) {
 // pra acoes que nao podem pontuar toda vez (ex: abrir o devocional) - so da ponto 1x por dia
 async function darPontosUmaVezPorDia(tipo) {
   if (!state.membro || !state.igreja) return;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = isoLocal(new Date());
   const { data: jaGanhou } = await sb.from("igr_pontos_eventos").select("id")
     .eq("membro_id", state.membro.id).eq("tipo", tipo).gte("created_at", hoje + "T00:00:00").maybeSingle();
   if (jaGanhou) return;
@@ -3656,7 +3665,7 @@ async function darPontosUmaVezPorDia(tipo) {
 // o devocional pontua ate 3x por dia (manha/tarde/noite) - abrir de novo no MESMO periodo nao pontua de novo
 async function darPontosUmaVezPorPeriodo(tipo) {
   if (!state.membro || !state.igreja) return;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = isoLocal(new Date());
   const periodoAtual = periodoDoDia();
   const { data: jaGanhou } = await sb.from("igr_pontos_eventos").select("created_at")
     .eq("membro_id", state.membro.id).eq("tipo", tipo).gte("created_at", hoje + "T00:00:00");
@@ -3976,7 +3985,7 @@ async function garantirFechamentoMesAnterior() {
   if (!state.igreja) return;
   const inicioMesAtual = primeiroDiaDoMes(0);
   const inicioMesAnterior = primeiroDiaDoMes(-1);
-  const mesAnteriorISO = inicioMesAnterior.toISOString().slice(0, 10);
+  const mesAnteriorISO = isoLocal(inicioMesAnterior);
 
   const { data: jaFechado } = await sb.from("igr_ranking_vencedores").select("id")
     .eq("igreja_id", state.igreja.id).eq("mes", mesAnteriorISO).limit(1).maybeSingle();
@@ -4485,7 +4494,7 @@ async function carregarEventos() {
   const btnCriar = document.getElementById("btn-criar-evento");
   if (btnCriar) btnCriar.style.display = podeGerenciarEventos() ? "block" : "none";
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = isoLocal(new Date());
   const { data } = await sb.from("igr_eventos").select("*, igr_eventos_inscricoes(count)")
     .eq("igreja_id", state.igreja.id).gte("data", hoje).order("data");
   state.eventosCache = data || [];
@@ -5350,7 +5359,7 @@ async function carregarLouvor() {
 
   const el = document.getElementById("louvor-minhas-escalas");
   el.innerHTML = `<p class="hint"><span class="loading-dot"></span></p>`;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = isoLocal(new Date());
 
   let escalas = [];
   if (podeGerenciar) {
@@ -5381,9 +5390,9 @@ async function carregarMinhasEstatisticasLouvor() {
   const el = document.getElementById("louvor-minhas-estatisticas");
   if (!el || !state.membro) return;
   const hoje = new Date();
-  const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
-  const inicioAno = new Date(hoje.getFullYear(), 0, 1).toISOString().slice(0, 10);
-  const dataHoje = hoje.toISOString().slice(0, 10);
+  const inicioMes = isoLocal(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  const inicioAno = isoLocal(new Date(hoje.getFullYear(), 0, 1));
+  const dataHoje = isoLocal(hoje);
 
   const { data } = await sb.from("igr_louvor_escala_participantes")
     .select("status, igr_louvor_escalas!inner(data)")
@@ -5414,7 +5423,7 @@ async function carregarListaEscalasLouvor(tipo) {
   state.louvorTabAtual = tipo;
   const el = document.getElementById("louvor-lista-escalas");
   el.innerHTML = `<p class="hint"><span class="loading-dot"></span></p>`;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = isoLocal(new Date());
   let q = sb.from("igr_louvor_escalas").select("*").eq("grupo_id", grupoLouvorAtivo());
   q = tipo === "proximas" ? q.gte("data", hoje).order("data", { ascending: true }) : q.lt("data", hoje).order("data", { ascending: false });
   const { data: escalas } = await q.limit(40);
@@ -7142,7 +7151,7 @@ async function exportarGrupoMembrosCSV() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `membros-${estadoMembrosAdmin.grupoNome.replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.href = url; a.download = `membros-${estadoMembrosAdmin.grupoNome.replace(/\s+/g, "-")}-${isoLocal(new Date())}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   } catch (e) {
@@ -7195,7 +7204,7 @@ async function exportarMembrosCSV() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `membros-${state.igreja.nome.replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.href = url; a.download = `membros-${state.igreja.nome.replace(/\s+/g, "-")}-${isoLocal(new Date())}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   } catch (e) {
@@ -7486,7 +7495,7 @@ async function enviarCultoAdmin(ev) {
       await sincronizarCalendarioDeOrigem({ tipoColuna: "culto_id", origemId: cultoId, titulo, local, horario, imagem_url: novaImagem || editando?.imagem_url, data: data_especifica, data_fim: data_especifica });
     } else if (dia_semana) {
       // recorrente semanal - usa a data de inicio se tiver, senao hoje; sem data de termino = vale pra sempre
-      const anchor = data_inicio || new Date().toISOString().slice(0, 10);
+      const anchor = data_inicio || isoLocal(new Date());
       await sincronizarCalendarioDeOrigem({ tipoColuna: "culto_id", origemId: cultoId, titulo, local, horario, imagem_url: novaImagem || editando?.imagem_url, data: anchor, data_fim, dia_semana });
     }
     carregarCultosAdmin();

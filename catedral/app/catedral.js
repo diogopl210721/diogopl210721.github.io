@@ -320,8 +320,53 @@ gl_FragColor=vec4(col,1.);}`;
   }
   function acaoPasso(id) {
     if (id === "palavra") { const el = $("#palavra-dia"); if (el && !el.hidden) destacar(el); else window.mostrarTela("tela-biblia"); marcar("palavra"); }
-    if (id === "humor") destacar($("#checkin-diario-box"));
+    if (id === "humor") abrirHumor();
     if (id === "devo") { ($("#palavra-card") || $("#btn-ler-devocional"))?.click(); marcar("devo"); }
+  }
+  const HICON = {
+    grato: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
+    esperancoso: '<path d="M3 18h18M6 18a6 6 0 0 1 12 0M12 6V4M5.6 9.6 4.2 8.2M18.4 9.6l1.4-1.4"/>',
+    em_paz: '<path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14Z"/><path d="M5 19 13 11"/>',
+    fortalecido: '<path d="M12 21c-3.9 0-6-2.7-6-6 0-4 3-5.5 3-9 2 1 3.5 3 3.5 5 1-.6 1.6-1.6 1.8-2.8C16.4 9.6 18 12 18 15c0 3.3-2.1 6-6 6Z"/>',
+    cansado: '<rect x="3" y="8" width="16" height="9" rx="2.5"/><path d="M21 11v3M6.5 11v3"/>',
+    ansioso: '<path d="M7 15a4 4 0 1 1 .9-7.9A5.5 5.5 0 0 1 18.5 9 3 3 0 0 1 18 15H7Z"/><path d="M9 18l-1 2M13 18l-1 2M17 18l-1 2"/>'
+  };
+  const HUMORES = [["grato", "Grato"], ["esperancoso", "Esperançoso"], ["em_paz", "Em paz"], ["fortalecido", "Fortalecido"], ["cansado", "Cansado"], ["ansioso", "Ansioso"]];
+  function abrirHumor() {
+    const li = $('#cpv-dia .cpv-passo[data-passo="humor"]')?.closest("li");
+    if (!li) return;
+    const aberto = $("#cpv-humor");
+    if (aberto) { aberto.remove(); return; }
+    const box = document.createElement("div");
+    box.id = "cpv-humor"; box.className = "cpv-humor";
+    box.innerHTML = `<p>Como você está hoje?</p><div class="cpv-humor-op">${HUMORES.map(([v, t]) => `<button type="button" data-h="${v}"><svg viewBox="0 0 24 24" aria-hidden="true">${HICON[v]}</svg>${t}</button>`).join("")}</div>`;
+    li.after(box);
+    $$("button", box).forEach(b => b.addEventListener("click", async () => {
+      $$("button", box).forEach(x => { x.disabled = true; x.classList.toggle("on", x === b); });
+      try {
+        const m = membro();
+        if (m && typeof sb !== "undefined") {
+          const { error } = await sb.from("igr_checkins_diarios").upsert({ membro_id: m.id, humor: b.dataset.h, data: hojeISO() }, { onConflict: "membro_id,data" });
+          if (error) throw error;
+          if (typeof darPontos === "function") darPontos("checkin_humor");
+        }
+        marcar("humor");
+        const cx = $("#checkin-diario-box"); if (cx) cx.style.display = "none";
+        box.innerHTML = `<p class="cpv-humor-ok">Obrigado por contar. Seus líderes estão orando por você.</p>`;
+        setTimeout(() => box.remove(), 2200);
+      } catch (e) {
+        $$("button", box).forEach(x => { x.disabled = false; x.classList.remove("on"); });
+        box.querySelector("p").textContent = "Não deu para salvar agora. Confira a internet e toque de novo.";
+      }
+    }));
+  }
+  async function humorJaFeito() {
+    const m = membro();
+    if (!m || typeof sb === "undefined" || feitos().humor) return;
+    try {
+      const { data } = await sb.from("igr_checkins_diarios").select("humor").eq("membro_id", m.id).eq("data", hojeISO()).maybeSingle();
+      if (data) marcar("humor");
+    } catch (e) {}
   }
   async function montarHoje() {
     const tela = $("#tela-membro-home"), sc = tela && $(".scroll", tela);
@@ -355,6 +400,7 @@ gl_FragColor=vec4(col,1.);}`;
             .map(([r, i, t]) => `<button type="button" ${!t ? "data-abrir-explorar" : t.startsWith("@") ? `data-cpv-ir="${t.slice(1)}"` : `data-nav="${t}"`}><span class="cpv-tile">${ci(i)}</span><span>${r}</span></button>`).join("")}
         </nav>`;
       $$(".cpv-passo", topo).forEach(b => b.addEventListener("click", () => acaoPasso(b.dataset.passo)));
+      humorJaFeito();
       $$("#checkin-diario-box .reacao-btn").forEach(b => b.addEventListener("click", () => marcar("humor")));
       // blocos que já existem, na ordem de prioridade
       let ref = topo;
