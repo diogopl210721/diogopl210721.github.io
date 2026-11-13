@@ -36,6 +36,7 @@ const S = {
   notas: [],
   guias: {},
   visitas: {},
+  config: {},
   fotos: [],
   fotoUrls: {},
   view: "inicio",
@@ -146,6 +147,7 @@ async function carregar() {
   S.fotos = d.fotos || [];
   S.guias = {}; (d.guias || []).forEach(g => S.guias[g.sub] = g);
   S.visitas = {}; (d.visitas || []).forEach(v => S.visitas[v.numero] = v);
+  S.config = d.config || {};
 }
 async function iniciar() {
   document.getElementById("login").classList.add("hidden");
@@ -161,7 +163,7 @@ function cliente(o) {
   const ed = S.clientes[o.chave_cliente] || {};
   return {
     chave: o.chave_cliente,
-    codigo: o.cliente_codigo || ed.codigo || "",
+    codigo: ed.codigo || o.cliente_codigo || "",
     nome: ed.nome || o.cliente_nome,
     logradouro: ed.logradouro || "", numero: ed.numero || "", complemento: ed.complemento || "",
     bairro: ed.bairro || title(o.bairro), cidade: ed.cidade || title(o.cidade), uf: ed.uf || ufSigla(o.uf), cep: ed.cep || "",
@@ -397,7 +399,7 @@ function vInicio() {
 
   <div class="section-title">🗺️ Rota do dia — para onde você vai hoje?</div>
   <div class="cid-chips">${cidadesAbertas().slice(0, 8).map(x => `<button class="cid" onclick='go("rota",()=>{S.rotaCidade=${jsArg(x.c)};S.rotaFiltro="todas";S.rotaFora=new Set()})'>
-    <b>${esc(x.c)}</b><span>${x.n} aberta${x.n > 1 ? "s" : ""}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("")}
+    <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("")}
     ${cidadesAbertas().length > 8 ? `<button class="cid" onclick="go('rota')"><b>Ver todas ›</b><span>${cidadesAbertas().length} cidades</span></button>` : ""}</div>
 
   <div class="section-title">Situação das ocorrências abertas</div>
@@ -549,25 +551,180 @@ function paradasCidade(cidade, filtro) {
   if (filtro === "rel") ocs = ocs.filter(isRel);
   // agrupa por endereço (mesmo cliente/bairro vira 1 parada) e ordena por bairro, bairros mais urgentes primeiro
   const paradas = new Map();
-  ocs.forEach(o => { const c = cliente(o), k = enderecoTexto(c); if (!paradas.has(k)) paradas.set(k, { k, c, ocs: [] }); paradas.get(k).ocs.push(o); });
+  ocs.forEach(o => { const c = cliente(o), k = enderecoTexto(c); if (!paradas.has(k)) paradas.set(k, { k, c, chave: o.chave_cliente, ocs: [] }); paradas.get(k).ocs.push(o); });
+  (S.rotaExtras || new Set()).forEach(ch => {
+    const ref = refCliente(ch); if (!ref || (title(ref.cidade) || "Sem cidade") !== cidade) return;
+    const c = cliente(ref), k = enderecoTexto(c);
+    if (!paradas.has(k)) paradas.set(k, { k, c, chave: ch, ocs: [], extra: true });
+  });
   const arr = [...paradas.values()];
-  arr.forEach(p => { p.pz = Math.min(...p.ocs.map(o => o._pz ? +o._pz : 9e15)); p.bairro = norm(p.c.bairro); });
+  arr.forEach(p => { p.pz = p.ocs.length ? Math.min(...p.ocs.map(o => o._pz ? +o._pz : 9e15)) : 9e15; p.bairro = norm(p.c.bairro); });
   const pzBairro = {}; arr.forEach(p => pzBairro[p.bairro] = Math.min(pzBairro[p.bairro] ?? 9e15, p.pz));
   arr.sort((a, b) => pzBairro[a.bairro] - pzBairro[b.bairro] || a.bairro.localeCompare(b.bairro) || a.pz - b.pz);
   return arr;
 }
+/* ---- rota otimizada: onde estou → paradas → base (Consigaz) ---- */
+function baseRota() { return (S.config.base_rota && S.config.base_rota.endereco) || ""; }
+function geoCache() { try { return JSON.parse(lsGet("ocv_geo") || "{}"); } catch (e) { return {}; } }
+async function geocodificar(q) {
+  const c = geoCache(); if (c[q]) return c[q];
+  const tentar = async t => {
+    const r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=" + encodeURIComponent(t), { headers: { "Accept-Language": "pt-BR" } });
+    const d = await r.json(); return d && d[0] ? { lat: +d[0].lat, lng: +d[0].lon } : null;
+  };
+  let g = await tentar(q);
+  if (!g) { const partes = q.split(","); if (partes.length > 2) { await new Promise(r => setTimeout(r, 1100)); g = await tentar(partes.slice(-2).join(",")); } }
+  if (g) { const cc = geoCache(); cc[q] = g; lsSet("ocv_geo", JSON.stringify(cc)); }
+  return g;
+}
+function distKm(a, b) {
+  const R = 6371, rad = x => x * Math.PI / 180, dLa = rad(b.lat - a.lat), dLo = rad(b.lng - a.lng);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLo / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function ordenarParadas(origem, pts, fim) {
+  // vizinho mais próximo + melhoria 2-opt, com início (onde estou) e fim (base) fixos
+  const rest = pts.slice(), ordem = []; let cur = origem;
+  while (rest.length) { let bi = 0; rest.forEach((p, i) => { if (distKm(cur, p.g) < distKm(cur, rest[bi].g)) bi = i; }); cur = rest[bi].g; ordem.push(rest.splice(bi, 1)[0]); }
+  const custo = o => { let d = 0, c = origem; o.forEach(p => { d += distKm(c, p.g); c = p.g; }); return d + (fim ? distKm(c, fim) : 0); };
+  let melhorou = true, best = ordem, bc = custo(ordem);
+  while (melhorou) { melhorou = false;
+    for (let i = 0; i < best.length - 1; i++) for (let j = i + 1; j < best.length; j++) {
+      const n = [...best.slice(0, i), ...best.slice(i, j + 1).reverse(), ...best.slice(j + 1)], nc = custo(n);
+      if (nc + 1e-9 < bc) { best = n; bc = nc; melhorou = true; }
+    } }
+  return { ordem: best, km: bc };
+}
+function onde() {
+  return new Promise(ok => {
+    if (!navigator.geolocation) return ok(null);
+    navigator.geolocation.getCurrentPosition(p => ok({ lat: p.coords.latitude, lng: p.coords.longitude }), () => ok(null), { enableHighAccuracy: true, timeout: 12000, maximumAge: 120000 });
+  });
+}
+function rotaSig() { return [S.rotaCidade, S.rotaFiltro, [...(S.rotaFora || [])].sort().join("|")].join("#"); }
+async function otimizarRota() {
+  if (!baseRota()) return editarBase(true);
+  const paradas = (S._paradas || []).filter(p => !S.rotaFora.has(p.k)); if (!paradas.length) return;
+  try {
+    toast("📍 Pegando sua localização…", 3000);
+    const aqui = await onde();
+    toast("🗺️ Localizando a base…", 3000);
+    const fim = await geocodificar(baseRota());
+    if (!fim) return toast("Não encontrei o endereço da base no mapa. Confira em ✏️ Base.", 5000);
+    const pts = []; let n = 0;
+    for (const p of paradas) {
+      const cache = geoCache()[p.k];
+      toast(`🗺️ Localizando paradas ${++n}/${paradas.length}…`, 2500);
+      const g = cache || await geocodificar(p.k);
+      if (!cache) await new Promise(r => setTimeout(r, 1100)); // limite do serviço de mapas
+      pts.push({ ...p, g: g || fim });
+    }
+    const origem = aqui || fim;
+    const { ordem, km } = ordenarParadas(origem, pts, fim);
+    S.rotaOtim = { sig: rotaSig(), ordem: ordem.map(p => p.k), km, origem: aqui, semGps: !aqui };
+    toast(aqui ? "✅ Rota otimizada" : "✅ Rota otimizada (sem GPS: considerei saída da base)", 3500);
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  } catch (e) { toast("Não consegui otimizar agora: " + e.message, 5000); }
+}
+function urlsRotaOtim(ends, origem, base) {
+  // Google Maps aceita até 9 paradas intermediárias por link: divide em partes encadeadas
+  const urls = [], tam = 9; let ori = origem ? `${origem.lat},${origem.lng}` : "";
+  for (let i = 0; i < ends.length; i += tam) {
+    const ch = ends.slice(i, i + tam), ultimo = i + tam >= ends.length;
+    const dest = ultimo ? base : ch[ch.length - 1], wps = ultimo ? ch : ch.slice(0, -1);
+    urls.push("https://www.google.com/maps/dir/?api=1&travelmode=driving" + (ori ? "&origin=" + encodeURIComponent(ori) : "") +
+      "&destination=" + encodeURIComponent(dest) + (wps.length ? "&waypoints=" + encodeURIComponent(wps.join("|")) : ""));
+    ori = dest;
+  }
+  if (!ends.length) urls.push("https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + encodeURIComponent(base));
+  return urls;
+}
+function editarBase(depoisOtimizar) {
+  modal(`<button class="x" onclick="fecharModal()">×</button><h3>🏁 Base de chegada</h3>
+    <p class="sub">Endereço da Consigaz para onde você volta no fim da rota. Fica salvo para todos os seus aparelhos.</p>
+    <div class="field"><label>Nome</label><input class="input" id="b_nome" value="${esc((S.config.base_rota || {}).nome || "Consigaz")}"></div>
+    <div class="field"><label>Endereço completo</label><input class="input" id="b_end" value="${esc(baseRota())}" placeholder="Rua, número, bairro, cidade - PR"></div>
+    <div class="err" id="b_err"></div>
+    <button class="btn block" onclick="salvarBase(${depoisOtimizar ? "true" : "false"})">Salvar base</button>`);
+}
+async function salvarBase(depoisOtimizar) {
+  const end = document.getElementById("b_end").value.trim(), nome = document.getElementById("b_nome").value.trim() || "Consigaz";
+  if (end.length < 8) { document.getElementById("b_err").textContent = "Digite o endereço completo (rua, número e cidade)."; return; }
+  const valor = { nome, endereco: end };
+  const r = await rpc("ocv_salvar_config", { p_token: S.token, p_chave: "base_rota", p_valor: valor }).catch(e => ({ ok: false, erro: e.message }));
+  if (!r.ok) { document.getElementById("b_err").textContent = r.erro; return; }
+  S.config.base_rota = valor; S.rotaOtim = null; fecharModal(); toast("Base salva ✓");
+  setTimeout(() => { render(); if (depoisOtimizar) otimizarRota(); }, 120);
+}
+
+function refCliente(chave) {
+  let ref = null; S.ocs.forEach(o => { if (o.chave_cliente === chave && (!ref || (o._ab || 0) > (ref._ab || 0))) ref = o; }); return ref;
+}
+function clientesDaCidade(cidade) {
+  return listaClientes().filter(e => (title(e.ref.cidade) || "Sem cidade") === cidade).map(e => {
+    const ab = e.ocs.filter(o => !isFin(o)), ultNota = S.notas.find(n => n.chave_cliente === e.chave);
+    const ultFin = e.ocs.filter(isFin).sort((a, b) => (b._fe || 0) - (a._fe || 0))[0];
+    return { ...e, c: cliente(e.ref), ab, ultNota, ultFin };
+  }).sort((a, b) => b.ab.length - a.ab.length || a.c.nome.localeCompare(b.c.nome));
+}
+function toggleExtra(chave, sim) {
+  S.rotaExtras = S.rotaExtras || new Set(); sim ? S.rotaExtras.add(chave) : S.rotaExtras.delete(chave);
+  S.rotaOtim = null; const y = window.scrollY; render(); window.scrollTo(0, y);
+}
+function atender(chave) {
+  const ref = refCliente(chave); if (!ref) return;
+  const ab = S.ocs.filter(o => o.chave_cliente === chave && !isFin(o)).sort((a, b) => (a._pz || 0) - (b._pz || 0))[0];
+  abrirNota((ab || ref).numero);
+}
+function vClientesCidade(sel) {
+  const q = norm(S.cidQ || "");
+  let l = clientesDaCidade(sel);
+  if (q) l = l.filter(e => norm([e.c.codigo, e.c.nome, e.c.bairro, e.c.telefone1].join(" ")).includes(q));
+  const ex = S.rotaExtras || new Set();
+  return `<div class="toolbar"><input class="input" placeholder="Buscar cliente em ${esc(sel)}…" value="${esc(S.cidQ || "")}" oninput="S.cidQ=this.value;debRender()"></div>
+  <p class="sub">${l.length} cliente${l.length === 1 ? "" : "s"} em ${esc(sel)} · ${l.filter(e => e.ab.length).length} com ocorrência aberta</p>
+  ${l.slice(0, 150).map(e => { const z = linkZap(e.c.telefone1), naRota = e.ab.length > 0 || ex.has(e.chave);
+    return `<div class="cc">
+      <div class="cc-top"><div style="flex:1;min-width:0"><div class="name" onclick="abrirFicha(${jsArg(e.chave)})">${esc(e.c.nome)}</div>
+        <div class="meta">${e.c.codigo ? "Cód. <b>" + esc(e.c.codigo) + "</b>" : '<span class="pill p-gray">sem código</span>'} · 📍 ${esc(e.c.bairro || "")}</div>
+        <div class="meta">${e.ultNota ? `Última anotação ${fmtData(e.ultNota.criado_em)}` : e.ultFin ? `Último atendimento ${fmtData(e.ultFin.fechamento)} · ${esc(subCurta(e.ultFin.subclassificacao))}` : "Sem atendimento registrado"}</div></div>
+        ${e.ab.length ? `<span class="pill p-orange">${e.ab.length} aberta${e.ab.length > 1 ? "s" : ""}</span>` : ""}</div>
+      <div class="actions">
+        <button class="btn sm" style="background:var(--green)" onclick="atender(${jsArg(e.chave)})">🤝 Atender</button>
+        <button class="btn sm ghost" onclick="abrirFotos(${jsArg(e.chave)})">📷 Fotos</button>
+        <a class="btn sm soft" href="${linkMaps(e.c)}" target="_blank" rel="noopener">🗺️ Maps</a>
+        <a class="btn sm soft" href="${linkWaze(e.c)}" target="_blank" rel="noopener">🚗 Waze</a>
+        ${z ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+        ${e.ab.length ? '<span class="pill p-blue" style="align-self:center">✓ já está na rota</span>' : `<button class="btn sm ${naRota ? "" : "ghost"}" onclick="toggleExtra(${jsArg(e.chave)},${!naRota})">${naRota ? "✓ Na rota (tirar)" : "➕ Pôr na rota"}</button>`}
+        <button class="btn sm ghost" onclick="abrirFicha(${jsArg(e.chave)})">Ficha ›</button>
+      </div></div>`; }).join("")}
+  ${l.length > 150 ? `<p class="sub" style="text-align:center">Mostrando 150 de ${l.length}. Use a busca.</p>` : ""}`;
+}
+
+function todasCidades() {
+  const ab = {}; cidadesAbertas().forEach(x => ab[x.c] = x);
+  const m = {}; S.ocs.forEach(o => { const c = title(o.cidade) || "Sem cidade"; m[c] = m[c] || ab[c] || { c, n: 0, urg: 0, rel: 0 }; });
+  return Object.values(m).sort((a, b) => b.urg - a.urg || b.n - a.n || a.c.localeCompare(b.c));
+}
 function vRota() {
-  const cids = cidadesAbertas();
+  const cids = (S.rotaModo || "rota") === "clientes" ? todasCidades() : cidadesAbertas();
   const sel = S.rotaCidade && cids.some(x => x.c === S.rotaCidade) ? S.rotaCidade : null;
   const filtro = S.rotaFiltro || "todas";
   let corpo = "";
-  if (sel) {
+  const modo = S.rotaModo || "rota";
+  if (sel && modo === "clientes") {
+    corpo = vClientesCidade(sel);
+  } else if (sel) {
     const paradas = paradasCidade(sel, filtro);
     S._paradas = paradas;
     if (!S.rotaFora) S.rotaFora = new Set();
+    const otim = S.rotaOtim && S.rotaOtim.sig === rotaSig() ? S.rotaOtim : null;
+    if (otim) paradas.sort((a, b) => { const ia = otim.ordem.indexOf(a.k), ib = otim.ordem.indexOf(b.k); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
+    S._paradas = paradas;
     const ativas = paradas.filter(p => !S.rotaFora.has(p.k));
     const ends = ativas.map(p => p.k);
     const partes = []; for (let i = 0; i < ends.length; i += 10) partes.push(ends.slice(i, i + 10));
+    const base = baseRota(), urlsOtim = otim && base ? urlsRotaOtim(ends, otim.origem, base) : [];
     const aprox = ativas.filter(p => !enderecoCompleto(p.c)).length;
     corpo = `
     <div class="toolbar" style="margin-top:4px">
@@ -576,8 +733,12 @@ function vRota() {
     ${paradas.length ? `
     <div class="card rota-go">
       <div><b style="font-size:17px">${ativas.length} parada${ativas.length === 1 ? "" : "s"} em ${esc(sel)}</b>
-        <div class="hint">${ativas.reduce((a, p) => a + p.ocs.length, 0)} ocorrências · partindo da sua localização · ordem por bairro, urgentes primeiro</div></div>
-      ${partes.map((p, i) => `<a class="btn block" style="margin-top:10px" href="${urlRota(p)}" target="_blank" rel="noopener">🗺️ Abrir rota no Google Maps${partes.length > 1 ? ` (parte ${i + 1} de ${partes.length})` : ""}</a>`).join("")}
+        <div class="hint">${ativas.reduce((a, p) => a + p.ocs.length, 0)} ocorrências · ${otim ? `<b>ordem otimizada</b>: ${otim.semGps ? "saindo da base" : "saindo de onde você está"} → paradas → ${esc((S.config.base_rota || {}).nome || "base")} · ≈ ${Math.round(otim.km * 1.3)} km` : "ordem por bairro, urgentes primeiro"}</div></div>
+      <div class="base-line">🏁 Chegada: <b>${base ? esc((S.config.base_rota || {}).nome || "Consigaz") + " — " + esc(base) : "base não definida"}</b> <button class="lnk" onclick="editarBase()">✏️ ${base ? "trocar" : "definir"}</button></div>
+      ${otim && base ? urlsOtim.map((u, i) => `<a class="btn block" style="margin-top:10px" href="${u}" target="_blank" rel="noopener">🧭 Iniciar rota otimizada no Google Maps${urlsOtim.length > 1 ? ` (parte ${i + 1} de ${urlsOtim.length})` : ""}</a>`).join("")
+        : `<button class="btn block" style="margin-top:10px" onclick="otimizarRota()">🧭 Otimizar: sair daqui → paradas → ${esc((S.config.base_rota || {}).nome || "Consigaz")}</button>
+           ${partes.map((p, i) => `<a class="btn block ghost" style="margin-top:8px" href="${urlRota(p)}" target="_blank" rel="noopener">🗺️ Abrir sem otimizar${partes.length > 1 ? ` (parte ${i + 1} de ${partes.length})` : ""}</a>`).join("")}`}
+      ${otim ? `<button class="lnk" style="margin-top:8px" onclick="S.rotaOtim=null;otimizarRota()">↻ Recalcular a partir de onde estou agora</button>` : ""}
       ${ativas[0] ? `<a class="btn block ghost" style="margin-top:8px" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">🚗 Ir para a 1ª parada no Waze</a>` : ""}
       ${aprox ? `<div class="info-box" style="margin-bottom:0">${aprox} parada${aprox > 1 ? "s estão" : " está"} só com o bairro (sem rua e número). Toque em ✏️ para completar e a rota fica exata.</div>` : ""}
     </div>
@@ -586,21 +747,22 @@ function vRota() {
       return `<div class="parada ${fora ? "fora" : ""}">
         <input type="checkbox" class="chk" ${fora ? "" : "checked"} onchange="toggleParada(${i},this.checked)">
         <div class="pn">${fora ? "–" : ativas.indexOf(p) + 1}</div>
-        <div class="body"><div class="name" onclick="abrirFicha(${jsArg(p.ocs[0].chave_cliente)})">${esc(p.c.nome)}</div>
+        <div class="body"><div class="name" onclick="abrirFicha(${jsArg(p.chave)})">${esc(p.c.nome)}</div>
           <div class="meta">📍 ${esc(enderecoTexto(p.c))}${enderecoCompleto(p.c) ? "" : ' <span class="pill p-gray">aprox.</span>'}</div>
-          <div class="top" style="margin-top:6px">${p.ocs.map(o => { const st = situacao(o); return `<span class="pill ${st.pill}">${st.txt}</span><span class="pill ${isRel(o) ? "p-purple" : "p-blue"}">${esc(subCurta(o.subclassificacao))}</span>`; }).join("")}</div>
+          <div class="top" style="margin-top:6px">${p.extra ? '<span class="pill p-purple">🤝 Visita sem ocorrência aberta</span>' : ""}${p.ocs.map(o => { const st = situacao(o); return `<span class="pill ${st.pill}">${st.txt}</span><span class="pill ${isRel(o) ? "p-purple" : "p-blue"}">${esc(subCurta(o.subclassificacao))}</span>`; }).join("")}</div>
           <div class="actions">
             <a class="btn sm soft" href="${linkMaps(p.c)}" target="_blank" rel="noopener">🗺️ Maps</a>
             <a class="btn sm soft" href="${linkWaze(p.c)}" target="_blank" rel="noopener">🚗 Waze</a>
             ${linkZap(p.c.telefone1) ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${linkZap(p.c.telefone1)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
-            <button class="btn sm ghost" onclick="abrirFicha(${jsArg(p.ocs[0].chave_cliente)},true)">✏️ Editar</button>
+            <button class="btn sm ghost" onclick="abrirFicha(${jsArg(p.chave)},true)">✏️ Editar</button>
           </div></div></div>`; }).join("")}` : `<div class="card empty">Nenhuma ocorrência aberta em ${esc(sel)} com esse filtro.</div>`}`;
   }
   return `${btnVoltar()}
   <h2 class="page">Rota do dia</h2>
   <p class="sub">${sel ? "Toque em outra cidade para trocar." : "Para onde você vai hoje? Escolha a cidade."}</p>
+  ${sel ? `<div class="seg" style="margin:4px 0 12px"><button class="${modo === "rota" ? "on" : ""}" onclick="S.rotaModo='rota';render()">🗺️ Rota do dia</button><button class="${modo === "clientes" ? "on" : ""}" onclick="S.rotaModo='clientes';render()">👥 Clientes de ${esc(sel)} (${clientesDaCidade(sel).length})</button></div>` : ""}
   <div class="cid-chips">${cids.map(x => `<button class="cid ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();render()">
-    <b>${esc(x.c)}</b><span>${x.n} aberta${x.n > 1 ? "s" : ""}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("") || '<div class="card empty">Nenhuma ocorrência aberta.</div>'}</div>
+    <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("") || '<div class="card empty">Nenhuma ocorrência aberta.</div>'}</div>
   ${corpo}`;
 }
 function toggleParada(i, on) {
@@ -768,7 +930,8 @@ function abrirFicha(chave, editar) {
     <details ${editar ? "open" : ""} style="margin:12px 0">
       <summary style="cursor:pointer;font-weight:700;padding:8px 0">✏️ Editar endereço e telefones</summary>
       <div class="form-grid" style="margin-top:10px">
-        ${f("nome", "Nome do cliente", c.nome, true)}
+        ${f("codigo", "Código do cliente", c.codigo, false, 'inputmode="numeric" placeholder="Ex.: 1137418"')}
+        ${f("nome", "Nome do cliente", c.nome, false)}
         ${f("logradouro", "Rua / Avenida", c.logradouro, true, 'placeholder="Ex.: Rua das Araucárias"')}
         ${f("numero", "Número", c.numero, false, 'inputmode="numeric"')}
         ${f("complemento", "Complemento", c.complemento)}
@@ -794,7 +957,7 @@ function abrirFicha(chave, editar) {
 }
 async function salvarFicha(chave, codigo) {
   const g = id => (document.getElementById("f_" + id)?.value || "").trim();
-  const p = { chave, codigo, nome: g("nome"), logradouro: g("logradouro"), numero: g("numero"), complemento: g("complemento"), bairro: g("bairro"), cidade: g("cidade"), uf: g("uf"), cep: g("cep"), telefone1: g("telefone1"), telefone2: g("telefone2"), contato: g("contato"), obs: g("obs") };
+  const p = { chave, codigo: g("codigo") || codigo, nome: g("nome"), logradouro: g("logradouro"), numero: g("numero"), complemento: g("complemento"), bairro: g("bairro"), cidade: g("cidade"), uf: g("uf"), cep: g("cep"), telefone1: g("telefone1"), telefone2: g("telefone2"), contato: g("contato"), obs: g("obs") };
   const btn = document.getElementById("btnSalvarCli"); btn.disabled = true; btn.textContent = "Salvando…";
   try {
     const r = await rpc("ocv_salvar_cliente", { p_token: S.token, p });
@@ -1381,6 +1544,10 @@ function parseEndereco(raw) {
   const ponto = p.length > 3 ? p.slice(0, p.length - 3).join(", ") : "";
   return { codigo, ponto, bairro, cidade, uf };
 }
+function chaveExistente(codigo, nome) {
+  if (codigo) { const ed = Object.values(S.clientes).find(c => c.codigo === codigo && c.chave !== "C" + codigo); if (ed) return ed.chave; }
+  return chaveCliente(codigo, nome);
+}
 function chaveCliente(codigo, nome) { return codigo ? "C" + codigo : "N:" + norm(nome).replace(/[^A-Z0-9]+/g, " ").trim(); }
 // Converte texto exportado (HTML da planilha .xls ou CSV) em linhas/colunas
 function linhasDeTexto(txt) {
@@ -1415,7 +1582,7 @@ function rowsParaLinhas(rows) {
     const nome = g(r, "cliente");
     linhas.push({
       numero: +num, estabelecimento: g(r, "estabelecimento"), ticket: g(r, "ticket").replace(/\.0+$/, "") || null,
-      cliente_nome: nome, cliente_codigo: e.codigo || null, chave_cliente: chaveCliente(e.codigo, nome),
+      cliente_nome: nome, cliente_codigo: e.codigo || null, chave_cliente: chaveExistente(e.codigo, nome),
       endereco_raw: g(r, "endereco"), ponto_entrega: e.ponto, bairro: e.bairro, cidade: e.cidade, uf: e.uf,
       subclassificacao: g(r, "sub"), abertura: parseDataBR(g(r, "abertura")), prazo: parseDataBR(g(r, "prazo")),
       fechamento: parseDataBR(g(r, "fechamento")), reabertura: +digits(g(r, "reabertura")) || 0, reincidencia: +digits(g(r, "reincidencia")) || 0,
