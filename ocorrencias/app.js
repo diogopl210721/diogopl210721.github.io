@@ -1301,8 +1301,8 @@ const MOD_VISITA = [
 const ROTEIRO_VISITA = [...MOD_VISITA, ["t", "Qual a vazão exigida pelo cliente?"], ["br"],
   ["t", "Indicação de novos negócios do cliente:"], ["s", "Cliente está satisfeito com o atendimento da Consigaz?"],
   ["l", "Ao indicar o Facilita, qual foi a devolutiva do cliente?"], ["l", "Resumo da visita (opcional)", "opc"]];
-const ROTEIRO_ATIVO = [["l", "Motivo:"]];
-const ROTEIROS_COMPLETOS = [ROTEIRO_VISITA, ROTEIRO_ATIVO];
+const ROTEIRO_SIMPLES = [["l", "Motivo/descrição:"]];
+const ROTEIROS_COMPLETOS = [ROTEIRO_VISITA, ROTEIRO_SIMPLES];
 const MODELOS = {
   "VISIT RELACIONAMENTO": ROTEIRO_VISITA,
   "VISITA DE TRANSFERÊNCIA": ROTEIRO_VISITA,
@@ -1310,7 +1310,7 @@ const MODELOS = {
   "RENEG DE PREÇO": [["t", "Preço atual (R$/kg)"], ["t", "Proposta da concorrência"], ["t", "Preço negociado (R$/kg)"], ["t", "Solicitação de alteração de preço nº"], ["s", "Necessário novo contrato?"], ["l", "Motivo / fatores de insatisfação"], ["l", "Resultado da negociação"]],
   "RENEGOCIAÇÃO DE PREÇO MEDIANTE A REG DE CONTRATO": [["t", "Contrato nº"], ["t", "Status da assinatura"], ["t", "Enviado ao Pós-Vendas interno em"], ["l", "Observações"]],
   "REGULARIZAÇÃO CONTRATO": [["t", "Contrato nº"], ["t", "Status da assinatura"], ["t", "Enviado ao Pós-Vendas interno em"], ["l", "Observações"]],
-  "VISITA PÓS VENDAS ATIVO": ROTEIRO_ATIVO,
+  "VISITA PÓS VENDAS ATIVO": ROTEIRO_SIMPLES,
   "COMODATO INATIVO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["s", "Previsão de voltar a consumir?"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
   "REDIMENS COMODATO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
   "REDIMENSIONAMENTO - GIRO": [["t", "Equipamentos no cliente"], ["t", "Consumo atual"], ["t", "Decisão (manter / retirada parcial / retirada total)"], ["t", "Solicitação / CI nº"], ["l", "Resumo"]],
@@ -1326,7 +1326,9 @@ const MODELOS = {
 };
 const MOD_GENERICO = [["l", "Motivo / descrição"], ["l", "O que foi feito"], ["t", "Ocorrência(s) / solicitação(ões) nº"], ["l", "Encaminhamento"]];
 function nomeSub(sub) { return String(sub || "").replace(/^\[[^\]]+\]\s*/, "").trim(); }
-function modeloDe(sub) { return MODELOS[nomeSub(sub)] || MODELOS[nomeSub(sub).toUpperCase()] || MOD_GENERICO; }
+function ehTransferencia(sub) { return norm(nomeSub(sub)) === "VISITA DE TRANSFERENCIA"; }
+function modeloDe(sub) { return ehTransferencia(sub) ? ROTEIRO_VISITA : ROTEIRO_SIMPLES; }
+function rotuloDepto(sub) { return ehTransferencia(sub) ? "Sobrenome ou departamento" : "Departamento/Cargo"; }
 function guiaDe(sub) { return S.guias[sub] || null; }
 function rascKey(numero, sub) { return "ocv_rasc_" + (numero || "lib_" + nomeSub(sub)); }
 function rascLer(numero, sub) { try { return JSON.parse(lsGet(rascKey(numero, sub)) || "{}"); } catch (e) { return {}; } }
@@ -1382,7 +1384,7 @@ function vGuia() {
   <div class="section-title">✍️ Montar texto de fechamento</div>
   <div class="card">
     <div class="gform">
-      ${["Contato", "Sobrenome ou departamento", "Telefone", "E-mail"].map((l, i) => campo(["t", l], "c" + i)).join("")}
+      ${["Contato", "Sobrenome ou departamento", "Telefone", "E-mail"].map((l, i) => campo(["t", l], "c" + i).replace(">Sobrenome ou departamento</label>", ">" + esc(rotuloDepto(sub)) + "</label>")).join("")}
       ${mod.map(campo).join("")}
       ${temFotos || r.__fotos ? `<label class="chk-line full"><input type="checkbox" ${r.__fotos === false ? "" : "checked"} onchange="guiaSet('__fotos',this.checked)"> Incluir “Fotos da visita em anexo.”</label>` : ""}
     </div>
@@ -1407,7 +1409,7 @@ function montarTexto(sub, v, temFotos) {
   const val = x => (x == null ? "" : String(x).trim());
   const linha = (l, x) => /[?:]$/.test(l) ? `${l} ${val(x)}`.trimEnd() : `${l}: ${val(x)}`.trimEnd();
   const add = (l, x) => { if (completo || val(x) !== "") linhas.push(linha(l, x)); };
-  ["Contato", "Sobrenome ou departamento", "Telefone", "E-mail"].forEach(l => add(l, v[l]));
+  [["Contato", "Contato"], [rotuloDepto(sub), "Sobrenome ou departamento"], ["Telefone", "Telefone"], ["E-mail", "E-mail"]].forEach(([l, k]) => add(l, v[k]));
   modeloDe(sub).forEach(([t, l, opc]) => {
     if (t === "br") { if (completo) linhas.push(""); return; }
     const x = v[l];
