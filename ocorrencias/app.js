@@ -173,7 +173,7 @@ function cliente(o) {
     nome: ed.nome || o.cliente_nome,
     logradouro: ed.logradouro || "", numero: ed.numero || "", complemento: ed.complemento || "",
     bairro: ed.bairro || title(o.bairro), cidade: ed.cidade || title(o.cidade), uf: ed.uf || ufSigla(o.uf), cep: ed.cep || "",
-    telefone1: ed.telefone1 || "", telefone2: ed.telefone2 || "", contato: ed.contato || "", obs: ed.obs || "",
+    telefone1: ed.telefone1 || "", telefone2: ed.telefone2 || "", contato: ed.contato || "", obs: ed.obs || "", email: ed.email || "",
     editado: !!S.clientes[o.chave_cliente],
   };
 }
@@ -947,19 +947,16 @@ function abrirFicha(chave, editar) {
       ${z1 ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z1}" target="_blank" rel="noopener">WhatsApp</a><a class="btn sm soft" href="${linkTel(c.telefone1)}">📞 Ligar</a>` : ""}
       ${z2 ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z2}" target="_blank" rel="noopener">WhatsApp 2</a>` : ""}
     </div>
-    <div style="font-size:14px;margin-bottom:6px">📍 ${esc(enderecoTexto(c))}</div>
-    ${(() => { const st = statusFotos(chave); return `<div class="ficha-acts">
-      <button class="btn sm" onclick="fecharModal(true);abrirFotos(${jsArg(chave)})">📷 Fotos ${st.ok}/${st.total}${st.n > st.ok ? ` (+${st.n - st.ok})` : ""}</button>
-      <button class="btn sm soft" onclick="abrirNota(${ocs[0].numero})">📝 Nova anotação de visita</button>
-      <button class="btn sm soft" onclick="fecharModal(true);abrirMedidores(${jsArg(chave)},${ocs[0].numero})">📟 Medidores ${S.medidores.filter(m => m.chave_cliente === chave).length || ""}</button></div>`; })()}
-    ${(() => { const ns = S.notas.filter(n => n.chave_cliente === chave); return ns.length ? `<div class="section-title">Anotações de visita <span class="count">${ns.length}</span></div>${ns.map(notaHTML).join("")}` : ""; })()}
-    ${!enderecoCompleto(c) ? `<div class="info-box">A planilha traz só bairro e cidade. Preencha rua e número para o Maps e o Waze levarem até a porta.</div>` : ""}
-
-    <details ${editar ? "open" : ""} style="margin:12px 0">
-      <summary style="cursor:pointer;font-weight:700;padding:8px 0">✏️ Editar endereço e telefones</summary>
+    <details class="edit-cli" id="editCli" ${editar ? "open" : ""}>
+      <summary>✏️ Editar dados do cliente <small>código, nome, tipo, contato, telefones, e-mail e endereço</small></summary>
       <div class="form-grid" style="margin-top:10px">
         ${f("codigo", "Código do cliente", c.codigo, false, 'inputmode="numeric" placeholder="Ex.: 1137418"')}
-        ${f("nome", "Nome do cliente", c.nome, false)}
+        <div class="field"><label>Tipo do cliente</label><select class="input" id="f_tipo">${TIPOS.map(([k, l]) => `<option value="${k}" ${k === tipoCliente(chave) ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+        ${f("nome", "Nome do cliente", c.nome, true)}
+        ${f("contato", "Contato (nome / cargo)", c.contato, true, 'placeholder="Ex.: Thiago — síndico"')}
+        ${f("telefone1", "Telefone / WhatsApp", c.telefone1, false, 'inputmode="tel" placeholder="(41) 9 0000-0000"')}
+        ${f("telefone2", "Telefone 2", c.telefone2, false, 'inputmode="tel"')}
+        ${f("email", "E-mail", c.email, true, 'inputmode="email" placeholder="nome@empresa.com.br"')}
         ${f("logradouro", "Rua / Avenida", c.logradouro, true, 'placeholder="Ex.: Rua das Araucárias"')}
         ${f("numero", "Número", c.numero, false, 'inputmode="numeric"')}
         ${f("complemento", "Complemento", c.complemento)}
@@ -967,13 +964,20 @@ function abrirFicha(chave, editar) {
         ${f("cidade", "Cidade", c.cidade)}
         ${f("uf", "UF", c.uf)}
         ${f("cep", "CEP", c.cep, false, 'inputmode="numeric"')}
-        ${f("telefone1", "Telefone / WhatsApp", c.telefone1, false, 'inputmode="tel" placeholder="(41) 9 0000-0000"')}
-        ${f("telefone2", "Telefone 2", c.telefone2, false, 'inputmode="tel"')}
-        ${f("contato", "Contato (nome / cargo)", c.contato, true, 'placeholder="Ex.: Thiago — síndico"')}
         <div class="field full"><label>Observações</label><textarea class="input" id="f_obs" rows="3">${esc(c.obs)}</textarea></div>
       </div>
-      <button class="btn block" style="margin-top:12px" id="btnSalvarCli" onclick="salvarFicha(${jsArg(chave)},${jsArg(c.codigo)})">Salvar</button>
+      <p class="sub" style="font-size:12.5px;margin:8px 0 0">O que você corrigir aqui vale no sistema todo e não é apagado pelas próximas importações. Deixe o código ou o nome em branco para voltar ao que vem da planilha.</p>
+      <button class="btn block" style="margin-top:10px" id="btnSalvarCli" onclick="salvarFicha(${jsArg(chave)},${jsArg(c.codigo)})">💾 Salvar dados do cliente</button>
     </details>
+    <div style="font-size:14px;margin-bottom:6px">📍 ${esc(enderecoTexto(c))}</div>
+    ${c.email ? `<div style="font-size:14px;margin-bottom:6px">✉️ <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>` : ""}
+    ${(() => { const st = statusFotos(chave); return `<div class="ficha-acts">
+      <button class="btn sm" onclick="fecharModal(true);abrirFotos(${jsArg(chave)})">📷 Fotos ${st.ok}/${st.total}${st.n > st.ok ? ` (+${st.n - st.ok})` : ""}</button>
+      <button class="btn sm soft" onclick="abrirNota(${ocs[0].numero})">📝 Nova anotação de visita</button>
+      <button class="btn sm soft" onclick="fecharModal(true);abrirMedidores(${jsArg(chave)},${ocs[0].numero})">📟 Medidores ${S.medidores.filter(m => m.chave_cliente === chave).length || ""}</button></div>`; })()}
+    ${(() => { const ns = S.notas.filter(n => n.chave_cliente === chave); return ns.length ? `<div class="section-title">Anotações de visita <span class="count">${ns.length}</span></div>${ns.map(notaHTML).join("")}` : ""; })()}
+    ${!enderecoCompleto(c) ? `<div class="info-box">A planilha traz só bairro e cidade. Preencha rua e número para o Maps e o Waze levarem até a porta.</div>` : ""}
+
 
     <div class="section-title">Resumo</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(subs).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="pill ${k === subCurta("VISIT RELACIONAMENTO") ? "p-purple" : "p-blue"}">${esc(k)}: ${v}</span>`).join("")}</div>
@@ -982,10 +986,12 @@ function abrirFicha(chave, editar) {
       <span style="color:var(--muted)">Aberta ${fmtDH(o.abertura)} · ${isFin(o) ? "Fechada " + fmtDH(o.fechamento) : "Prazo " + fmtDH(o.prazo)}${o.ticket ? " · Zendesk " + esc(o.ticket) : ""}</span>
       ${o.solucao ? `<div class="sol">${esc(o.solucao)}</div>` : ""}</div>`; }).join("")}
   `);
+  if (editar) rolarEdicao();
 }
+function rolarEdicao() { setTimeout(() => { const d = document.getElementById("editCli"); if (d && d.open) d.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); }
 async function salvarFicha(chave, codigo) {
   const g = id => (document.getElementById("f_" + id)?.value || "").trim();
-  const p = { chave, codigo: g("codigo") || codigo, nome: g("nome"), logradouro: g("logradouro"), numero: g("numero"), complemento: g("complemento"), bairro: g("bairro"), cidade: g("cidade"), uf: g("uf"), cep: g("cep"), telefone1: g("telefone1"), telefone2: g("telefone2"), contato: g("contato"), obs: g("obs") };
+  const p = { chave, codigo: g("codigo"), tipo: g("tipo"), email: g("email"), nome: g("nome"), logradouro: g("logradouro"), numero: g("numero"), complemento: g("complemento"), bairro: g("bairro"), cidade: g("cidade"), uf: g("uf"), cep: g("cep"), telefone1: g("telefone1"), telefone2: g("telefone2"), contato: g("contato"), obs: g("obs") };
   const btn = document.getElementById("btnSalvarCli"); btn.disabled = true; btn.textContent = "Salvando…";
   try {
     const r = await rpc("ocv_salvar_cliente", { p_token: S.token, p });
@@ -1401,7 +1407,7 @@ function vGuia() {
   if (o) {
     const n = S.notas.find(x => x.numero === o.numero) || S.notas.find(x => x.chave_cliente === o.chave_cliente);
     const c = cliente(o);
-    pre = { Contato: n?.recebido_por || (c.contato || "").split(" — ")[0] || "", "Sobrenome ou departamento": n?.cargo || (c.contato || "").split(" — ")[1] || "", Telefone: n?.telefone || c.telefone1 || "", "E-mail": "" };
+    pre = { Contato: n?.recebido_por || (c.contato || "").split(" — ")[0] || "", "Sobrenome ou departamento": n?.cargo || (c.contato || "").split(" — ")[1] || "", Telefone: n?.telefone || c.telefone1 || "", "E-mail": c.email || "" };
   }
   const val = k => r[k] ?? pre[k] ?? "";
   const ex = exemplosDe(sub);
