@@ -8,6 +8,7 @@ const META_REL = 50;
 const JANELA_DIAS = 5;
 const LIMITE_REAB = 5; // acima disso a comissão cai
 const FN_FOTOS = SB_URL + "/functions/v1/ocv-fotos";
+const FN_MED = SB_URL + "/functions/v1/ocv-medidor";
 // Padrão de fotos por tipo de cliente. multi = pode ter várias.
 const FOTOS_BASE = [
   { k: "fachada", l: "Fachada" },
@@ -16,6 +17,8 @@ const FOTOS_BASE = [
   { k: "frente_central", l: "Frente da central" },
   { k: "lateral_esquerda", l: "Lateral esquerda" },
   { k: "lateral_direita", l: "Lateral direita" },
+  { k: "regulador_central", l: "Regulador da central" },
+  { k: "magnetron", l: "Magnetron (nível de gás no dia)" },
 ];
 const FOTOS_TIPO = {
   comercio: [{ k: "equipamentos", l: "Equipamentos", multi: true }],
@@ -37,6 +40,8 @@ const S = {
   guias: {},
   visitas: {},
   config: {},
+  medidores: [],
+  medUrls: {},
   fotos: [],
   fotoUrls: {},
   view: "inicio",
@@ -148,6 +153,7 @@ async function carregar() {
   S.guias = {}; (d.guias || []).forEach(g => S.guias[g.sub] = g);
   S.visitas = {}; (d.visitas || []).forEach(v => S.visitas[v.numero] = v);
   S.config = d.config || {};
+  S.medidores = d.medidores || [];
 }
 async function iniciar() {
   document.getElementById("login").classList.add("hidden");
@@ -326,7 +332,7 @@ function renderNav() {
 function render() {
   renderNav();
   const v = document.getElementById("view");
-  const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar, relatorio: vRelatorio, reaberturas: vReaberturas, rota: vRota, fotos: vFotos, guia: vGuia }[S.view] || vInicio;
+  const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar, relatorio: vRelatorio, reaberturas: vReaberturas, rota: vRota, fotos: vFotos, guia: vGuia, medidores: vMedidores }[S.view] || vInicio;
   v.innerHTML = fn();
   if (S.view === "importar") bindImport();
   if (S.view === "rota") autoOtimizar();
@@ -467,6 +473,7 @@ function ocCard(o, opts = {}) {
         ${!fin ? `<button class="btn sm" style="background:#0b1f3a" onclick="abrirGuia(${o.numero})">📘 Fechar ocorrência</button>` : ""}
         ${!fin ? (vis ? `<button class="btn sm ghost" onclick="if(confirm('Desmarcar a visita desta ocorrência?'))marcarVisita(${o.numero},false)">↩ Desmarcar visita</button>` : `<button class="btn sm" style="background:var(--green)" onclick="marcarVisita(${o.numero},true)">✅ Marcar visitada</button>`) : ""}
         <button class="btn sm ghost" onclick="abrirNota(${o.numero})">📝 Anotar</button>
+        ${!fin ? `<button class="btn sm ghost" onclick="abrirMedidores(${jsArg(o.chave_cliente)},${o.numero})">📟 Medidores${(() => { const n = S.medidores.filter(m => m.chave_cliente === o.chave_cliente).length; return n ? " " + n : ""; })()}</button>` : ""}
         <button class="btn sm ghost" onclick="abrirFotos(${jsArg(o.chave_cliente)},${o.numero})">📷 Fotos${(() => { const st = statusFotos(o.chave_cliente); return st.n ? ` ${st.ok}/${st.total}` : ""; })()}</button>
         <button class="btn sm ghost" onclick="abrirFicha(${jsArg(o.chave_cliente)},true)">✏️ Editar</button>
       </div>
@@ -943,7 +950,8 @@ function abrirFicha(chave, editar) {
     <div style="font-size:14px;margin-bottom:6px">📍 ${esc(enderecoTexto(c))}</div>
     ${(() => { const st = statusFotos(chave); return `<div class="ficha-acts">
       <button class="btn sm" onclick="fecharModal(true);abrirFotos(${jsArg(chave)})">📷 Fotos ${st.ok}/${st.total}${st.n > st.ok ? ` (+${st.n - st.ok})` : ""}</button>
-      <button class="btn sm soft" onclick="abrirNota(${ocs[0].numero})">📝 Nova anotação de visita</button></div>`; })()}
+      <button class="btn sm soft" onclick="abrirNota(${ocs[0].numero})">📝 Nova anotação de visita</button>
+      <button class="btn sm soft" onclick="fecharModal(true);abrirMedidores(${jsArg(chave)},${ocs[0].numero})">📟 Medidores ${S.medidores.filter(m => m.chave_cliente === chave).length || ""}</button></div>`; })()}
     ${(() => { const ns = S.notas.filter(n => n.chave_cliente === chave); return ns.length ? `<div class="section-title">Anotações de visita <span class="count">${ns.length}</span></div>${ns.map(notaHTML).join("")}` : ""; })()}
     ${!enderecoCompleto(c) ? `<div class="info-box">A planilha traz só bairro e cidade. Preencha rua e número para o Maps e o Waze levarem até a porta.</div>` : ""}
 
@@ -1200,7 +1208,7 @@ function vFotos() {
   ${slotsDe(chave).map(sl => { const lista = fs.filter(f => f.slot === sl.k);
     return `<div class="slot ${lista.length ? "tem" : ""}">
       <div class="slot-h"><span>${lista.length ? "✅" : sl.opcional ? "➕" : "⬜"} ${esc(sl.l)}</span>${lista.length ? `<small>${lista.length} foto${lista.length > 1 ? "s" : ""}</small>` : ""}</div>
-      <div class="thumbs">${lista.map(f => `<div class="thumb">${urls[f.id] ? `<a href="${urls[f.id]}" target="_blank" rel="noopener"><img src="${urls[f.id]}" loading="lazy" alt=""></a>` : `<div class="ph">⏳</div>`}
+      <div class="thumbs">${S.pend.filter(p => p.chave === chave && p.slot === sl.k).map(p => `<div class="thumb"><img src="${p.url}" alt="">${p.erro ? `<button class="enviando erro" onclick="reenviar('${p.tmp}')">⚠️ tocar p/ reenviar</button>` : `<span class="enviando"><i class="spinner"></i>enviando</span>`}</div>`).join("")}${lista.map(f => `<div class="thumb">${urls[f.id] ? `<a href="${urls[f.id]}" target="_blank" rel="noopener"><img src="${urls[f.id]}" loading="lazy" alt=""></a>` : `<div class="ph">⏳</div>`}
         <button class="del" title="Apagar" onclick="apagarFotos([${jsArg(f.id)}],true)">×</button>${f.exportada_em ? '<span class="exp">exportada</span>' : ""}</div>`).join("")}
       <label class="add ${lista.length ? "mais" : ""}"><input type="file" accept="image/*" class="hidden" multiple onchange="enviarFotos(this,${jsArg(chave)},'${sl.k}')"><span>${lista.length ? "＋" : "📷"}</span><small>${lista.length ? "Mais uma" : "Tirar foto"}</small></label>
       </div></div>`; }).join("")}
@@ -1227,23 +1235,36 @@ async function comprimir(file, max = 1600, q = 0.8) {
   cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
   return cv.toDataURL("image/jpeg", q);
 }
-async function enviarFotos(inp, chave, slot, substituir) {
-  const files = [...inp.files]; if (!files.length) return;
-  const antigas = substituir ? S.fotos.filter(f => f.chave_cliente === chave && f.slot === slot).map(f => f.id) : [];
-  let n = 0;
-  for (const f of files) {
-    toast(`Enviando foto ${++n} de ${files.length}…`, 1800);
-    try {
-      const data = await comprimir(f);
-      const d = await fotosApi({ acao: "upload", chave, slot, numero: S.fotoNumero, data });
-      S.fotos.push(d.foto);
-      const m = (S.fotoUrls[chave] = S.fotoUrls[chave] || { t: Date.now(), m: {} }).m; m[d.foto.id] = data; // mostra a prévia local na hora
-    } catch (e) { toast("Erro: " + e.message, 4000); }
-    render();
-  }
-  if (antigas.length) await apagarFotos(antigas, false, true);
-  toast("Foto salva ✓");
+// Envio rápido: a foto aparece na hora (prévia local) e sobe em segundo plano, 2 por vez.
+S.pend = []; S._fila = []; S._subindo = 0;
+function renderLeve() { if (S.view === "fotos" && !S.modalOpen) { const y = window.scrollY; document.getElementById("view").innerHTML = vFotos(); window.scrollTo(0, y); renderNav(); } }
+function enviarFotos(inp, chave, slot) {
+  const files = [...inp.files]; inp.value = ""; if (!files.length) return;
+  files.forEach(f => {
+    const p = { tmp: "p" + Date.now() + Math.random().toString(36).slice(2, 6), chave, slot, numero: S.fotoNumero, file: f, url: URL.createObjectURL(f), erro: null };
+    S.pend.push(p); S._fila.push(p);
+  });
+  renderLeve(); processarFila();
 }
+async function processarFila() {
+  while (S._subindo < 2 && S._fila.length) {
+    const p = S._fila.shift(); S._subindo++;
+    (async () => {
+      try {
+        const data = await comprimir(p.file, 1400, 0.72);
+        const d = await fotosApi({ acao: "upload", chave: p.chave, slot: p.slot, numero: p.numero, data });
+        S.fotos.push(d.foto);
+        const m = (S.fotoUrls[p.chave] = S.fotoUrls[p.chave] || { t: Date.now(), m: {} }).m; m[d.foto.id] = p.url;
+        S.pend = S.pend.filter(x => x !== p);
+      } catch (e) { p.erro = e.message; toast("Foto não enviada: " + e.message + " — toque nela para tentar de novo", 4500); }
+      S._subindo--; renderLeve();
+      if (!S._fila.length && !S._subindo && !S.pend.some(x => x.erro)) toast("✅ Fotos salvas");
+      processarFila();
+    })();
+  }
+}
+function reenviar(tmp) { const p = S.pend.find(x => x.tmp === tmp); if (!p) return; p.erro = null; S._fila.push(p); renderLeve(); processarFila(); }
+window.addEventListener("beforeunload", e => { if (S._fila.length || S._subindo) { e.preventDefault(); e.returnValue = ""; } });
 async function apagarFotos(ids, perguntar, silencioso) {
   if (!ids.length) return;
   if (perguntar !== false && !confirm(ids.length === 1 ? "Apagar esta foto do sistema? Não dá para desfazer." : `Apagar ${ids.length} fotos do sistema? Não dá para desfazer.`)) return;
@@ -1472,6 +1493,160 @@ async function salvarGuia(sub) {
   const r = await rpc("ocv_salvar_guia", { p_token: S.token, p: { sub, nome: nomeSub(sub), prazo_du: g("gp"), origem: g("go"), acao: g("ga"), dicas: g("gd") } }).catch(e => ({ ok: false, erro: e.message }));
   if (!r.ok) return toast(r.erro);
   S.guias[sub] = r.guia; fecharModal(); toast("Guia salvo ✓"); setTimeout(render, 80);
+}
+
+/* ---------------- MEDIDORES (Conta Sim) ---------------- */
+async function medApi(body) {
+  const r = await fetch(FN_MED, { method: "POST", headers: { "Content-Type": "application/json", apikey: SB_KEY, Authorization: "Bearer " + SB_KEY }, body: JSON.stringify({ token: S.token, ...body }) });
+  const d = await r.json().catch(() => ({ ok: false, erro: "Falha de rede" }));
+  if (d.erro === "SESSAO_INVALIDA") { sair(true); throw new Error("Sessão expirada. Entre novamente."); }
+  if (!d.ok) throw new Error(d.erro || "Erro ao processar medidor");
+  return d;
+}
+function medsDe(chave) { return S.medidores.filter(m => m.chave_cliente === chave); }
+async function carregarMedUrls(chave) {
+  if (!medsDe(chave).length) return;
+  const d = await medApi({ acao: "listar", chave });
+  const m = {}; d.medidores.forEach(x => m[x.id] = x.url); S.medUrls[chave] = { t: Date.now(), m };
+}
+function abrirMedidores(chave, numero) {
+  go("medidores", () => { S.medChave = chave; S.medNumero = numero || null; S.medQ = ""; });
+  const c = S.medUrls[chave];
+  if (!c || Date.now() - c.t > 45 * 60e3) carregarMedUrls(chave).then(() => S.view === "medidores" && render()).catch(e => toast(e.message));
+}
+function ordUnidade(a, b) { return String(a.unidade).localeCompare(String(b.unidade), "pt-BR", { numeric: true, sensitivity: "base" }); }
+function vMedidores() {
+  const chave = S.medChave, ref = refCliente(chave);
+  if (!ref) return `${btnVoltar()}<div class="card empty">Cliente não encontrado.</div>`;
+  const c = cliente(ref), urls = (S.medUrls[chave] || {}).m || {};
+  let l = medsDe(chave).slice().sort(ordUnidade);
+  const dupU = {}, dupS = {}; l.forEach(m => { dupU[norm(m.unidade)] = (dupU[norm(m.unidade)] || 0) + 1; if (m.serie) dupS[norm(m.serie)] = (dupS[norm(m.serie)] || 0) + 1; });
+  const total = l.length, semLeit = l.filter(m => !m.serie || !m.leitura).length, naoExp = l.filter(m => !m.exportado_em).length;
+  const q = norm(S.medQ || ""); if (q) l = l.filter(m => norm([m.unidade, m.serie, m.leitura].join(" ")).includes(q));
+  return `${btnVoltar()}
+  <h2 class="page">📟 Coletar medidores</h2>
+  <p class="sub"><b>${esc(c.nome)}</b>${c.codigo ? " · Cód. " + esc(c.codigo) : ""} · ${esc(c.cidade)}</p>
+  <div class="grid g4" style="margin-bottom:12px">
+    <div class="card kpi green"><div class="n">${total}</div><div class="l">Unidades coletadas</div></div>
+    <div class="card kpi ${semLeit ? "orange" : ""}"><div class="n">${semLeit}</div><div class="l">Sem série ou leitura</div></div>
+    <div class="card kpi"><div class="n">${naoExp}</div><div class="l">Ainda não exportadas</div></div>
+    <div class="card kpi ${Object.values(dupU).some(n => n > 1) || Object.values(dupS).some(n => n > 1) ? "red" : ""}"><div class="n">${Object.values(dupU).filter(n => n > 1).length + Object.values(dupS).filter(n => n > 1).length}</div><div class="l">Repetidos (conferir)</div></div>
+  </div>
+  <button class="btn block" style="padding:16px;font-size:16px" onclick="coletarMedidor()">📷 + Coletar medidor</button>
+  ${total > 6 ? `<div class="toolbar" style="margin-top:12px"><input class="input" placeholder="Buscar unidade, série ou leitura" value="${esc(S.medQ || "")}" oninput="S.medQ=this.value;debRender()"></div>` : ""}
+  <div class="section-title">Unidades <span class="count">${total}</span></div>
+  ${l.length ? l.map(m => { const du = dupU[norm(m.unidade)] > 1, ds = m.serie && dupS[norm(m.serie)] > 1;
+    return `<div class="med ${du || ds ? "dup" : ""}" onclick="coletarMedidor(${jsArg(m.id)})">
+      <div class="med-img">${urls[m.id] ? `<img src="${urls[m.id]}" alt="" loading="lazy">` : "📟"}</div>
+      <div class="med-b"><div class="med-u">${esc(m.unidade)}${du ? ' <span class="pill p-red">unidade repetida</span>' : ""}</div>
+        <div class="med-l">Série <b>${esc(m.serie || "—")}</b>${ds ? ' <span class="pill p-red">série repetida</span>' : ""}</div>
+        <div class="med-l">Leitura <b>${esc(m.leitura || "—")}</b> m³</div>
+        <div class="med-d">${fmtDH(m.criado_em)}${m.exportado_em ? ' · <span class="pill p-green">exportado</span>' : ""}</div></div>
+      <span class="chev">›</span></div>`; }).join("") : `<div class="card empty">Nenhum medidor coletado ainda.<br>Toque em <b>+ Coletar medidor</b>, digite a unidade e tire a foto: a leitura e o nº de série são preenchidos sozinhos.</div>`}
+  ${total ? `<div class="card" style="margin-top:14px">
+    <b>📦 Exportar para o Conta Sim</b>
+    <p class="sub" style="margin:4px 0 10px">Gera um .zip com a planilha Excel (unidade, nº de série, leitura, data) e as fotos nomeadas pela unidade. No iPhone, escolha OneDrive, e-mail ou Salvar em Arquivos.</p>
+    <button class="btn block" onclick="exportarMedidores(${jsArg(chave)})">📦 Exportar ${total} medidor${total > 1 ? "es" : ""}</button>
+    ${total - naoExp ? `<button class="btn block ghost" style="margin-top:8px;color:var(--red)" onclick='apagarMedidores(${jsArg(medsDe(chave).filter(m => m.exportado_em).map(m => m.id))})'>🗑️ Apagar do sistema os ${total - naoExp} já exportados</button>` : ""}
+  </div>` : ""}`;
+}
+function coletarMedidor(id) {
+  const m = id ? S.medidores.find(x => x.id === id) : null;
+  const url = m ? ((S.medUrls[S.medChave] || {}).m || {})[m.id] : null;
+  S._medFoto = null; S._medIA = null;
+  modal(`<button class="x" onclick="fecharModal()">×</button>
+    <h3>📟 ${m ? "Editar medidor" : "Coletar medidor"}</h3>
+    <p class="sub">${esc(cliente(refCliente(S.medChave)).nome)}</p>
+    <div class="field"><label>Apartamento / casa / unidade</label>
+      <input class="input" id="m_un" value="${esc(m ? m.unidade : "")}" placeholder="Ex.: Apto 101, Bloco B 202, Casa 3" autocomplete="off"></div>
+    <label class="med-foto" id="m_fotoBox">
+      <input type="file" accept="image/*" capture="environment" class="hidden" onchange="lerFotoMedidor(this)">
+      ${url ? `<img src="${url}" alt="">` : `<span>📷</span><b>Tirar foto do medidor</b><small>Enquadre o mostrador e a plaqueta do nº de série</small>`}
+    </label>
+    <div id="m_ia"></div>
+    <div class="form-grid">
+      <div class="field"><label>Nº de série</label><input class="input" id="m_se" value="${esc(m ? m.serie || "" : "")}" autocomplete="off"></div>
+      <div class="field"><label>Leitura (m³)</label><input class="input" id="m_le" value="${esc(m ? m.leitura || "" : "")}" inputmode="decimal" autocomplete="off"></div>
+    </div>
+    <div class="err" id="m_err"></div>
+    <button class="btn block" id="m_btn" onclick="salvarMedidor(${jsArg(m ? m.id : "")},false)">💾 Salvar</button>
+    ${m ? `<button class="btn block ghost" style="margin-top:8px;color:var(--red)" onclick='apagarMedidores([${jsArg(m.id)}],true)'>Excluir este medidor</button>`
+        : `<button class="btn block soft" style="margin-top:8px" onclick="salvarMedidor('',true)">💾 Salvar e coletar o próximo</button>`}`);
+  if (!m) setTimeout(() => document.getElementById("m_un")?.focus(), 150);
+}
+async function lerFotoMedidor(inp) {
+  const f = inp.files[0]; if (!f) return;
+  const box = document.getElementById("m_fotoBox"), ia = document.getElementById("m_ia");
+  try {
+    box.innerHTML = `<input type="file" accept="image/*" capture="environment" class="hidden" onchange="lerFotoMedidor(this)"><img src="${URL.createObjectURL(f)}" alt="">`;
+    ia.innerHTML = `<div class="otim-run" style="margin:8px 0"><div class="spinner" style="width:20px;height:20px;margin:0"></div>Preparando a foto…</div>`;
+    const data = await comprimir(f, 1600, 0.8);
+    S._medFoto = data;
+    ia.innerHTML = `<div class="otim-run" style="margin:8px 0"><div class="spinner" style="width:20px;height:20px;margin:0"></div>Lendo nº de série e leitura com IA…</div>`;
+    const r = await medApi({ acao: "ler", data });
+    S._medIA = r;
+    if (r.serie) document.getElementById("m_se").value = r.serie;
+    if (r.leitura) document.getElementById("m_le").value = r.leitura;
+    const cor = r.confianca === "alta" ? "p-green" : r.confianca === "media" ? "p-yellow" : "p-red";
+    ia.innerHTML = `<div class="ia-res"><span class="pill ${cor}">IA: confiança ${esc(r.confianca || "?")}</span> Confira os números antes de salvar.${r.observacao ? `<br><small>${esc(r.observacao)}</small>` : ""}</div>`;
+  } catch (e) {
+    ia.innerHTML = `<div class="ia-res" style="color:var(--red)">⚠️ Não consegui ler automaticamente (${esc(e.message)}). Digite a série e a leitura olhando a foto — ela será salva do mesmo jeito.</div>`;
+  }
+}
+async function salvarMedidor(id, proximo) {
+  const g = i => (document.getElementById(i)?.value || "").trim();
+  const unidade = g("m_un");
+  if (!unidade) { document.getElementById("m_err").textContent = "Informe o apartamento/casa."; return; }
+  if (!id && !S._medFoto && !confirm("Salvar sem foto?")) return;
+  const btn = document.getElementById("m_btn"); btn.disabled = true; btn.textContent = "Salvando…";
+  try {
+    const d = await medApi({ acao: "salvar", id: id || null, chave: S.medChave, numero: S.medNumero, unidade, serie: g("m_se"), leitura: g("m_le"), data: S._medFoto, ia: S._medIA });
+    S.medidores = [...S.medidores.filter(x => x.id !== d.medidor.id), d.medidor];
+    if (S._medFoto) { const c = (S.medUrls[S.medChave] = S.medUrls[S.medChave] || { t: Date.now(), m: {} }); c.m[d.medidor.id] = S._medFoto; }
+    toast(`✅ ${unidade} salvo`);
+    if (proximo) { render(); coletarMedidor(); } else { fecharModal(); setTimeout(render, 80); }
+  } catch (e) { document.getElementById("m_err").textContent = e.message; btn.disabled = false; btn.textContent = "💾 Salvar"; }
+}
+async function apagarMedidores(ids, dentroModal) {
+  if (!ids.length || !confirm(ids.length === 1 ? "Excluir este medidor e a foto? Não dá para desfazer." : `Excluir ${ids.length} medidores e as fotos do sistema? Não dá para desfazer.`)) return;
+  try {
+    await medApi({ acao: "excluir", ids });
+    S.medidores = S.medidores.filter(m => !ids.includes(m.id));
+    if (dentroModal) fecharModal(); toast("Excluído"); setTimeout(render, 80);
+  } catch (e) { toast(e.message, 4000); }
+}
+async function exportarMedidores(chave) {
+  try {
+    toast("Preparando exportação…", 2500);
+    if (!window.JSZip) await carregarScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
+    if (!window.XLSX) await carregarScript("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+    const ref = refCliente(chave), c = cliente(ref);
+    const d = await medApi({ acao: "listar", chave });
+    const lista = d.medidores.slice().sort(ordUnidade);
+    const usados = {}; lista.forEach(m => { let n = nomeArq(`${m.unidade} - ${m.serie || "sem serie"}`); if (usados[n]) n += ` (${++usados[n]})`; else usados[n] = 1; m._arq = n + ".jpg"; });
+    const linhas = lista.map(m => ({ "Cliente": c.nome, "Código": c.codigo || "", "Cidade": c.cidade || "", "Unidade": m.unidade, "Nº de série": m.serie || "", "Leitura (m³)": m.leitura || "", "Data da coleta": new Date(m.criado_em).toLocaleString("pt-BR"), "Ocorrência": m.numero || "", "Confiança IA": (m.ia && m.ia.confianca) || "", "Foto": m.url ? m._arq : "" }));
+    const ws = XLSX.utils.json_to_sheet(linhas);
+    ws["!cols"] = [{ wch: 34 }, { wch: 10 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 13 }, { wch: 18 }, { wch: 11 }, { wch: 12 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Medidores");
+    const xlsx = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const base = nomeArq(`Medidores ${c.codigo ? c.codigo + " - " : ""}${c.nome} ${ymd(new Date())}`);
+    const zip = new JSZip(); zip.file(base + ".xlsx", xlsx);
+    const pasta = zip.folder("Fotos"); let i = 0;
+    for (const m of lista) {
+      if (!m.url) continue;
+      toast(`Baixando foto ${++i}…`, 1200);
+      const blob = await fetch(m.url).then(r => r.blob());
+      pasta.file(m._arq, blob);
+    }
+    const file = new File([await zip.generateAsync({ type: "blob" })], base + ".zip", { type: "application/zip" });
+    let ok = false;
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: base }); ok = true; } catch (e) { if (e.name === "AbortError") return; } }
+    if (!ok) { const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = file.name; a.click(); }
+    const ids = lista.map(m => m.id);
+    await medApi({ acao: "marcar_exportados", ids });
+    const agora = new Date().toISOString(); S.medidores.forEach(m => { if (ids.includes(m.id)) m.exportado_em = agora; });
+    render(); toast(`✅ ${lista.length} medidores exportados`, 3500);
+  } catch (e) { toast(e.message, 4500); }
 }
 
 /* ---------------- modal ---------------- */
