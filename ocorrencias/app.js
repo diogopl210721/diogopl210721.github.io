@@ -398,7 +398,7 @@ function vInicio() {
         ${ra ? `<div class="hint" style="margin-top:6px">⚠️ <b>${ra}</b> reaberta${ra > 1 ? "s" : ""} ainda em aberto — resolva primeiro ›</div>` : ""}</div></div>`; })()}
 
   <div class="section-title">🗺️ Rota do dia — para onde você vai hoje?</div>
-  <div class="cid-chips">${cidadesAbertas().slice(0, 8).map(x => `<button class="cid" onclick='go("rota",()=>{S.rotaCidade=${jsArg(x.c)};S.rotaFiltro="todas";S.rotaFora=new Set()})'>
+  <div class="cid-chips">${cidadesAbertas().slice(0, 8).map(x => `<button class="cid" onclick='go("rota",()=>{S.rotaCidade=${jsArg(x.c)};S.rotaFiltro="todas";S.rotaFora=new Set();S.rotaTrocar=false})'>
     <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("")}
     ${cidadesAbertas().length > 8 ? `<button class="cid" onclick="go('rota')"><b>Ver todas ›</b><span>${cidadesAbertas().length} cidades</span></button>` : ""}</div>
 
@@ -455,7 +455,7 @@ function ocCard(o, opts = {}) {
         <a class="btn sm soft" href="${linkWaze(c)}" target="_blank" rel="noopener">🚗 Waze${aprox ? "*" : ""}</a>
         ${z ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
         ${tel ? `<a class="btn sm soft" href="${tel}">📞 Ligar</a>` : ""}
-        ${!fin ? `<button class="btn sm" style="background:#0b1f3a" onclick="abrirGuia(${o.numero})">📘 Como fechar</button>` : ""}
+        ${!fin ? `<button class="btn sm" style="background:#0b1f3a" onclick="abrirGuia(${o.numero})">📘 Fechar ocorrência</button>` : ""}
         ${!fin ? (vis ? `<button class="btn sm ghost" onclick="if(confirm('Desmarcar a visita desta ocorrência?'))marcarVisita(${o.numero},false)">↩ Desmarcar visita</button>` : `<button class="btn sm" style="background:var(--green)" onclick="marcarVisita(${o.numero},true)">✅ Marcar visitada</button>`) : ""}
         <button class="btn sm ghost" onclick="abrirNota(${o.numero})">📝 Anotar</button>
         <button class="btn sm ghost" onclick="abrirFotos(${jsArg(o.chave_cliente)},${o.numero})">📷 Fotos${(() => { const st = statusFotos(o.chave_cliente); return st.n ? ` ${st.ok}/${st.total}` : ""; })()}</button>
@@ -743,27 +743,33 @@ function vRota() {
       ${aprox ? `<div class="info-box" style="margin-bottom:0">${aprox} parada${aprox > 1 ? "s estão" : " está"} só com o bairro (sem rua e número). Toque em ✏️ para completar e a rota fica exata.</div>` : ""}
     </div>
     <div class="section-title">Paradas <span class="count">${paradas.length}</span> <span style="text-transform:none;font-weight:500;letter-spacing:0">· desmarque para tirar da rota</span></div>
-    ${paradas.map((p, i) => { const fora = S.rotaFora.has(p.k); const pior = p.ocs.map(o => situacao(o)).sort((a, b) => (a.grupo ?? 9) - (b.grupo ?? 9))[0];
-      return `<div class="parada ${fora ? "fora" : ""}">
-        <input type="checkbox" class="chk" ${fora ? "" : "checked"} onchange="toggleParada(${i},this.checked)">
-        <div class="pn">${fora ? "–" : ativas.indexOf(p) + 1}</div>
-        <div class="body"><div class="name" onclick="abrirFicha(${jsArg(p.chave)})">${esc(p.c.nome)}</div>
-          <div class="meta">📍 ${esc(enderecoTexto(p.c))}${enderecoCompleto(p.c) ? "" : ' <span class="pill p-gray">aprox.</span>'}</div>
-          <div class="top" style="margin-top:6px">${p.extra ? '<span class="pill p-purple">🤝 Visita sem ocorrência aberta</span>' : ""}${p.ocs.map(o => { const st = situacao(o); return `<span class="pill ${st.pill}">${st.txt}</span><span class="pill ${isRel(o) ? "p-purple" : "p-blue"}">${esc(subCurta(o.subclassificacao))}</span>`; }).join("")}</div>
+    ${paradas.map((p, i) => { const fora = S.rotaFora.has(p.k);
+      return `<div class="parada-grp ${fora ? "fora" : ""}">
+        <div class="parada-h">
+          <input type="checkbox" class="chk" title="Incluir na rota" ${fora ? "" : "checked"} onchange="toggleParada(${i},this.checked)">
+          <div class="pn">${fora ? "–" : ativas.indexOf(p) + 1}</div>
+          <div style="flex:1;min-width:0"><b>${fora ? "Fora da rota" : "Parada " + (ativas.indexOf(p) + 1)}</b> · 📍 ${esc(enderecoTexto(p.c))}${enderecoCompleto(p.c) ? "" : ' <span class="pill p-gray">aprox.</span>'}</div>
+        </div>
+        ${p.ocs.length ? p.ocs.map(o => ocCard(o, { rota: false })).join("") : `<div class="cc">
+          <div class="name" onclick="abrirFicha(${jsArg(p.chave)})">${esc(p.c.nome)}</div>
+          <div class="meta"><span class="pill p-purple">🤝 Visita sem ocorrência aberta</span></div>
           <div class="actions">
+            <button class="btn sm" style="background:var(--green)" onclick="atender(${jsArg(p.chave)})">🤝 Atender</button>
+            <button class="btn sm ghost" onclick="abrirFotos(${jsArg(p.chave)})">📷 Fotos</button>
             <a class="btn sm soft" href="${linkMaps(p.c)}" target="_blank" rel="noopener">🗺️ Maps</a>
             <a class="btn sm soft" href="${linkWaze(p.c)}" target="_blank" rel="noopener">🚗 Waze</a>
-            ${linkZap(p.c.telefone1) ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${linkZap(p.c.telefone1)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
-            <button class="btn sm ghost" onclick="abrirFicha(${jsArg(p.chave)},true)">✏️ Editar</button>
-          </div></div></div>`; }).join("")}` : `<div class="card empty">Nenhuma ocorrência aberta em ${esc(sel)} com esse filtro.</div>`}`;
+            <button class="btn sm ghost" onclick="toggleExtra(${jsArg(p.chave)},false)">Tirar da rota</button>
+          </div></div>`}
+      </div>`; }).join("")}` : `<div class="card empty">Nenhuma ocorrência aberta em ${esc(sel)} com esse filtro.</div>`}`;
   }
   return `${btnVoltar()}
   <h2 class="page">Rota do dia</h2>
-  <p class="sub">${sel ? "Toque em outra cidade para trocar." : "Para onde você vai hoje? Escolha a cidade."}</p>
-  ${sel ? `<div class="seg" style="margin:4px 0 12px"><button class="${modo === "rota" ? "on" : ""}" onclick="S.rotaModo='rota';render()">🗺️ Rota do dia</button><button class="${modo === "clientes" ? "on" : ""}" onclick="S.rotaModo='clientes';render()">👥 Clientes de ${esc(sel)} (${clientesDaCidade(sel).length})</button></div>` : ""}
-  <div class="cid-chips">${cids.map(x => `<button class="cid ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();render()">
-    <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("") || '<div class="card empty">Nenhuma ocorrência aberta.</div>'}</div>
-  ${corpo}`;
+  ${sel && !S.rotaTrocar ? `<div class="cid-sel"><span>📍 <b>${esc(sel)}</b> · ${(cids.find(x => x.c === sel) || { n: 0 }).n} aberta(s)</span><button class="btn sm ghost" onclick="S.rotaTrocar=true;render()">Trocar cidade</button></div>`
+    : `<p class="sub">Para onde você vai hoje? Escolha a cidade.</p>`}
+  ${sel ? `<div class="seg" style="margin:4px 0 12px"><button class="${modo === "rota" ? "on" : ""}" onclick="S.rotaModo='rota';render()">🗺️ Rota do dia</button><button class="${modo === "clientes" ? "on" : ""}" onclick="S.rotaModo='clientes';render()">👥 Clientes da cidade (${clientesDaCidade(sel).length})</button></div>` : ""}
+  ${sel && !S.rotaTrocar ? "" : `<div class="cid-chips" style="margin-bottom:12px">${cids.map(x => `<button class="cid ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();S.rotaTrocar=false;S.rotaOtim=null;render();window.scrollTo(0,0)">
+    <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("") || '<div class="card empty">Nenhuma ocorrência aberta.</div>'}</div>`}
+  ${sel && !S.rotaTrocar ? corpo : ""}`;
 }
 function toggleParada(i, on) {
   const p = S._paradas[i]; if (!p) return;
