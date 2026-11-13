@@ -554,8 +554,9 @@ function cidadesAbertas() {
   abertas().forEach(o => { const c = title(o.cidade) || "Sem cidade"; m[c] = m[c] || { c, n: 0, urg: 0, rel: 0 }; m[c].n++; if (situacao(o).grupo <= 3) m[c].urg++; if (isRel(o)) m[c].rel++; });
   return Object.values(m).sort((a, b) => b.urg - a.urg || b.n - a.n);
 }
+function visitadasNaCidade(cidade) { return abertas().filter(o => (title(o.cidade) || "Sem cidade") === cidade && visitada(o)); }
 function paradasCidade(cidade, filtro) {
-  let ocs = abertas().filter(o => (title(o.cidade) || "Sem cidade") === cidade);
+  let ocs = abertas().filter(o => (title(o.cidade) || "Sem cidade") === cidade && !visitada(o));
   if (filtro === "urgentes") ocs = ocs.filter(o => situacao(o).grupo <= 3);
   if (filtro === "rel") ocs = ocs.filter(isRel);
   // agrupa por endereço (mesmo cliente/bairro vira 1 parada) e ordena por bairro, bairros mais urgentes primeiro
@@ -610,7 +611,7 @@ function onde() {
     navigator.geolocation.getCurrentPosition(p => ok({ lat: p.coords.latitude, lng: p.coords.longitude }), () => ok(null), { enableHighAccuracy: true, timeout: 12000, maximumAge: 120000 });
   });
 }
-function rotaSig() { return [S.rotaCidade, S.rotaFiltro, [...(S.rotaFora || [])].sort().join("|")].join("#"); }
+function rotaSig() { return [S.rotaCidade, S.rotaFiltro, [...(S.rotaFora || [])].sort().join("|"), visitadasNaCidade(S.rotaCidade || "").map(o => o.numero).sort().join(",")].join("#"); }
 async function otimizarRota() {
   if (!baseRota()) return editarBase(true);
   const paradas = (S._paradas || []).filter(p => !S.rotaFora.has(p.k)); if (!paradas.length) return;
@@ -754,6 +755,7 @@ function vRota() {
       ${ativas[0] ? `<a class="btn block ghost" style="margin-top:8px" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">🚗 Ir para a 1ª parada no Waze</a>` : ""}
       ${aprox ? `<div class="info-box" style="margin-bottom:0">${aprox} parada${aprox > 1 ? "s estão" : " está"} só com o bairro (sem rua e número). Toque em ✏️ para completar e a rota fica exata.</div>` : ""}
     </div>
+    ${(() => { const vs = visitadasNaCidade(sel); return vs.length ? `<details class="card vis-fora"><summary>✅ <b>${vs.length}</b> visitada${vs.length > 1 ? "s" : ""} — saiu${vs.length > 1 ? "ram" : ""} da rota · falta fechar no Salesforce</summary>${vs.map(o => ocCard(o, { rota: false })).join("")}</details>` : ""; })()}
     <div class="section-title">Paradas <span class="count">${paradas.length}</span> <span style="text-transform:none;font-weight:500;letter-spacing:0">· desmarque para tirar da rota</span></div>
     ${paradas.map((p, i) => { const fora = S.rotaFora.has(p.k);
       return `<div class="parada-grp ${fora ? "fora" : ""}">
@@ -1303,7 +1305,7 @@ async function marcarVisita(numero, sim, texto) {
     const r = await rpc("ocv_salvar_visita", { p_token: S.token, p_numero: numero, p_visitada: !!sim, p_texto: texto ?? null });
     if (!r.ok) throw new Error(r.erro);
     S.visitas[numero] = r.visita;
-    toast(sim ? "✅ Marcada como visitada — falta fechar no Salesforce" : "Marcação de visita removida", 3500);
+    toast(sim ? (S.view === "rota" ? "✅ Visitada — saiu da rota. Reorganizando as próximas paradas…" : "✅ Marcada como visitada — falta fechar no Salesforce") : "Marcação de visita removida — voltou para a rota", 3500);
     const y = window.scrollY; render(); window.scrollTo(0, y);
   } catch (e) { toast(e.message, 4000); }
 }
