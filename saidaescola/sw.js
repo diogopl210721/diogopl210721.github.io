@@ -1,1 +1,12 @@
-if(!self.define){let e,i={};const s=(s,n)=>(s=new URL(s+".js",n).href,i[s]||new Promise(i=>{if("document"in self){const e=document.createElement("script");e.src=s,e.onload=i,document.head.appendChild(e)}else e=s,importScripts(s),i()}).then(()=>{let e=i[s];if(!e)throw new Error(`Module ${s} didn’t register its module`);return e}));self.define=(n,r)=>{const o=e||("document"in self?document.currentScript.src:"")||location.href;if(i[o])return;let t={};const l=e=>s(e,o),u={module:{uri:o},exports:t,require:l};i[o]=Promise.all(n.map(e=>u[e]||l(e))).then(e=>(r(...e),t))}}define(["./workbox-abeb32eb"],function(e){"use strict";self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"registerSW.js",revision:"3d4dbbd7f323b314a5b846bd8f0f806a"},{url:"index.html",revision:"db798b196f2bc91e1522e95afac9df04"},{url:"assets/index-DLuEYk4e.css",revision:null},{url:"assets/index-B2yyj4Xl.js",revision:null},{url:"eu/simbolo-128.png",revision:"1019d3842771e77a9b3c546534037743"},{url:"eu/simbolo-512.png",revision:"d94122016a84b43963451295942e00ed"},{url:"manifest.webmanifest",revision:"79949500eb39c8582638f0f92de3469a"}],{}),e.cleanupOutdatedCaches(),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html"))),e.registerRoute(/supabase\.co\/.*/i,new e.NetworkOnly,"GET")});
+// O app saiu de /saidaescola para /estudeup: este service worker limpa o antigo e leva para o novo endereço.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (e) => {
+  e.waitUntil((async () => {
+    for (const k of await caches.keys()) await caches.delete(k);
+    await self.registration.unregister();
+    for (const c of await self.clients.matchAll({ type: 'window' })) {
+      const u = new URL(c.url);
+      c.navigate('/estudeup/' + u.search + u.hash);
+    }
+  })());
+});
