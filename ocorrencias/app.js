@@ -329,7 +329,16 @@ function render() {
   const fn = { inicio: vInicio, prazos: vPrazos, finalizadas: vFinalizadas, clientes: vClientes, importar: vImportar, relatorio: vRelatorio, reaberturas: vReaberturas, rota: vRota, fotos: vFotos, guia: vGuia }[S.view] || vInicio;
   v.innerHTML = fn();
   if (S.view === "importar") bindImport();
+  if (S.view === "rota") autoOtimizar();
   renderRotaBar();
+}
+// Ao abrir a rota de uma cidade, organiza sozinha: onde estou → paradas na melhor ordem → base
+function autoOtimizar() {
+  if ((S.rotaModo || "rota") !== "rota" || !S.rotaCidade || S.rotaTrocar || !baseRota() || S.otimRodando) return;
+  const sig = rotaSig();
+  if ((S.rotaOtim && S.rotaOtim.sig === sig) || S.otimTentado === sig) return;
+  if (!(S._paradas || []).some(p => !S.rotaFora.has(p.k))) return;
+  S.otimTentado = sig; setTimeout(otimizarRota, 60);
 }
 function abertas() { return S.ocs.filter(o => !isFin(o)); }
 function finalizadas() { return S.ocs.filter(isFin); }
@@ -605,6 +614,7 @@ function rotaSig() { return [S.rotaCidade, S.rotaFiltro, [...(S.rotaFora || [])]
 async function otimizarRota() {
   if (!baseRota()) return editarBase(true);
   const paradas = (S._paradas || []).filter(p => !S.rotaFora.has(p.k)); if (!paradas.length) return;
+  S.otimRodando = true; if (S.view === "rota") { const y = window.scrollY; document.getElementById("view").innerHTML = vRota(); window.scrollTo(0, y); }
   try {
     toast("📍 Pegando sua localização…", 3000);
     const aqui = await onde();
@@ -625,6 +635,7 @@ async function otimizarRota() {
     toast(aqui ? "✅ Rota otimizada" : "✅ Rota otimizada (sem GPS: considerei saída da base)", 3500);
     const y = window.scrollY; render(); window.scrollTo(0, y);
   } catch (e) { toast("Não consegui otimizar agora: " + e.message, 5000); }
+  finally { S.otimRodando = false; if (S.view === "rota") { const y = window.scrollY; document.getElementById("view").innerHTML = vRota(); window.scrollTo(0, y); } }
 }
 function urlsRotaOtim(ends, origem, base) {
   // Google Maps aceita até 9 paradas intermediárias por link: divide em partes encadeadas
@@ -736,9 +747,10 @@ function vRota() {
         <div class="hint">${ativas.reduce((a, p) => a + p.ocs.length, 0)} ocorrências · ${otim ? `<b>ordem otimizada</b>: ${otim.semGps ? "saindo da base" : "saindo de onde você está"} → paradas → ${esc((S.config.base_rota || {}).nome || "base")} · ≈ ${Math.round(otim.km * 1.3)} km` : "ordem por bairro, urgentes primeiro"}</div></div>
       <div class="base-line">🏁 Chegada: <b>${base ? esc((S.config.base_rota || {}).nome || "Consigaz") + " — " + esc(base) : "base não definida"}</b> <button class="lnk" onclick="editarBase()">✏️ ${base ? "trocar" : "definir"}</button></div>
       ${otim && base ? urlsOtim.map((u, i) => `<a class="btn block" style="margin-top:10px" href="${u}" target="_blank" rel="noopener">🧭 Iniciar rota otimizada no Google Maps${urlsOtim.length > 1 ? ` (parte ${i + 1} de ${urlsOtim.length})` : ""}</a>`).join("")
+        : S.otimRodando ? `<div class="otim-run"><div class="spinner" style="width:22px;height:22px;margin:0"></div>Organizando a rota a partir de onde você está… (1ª, 2ª, 3ª parada → ${esc((S.config.base_rota || {}).nome || "Consigaz")})</div>`
         : `<button class="btn block" style="margin-top:10px" onclick="otimizarRota()">🧭 Otimizar: sair daqui → paradas → ${esc((S.config.base_rota || {}).nome || "Consigaz")}</button>
            ${partes.map((p, i) => `<a class="btn block ghost" style="margin-top:8px" href="${urlRota(p)}" target="_blank" rel="noopener">🗺️ Abrir sem otimizar${partes.length > 1 ? ` (parte ${i + 1} de ${partes.length})` : ""}</a>`).join("")}`}
-      ${otim ? `<button class="lnk" style="margin-top:8px" onclick="S.rotaOtim=null;otimizarRota()">↻ Recalcular a partir de onde estou agora</button>` : ""}
+      ${otim ? `<button class="lnk" style="margin-top:8px" onclick="S.rotaOtim=null;S.otimTentado=null;otimizarRota()">↻ Recalcular a partir de onde estou agora</button>` : ""}
       ${ativas[0] ? `<a class="btn block ghost" style="margin-top:8px" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">🚗 Ir para a 1ª parada no Waze</a>` : ""}
       ${aprox ? `<div class="info-box" style="margin-bottom:0">${aprox} parada${aprox > 1 ? "s estão" : " está"} só com o bairro (sem rua e número). Toque em ✏️ para completar e a rota fica exata.</div>` : ""}
     </div>
