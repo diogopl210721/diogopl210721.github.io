@@ -1542,7 +1542,11 @@ function vMedidores() {
     <div class="card kpi"><div class="n">${naoExp}</div><div class="l">Ainda não exportadas</div></div>
     <div class="card kpi ${Object.values(dupU).some(n => n > 1) || Object.values(dupS).some(n => n > 1) ? "red" : ""}"><div class="n">${Object.values(dupU).filter(n => n > 1).length + Object.values(dupS).filter(n => n > 1).length}</div><div class="l">Repetidos (conferir)</div></div>
   </div>
-  <button class="btn block" style="padding:16px;font-size:16px" onclick="coletarMedidor()">📷 + Coletar medidor</button>
+  <div class="med-acts">
+    <button class="btn" onclick="coletarMedidor()">📷 Coletar medidor</button>
+    <button class="btn ghost" ${total ? "" : "disabled"} onclick="exportarMedidores(${jsArg(chave)})" title="Planilha no padrão Conta Sim + fotos">📦 Exportar${total ? ` (${total})` : ""}</button>
+  </div>
+  <div class="med-hint">${total ? `Exporta a planilha no padrão Conta Sim Digital + as fotos (.zip).${naoExp ? ` <b>${naoExp}</b> ainda não exportada${naoExp > 1 ? "s" : ""}.` : " Tudo já exportado."}` : "O botão Exportar libera depois do 1º medidor coletado."}</div>
   ${total > 6 ? `<div class="toolbar" style="margin-top:12px"><input class="input" placeholder="Buscar unidade, série ou leitura" value="${esc(S.medQ || "")}" oninput="S.medQ=this.value;debRender()"></div>` : ""}
   <div class="section-title">Unidades <span class="count">${total}</span></div>
   ${l.length ? l.map(m => { const du = dupU[norm(m.unidade)] > 1, ds = m.serie && dupS[norm(m.serie)] > 1;
@@ -1553,12 +1557,7 @@ function vMedidores() {
         <div class="med-l">Leitura <b>${esc(m.leitura || "—")}</b> m³</div>
         <div class="med-d">${fmtDH(m.criado_em)}${m.exportado_em ? ' · <span class="pill p-green">exportado</span>' : ""}</div></div>
       <span class="chev">›</span></div>`; }).join("") : `<div class="card empty">Nenhum medidor coletado ainda.<br>Toque em <b>+ Coletar medidor</b>, digite a unidade e tire a foto: a leitura e o nº de série são preenchidos sozinhos.</div>`}
-  ${total ? `<div class="card" style="margin-top:14px">
-    <b>📦 Exportar para o Conta Sim</b>
-    <p class="sub" style="margin:4px 0 10px">Gera um .zip com a planilha Excel (unidade, nº de série, leitura, data) e as fotos nomeadas pela unidade. No iPhone, escolha OneDrive, e-mail ou Salvar em Arquivos.</p>
-    <button class="btn block" onclick="exportarMedidores(${jsArg(chave)})">📦 Exportar ${total} medidor${total > 1 ? "es" : ""}</button>
-    ${total - naoExp ? `<button class="btn block ghost" style="margin-top:8px;color:var(--red)" onclick='apagarMedidores(${jsArg(medsDe(chave).filter(m => m.exportado_em).map(m => m.id))})'>🗑️ Apagar do sistema os ${total - naoExp} já exportados</button>` : ""}
-  </div>` : ""}`;
+  ${total - naoExp ? `<button class="btn block ghost" style="margin-top:14px;color:var(--red)" onclick='apagarMedidores(${jsArg(medsDe(chave).filter(m => m.exportado_em).map(m => m.id))})'>🗑️ Apagar do sistema os ${total - naoExp} já exportados</button>` : ""}`;
 }
 function coletarMedidor(id) {
   const m = id ? S.medidores.find(x => x.id === id) : null;
@@ -1625,21 +1624,82 @@ async function apagarMedidores(ids, dentroModal) {
     if (dentroModal) fecharModal(); toast("Excluído"); setTimeout(render, 80);
   } catch (e) { toast(e.message, 4000); }
 }
+function leituraM3(v) {
+  if (v === null || v === undefined || v === "") return "";
+  let t = String(v).replace(/\s/g, ""); t = t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t;
+  const n = Number(t);
+  if (!isFinite(n)) return String(v);
+  const p = n.toFixed(3).split("."); return `${p[0].padStart(5, "0")},${p[1]}`;
+}
+function partesUnidade(u) {
+  const t = String(u || "").trim();
+  const torre = (t.match(/torre\s*([\w-]+)/i) || [])[1] || "";
+  const bloco = (t.match(/bl(?:oco|\.)?\s*([\w-]+)/i) || [])[1] || "";
+  let apto = t.replace(/torre\s*[\w-]+/i, "").replace(/bl(?:oco|\.)?\s*[\w-]+/i, "").replace(/ap(?:to|artamento|\.)?\s*/i, "").replace(/[-–·,]+/g, " ").trim();
+  return { torre, bloco, apto: apto || t };
+}
 async function exportarMedidores(chave) {
   try {
     toast("Preparando exportação…", 2500);
     if (!window.JSZip) await carregarScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
-    if (!window.XLSX) await carregarScript("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+    if (!window.ExcelJS) await carregarScript("https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js");
     const ref = refCliente(chave), c = cliente(ref);
     const d = await medApi({ acao: "listar", chave });
     const lista = d.medidores.slice().sort(ordUnidade);
     const usados = {}; lista.forEach(m => { let n = nomeArq(`${m.unidade} - ${m.serie || "sem serie"}`); if (usados[n]) n += ` (${++usados[n]})`; else usados[n] = 1; m._arq = n + ".jpg"; });
-    const linhas = lista.map(m => ({ "Cliente": c.nome, "Código": c.codigo || "", "Cidade": c.cidade || "", "Unidade": m.unidade, "Nº de série": m.serie || "", "Leitura (m³)": m.leitura || "", "Data da coleta": new Date(m.criado_em).toLocaleString("pt-BR"), "Ocorrência": m.numero || "", "Confiança IA": (m.ia && m.ia.confianca) || "", "Foto": m.url ? m._arq : "" }));
-    const ws = XLSX.utils.json_to_sheet(linhas);
-    ws["!cols"] = [{ wch: 34 }, { wch: 10 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 13 }, { wch: 18 }, { wch: 11 }, { wch: 12 }, { wch: 30 }];
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Medidores");
-    const xlsx = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    const base = nomeArq(`Medidores ${c.codigo ? c.codigo + " - " : ""}${c.nome} ${ymd(new Date())}`);
+
+    const NAVY = "FF0B2947", FLAME = "FFFF5630", SUCCESS = "FFE7F7EC", SUCCESS_TXT = "FF16A34A", WARNING = "FFFEF3DA", WARNING_TXT = "FF92660A", NEUTRAL_TXT = "FF4B5875";
+    const BORDER = { style: "thin", color: { argb: "FFDCE1EA" } };
+    const wb = new ExcelJS.Workbook(); wb.creator = "Consigaz - Conta Sim Digital"; wb.created = new Date();
+    let logo = null; try { logo = wb.addImage({ buffer: await fetch("logo-consigaz.png").then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); }), extension: "png" }); } catch (e) {}
+    const sh = wb.addWorksheet("Conta Sim Digital", { views: [{ state: "frozen", ySplit: 7 }] });
+    const colunas = ["Torre", "Bloco", "Apto", "Morador", "CPF", "Data de Nascimento", "E-mail", "Telefone", "Nº Série Medidor", "Leitura (m³)", "Status Medidor", "Status Validação", "Aviso"];
+    sh.columns = colunas.map(x => ({ width: Math.max(14, x.length + 4) }));
+    sh.columns[3].width = 26; sh.columns[6].width = 26; sh.columns[12].width = 30;
+    sh.mergeCells("A1:M1"); sh.getRow(1).height = 8; sh.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: FLAME } };
+    if (logo !== null) sh.addImage(logo, { tl: { col: 0.15, row: 1.15 }, ext: { width: 118, height: 28 } });
+    sh.getRow(2).height = 24;
+    const linhaTopo = (r, v, font, h) => { sh.mergeCells(`A${r}:M${r}`); const cl = sh.getCell(`A${r}`); cl.value = v; cl.font = { name: "Calibri", ...font }; cl.alignment = { vertical: "middle", horizontal: "left", indent: 1 }; sh.getRow(r).height = h; };
+    linhaTopo(3, "Conta Sim Digital", { size: 11, bold: true, color: { argb: "FF8A93A6" } }, 16);
+    linhaTopo(4, c.nome || "", { size: 17, bold: true, color: { argb: NAVY } }, 24);
+    linhaTopo(5, [c.codigo ? `Cód. cliente: ${c.codigo}` : "", c.contato ? `Contato: ${c.contato}${c.telefone1 ? "  ·  " + c.telefone1 : ""}` : ""].filter(Boolean).join("   |   "), { size: 10.5, color: { argb: NAVY } }, 16);
+    linhaTopo(6, enderecoTexto(c), { size: 10, italic: true, color: { argb: "FF8A93A6" } }, 16);
+    const hr = sh.getRow(7); hr.values = colunas; hr.height = 24;
+    hr.eachCell(cl => { cl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } }; cl.font = { name: "Calibri", bold: true, color: { argb: "FFFFFFFF" }, size: 11 }; cl.alignment = { vertical: "middle", horizontal: "center" }; cl.border = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER }; });
+    let capt = 0;
+    for (const m of lista) {
+      const ok = !!(m.serie && m.leitura); if (ok) capt++;
+      const u = partesUnidade(m.unidade);
+      const row = sh.addRow([u.torre, u.bloco, u.apto, "", "", "", "", "", m.serie || "", leituraM3(m.leitura), ok ? "Capturado" : "Pendente", "Aguardando", ""]);
+      row.height = 20;
+      row.eachCell({ includeEmpty: true }, (cl, n) => {
+        cl.font = { name: "Calibri", size: 10.5, color: { argb: "FF14213D" } };
+        cl.border = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER }; cl.alignment = { vertical: "middle" };
+        if (n === 6) cl.alignment.horizontal = "center";
+        if (n === 10) { cl.font.name = "Courier New"; cl.alignment.horizontal = "center"; }
+        if (n === 11) { cl.alignment.horizontal = "center"; cl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ok ? SUCCESS : WARNING } }; cl.font.color = { argb: ok ? SUCCESS_TXT : WARNING_TXT }; cl.font.bold = true; }
+        if (n === 12) { cl.alignment.horizontal = "center"; cl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F1F4" } }; cl.font.color = { argb: NEUTRAL_TXT }; cl.font.bold = true; }
+      });
+    }
+    sh.autoFilter = { from: "A7", to: `M${7 + lista.length}` };
+    // Resumo
+    const tot = lista.length, pct = tot ? Math.round(capt / tot * 100) : 0;
+    const rs = wb.addWorksheet("Resumo"); rs.columns = [{ width: 4 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 4 }];
+    rs.mergeCells("A1:F1"); rs.getRow(1).height = 8; rs.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: FLAME } };
+    if (logo !== null) rs.addImage(logo, { tl: { col: 0.15, row: 1.15 }, ext: { width: 148, height: 35 } });
+    rs.mergeCells("B2:F3"); const t = rs.getCell("B2"); t.value = `Resumo - ${c.nome || ""}`; t.font = { name: "Calibri", size: 16, bold: true, color: { argb: NAVY } }; t.alignment = { vertical: "bottom", horizontal: "right" };
+    rs.mergeCells("B4:F4"); const sb = rs.getCell("B4"); sb.value = `Gerado em ${new Date().toLocaleString("pt-BR")}`; sb.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF8A93A6" } }; sb.alignment = { horizontal: "right" };
+    rs.getRow(2).height = 20; rs.getRow(3).height = 20;
+    [{ t: "TOTAL DE UNIDADES", v: tot, c: NAVY, f: "FFEFF3F8" }, { t: "MEDIDORES CAPTURADOS", v: capt, c: SUCCESS_TXT, f: SUCCESS }, { t: "PENDENTES", v: tot - capt, c: tot - capt ? WARNING_TXT : NEUTRAL_TXT, f: tot - capt ? WARNING : "FFF0F1F4" }, { t: "% CONCLUÍDO", v: `${pct}%`, c: pct === 100 ? SUCCESS_TXT : WARNING_TXT, f: pct === 100 ? SUCCESS : WARNING }].forEach((k, i) => {
+      const col = "BCDE"[i]; rs.mergeCells(`${col}6:${col}7`); rs.mergeCells(`${col}8:${col}9`);
+      const a1 = rs.getCell(`${col}6`); a1.value = k.t; a1.font = { name: "Calibri", size: 9, bold: true, color: { argb: "FF8A93A6" } }; a1.alignment = { vertical: "bottom", horizontal: "center", wrapText: true };
+      const a2 = rs.getCell(`${col}8`); a2.value = k.v; a2.font = { name: "Calibri", size: 22, bold: true, color: { argb: k.c } }; a2.alignment = { vertical: "top", horizontal: "center" };
+      for (let l = 6; l <= 9; l++) rs.getCell(`${col}${l}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: k.f } };
+    });
+    rs.getRow(6).height = 16; rs.getRow(7).height = 8; rs.getRow(8).height = 30; rs.getRow(9).height = 10;
+    rs.mergeCells("B11:F11"); rs.getCell("B11").value = "Consigaz Distribuidora de Gás LTDA - Sistema Conta Sim Digital"; rs.getCell("B11").font = { size: 9, italic: true, color: { argb: "FF8A93A6" } };
+    const xlsx = await wb.xlsx.writeBuffer();
+    const base = nomeArq(`conta-sim ${c.codigo ? c.codigo + " - " : ""}${c.nome} ${ymd(new Date())}`);
     const zip = new JSZip(); zip.file(base + ".xlsx", xlsx);
     const pasta = zip.folder("Fotos"); let i = 0;
     for (const m of lista) {
@@ -1656,7 +1716,7 @@ async function exportarMedidores(chave) {
     await medApi({ acao: "marcar_exportados", ids });
     const agora = new Date().toISOString(); S.medidores.forEach(m => { if (ids.includes(m.id)) m.exportado_em = agora; });
     render(); toast(`✅ ${lista.length} medidores exportados`, 3500);
-  } catch (e) { toast(e.message, 4500); }
+  } catch (e) { toast(e.message || "Erro ao exportar", 4500); }
 }
 
 /* ---------------- modal ---------------- */
