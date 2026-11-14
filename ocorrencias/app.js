@@ -1345,6 +1345,14 @@ async function exportarFotos(chaves) {
 /* ---------------- VISITADAS ---------------- */
 function visitada(o) { const v = S.visitas[o.numero]; return v && v.visitada_em ? v : null; }
 function visitadasAFechar() { return abertas().filter(o => visitada(o)); }
+async function salvarTextoGuia(numero, texto) {
+  try {
+    const r = await rpc("ocv_salvar_visita", { p_token: S.token, p_numero: numero, p_visitada: null, p_texto: texto ?? "" });
+    if (!r.ok) throw new Error(r.erro);
+    S.visitas[numero] = r.visita;
+    toast("💾 Texto salvo", 2500);
+  } catch (e) { toast(e.message, 4000); }
+}
 async function marcarVisita(numero, sim, texto) {
   try {
     const r = await rpc("ocv_salvar_visita", { p_token: S.token, p_numero: numero, p_visitada: !!sim, p_texto: texto ?? null });
@@ -1440,11 +1448,12 @@ function vGuia() {
   <div class="page-head"><h2 class="page">📘 ${esc(subCurta(sub))}</h2><button class="btn sm ghost" onclick="go('guia',()=>{S.guiaSub=null;S.guiaNumero=null})">Todos os guias</button></div>
   <p class="sub">${o ? `Oc. <b>${o.numero}</b> · ${esc(cliente(o).nome)} · ` : ""}${g.prazo_du ? `Prazo padrão <b>${g.prazo_du} dias úteis</b>` : "Prazo padrão não cadastrado"}${g.origem ? ` · Quem abre: ${esc(g.origem)}` : ""}</p>
 
-  <div class="card guia-acao">
-    <div class="section-title" style="margin-top:0">O que fazer <button class="lnk" style="margin-left:auto" onclick="editarGuia(${jsArg(sub)})">✏️ editar</button></div>
-    <div>${g.acao ? esc(g.acao) : '<span class="mu">Ainda não há orientação para esta subclassificação. Toque em editar para escrever.</span>'}</div>
+  <details class="card guia-acao guia-dobra">
+    <summary>📋 O que fazer <span>mostrar</span></summary>
+    <div style="margin-top:10px">${g.acao ? esc(g.acao) : '<span class="mu">Ainda não há orientação para esta subclassificação. Toque em editar para escrever.</span>'}</div>
     ${g.dicas ? `<div class="dicas">💡 ${esc(g.dicas)}</div>` : ""}
-  </div>
+    <button class="lnk" style="margin-top:8px" onclick="editarGuia(${jsArg(sub)})">✏️ editar orientação</button>
+  </details>
 
   <div class="section-title">✍️ Montar texto de fechamento</div>
   <div class="card">
@@ -1458,7 +1467,7 @@ function vGuia() {
     <textarea class="input" id="guiaTxt" rows="10">${esc((() => { const v = o && S.visitas[o.numero]; const rascMaisNovo = r.__t && (!v || r.__t > Date.parse(v.atualizado_em)); return v && v.texto && !rascMaisNovo ? v.texto : montarTexto(sub, { ...pre, ...r }, temFotos); })())}</textarea>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn" style="flex:1" onclick="copiar(document.getElementById('guiaTxt').value)">📋 Copiar texto</button>
-      ${o && !isFin(o) ? `<button class="btn" style="flex:1 1 100%;background:var(--green)" onclick="marcarVisita(${o.numero},true,document.getElementById('guiaTxt').value)">✅ Salvar texto e marcar como visitada</button>` : ""}
+      ${o && !isFin(o) ? `<button class="btn" style="flex:1 1 100%;background:var(--green)" onclick="salvarTextoGuia(${o.numero},document.getElementById('guiaTxt').value)">💾 Salvar texto</button>` : ""}
       <button class="btn ghost" onclick="if(confirm('Limpar o que foi preenchido?')){lsSet(rascKey(S.guiaNumero,S.guiaSub),null);render()}">Limpar</button>
     </div>
     <p class="sub" style="margin:8px 0 0;font-size:12.5px">O que você preenche fica salvo neste aparelho até limpar.</p>
@@ -1586,6 +1595,7 @@ function coletarMedidor(id) {
       <input type="file" accept="image/*" capture="environment" class="hidden" onchange="lerFotoMedidor(this)">
       ${url ? `<img src="${url}" alt="">` : `<span>📷</span><b>Tirar foto do medidor</b><small>Enquadre o mostrador e a plaqueta do nº de série</small>`}
     </label>
+    <label class="med-gal"><input type="file" accept="image/*" class="hidden" onchange="lerFotoMedidor(this)">🖼️ Escolher foto da galeria</label>
     <div id="m_ia"></div>
     <div class="form-grid">
       <div class="field"><label>Nº de série</label><input class="input" id="m_se" value="${esc(m ? m.serie || "" : "")}" autocomplete="off"></div>
