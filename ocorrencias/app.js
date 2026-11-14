@@ -397,7 +397,7 @@ function vInicio() {
     <div class="d-top"><div><small>${saud}${nome ? ", " + esc(nome) : ""}</small><h2>${atual ? "Seu mês" : mesNome(mk)}</h2></div>
       <label class="d-mes">🗓 ${esc(mesNome(mk))}<select onchange="S.mesMeta=this.value;render()">${mesesDisponiveis().map(m => `<option value="${m}" ${m === mk ? "selected" : ""}>${mesNome(m)}</option>`).join("")}</select></label></div>
     <div class="d-metas">
-      ${meta("★ Relacionamento", relMes, META_REL, fR, "#c4b5fd", "abrirOcsFin({per:'" + mk + "',sub:'__REL__'})")}
+      ${meta("★ Relac.", relMes, META_REL, fR, "#c4b5fd", "abrirOcsFin({per:'" + mk + "',sub:'__REL__'})")}
       ${meta("Finalizadas", totMes, META_TOTAL, fT, "#93c5fd", "abrirOcsFin({per:'" + mk + "'})")}
     </div>
     ${atual && du ? `<div class="d-du">${du} dias úteis restantes no mês</div>` : ""}
