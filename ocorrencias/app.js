@@ -298,7 +298,7 @@ const ICONS = {
   guia: '<path d="M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5z"/><path d="M4 19.5A2.5 2.5 0 006.5 22H20v-5"/>',
   reaberturas: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
 };
-const NAV = [["inicio", "Início"], ["prazos", "Prazos"], ["finalizadas", "Finalizadas"], ["rota", "Rota"], ["guia", "Guia"], ["reaberturas", "Reaberturas"], ["clientes", "Clientes"], ["importar", "Importar"]];
+const NAV = [["inicio", "Início"], ["prazos", "Agenda"], ["finalizadas", "Finalizadas"], ["rota", "Rota"], ["guia", "Guia"], ["reaberturas", "Reaberturas"], ["importar", "Importar"]];
 function svgI(k) { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`; }
 function snap() { return { v: S.view, pf: { ...S.prazoFiltro }, mf: S.mesFin, ff: { ...S.filtroFin }, mm: S.mesMeta, rp: S.relPeriodo, d: S.depth }; }
 function aplicar(st) {
@@ -489,38 +489,58 @@ function vPrazos() {
   const ab = abertas();
   const cidades = [...new Set(ab.map(o => title(o.cidade)).filter(Boolean))].sort();
   const subs = [...new Set(ab.map(o => o.subclassificacao))].sort();
-  let lista = ab.filter(o => {
-    const s = situacao(o);
-    if (f.janela === "vencidas" && s.grupo !== 0) return false;
-    if (f.janela === "urgentes" && !(s.grupo <= 3)) return false;
-    if (f.janela === "prox" && !(s.grupo >= 1 && s.grupo <= 3)) return false;
-    if (f.janela === "visitadas" && !visitada(o)) return false;
-    if (f.janela === "naovisitadas" && visitada(o)) return false;
+  const passa = (o, ign) => {
+    const s = situacao(o), j = ign ? "todas" : f.janela;
+    if (j === "vencidas" && s.grupo !== 0) return false;
+    if (/^g\d$/.test(j) && s.grupo !== +j[1]) return false;
+    if (j === "urgentes" && !(s.grupo <= 3)) return false;
+    if (j === "prox" && !(s.grupo >= 1 && s.grupo <= 3)) return false;
+    if (j === "visitadas" && !visitada(o)) return false;
+    if (j === "naovisitadas" && visitada(o)) return false;
     if (f.cidade && title(o.cidade) !== f.cidade) return false;
     if (f.sub === "__REL__" && !isRel(o)) return false;
     if (f.sub === "__REAB__" && !(o.reabertura > 0)) return false;
     if (f.sub && !f.sub.startsWith("__") && o.subclassificacao !== f.sub) return false;
-    if (f.q) { const q = norm(f.q), c = cliente(o); if (!norm([o.numero, c.nome, c.codigo, c.bairro, c.cidade, o.ticket].join(" ")).includes(q)) return false; }
+    if (f.q) { const q = norm(f.q), c = cliente(o); if (!norm([o.numero, c.nome, c.codigo, c.bairro, c.cidade, c.telefone1, o.ticket].join(" ")).includes(q)) return false; }
     return true;
-  }).sort((a, b) => (a._pz || 9e15) - (b._pz || 9e15));
-  const grupos = [["Vencidas", 0], ["Vencem hoje", 1], ["Até 2 dias", 2], ["Até 5 dias", 3], ["Mais de 5 dias", 4]];
-  const sel = (id, opts, cur, onch) => `<select class="input" onchange="${onch}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  };
+  const base = ab.filter(o => passa(o, true));
+  const lista = ab.filter(o => passa(o)).sort((a, b) => (a._pz || 9e15) - (b._pz || 9e15));
+  const cnt = g => base.filter(o => situacao(o).grupo === g).length;
+  const grupos = [["Vencidas", 0, "red", "Vencidas"], ["Vencem hoje", 1, "orange", "Hoje"], ["Até 2 dias", 2, "orange", "2 dias"], ["Até 5 dias", 3, "yellow", "5 dias"], ["Mais de 5 dias", 4, "green", "Depois"]];
+  const nVis = base.filter(o => visitada(o)).length;
+  const jan = f.janela === "vencidas" ? "g0" : f.janela;
+  const tile = (k, n, l, cor) => `<button class="ag-t ${cor} ${jan === k ? "on" : ""}" onclick="S.prazoFiltro.janela=${jan === k ? "'todas'" : `'${k}'`};render()"><b>${n}</b><span>${l}</span></button>`;
+  const nFil = (f.cidade ? 1 : 0) + (f.sub ? 1 : 0);
+  const subNome = f.sub === "__REL__" ? "★ Relacionamento" : f.sub === "__REAB__" ? "↺ Reabertas" : subCurta(f.sub);
+  const jNome = { urgentes: `Vencidas + ${JANELA_DIAS} dias`, prox: `Próximos ${JANELA_DIAS} dias`, naovisitadas: "Não visitadas" }[f.janela];
   return `
-  ${btnVoltar()}<h2 class="page">Prazos</h2>
-  <p class="sub">Mostrando <b>${lista.length}</b> de ${ab.length} abertas · marque ☑ para montar a rota do dia</p>
-  <div class="toolbar">
-    <input class="input" placeholder="Buscar cliente, código, nº…" value="${esc(f.q)}" oninput="S.prazoFiltro.q=this.value;debRender()">
-    ${sel("j", [["todas", "Todos os prazos"], ["vencidas", "Só vencidas"], ["prox", `Vencem em até ${JANELA_DIAS} dias`], ["urgentes", `Vencidas + até ${JANELA_DIAS} dias`], ["visitadas", "✅ Visitadas — falta fechar no Salesforce"], ["naovisitadas", "Ainda não visitadas"]], f.janela, "S.prazoFiltro.janela=this.value;render()")}
-    ${sel("c", [["", "Todas as cidades"], ...cidades.map(c => [c, c])], f.cidade, "S.prazoFiltro.cidade=this.value;render()")}
-    ${sel("s", [["", "Todas as subclassificações"], ["__REL__", "★ Só Relacionamento"], ["__REAB__", "↺ Só reabertas"], ...subs.map(s => [s, subCurta(s)])], f.sub, "S.prazoFiltro.sub=this.value;render()")}
+  ${btnVoltar()}<div class="ag-head"><h2 class="page">Agenda</h2><span>${lista.length} de ${ab.length} abertas</span></div>
+  <div class="ag-strip">
+    ${grupos.map(([, g, c, l]) => tile("g" + g, cnt(g), l, c)).join("")}
+    ${tile("visitadas", nVis, "Visitadas", "blue")}
   </div>
-  ${f.cidade ? `<button class="btn sm" style="margin-bottom:10px" onclick='go("rota",()=>{S.rotaCidade=${jsArg(f.cidade)};S.rotaFiltro="todas";S.rotaFora=new Set()})'>🗺️ Montar rota de ${esc(f.cidade)}</button>` : ""}
-  ${lista.length ? grupos.map(([nome, g]) => {
+  <div class="ag-bar">
+    <div class="ag-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input placeholder="Cliente, código, nº, telefone…" value="${esc(f.q)}" oninput="S.prazoFiltro.q=this.value;debRender()"></div>
+    <button class="ag-fbtn ${S.agFiltros || nFil ? "on" : ""}" onclick="S.agFiltros=!S.agFiltros;render()">⚙︎${nFil ? `<i>${nFil}</i>` : ""}</button>
+  </div>
+  ${S.agFiltros ? `<div class="ag-pan">
+    <select class="input" onchange="S.prazoFiltro.cidade=this.value;render()">${[["", "Todas as cidades"], ...cidades.map(c => [c, c])].map(([v, l]) => `<option value="${esc(v)}" ${v === f.cidade ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    <select class="input" onchange="S.prazoFiltro.sub=this.value;render()">${[["", "Todos os tipos"], ["__REL__", "★ Só Relacionamento"], ["__REAB__", "↺ Só reabertas"], ...subs.map(x => [x, subCurta(x)])].map(([v, l]) => `<option value="${esc(v)}" ${v === f.sub ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+  </div>` : ""}
+  ${f.cidade || f.sub || jNome ? `<div class="ag-chips">
+    ${jNome ? `<button onclick="S.prazoFiltro.janela='todas';render()">${jNome} ✕</button>` : ""}
+    ${f.cidade ? `<button onclick="S.prazoFiltro.cidade='';render()">📍 ${esc(f.cidade)} ✕</button>` : ""}
+    ${f.sub ? `<button onclick="S.prazoFiltro.sub='';render()">${esc(subNome)} ✕</button>` : ""}
+    ${f.cidade ? `<button class="go" onclick='go("rota",()=>{S.rotaCidade=${jsArg(f.cidade)};S.rotaFiltro="todas";S.rotaFora=new Set()})'>🗺️ Rota de ${esc(f.cidade)}</button>` : ""}
+  </div>` : ""}
+  ${lista.length ? grupos.map(([nome, g, c]) => {
     const it = lista.filter(o => situacao(o).grupo === g);
-    return it.length ? `<div class="section-title">${nome} <span class="count">${it.length}</span></div>${it.map(o => ocCard(o)).join("")}` : "";
-  }).join("") : `<div class="card empty">Nenhuma ocorrência com esses filtros.</div>`}`;
+    return it.length ? `<div class="ag-sec ${c}"><i></i>${nome}<span>${it.length}</span></div>${it.map(o => ocCard(o)).join("")}` : "";
+  }).join("") : `<div class="card empty">Nada por aqui com esses filtros.</div>`}`;
 }
-let _deb; function debRender() { clearTimeout(_deb); _deb = setTimeout(() => { const a = document.activeElement, pos = a && a.selectionStart; render(); const i = document.querySelector("#view .toolbar input"); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch (e) {} } }, 250); }
+let _deb; function debRender() { clearTimeout(_deb); _deb = setTimeout(() => { const a = document.activeElement, pos = a && a.selectionStart; render(); const i = document.querySelector("#view .ag-search input, #view .toolbar input"); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch (e) {} } }, 250); }
 
 /* ---------------- ROTA ---------------- */
 function toggleRota(n, on) { on ? S.rota.add(n) : S.rota.delete(n); renderRotaBar(); }
