@@ -441,39 +441,45 @@ function ocCard(o, opts = {}) {
   const z = linkZap(c.telefone1), tel = linkTel(c.telefone1);
   const aprox = !enderecoCompleto(c);
   const vis = !fin && visitada(o);
+  const nMed = S.medidores.filter(m => m.chave_cliente === o.chave_cliente).length;
+  const stF = statusFotos(o.chave_cliente);
+  const ns = S.notas.filter(n => n.numero === o.numero);
+  const tool = (ic, lb, attrs, extra = "") => `<${attrs.startsWith("href") ? "a" : "button"} class="tool${extra}" ${attrs}><i>${ic}</i><span>${lb}</span></${attrs.startsWith("href") ? "a" : "button"}>`;
   return `<div class="oc ${s.cls} ${vis ? "visitada" : ""}">
-    ${!fin && opts.rota !== false ? `<input type="checkbox" class="chk" title="Adicionar à rota" ${S.rota.has(o.numero) ? "checked" : ""} onchange="toggleRota(${o.numero},this.checked)">` : ""}
-    <div class="body">
+    <div class="oc-head">
+      ${!fin && opts.rota !== false ? `<input type="checkbox" class="chk" title="Adicionar à rota" ${S.rota.has(o.numero) ? "checked" : ""} onchange="toggleRota(${o.numero},this.checked)">` : ""}
       <div class="top">
         <span class="pill ${s.pill}">${s.txt}</span>
-        ${isRel(o) ? '<span class="pill p-purple">★ Relacionamento</span>' : ""}
-        <span class="pill p-blue">${esc(subCurta(o.subclassificacao))}</span>
+        ${isRel(o) ? '<span class="pill p-purple">★ Relac.</span>' : ""}
         ${o.reabertura ? '<span class="pill p-orange">Reaberta</span>' : ""}
-        ${vis ? `<span class="pill p-green">✅ Visitada ${fmtData(vis.visitada_em)} · fechar no Salesforce</span>` : ""}
-        ${(() => { const ns = S.notas.filter(n => n.numero === o.numero); return ns.length ? `<span class="pill p-gray">📝 ${ns.length}</span>${ns.some(n => n.irregularidade) ? '<span class="pill p-red">⚠ Irregularidade</span>' : ""}` : ""; })()}
+        ${ns.length ? `<span class="pill p-gray">📝 ${ns.length}</span>${ns.some(n => n.irregularidade) ? '<span class="pill p-red">⚠ Irregular</span>' : ""}` : ""}
       </div>
-      <div class="name" onclick="abrirFicha(${jsArg(o.chave_cliente)})">${esc(c.nome)}</div>
-      <div class="meta">
-        <span>Oc. <b>${o.numero}</b></span>
-        ${c.codigo ? `<span>Cód. <b>${esc(c.codigo)}</b></span>` : '<span class="pill p-gray">sem código</span>'}
-        <span>📍 ${esc([c.bairro, c.cidade].filter(Boolean).join(" · "))}</span>
-        ${fin ? `<span>Fechada <b>${fmtDH(o.fechamento)}</b></span>` : `<span>Prazo <b>${fmtDH(o.prazo)}</b></span>`}
-      </div>
-      ${fin && o.solucao && opts.sol ? `<div class="sol">${esc(o.solucao.slice(0, 260))}${o.solucao.length > 260 ? "…" : ""}</div>` : ""}
-      <div class="actions">
-        <a class="btn sm soft" href="${linkMaps(c)}" target="_blank" rel="noopener" title="${aprox ? "Endereço aproximado (só bairro)" : "Abrir no Google Maps"}">🗺️ Maps${aprox ? "*" : ""}</a>
-        <a class="btn sm soft" href="${linkWaze(c)}" target="_blank" rel="noopener">🚗 Waze${aprox ? "*" : ""}</a>
-        ${z ? `<a class="btn sm soft" style="background:#e4f6ea;color:#15803d" href="${z}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
-        ${tel ? `<a class="btn sm soft" href="${tel}">📞 Ligar</a>` : ""}
-        ${!fin ? `<button class="btn sm" style="background:#0b1f3a" onclick="abrirGuia(${o.numero})">📘 Fechar ocorrência</button>` : ""}
-        ${!fin ? (vis ? `<button class="btn sm ghost" onclick="if(confirm('Desmarcar a visita desta ocorrência?'))marcarVisita(${o.numero},false)">↩ Desmarcar visita</button>` : `<button class="btn sm" style="background:var(--green)" onclick="marcarVisita(${o.numero},true)">✅ Marcar visitada</button>`) : ""}
-        <button class="btn sm ghost" onclick="abrirNota(${o.numero})">📝 Anotar</button>
-        ${!fin ? `<button class="btn sm ghost" onclick="abrirMedidores(${jsArg(o.chave_cliente)},${o.numero})">📟 Medidores${(() => { const n = S.medidores.filter(m => m.chave_cliente === o.chave_cliente).length; return n ? " " + n : ""; })()}</button>` : ""}
-        <button class="btn sm ghost" onclick="abrirFotos(${jsArg(o.chave_cliente)},${o.numero})">📷 Fotos${(() => { const st = statusFotos(o.chave_cliente); return st.n ? ` ${st.ok}/${st.total}` : ""; })()}</button>
-        <button class="btn sm ghost" onclick="abrirFicha(${jsArg(o.chave_cliente)},true)">✏️ Editar</button>
-      </div>
+      ${!fin ? `<div class="due"><b style="color:var(--${s.pill.slice(2)})">${cd.d}</b> <span>${cd.u}</span></div>` : ""}
     </div>
-    ${!fin ? `<div class="due"><div class="d" style="color:var(--${s.pill.slice(2)})">${cd.d}</div><div class="u">${cd.u}</div></div>` : ""}
+    <div class="sub-oc">${esc(subCurta(o.subclassificacao))}</div>
+    <div class="name" onclick="abrirFicha(${jsArg(o.chave_cliente)})">${esc(c.nome)}</div>
+    <div class="meta">
+      <span>Oc. <b>${o.numero}</b></span>
+      ${c.codigo ? `<span>Cód. <b>${esc(c.codigo)}</b></span>` : '<span class="pill p-gray">sem código</span>'}
+      ${fin ? `<span>Fechada <b>${fmtDH(o.fechamento)}</b></span>` : `<span>Prazo <b>${fmtDH(o.prazo)}</b></span>`}
+    </div>
+    <div class="meta loc">📍 ${esc([c.bairro, c.cidade].filter(Boolean).join(" · ")) || "sem endereço"}${aprox ? ' <em title="Só bairro e cidade — Maps/Waze aproximado">· aprox.</em>' : ""}</div>
+    ${vis ? `<div class="vis-tag">✅ Visitada ${fmtData(vis.visitada_em)} · falta fechar no Salesforce</div>` : ""}
+    ${fin && o.solucao && opts.sol ? `<div class="sol">${esc(o.solucao.slice(0, 260))}${o.solucao.length > 260 ? "…" : ""}</div>` : ""}
+    ${!fin ? `<div class="main-acts">
+      <button class="btn" style="background:#0b1f3a" onclick="abrirGuia(${o.numero})">📘 Fechar ocorrência</button>
+      ${vis ? `<button class="btn ghost" onclick="if(confirm('Desmarcar a visita desta ocorrência?'))marcarVisita(${o.numero},false)">↩ Desmarcar</button>`
+        : `<button class="btn" style="background:var(--green)" onclick="marcarVisita(${o.numero},true)">✅ Marcar visitada</button>`}
+    </div>` : ""}
+    <div class="tools">
+      ${tool("🗺️", "Maps", `href="${linkMaps(c)}" target="_blank" rel="noopener"`)}
+      ${tool("🚗", "Waze", `href="${linkWaze(c)}" target="_blank" rel="noopener"`)}
+      ${z ? tool("💬", "WhatsApp", `href="${z}" target="_blank" rel="noopener"`, " zap") : ""}
+      ${tel ? tool("📞", "Ligar", `href="${tel}"`) : ""}
+      ${!fin ? tool("📟", `Medidor${nMed ? " " + nMed : ""}`, `onclick="abrirMedidores(${jsArg(o.chave_cliente)},${o.numero})"`) : ""}
+      ${tool("📷", `Fotos${stF.n ? ` ${stF.ok}/${stF.total}` : ""}`, `onclick="abrirFotos(${jsArg(o.chave_cliente)},${o.numero})"`)}
+      ${tool("✏️", "Editar", `onclick="abrirFicha(${jsArg(o.chave_cliente)},true)"`)}
+    </div>
   </div>`;
 }
 
@@ -967,7 +973,6 @@ function abrirFicha(chave, editar) {
     ${c.email ? `<div style="font-size:14px;margin-bottom:6px">✉️ <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>` : ""}
     ${(() => { const st = statusFotos(chave); return `<div class="ficha-acts">
       <button class="btn sm" onclick="fecharModal(true);abrirFotos(${jsArg(chave)})">📷 Fotos ${st.ok}/${st.total}${st.n > st.ok ? ` (+${st.n - st.ok})` : ""}</button>
-      <button class="btn sm soft" onclick="abrirNota(${ocs[0].numero})">📝 Nova anotação de visita</button>
       <button class="btn sm soft" onclick="fecharModal(true);abrirMedidores(${jsArg(chave)},${ocs[0].numero})">📟 Medidores ${S.medidores.filter(m => m.chave_cliente === chave).length || ""}</button></div>`; })()}
     ${(() => { const ns = S.notas.filter(n => n.chave_cliente === chave); return ns.length ? `<div class="section-title">Anotações de visita <span class="count">${ns.length}</span></div>${ns.map(notaHTML).join("")}` : ""; })()}
     ${!enderecoCompleto(c) ? `<div class="info-box">A planilha traz só bairro e cidade. Preencha rua e número para o Maps e o Waze levarem até a porta.</div>` : ""}
