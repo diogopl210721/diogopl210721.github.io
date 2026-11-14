@@ -387,8 +387,9 @@ function vInicio() {
   const nR = reabsDoPeriodo(mk).length, nv = nivelReab(nR), ra = reabertasAbertas().length;
   const mini = (val, meta, cor) => { const r = 34, c = 2 * Math.PI * r, p = Math.min(1, val / meta);
     return `<svg viewBox="0 0 84 84" class="d-ring"><circle cx="42" cy="42" r="${r}" stroke="rgba(255,255,255,.14)" stroke-width="9" fill="none"/><circle cx="42" cy="42" r="${r}" stroke="${cor}" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}" transform="rotate(-90 42 42)"/><text x="42" y="47" text-anchor="middle">${Math.round(p * 100)}%</text></svg>`; };
-  const meta = (tit, val, m, f, cor, onc) => `<button class="d-meta" onclick="${onc}">${mini(val, m, cor)}
-    <div><small>${tit}</small><b>${val}<i>/${m}</i></b><span>${f ? `faltam ${f}${porDia(f) ? ` · ${porDia(f)}/dia` : ""}` : "meta batida 🎉"}</span></div></button>`;
+  const meta = (tit, val, m, f, cor, onc) => `<button class="d-meta" onclick="${onc}"><small>${tit}</small>
+    <div class="d-mrow">${mini(val, m, cor)}<b>${val}<i>/${m}</i></b></div>
+    <span>${f ? `faltam ${f}${porDia(f) ? ` · ${porDia(f)}/dia` : ""}` : "meta batida 🎉"}</span></button>`;
   const porSub = Object.entries(ab.reduce((m, o) => { m[o.subclassificacao] = (m[o.subclassificacao] || 0) + 1; return m; }, {}))
     .sort((a, b) => (isRel({ subclassificacao: b[0] }) - isRel({ subclassificacao: a[0] })) || b[1] - a[1]);
   const maxS = porSub[0] ? Math.max(...porSub.map(x => x[1])) : 1;
@@ -397,7 +398,7 @@ function vInicio() {
     <div class="d-top"><div><small>${saud}${nome ? ", " + esc(nome) : ""}</small><h2>${atual ? "Seu mês" : "Mês fechado"}</h2></div>
       <select class="d-mes" onchange="S.mesMeta=this.value;render()">${mesesDisponiveis().map(m => `<option value="${m}" ${m === mk ? "selected" : ""}>${mesNome(m)}</option>`).join("")}</select></div>
     <div class="d-metas">
-      ${meta("★ Relac.", relMes, META_REL, fR, "#c4b5fd", "abrirOcsFin({per:'" + mk + "',sub:'__REL__'})")}
+      ${meta("★ Relacionamento", relMes, META_REL, fR, "#c4b5fd", "abrirOcsFin({per:'" + mk + "',sub:'__REL__'})")}
       ${meta("Finalizadas", totMes, META_TOTAL, fT, "#93c5fd", "abrirOcsFin({per:'" + mk + "'})")}
     </div>
     ${atual && du ? `<div class="d-du">${du} dias úteis restantes no mês</div>` : ""}
