@@ -412,11 +412,6 @@ function vInicio() {
         <div class="reab-track"><div style="width:${Math.min(100, nR / LIMITE_REAB * 100)}%"></div></div>
         ${ra ? `<div class="hint" style="margin-top:6px">⚠️ <b>${ra}</b> reaberta${ra > 1 ? "s" : ""} ainda em aberto — resolva primeiro ›</div>` : ""}</div></div>`; })()}
 
-  <div class="section-title">🗺️ Rota do dia — para onde você vai hoje?</div>
-  <div class="cid-chips">${cidadesAbertas().slice(0, 8).map(x => `<button class="cid" onclick='go("rota",()=>{S.rotaCidade=${jsArg(x.c)};S.rotaFiltro="todas";S.rotaFora=new Set();S.rotaTrocar=false})'>
-    <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("")}
-    ${cidadesAbertas().length > 8 ? `<button class="cid" onclick="go('rota')"><b>Ver todas ›</b><span>${cidadesAbertas().length} cidades</span></button>` : ""}</div>
-
   <div class="section-title">Situação das ocorrências abertas</div>
   <div class="grid g4">
     <div class="card kpi red" onclick="abrirPrazos('vencidas')"><div class="n">${venc.length}</div><div class="l">Vencidas</div></div>
@@ -730,7 +725,7 @@ function vRota() {
   const sel = S.rotaCidade && cids.some(x => x.c === S.rotaCidade) ? S.rotaCidade : null;
   const filtro = S.rotaFiltro || "todas";
   let corpo = "";
-  const modo = S.rotaModo || "rota";
+  const modo = "rota"; S.rotaModo = "rota";
   if (sel && modo === "clientes") {
     corpo = vClientesCidade(sel);
   } else if (sel) {
@@ -754,7 +749,7 @@ function vRota() {
       <div><b style="font-size:17px">${ativas.length} parada${ativas.length === 1 ? "" : "s"} em ${esc(sel)}</b>
         <div class="hint">${ativas.reduce((a, p) => a + p.ocs.length, 0)} ocorrências · ${otim ? `<b>ordem otimizada</b>: ${otim.semGps ? "saindo da base" : "saindo de onde você está"} → paradas → ${esc((S.config.base_rota || {}).nome || "base")} · ≈ ${Math.round(otim.km * 1.3)} km` : "ordem por bairro, urgentes primeiro"}</div></div>
       <div class="base-line">🏁 Chegada: <b>${base ? esc((S.config.base_rota || {}).nome || "Consigaz") + " — " + esc(base) : "base não definida"}</b> <button class="lnk" onclick="editarBase()">✏️ ${base ? "trocar" : "definir"}</button></div>
-      ${otim && base ? urlsOtim.map((u, i) => `<a class="btn block" style="margin-top:10px" href="${u}" target="_blank" rel="noopener">🧭 Iniciar rota otimizada no Google Maps${urlsOtim.length > 1 ? ` (parte ${i + 1} de ${urlsOtim.length})` : ""}</a>`).join("")
+      ${otim && base ? `<a class="btn block" style="margin-top:10px" href="${urlsOtim[0]}" target="_blank" rel="noopener">🧭 Iniciar rota otimizada no Google Maps</a>${urlsOtim.length > 1 ? `<p class="sub" style="margin:6px 2px 0;font-size:13px">O Maps abre as 9 primeiras paradas. Ao terminar, marque as visitadas e toque em “Recalcular” para seguir com as próximas.</p>` : ""}`
         : S.otimRodando ? `<div class="otim-run"><div class="spinner" style="width:22px;height:22px;margin:0"></div>Organizando a rota a partir de onde você está… (1ª, 2ª, 3ª parada → ${esc((S.config.base_rota || {}).nome || "Consigaz")})</div>`
         : `<button class="btn block" style="margin-top:10px" onclick="otimizarRota()">🧭 Otimizar: sair daqui → paradas → ${esc((S.config.base_rota || {}).nome || "Consigaz")}</button>
            ${partes.map((p, i) => `<a class="btn block ghost" style="margin-top:8px" href="${urlRota(p)}" target="_blank" rel="noopener">🗺️ Abrir sem otimizar${partes.length > 1 ? ` (parte ${i + 1} de ${partes.length})` : ""}</a>`).join("")}`}
@@ -787,7 +782,6 @@ function vRota() {
   <h2 class="page">Rota do dia</h2>
   ${sel && !S.rotaTrocar ? `<div class="cid-sel"><span>📍 <b>${esc(sel)}</b> · ${(cids.find(x => x.c === sel) || { n: 0 }).n} aberta(s)</span><button class="btn sm ghost" onclick="S.rotaTrocar=true;render()">Trocar cidade</button></div>`
     : `<p class="sub">Para onde você vai hoje? Escolha a cidade.</p>`}
-  ${sel ? `<div class="seg" style="margin:4px 0 12px"><button class="${modo === "rota" ? "on" : ""}" onclick="S.rotaModo='rota';render()">🗺️ Rota do dia</button><button class="${modo === "clientes" ? "on" : ""}" onclick="S.rotaModo='clientes';render()">👥 Clientes da cidade (${clientesDaCidade(sel).length})</button></div>` : ""}
   ${sel && !S.rotaTrocar ? "" : `<div class="cid-chips" style="margin-bottom:12px">${cids.map(x => `<button class="cid ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();S.rotaTrocar=false;S.rotaOtim=null;render();window.scrollTo(0,0)">
     <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("") || '<div class="card empty">Nenhuma ocorrência aberta.</div>'}</div>`}
   ${sel && !S.rotaTrocar ? corpo : ""}`;
