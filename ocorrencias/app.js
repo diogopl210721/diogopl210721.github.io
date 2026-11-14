@@ -298,7 +298,7 @@ const ICONS = {
   guia: '<path d="M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5z"/><path d="M4 19.5A2.5 2.5 0 006.5 22H20v-5"/>',
   reaberturas: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
 };
-const NAV = [["inicio", "Início"], ["prazos", "Agenda"], ["finalizadas", "Finalizadas"], ["rota", "Rota"], ["guia", "Guia"], ["reaberturas", "Reaberturas"], ["importar", "Importar"]];
+const NAV = [["inicio", "Início"], ["prazos", "Ocorrências"], ["finalizadas", "Resultados"], ["rota", "Rota"], ["guia", "Guia"], ["reaberturas", "Reaberturas"], ["importar", "Importar"]];
 function svgI(k) { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`; }
 function snap() { return { v: S.view, pf: { ...S.prazoFiltro }, mf: S.mesFin, ff: { ...S.filtroFin }, mm: S.mesMeta, rp: S.relPeriodo, d: S.depth }; }
 function aplicar(st) {
@@ -311,17 +311,24 @@ function go(v, muda) {
   try { history.pushState(snap(), "", "#" + v); } catch (e) {}
   render(); window.scrollTo(0, 0);
 }
+function irAba(v, muda) {
+  if (typeof muda === "function") muda();
+  S.view = v; S.depth = 0;
+  try { history.pushState(snap(), "", "#" + v); } catch (e) {}
+  render(); window.scrollTo(0, 0);
+}
 function voltar() { if (S.depth > 0) history.back(); else go("inicio"); }
 function btnVoltar() { return S.depth > 0 ? `<button class="back no-print" onclick="voltar()">‹ Voltar</button>` : ""; }
 window.addEventListener("popstate", e => {
   if (S.modalOpen) { fecharModal(true); return; }
   aplicar(e.state || { v: "inicio", d: 0 }); render(); window.scrollTo(0, 0);
 });
-function abrirPrazos(janela, sub) { go("prazos", () => { S.prazoFiltro = { q: "", cidade: "", sub: sub || "", janela: janela || "todas" }; }); }
+function abrirPrazos(janela, sub) { go("prazos", () => { S.prazoFiltro = { q: "", cidade: "", sub: sub || "", janela: janela || "todas", st: "ab", per: "todos" }; }); }
+function abrirOcsFin(extra) { go("prazos", () => { S.prazoFiltro = { q: "", cidade: "", sub: "", janela: "todas", st: "fin", per: "todos", ...extra }; }); }
 function abrirFinalizadas(periodo, filtro) { go("finalizadas", () => { S.mesFin = periodo || S.mesFin; S.filtroFin = filtro || { tipo: null }; }); }
 function renderNav() {
   const urg = abertas().filter(o => { const s = situacao(o); return s.grupo != null && s.grupo <= 3; }).length;
-  const btn = ([k, l]) => `<button class="tab ${S.view === k ? "on" : ""}" onclick="go('${k}'${k === "guia" ? `,()=>{S.guiaSub=null;S.guiaNumero=null}` : k === "prazos" ? `,()=>S.prazoFiltro={q:'',cidade:'',sub:'',janela:'todas'}` : ""})">${svgI(k)}<span>${l}</span>${k === "prazos" && urg ? `<span class="dot">${urg}</span>` : ""}${k === "reaberturas" && reabsDoPeriodo(mesKey(new Date())).length ? `<span class="dot">${reabsDoPeriodo(mesKey(new Date())).length}</span>` : ""}</button>`;
+  const btn = ([k, l]) => `<button class="tab ${S.view === k ? "on" : ""}" onclick="irAba('${k}'${k === "guia" ? `,()=>{S.guiaSub=null;S.guiaNumero=null}` : k === "prazos" ? `,()=>S.prazoFiltro={q:'',cidade:'',sub:'',janela:'todas',st:'ab',per:'todos'}` : ""})">${svgI(k)}<span>${l}</span>${k === "prazos" && urg ? `<span class="dot">${urg}</span>` : ""}${k === "reaberturas" && reabsDoPeriodo(mesKey(new Date())).length ? `<span class="dot">${reabsDoPeriodo(mesKey(new Date())).length}</span>` : ""}</button>`;
   document.getElementById("tabs").innerHTML = NAV.filter(n => !["importar", "reaberturas", "guia"].includes(n[0])).map(btn).join("");
   const ult = S.importacoes[0];
   document.getElementById("side").innerHTML = `<div class="brand">Minhas Ocorrências<small>Pós-Vendas · ${esc(S.user?.nome || "")}</small></div>
@@ -370,69 +377,55 @@ function vInicio() {
   const relAb = ab.filter(isRel).length;
   const venc = ab.filter(o => situacao(o).grupo === 0);
   const prox = ab.filter(o => { const g = situacao(o).grupo; return g >= 1 && g <= 3; });
+  const visF = visitadasAFechar().length;
   const du = diasUteisRestantes(mk);
   const fT = Math.max(0, META_TOTAL - totMes), fR = Math.max(0, META_REL - relMes);
-  const ritmo = (f) => atual && du > 0 && f > 0 ? `≈ <b>${Math.ceil(f / du)}</b> por dia útil · ${du} dias úteis restantes` : (f === 0 ? "Meta batida! 🎉" : (atual ? "Fim do mês" : ""));
+  const porDia = f => atual && du > 0 && f > 0 ? Math.ceil(f / du) : 0;
   const hora = new Date().getHours();
   const saud = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
   const nome = (S.user?.nome || "").split(" ")[0];
-  const urg = [...venc, ...prox].sort((a, b) => a._pz - b._pz).slice(0, 6);
-
+  const nR = reabsDoPeriodo(mk).length, nv = nivelReab(nR), ra = reabertasAbertas().length;
+  const mini = (val, meta, cor) => { const r = 34, c = 2 * Math.PI * r, p = Math.min(1, val / meta);
+    return `<svg viewBox="0 0 84 84" class="d-ring"><circle cx="42" cy="42" r="${r}" stroke="rgba(255,255,255,.14)" stroke-width="9" fill="none"/><circle cx="42" cy="42" r="${r}" stroke="${cor}" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}" transform="rotate(-90 42 42)"/><text x="42" y="47" text-anchor="middle">${Math.round(p * 100)}%</text></svg>`; };
+  const meta = (tit, val, m, f, cor, onc) => `<button class="d-meta" onclick="${onc}">${mini(val, m, cor)}
+    <div><small>${tit}</small><b>${val}<i>/${m}</i></b><span>${f ? `faltam ${f}${porDia(f) ? ` · ${porDia(f)}/dia` : ""}` : "meta batida 🎉"}</span></div></button>`;
+  const porSub = Object.entries(ab.reduce((m, o) => { m[o.subclassificacao] = (m[o.subclassificacao] || 0) + 1; return m; }, {}))
+    .sort((a, b) => (isRel({ subclassificacao: b[0] }) - isRel({ subclassificacao: a[0] })) || b[1] - a[1]);
+  const maxS = porSub[0] ? Math.max(...porSub.map(x => x[1])) : 1;
   return `
-  <div class="page-head"><h2 class="page">${saud}, ${esc(nome)} 👋</h2><button class="btn sm soft" onclick="go('relatorio')">📄 Relatório PDF</button></div>
-  <p class="sub">${atual ? "Seu mês até agora" : "Resultado de " + mesNome(mk)}</p>
-  <div class="month-sel"><select onchange="S.mesMeta=this.value;render()">${mesesDisponiveis().map(m => `<option value="${m}" ${m === mk ? "selected" : ""}>${mesNome(m)}</option>`).join("")}</select></div>
+  <section class="d-hero">
+    <div class="d-top"><div><small>${saud}${nome ? ", " + esc(nome) : ""}</small><h2>${atual ? "Seu mês" : mesNome(mk)}</h2></div>
+      <label class="d-mes">🗓 ${esc(mesNome(mk))}<select onchange="S.mesMeta=this.value;render()">${mesesDisponiveis().map(m => `<option value="${m}" ${m === mk ? "selected" : ""}>${mesNome(m)}</option>`).join("")}</select></label></div>
+    <div class="d-metas">
+      ${meta("★ Relacionamento", relMes, META_REL, fR, "#c4b5fd", "abrirOcsFin({per:'" + mk + "',sub:'__REL__'})")}
+      ${meta("Finalizadas", totMes, META_TOTAL, fT, "#93c5fd", "abrirOcsFin({per:'" + mk + "'})")}
+    </div>
+    ${atual && du ? `<div class="d-du">${du} dias úteis restantes no mês</div>` : ""}
+  </section>
 
-  <div class="grid g2">
-    <div class="card goal star clk" onclick="abrirPrazos('todas','__REL__')">
-      ${ring(relMes, META_REL, "var(--purple)")}
-      <div>
-        <h3>Visitas de Relacionamento <span class="pill p-purple">gratificação</span></h3>
-        <div class="falta">${fR ? `Faltam <b>${fR}</b> para a meta` : "<b>Meta batida!</b>"}</div>
-        <div class="hint">${ritmo(fR)}</div>
-        <div class="hint" style="margin-top:6px">Você tem <b>${relAb}</b> aberta${relAb === 1 ? "" : "s"} de relacionamento${relAb ? ` <span class="pill p-purple">ver ›</span>` : ""}</div>
-      </div>
-    </div>
-    <div class="card goal clk" onclick="abrirFinalizadas('${mk}')">
-      ${ring(totMes, META_TOTAL, "var(--blue)")}
-      <div>
-        <h3>Ocorrências finalizadas</h3>
-        <div class="falta">${fT ? `Faltam <b>${fT}</b> para a meta` : "<b>Meta batida!</b>"}</div>
-        <div class="hint">${ritmo(fT)}</div>
-        <div class="hint" style="margin-top:6px">Ver as finalizadas do mês <span class="pill p-blue">›</span></div>
-      </div>
-    </div>
+  <button class="d-reab r-${nv.cls}" onclick="go('reaberturas',()=>S.mesReab='${mk}')">
+    <div class="d-reab-n">${nR}<i>/${LIMITE_REAB}</i></div>
+    <div class="d-reab-b"><b>Reaberturas</b><span>${nv.txt}${ra ? ` · ${ra} ainda aberta${ra > 1 ? "s" : ""}` : ""}</span>
+      <div class="d-track">${Array.from({ length: LIMITE_REAB }, (_, i) => `<i class="${i < nR ? "on" : ""}"></i>`).join("")}</div></div>
+    <em>›</em></button>
+
+  <div class="d-label">Abertas agora</div>
+  <div class="d-kpis">
+    <button class="d-k red" onclick="abrirPrazos('vencidas')"><b>${venc.length}</b><span>Vencidas</span></button>
+    <button class="d-k orange" onclick="abrirPrazos('prox')"><b>${prox.length}</b><span>Até ${JANELA_DIAS} dias</span></button>
+    <button class="d-k green" onclick="abrirPrazos('visitadas')"><b>${visF}</b><span>Visitadas a fechar</span></button>
+    <button class="d-k" onclick="abrirPrazos('todas')"><b>${ab.length}</b><span>Total aberto</span></button>
   </div>
 
-  ${(() => { const nR = reabsDoPeriodo(mk).length, nv = nivelReab(nR), ra = reabertasAbertas().length;
-    return `<div class="card reab-card r-${nv.cls} clk" style="margin-top:12px" onclick="go('reaberturas',()=>S.mesReab='${mk}')">
-      <div class="reab-n">${nR}<small>/${LIMITE_REAB}</small></div>
-      <div style="flex:1"><div style="font-weight:800;font-size:16px">Reaberturas no mês <span class="pill p-red">penalidade</span></div>
-        <span class="pill ${nv.pill}" style="margin-top:6px">${nv.txt}</span>
-        <div class="reab-track"><div style="width:${Math.min(100, nR / LIMITE_REAB * 100)}%"></div></div>
-        ${ra ? `<div class="hint" style="margin-top:6px">⚠️ <b>${ra}</b> reaberta${ra > 1 ? "s" : ""} ainda em aberto — resolva primeiro ›</div>` : ""}</div></div>`; })()}
+  <div class="d-label">Por tipo <span>${relAb ? `★ ${relAb} de relacionamento` : ""}</span></div>
+  <div class="d-card">${porSub.map(([k, v]) => { const u = ab.filter(o => o.subclassificacao === k && situacao(o).grupo <= 3).length, rel = isRel({ subclassificacao: k });
+    return `<button class="d-bar ${rel ? "rel" : ""}" onclick='abrirPrazos("todas",${jsArg(k)})'><span class="t">${esc(subCurta(k))}</span><span class="n">${v}${u ? `<i>${u}!</i>` : ""}</span><span class="tr"><span style="width:${v / maxS * 100}%"></span></span></button>`; }).join("") || '<div class="empty" style="padding:14px">Nenhuma aberta. 👏</div>'}</div>
 
-  <div class="section-title">Situação das ocorrências abertas</div>
-  <div class="grid g4">
-    <div class="card kpi red" onclick="abrirPrazos('vencidas')"><div class="n">${venc.length}</div><div class="l">Vencidas</div></div>
-    <div class="card kpi orange" onclick="abrirPrazos('prox')"><div class="n">${prox.length}</div><div class="l">Vencem em até ${JANELA_DIAS} dias</div></div>
-    <div class="card kpi green" onclick="abrirPrazos('visitadas')"><div class="n">${visitadasAFechar().length}</div><div class="l">✅ Visitadas — falta fechar no Salesforce</div></div>
-    <div class="card kpi" onclick="abrirPrazos('todas')"><div class="n">${ab.length}</div><div class="l">Abertas no total · ${ab.length - visitadasAFechar().length} sem visita</div></div>
-  </div>
-
-  <div class="section-title">Abertas por subclassificação <span class="count">${ab.length}</span></div>
-  <div class="grid g4">${Object.entries(ab.reduce((m, o) => { m[o.subclassificacao] = (m[o.subclassificacao] || 0) + 1; return m; }, {}))
-    .sort((a, b) => (isRel({ subclassificacao: b[0] }) - isRel({ subclassificacao: a[0] })) || b[1] - a[1])
-    .map(([k, v]) => { const urgN = ab.filter(o => o.subclassificacao === k && situacao(o).grupo <= 3).length;
-      return `<div class="card kpi ${isRel({ subclassificacao: k }) ? "purple" : ""}" onclick='abrirPrazos("todas",${jsArg(k)})'>
-      <div class="n">${v}</div><div class="l">${esc(subCurta(k))}</div>${urgN ? `<div style="margin-top:6px"><span class="pill p-red">${urgN} urgente${urgN > 1 ? "s" : ""}</span></div>` : ""}</div>`; }).join("")}</div>
-
-  <button class="card guia-cta clk" onclick="go('guia',()=>{S.guiaSub=null;S.guiaNumero=null})"><span>📘</span><div><b>Guia de fechamento</b><small>O que fazer em cada ocorrência, modelo de texto pronto e exemplos reais</small></div><em>›</em></button>
-
-  <div class="section-title">Prioridade agora <span class="count">${urg.length}</span></div>
-  ${urg.length ? urg.map(ocCard).join("") : `<div class="card empty">Nenhuma ocorrência vencida ou vencendo nos próximos ${JANELA_DIAS} dias. 👏</div>`}
-  ${venc.length + prox.length > urg.length ? `<button class="btn ghost block" onclick="abrirPrazos('urgentes')">Ver todas (${venc.length + prox.length})</button>` : ""}
-  `;
+  <div class="d-links">
+    <button onclick="go('guia',()=>{S.guiaSub=null;S.guiaNumero=null})"><span>📘</span>Guia de fechamento</button>
+    <button onclick="go('relatorio')"><span>📄</span>Relatório PDF</button>
+    <button onclick="go('importar')"><span>⬇️</span>Importar planilha</button>
+  </div>`;
 }
 
 /* ---------------- card ocorrência ---------------- */
@@ -485,60 +478,74 @@ function ocCard(o, opts = {}) {
 
 /* ---------------- PRAZOS ---------------- */
 function vPrazos() {
-  const f = S.prazoFiltro;
-  const ab = abertas();
-  const cidades = [...new Set(ab.map(o => title(o.cidade)).filter(Boolean))].sort();
-  const subs = [...new Set(ab.map(o => o.subclassificacao))].sort();
-  const passa = (o, ign) => {
-    const s = situacao(o), j = ign ? "todas" : f.janela;
+  const f = S.prazoFiltro; if (!f.st) f.st = "ab"; if (!f.per) f.per = "todos";
+  const ab = abertas(), fins = finalizadas().filter(o => f.per === "todos" || periodoDe(o._fe, f.per));
+  const univ = f.st === "ab" ? ab : f.st === "fin" ? fins : ab.concat(fins);
+  const cidades = [...new Set(univ.map(o => title(o.cidade)).filter(Boolean))].sort();
+  const subs = [...new Set(univ.map(o => o.subclassificacao))].sort();
+  const passaComum = o => {
+    if (f.cidade && title(o.cidade) !== f.cidade) return false;
+    if (f.sub === "__REL__" && !isRel(o)) return false;
+    if (f.sub === "__REAB__" && !(o.reabertura > 0)) return false;
+    if (f.sub && !f.sub.startsWith("__") && o.subclassificacao !== f.sub && subCurta(o.subclassificacao) !== f.sub) return false;
+    if (f.q) { const q = norm(f.q), c = cliente(o); if (!norm([o.numero, c.nome, c.codigo, c.bairro, c.cidade, c.telefone1, o.ticket, o.solucao].join(" ")).includes(q)) return false; }
+    return true;
+  };
+  const passaJan = o => {
+    const s = situacao(o), j = f.janela;
     if (j === "vencidas" && s.grupo !== 0) return false;
     if (/^g\d$/.test(j) && s.grupo !== +j[1]) return false;
     if (j === "urgentes" && !(s.grupo <= 3)) return false;
     if (j === "prox" && !(s.grupo >= 1 && s.grupo <= 3)) return false;
     if (j === "visitadas" && !visitada(o)) return false;
     if (j === "naovisitadas" && visitada(o)) return false;
-    if (f.cidade && title(o.cidade) !== f.cidade) return false;
-    if (f.sub === "__REL__" && !isRel(o)) return false;
-    if (f.sub === "__REAB__" && !(o.reabertura > 0)) return false;
-    if (f.sub && !f.sub.startsWith("__") && o.subclassificacao !== f.sub) return false;
-    if (f.q) { const q = norm(f.q), c = cliente(o); if (!norm([o.numero, c.nome, c.codigo, c.bairro, c.cidade, c.telefone1, o.ticket].join(" ")).includes(q)) return false; }
     return true;
   };
-  const base = ab.filter(o => passa(o, true));
-  const lista = ab.filter(o => passa(o)).sort((a, b) => (a._pz || 9e15) - (b._pz || 9e15));
-  const cnt = g => base.filter(o => situacao(o).grupo === g).length;
+  const baseAb = f.st === "fin" ? [] : ab.filter(passaComum);
+  const listaAb = baseAb.filter(passaJan).sort((a, b) => (a._pz || 9e15) - (b._pz || 9e15));
+  const listaFin = f.st === "ab" ? [] : fins.filter(passaComum).sort((a, b) => b._fe - a._fe);
+  const total = listaAb.length + listaFin.length;
+  const cnt = g => baseAb.filter(o => situacao(o).grupo === g).length;
   const grupos = [["Vencidas", 0, "red", "Vencidas"], ["Vencem hoje", 1, "orange", "Hoje"], ["Até 2 dias", 2, "orange", "2 dias"], ["Até 5 dias", 3, "yellow", "5 dias"], ["Mais de 5 dias", 4, "green", "Depois"]];
-  const nVis = base.filter(o => visitada(o)).length;
+  const nVis = baseAb.filter(o => visitada(o)).length;
   const jan = f.janela === "vencidas" ? "g0" : f.janela;
   const tile = (k, n, l, cor) => `<button class="ag-t ${cor} ${jan === k ? "on" : ""}" onclick="S.prazoFiltro.janela=${jan === k ? "'todas'" : `'${k}'`};render()"><b>${n}</b><span>${l}</span></button>`;
-  const nFil = (f.cidade ? 1 : 0) + (f.sub ? 1 : 0);
+  const nFil = (f.cidade ? 1 : 0) + (f.sub ? 1 : 0) + (f.st !== "ab" && f.per !== "todos" ? 1 : 0);
   const subNome = f.sub === "__REL__" ? "★ Relacionamento" : f.sub === "__REAB__" ? "↺ Reabertas" : subCurta(f.sub);
-  const jNome = { urgentes: `Vencidas + ${JANELA_DIAS} dias`, prox: `Próximos ${JANELA_DIAS} dias`, naovisitadas: "Não visitadas" }[f.janela];
+  const jNome = f.st === "fin" ? null : { urgentes: `Vencidas + ${JANELA_DIAS} dias`, prox: `Próximos ${JANELA_DIAS} dias`, naovisitadas: "Não visitadas" }[f.janela];
+  const P = periodosDisponiveis(), optP = v => `<option value="${v}" ${v === f.per ? "selected" : ""}>${esc(periodoNome(v))}</option>`;
+  const stBtn = (k, l, n) => `<button class="${f.st === k ? "on" : ""}" onclick="S.prazoFiltro.st='${k}';${k === "fin" ? "S.prazoFiltro.janela='todas';" : ""}render()">${l} <small>${n}</small></button>`;
+  const porMes = {}; listaFin.forEach(o => { const k = mesKey(o._fe); (porMes[k] = porMes[k] || []).push(o); });
   return `
-  ${btnVoltar()}<div class="ag-head"><h2 class="page">Agenda</h2><span>${lista.length} de ${ab.length} abertas</span></div>
-  <div class="ag-strip">
+  ${btnVoltar()}<div class="ag-head"><h2 class="page">Ocorrências</h2><span>${total} na lista</span></div>
+  <div class="seg st">${stBtn("ab", "Abertas", ab.length)}${stBtn("fin", "Finalizadas", fins.length)}${stBtn("todas", "Todas", ab.length + fins.length)}</div>
+  ${f.st !== "fin" ? `<div class="ag-strip">
     ${grupos.map(([, g, c, l]) => tile("g" + g, cnt(g), l, c)).join("")}
     ${tile("visitadas", nVis, "Visitadas", "blue")}
-  </div>
+  </div>` : ""}
   <div class="ag-bar">
     <div class="ag-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input placeholder="Cliente, código, nº, telefone…" value="${esc(f.q)}" oninput="S.prazoFiltro.q=this.value;debRender()"></div>
+      <input placeholder="Cliente, código, nº, telefone, texto…" value="${esc(f.q)}" oninput="S.prazoFiltro.q=this.value;debRender()"></div>
     <button class="ag-fbtn ${S.agFiltros || nFil ? "on" : ""}" onclick="S.agFiltros=!S.agFiltros;render()">⚙︎${nFil ? `<i>${nFil}</i>` : ""}</button>
   </div>
   ${S.agFiltros ? `<div class="ag-pan">
     <select class="input" onchange="S.prazoFiltro.cidade=this.value;render()">${[["", "Todas as cidades"], ...cidades.map(c => [c, c])].map(([v, l]) => `<option value="${esc(v)}" ${v === f.cidade ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
-    <select class="input" onchange="S.prazoFiltro.sub=this.value;render()">${[["", "Todos os tipos"], ["__REL__", "★ Só Relacionamento"], ["__REAB__", "↺ Só reabertas"], ...subs.map(x => [x, subCurta(x)])].map(([v, l]) => `<option value="${esc(v)}" ${v === f.sub ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    <select class="input" onchange="S.prazoFiltro.sub=this.value;render()">${[["", "Todos os tipos"], ["__REL__", "★ Só Relacionamento"], ["__REAB__", "↺ Só reabertas"], ...subs.map(x => [x, subCurta(x)])].map(([v, l]) => `<option value="${esc(v)}" ${v === f.sub || (f.sub && !v.startsWith("__") && subCurta(v) === f.sub) ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    ${f.st !== "ab" ? `<select class="input" style="grid-column:1/-1" onchange="S.prazoFiltro.per=this.value;render()"><option value="todos" ${f.per === "todos" ? "selected" : ""}>Finalizadas: todo o histórico</option><optgroup label="Meses">${P.meses.map(optP).join("")}</optgroup><optgroup label="Trimestres">${P.tri.map(optP).join("")}</optgroup><optgroup label="Anos">${P.anos.map(optP).join("")}</optgroup></select>` : ""}
   </div>` : ""}
-  ${f.cidade || f.sub || jNome ? `<div class="ag-chips">
+  ${f.cidade || f.sub || jNome || (f.st !== "ab" && f.per !== "todos") ? `<div class="ag-chips">
     ${jNome ? `<button onclick="S.prazoFiltro.janela='todas';render()">${jNome} ✕</button>` : ""}
+    ${f.st !== "ab" && f.per !== "todos" ? `<button onclick="S.prazoFiltro.per='todos';render()">🗓 ${esc(periodoNome(f.per))} ✕</button>` : ""}
     ${f.cidade ? `<button onclick="S.prazoFiltro.cidade='';render()">📍 ${esc(f.cidade)} ✕</button>` : ""}
     ${f.sub ? `<button onclick="S.prazoFiltro.sub='';render()">${esc(subNome)} ✕</button>` : ""}
-    ${f.cidade ? `<button class="go" onclick='go("rota",()=>{S.rotaCidade=${jsArg(f.cidade)};S.rotaFiltro="todas";S.rotaFora=new Set()})'>🗺️ Rota de ${esc(f.cidade)}</button>` : ""}
+    ${f.cidade && f.st !== "fin" ? `<button class="go" onclick='go("rota",()=>{S.rotaCidade=${jsArg(f.cidade)};S.rotaFiltro="todas";S.rotaFora=new Set()})'>🗺️ Rota de ${esc(f.cidade)}</button>` : ""}
   </div>` : ""}
-  ${lista.length ? grupos.map(([nome, g, c]) => {
-    const it = lista.filter(o => situacao(o).grupo === g);
+  ${grupos.map(([nome, g, c]) => {
+    const it = listaAb.filter(o => situacao(o).grupo === g);
     return it.length ? `<div class="ag-sec ${c}"><i></i>${nome}<span>${it.length}</span></div>${it.map(o => ocCard(o)).join("")}` : "";
-  }).join("") : `<div class="card empty">Nada por aqui com esses filtros.</div>`}`;
+  }).join("")}
+  ${Object.keys(porMes).sort().reverse().map(k => `<div class="ag-sec fin"><i></i>Finalizadas · ${esc(mesNome(k))}<span>${porMes[k].length}</span></div>${porMes[k].map(o => ocCard(o, { sol: true, rota: false })).join("")}`).join("")}
+  ${total ? "" : `<div class="card empty">Nada por aqui com esses filtros.</div>`}`;
 }
 let _deb; function debRender() { clearTimeout(_deb); _deb = setTimeout(() => { const a = document.activeElement, pos = a && a.selectionStart; render(); const i = document.querySelector("#view .ag-search input, #view .toolbar input"); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch (e) {} } }, 250); }
 
@@ -885,8 +892,8 @@ function vFinalizadas() {
     S._matriz = { mesesP, subs, cnt, porSub, totM: mesesP.map(totM), relM: mesesP.map(relM), reabM: mesesP.map(m => reabsDoPeriodo(m).length), total: base.length, periodo: periodoNome(pk) };
   }
   return `
-  ${btnVoltar()}<div class="page-head"><h2 class="page">Finalizadas</h2><button class="btn sm soft" onclick="go('relatorio',()=>S.relPeriodo=S.mesFin)">📄 Relatório PDF</button></div>
-  <p class="sub">Escolha o período · toque numa barra para ver as ocorrências</p>
+  ${btnVoltar()}<div class="page-head"><h2 class="page">Resultados</h2><button class="btn sm soft" onclick="go('relatorio',()=>S.relPeriodo=S.mesFin)">📄 Relatório PDF</button></div>
+  <p class="sub">Escolha o período · toque numa barra para abrir as ocorrências</p>
   <div class="month-sel"><select onchange="S.mesFin=this.value;S.filtroFin={tipo:null};render()">
     <option value="todos" ${pk === "todos" ? "selected" : ""}>Todo o histórico</option>
     <optgroup label="Trimestres">${P.tri.map(opt).join("")}</optgroup>
@@ -903,9 +910,7 @@ function vFinalizadas() {
     <div class="card"><div class="section-title" style="margin-top:0">Por cidade</div>${bars(porCid, "cid")}</div>
   </div>
   ${matriz}
-  <div class="section-title" id="finLista">${ff.tipo ? esc(ff.valor) + ` <button class="btn sm ghost" onclick="S.filtroFin={tipo:null};render()">limpar filtro</button>` : "Últimas finalizadas"} <span class="count">${lista.length}</span></div>
-  ${lista.slice(0, 60).map(o => ocCard(o, { sol: true, rota: false })).join("") || '<div class="card empty">Nada por aqui.</div>'}
-  ${lista.length > 60 ? `<p class="sub" style="text-align:center">Mostrando 60 de ${lista.length}. Use os filtros para refinar.</p>` : ""}`;
+  <button class="btn block ghost" style="margin-top:14px" onclick="abrirOcsFin({per:S.mesFin})">📋 Ver as ${base.length} finalizadas deste período em Ocorrências ›</button>`;
 }
 function exportarMatriz() {
   const M = S._matriz; if (!M) return;
@@ -920,9 +925,7 @@ function exportarMatriz() {
   a.download = "ocorrencias-" + M.periodo.replace(/\W+/g, "-").toLowerCase() + ".csv"; a.click();
 }
 function filtrarFin(tipo, valor) {
-  S.filtroFin = S.filtroFin.tipo === tipo && S.filtroFin.valor === valor ? { tipo: null } : { tipo, valor };
-  render();
-  document.getElementById("finLista")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  abrirOcsFin({ per: S.mesFin, [tipo === "sub" ? "sub" : "cidade"]: valor });
 }
 
 /* ---------------- CLIENTES ---------------- */
