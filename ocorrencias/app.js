@@ -415,16 +415,6 @@ function vInicio() {
     <button class="d-k orange" onclick="abrirPrazos('prox')"><b>${prox.length}</b><span>Até ${JANELA_DIAS} dias</span></button>
     <button class="d-k green" onclick="abrirPrazos('visitadas')"><b>${visF}</b><span>Visitadas a fechar</span></button>
     <button class="d-k" onclick="abrirPrazos('todas')"><b>${ab.length}</b><span>Total aberto</span></button>
-  </div>
-
-  <div class="d-label">Por tipo <span>${relAb ? `★ ${relAb} de relacionamento` : ""}</span></div>
-  <div class="d-card">${porSub.map(([k, v]) => { const u = ab.filter(o => o.subclassificacao === k && situacao(o).grupo <= 3).length, rel = isRel({ subclassificacao: k });
-    return `<button class="d-bar ${rel ? "rel" : ""}" onclick='abrirPrazos("todas",${jsArg(k)})'><span class="t">${esc(subCurta(k))}</span><span class="n">${v}${u ? `<i>${u}!</i>` : ""}</span><span class="tr"><span style="width:${v / maxS * 100}%"></span></span></button>`; }).join("") || '<div class="empty" style="padding:14px">Nenhuma aberta. 👏</div>'}</div>
-
-  <div class="d-links">
-    <button onclick="go('guia',()=>{S.guiaSub=null;S.guiaNumero=null})"><span>📘</span>Guia de fechamento</button>
-    <button onclick="go('relatorio')"><span>📄</span>Relatório PDF</button>
-    <button onclick="go('importar')"><span>⬇️</span>Importar planilha</button>
   </div>`;
 }
 
