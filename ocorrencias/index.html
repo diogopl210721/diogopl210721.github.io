@@ -527,6 +527,10 @@ details.ex summary{cursor:pointer;font-size:14px}
 .d-meta>div{min-width:0;overflow:hidden}
 .d-meta small,.d-meta span{overflow:hidden;text-overflow:ellipsis}
 @media(max-width:430px){.d-meta{gap:8px;padding:9px 8px}.d-ring{width:48px;height:48px}.d-meta b{font-size:21px}.d-meta small{font-size:10.5px}.d-meta span{font-size:10.5px}}
+.d-hero::after{pointer-events:none}
+.d-top{position:relative;z-index:2}
+select.d-mes{-webkit-appearance:none;appearance:none;border:1px solid rgba(255,255,255,.25);color:#fff;font:inherit;font-size:13px;font-weight:700;padding:7px 30px 7px 12px;background:rgba(255,255,255,.14) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;border-radius:20px;cursor:pointer;max-width:170px}
+select.d-mes option{color:#000}
 </style>
 </head>
 <body>
@@ -566,6 +570,6 @@ details.ex summary{cursor:pointer;font-size:14px}
 
 <div id="modalRoot"></div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="app.js?v=20261113d"></script>
+<script src="app.js?v=20261113e"></script>
 </body>
 </html>
