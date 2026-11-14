@@ -655,8 +655,10 @@ async function otimizarRota() {
       toast(`🗺️ Localizando paradas ${++n}/${paradas.length}…`, 2500);
       const g = cache || await geocodificar(p.k);
       if (!cache) await new Promise(r => setTimeout(r, 1100)); // limite do serviço de mapas
-      pts.push({ ...p, g: g || fim });
+      pts.push({ ...p, g });
     }
+    // parada que o mapa não achou: usa o centro da cidade (não joga para a base, que embaralharia a ordem)
+    if (pts.some(p => !p.g)) { const cg = await geocodificar(`${S.rotaCidade}, PR, Brasil`); pts.forEach(p => { if (!p.g) p.g = cg || fim; }); }
     const origem = aqui || fim;
     const { ordem, km } = ordenarParadas(origem, pts, fim);
     S.rotaOtim = { sig: rotaSig(), ordem: ordem.map(p => p.k), km, origem: aqui, semGps: !aqui };
@@ -783,13 +785,18 @@ function vRota() {
         <div class="rz-st"><i class="p">${ativas.length}</i><div><small>Paradas</small><b>${ativas.length} selecionada${ativas.length === 1 ? "" : "s"} · ${nOcs} ocorrência${nOcs === 1 ? "" : "s"}</b><span>${otim ? "Na ordem mais curta ✓" : "Desmarque na lista abaixo as que não vai fazer"}</span></div></div>
         <div class="rz-st"><i class="f">🏁</i><div><small>Chegada</small><b>${base ? nomeBase : "Não definida"}</b>${enderecoBase ? `<span>${enderecoBase}</span>` : ""}</div><button class="rz-edit" onclick="editarBase()">✏️ ${base ? "Trocar" : "Definir"}</button></div>
       </div>
-      ${otim && base ? `<div class="rz-res"><div><b>≈ ${Math.round(otim.km * 1.3)} km</b><span>percurso estimado</span></div><button class="rz-redo" onclick="S.rotaOtim=null;S.otimTentado=null;otimizarRota()">↻ Refazer</button></div>
-        <div class="rz-acts"><a class="btn" href="${urlsOtim[0]}" target="_blank" rel="noopener">🧭 Iniciar no Google Maps</a>
-          ${ativas[0] ? `<a class="btn ghost" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">🚗 Waze</a>` : ""}</div>
-        ${urlsOtim.length > 1 ? `<div class="rz-note">O Maps abre 9 paradas por vez. Depois de visitá-las, toque em ↻ Refazer para seguir com as próximas.</div>` : ""}`
+      ${otim && base ? `<div class="rz-res"><div><b>≈ ${Math.round(otim.km * 1.3)} km</b><span>ordem otimizada · sem ir e voltar</span></div><button class="rz-redo" onclick="S.rotaOtim=null;S.otimTentado=null;otimizarRota()">↻ Refazer</button></div>
+        <div class="rz-nav">
+          <a href="${urlsOtim[0]}" target="_blank" rel="noopener"><i class="mp">🗺️</i><b>Google Maps</b><span>${urlsOtim.length > 1 ? "9 primeiras paradas" : "rota completa"}</span></a>
+          ${ativas[0] ? `<a href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener"><i class="wz">🚗</i><b>Waze</b><span>próxima parada</span></a>` : ""}
+        </div>
+        ${urlsOtim.length > 1 ? `<div class="rz-note">O Maps aceita 9 paradas por vez. Depois de visitá-las, toque em ↻ Refazer para abrir as próximas.</div>` : ""}`
         : S.otimRodando ? `<div class="otim-run"><div class="spinner" style="width:20px;height:20px;margin:0"></div>Calculando a melhor ordem a partir de onde você está…</div>`
         : `<button class="btn block rz-go" onclick="S.rotaIniciada=S.rotaCidade;S.otimTentado=null;otimizarRota()" ${base && ativas.length ? "" : "disabled"}>🧭 Otimizar rota</button>
-           <div class="rz-alt">Sem otimizar: ${partes[0] ? `<a href="${urlRota(partes[0])}" target="_blank" rel="noopener">abrir no Maps</a>` : ""}${ativas[0] ? ` · <a href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">1ª parada no Waze</a>` : ""}</div>`}
+           <div class="rz-nav off">
+             <button onclick="S.rotaIniciada=S.rotaCidade;S.otimTentado=null;otimizarRota()"><i class="mp">🗺️</i><b>Google Maps</b><span>otimize primeiro</span></button>
+             <button onclick="S.rotaIniciada=S.rotaCidade;S.otimTentado=null;otimizarRota()"><i class="wz">🚗</i><b>Waze</b><span>otimize primeiro</span></button>
+           </div>`}
       ${aprox ? `<div class="rz-warn">⚠ ${aprox} parada${aprox > 1 ? "s" : ""} só com bairro — posição aproximada</div>` : ""}
     </div>
     ${(() => { const vs = visitadasNaCidade(sel); return vs.length ? `<details class="card vis-fora"><summary>✅ <b>${vs.length}</b> visitada${vs.length > 1 ? "s" : ""} — saiu${vs.length > 1 ? "ram" : ""} da rota · falta fechar no Salesforce</summary>${vs.map(o => ocCard(o, { rota: false })).join("")}</details>` : ""; })()}

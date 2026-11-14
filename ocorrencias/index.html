@@ -596,6 +596,14 @@ select.d-mes option{color:#000}
 @media(min-width:760px){.rz-head,.rz-plan,.rz-list{max-width:640px}}
 .seg.rf{display:grid;grid-template-columns:.8fr 1fr 1.6fr}
 .seg.rf button{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rz-nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.rz-nav a,.rz-nav button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 8px;border-radius:14px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink);font:inherit;cursor:pointer}
+.rz-nav a:active,.rz-nav button:active{background:#f4f7fc}
+.rz-nav img{width:30px;height:30px}
+.rz-nav i{width:34px;height:34px;border-radius:10px;font-style:normal;font-size:19px;display:flex;align-items:center;justify-content:center}.rz-nav i.mp{background:#e7f3ec}.rz-nav i.wz{background:#e3f6fd}
+.rz-nav b{font-size:14px}
+.rz-nav span{font-size:11.5px;color:var(--muted);font-weight:600}
+.rz-nav.off a,.rz-nav.off button{opacity:.55}
 </style>
 </head>
 <body>
@@ -635,6 +643,6 @@ select.d-mes option{color:#000}
 
 <div id="modalRoot"></div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="app.js?v=20261114e"></script>
+<script src="app.js?v=20261114f"></script>
 </body>
 </html>
