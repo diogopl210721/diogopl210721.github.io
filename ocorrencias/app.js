@@ -298,7 +298,7 @@ const ICONS = {
   guia: '<path d="M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5z"/><path d="M4 19.5A2.5 2.5 0 006.5 22H20v-5"/>',
   reaberturas: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
 };
-const NAV = [["inicio", "Início"], ["prazos", "Ocorrências"], ["finalizadas", "Resultados"], ["rota", "Rota"], ["guia", "Guia"], ["reaberturas", "Reaberturas"], ["importar", "Importar"]];
+const NAV = [["inicio", "Início"], ["prazos", "Ocorrências"], ["finalizadas", "Resultados"], ["rota", "Rota"], ["importar", "Importar"]];
 function svgI(k) { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`; }
 function snap() { return { v: S.view, pf: { ...S.prazoFiltro }, mf: S.mesFin, ff: { ...S.filtroFin }, mm: S.mesMeta, rp: S.relPeriodo, d: S.depth }; }
 function aplicar(st) {
@@ -348,6 +348,7 @@ function render() {
 // Ao abrir a rota de uma cidade, organiza sozinha: onde estou → paradas na melhor ordem → base
 function autoOtimizar() {
   if ((S.rotaModo || "rota") !== "rota" || !S.rotaCidade || S.rotaTrocar || !baseRota() || S.otimRodando) return;
+  if (S.rotaIniciada !== S.rotaCidade) return; // só reorganiza sozinha depois que você tocou em Otimizar
   const sig = rotaSig();
   if ((S.rotaOtim && S.rotaOtim.sig === sig) || S.otimTentado === sig) return;
   if (!(S._paradas || []).some(p => !S.rotaFora.has(p.k))) return;
@@ -781,7 +782,8 @@ function vRota() {
           <button class="btn ghost ico" onclick="S.rotaOtim=null;S.otimTentado=null;otimizarRota()" title="Recalcular a partir de onde estou">↻<small>Refazer</small></button>
         </div>${urlsOtim.length > 1 ? `<div class="rg-note">O Maps abre 9 paradas por vez — depois de visitá-las, toque em ↻ Refazer.</div>` : ""}`
         : S.otimRodando ? `<div class="otim-run"><div class="spinner" style="width:20px;height:20px;margin:0"></div>Otimizando a partir de onde você está…</div>`
-        : `<div class="rg-acts"><button class="btn" onclick="otimizarRota()">🧭 Otimizar rota</button>
+        : `<div class="rg-pre">1️⃣ Desmarque abaixo as paradas que não vai fazer · 2️⃣ confira o ponto final (🏁) · 3️⃣ toque em Otimizar</div>
+           <div class="rg-acts"><button class="btn" onclick="S.rotaIniciada=S.rotaCidade;S.otimTentado=null;otimizarRota()">🧭 Otimizar rota</button>
            ${ativas[0] ? `<a class="btn ghost ico" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">🚗<small>Waze</small></a>` : ""}
            ${partes[0] ? `<a class="btn ghost ico" href="${urlRota(partes[0])}" target="_blank" rel="noopener" title="Abrir no Maps sem otimizar">🗺️<small>Maps</small></a>` : ""}</div>`}
       ${aprox ? `<div class="rg-warn">⚠ ${aprox} com endereço aproximado (sem rua/nº)</div>` : ""}
@@ -811,7 +813,7 @@ function vRota() {
   <h2 class="page">Rota do dia</h2>
   ${sel && !S.rotaTrocar ? `<div class="cid-sel"><span>📍 <b>${esc(sel)}</b> · ${(cids.find(x => x.c === sel) || { n: 0 }).n} abertas</span><button class="lnk" onclick="S.rotaTrocar=true;render()">Trocar ›</button></div>`
     : `<p class="sub">Para onde você vai hoje? Escolha a cidade.</p>`}
-  ${sel && !S.rotaTrocar ? "" : `<div class="cid-chips" style="margin-bottom:12px">${cids.map(x => `<button class="cid ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();S.rotaTrocar=false;S.rotaOtim=null;render();window.scrollTo(0,0)">
+  ${sel && !S.rotaTrocar ? "" : `<div class="cid-chips" style="margin-bottom:12px">${cids.map(x => `<button class="cid ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();S.rotaTrocar=false;S.rotaOtim=null;S.rotaIniciada=null;render();window.scrollTo(0,0)">
     <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("") || '<div class="card empty">Nenhuma ocorrência aberta.</div>'}</div>`}
   ${sel && !S.rotaTrocar ? corpo : ""}`;
 }
