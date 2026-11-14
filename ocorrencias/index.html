@@ -545,6 +545,57 @@ select.d-mes option{color:#000}
 .guia-dobra summary span::after{content:" ▾"}
 .guia-dobra[open] summary span{font-size:0}.guia-dobra[open] summary span::after{content:"ocultar ▴";font-size:13px}
 .rg-pre{margin-top:12px;font-size:12.5px;line-height:1.45;color:var(--ink);background:#f1f5ff;border-radius:10px;padding:9px 11px;font-weight:600}
+
+/* rota v3 */
+.rz-head{background:linear-gradient(145deg,#0b1f3a,#163a6b);color:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 8px 24px rgba(11,31,58,.22);margin-bottom:10px}
+.rz-ht{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.rz-ht small{font-size:12px;opacity:.7;font-weight:600}
+.rz-ht h2{margin:1px 0 0;font-size:24px;font-weight:800;letter-spacing:-.3px}
+.rz-troca{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:13px;font-weight:700;border-radius:20px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.rz-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rz-chips span{font-size:12px;font-weight:700;background:rgba(255,255,255,.12);border-radius:20px;padding:4px 10px}
+.rz-chips .u{background:rgba(239,68,68,.25);color:#fecaca}.rz-chips .r{background:rgba(167,139,250,.25);color:#ddd6fe}
+.seg.rf button{font-size:13px;padding:9px 4px;white-space:nowrap}
+.rz-plan{padding:14px}
+.rz-tl{position:relative}
+.rz-tl::before{content:"";position:absolute;left:13px;top:18px;bottom:22px;border-left:2px dashed #cdd5e3}
+.rz-st{display:flex;align-items:flex-start;gap:12px;position:relative;padding:6px 0}
+.rz-st>i{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:800;position:relative;z-index:1}
+.rz-st>i.o{background:#e0e7ff;box-shadow:inset 0 0 0 7px #e0e7ff;background-color:var(--blue)}
+.rz-st>i.p{background:var(--navy);color:#fff}
+.rz-st>i.f{background:#fff;border:2px solid #cdd5e3;font-size:13px}
+.rz-st>div{flex:1;min-width:0}
+.rz-st small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.rz-st b{display:block;font-size:14.5px;line-height:1.3}
+.rz-st span{display:block;font-size:12px;color:var(--muted);margin-top:1px;line-height:1.35}
+.rz-edit{flex:none;align-self:center;border:0;background:var(--blue-soft);color:var(--blue);font:inherit;font-size:12.5px;font-weight:700;border-radius:20px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+.rz-go{margin-top:12px;padding:14px;font-size:15.5px;border-radius:12px}
+.rz-go[disabled]{opacity:.5}
+.rz-alt{text-align:center;font-size:12.5px;color:var(--muted);margin-top:9px}
+.rz-alt a{color:var(--blue);font-weight:700;text-decoration:none}
+.rz-res{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 12px;background:#f4f7fc;border-radius:12px}
+.rz-res b{display:block;font-size:20px;font-weight:800;color:var(--blue)}
+.rz-res span{font-size:11.5px;color:var(--muted);font-weight:600}
+.rz-redo{border:0;background:#fff;box-shadow:var(--shadow);font:inherit;font-size:13px;font-weight:700;border-radius:20px;padding:7px 12px;cursor:pointer;color:var(--ink)}
+.rz-acts{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
+.rz-acts .btn{justify-content:center;padding:13px 12px;font-size:14.5px;border-radius:12px}
+.rz-note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.4}
+.rz-warn{margin-top:12px;font-size:12px;color:#92400e;background:#fef6e0;border-radius:9px;padding:7px 10px;font-weight:600}
+.rz-list{padding:4px}
+.rz-city{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;font:inherit;text-align:left;padding:12px 10px;border-radius:12px;cursor:pointer;color:var(--ink)}
+.rz-city+.rz-city{border-top:1px solid #eef1f5;border-radius:0}
+.rz-city:hover,.rz-city:active{background:#f4f7fc}
+.rz-city>i{flex:none;width:6px;align-self:stretch;border-radius:4px;background:#cdd5e3}
+.rz-city.hot>i{background:var(--red)}
+.rz-city.on{background:var(--blue-soft)}
+.rz-city>div{flex:1;min-width:0}
+.rz-city b{display:block;font-size:15.5px}
+.rz-city span{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+.rz-city em{flex:none;font-style:normal;font-size:12px;font-weight:800;color:var(--red);background:var(--red-soft);border-radius:20px;padding:4px 9px}
+.rz-city u{text-decoration:none;color:#9aa4b5;font-size:20px}
+@media(min-width:760px){.rz-head,.rz-plan,.rz-list{max-width:640px}}
+.seg.rf{display:grid;grid-template-columns:.8fr 1fr 1.6fr}
+.seg.rf button{min-width:0;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -584,6 +635,6 @@ select.d-mes option{color:#000}
 
 <div id="modalRoot"></div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="app.js?v=20261114d"></script>
+<script src="app.js?v=20261114e"></script>
 </body>
 </html>

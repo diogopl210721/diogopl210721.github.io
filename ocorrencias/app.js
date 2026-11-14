@@ -767,26 +767,30 @@ function vRota() {
     const aprox = ativas.filter(p => !enderecoCompleto(p.c)).length;
     const nomeBase = esc((S.config.base_rota || {}).nome || "Consigaz");
     const nOcs = ativas.reduce((a, p) => a + p.ocs.length, 0);
+    const infoC = cids.find(x => x.c === sel) || { n: 0, urg: 0, rel: 0 };
+    const enderecoBase = base ? esc(base.replace(/^[^—]*—\s*/, "")) : "";
     corpo = `
-    <div class="seg rf">${[["todas", "Todas"], ["urgentes", `Urgentes ≤${JANELA_DIAS}d`], ["rel", "★ Relac."]].map(([v, l]) => `<button class="${filtro === v ? "on" : ""}" onclick="S.rotaFiltro='${v}';S.rotaFora=new Set();render()">${l}</button>`).join("")}</div>
+    <section class="rz-head">
+      <div class="rz-ht"><div><small>Rota de hoje</small><h2>${esc(sel)}</h2></div>
+        <button class="rz-troca" onclick="S.rotaTrocar=true;render();window.scrollTo(0,0)">Trocar cidade</button></div>
+      <div class="rz-chips"><span>${infoC.n} aberta${infoC.n === 1 ? "" : "s"}</span>${infoC.urg ? `<span class="u">${infoC.urg} urgente${infoC.urg > 1 ? "s" : ""}</span>` : ""}${infoC.rel ? `<span class="r">★ ${infoC.rel} de relacionamento</span>` : ""}</div>
+    </section>
+    <div class="seg rf">${[["todas", "Todas"], ["urgentes", "Urgentes"], ["rel", "★ Relacionamento"]].map(([v, l]) => `<button class="${filtro === v ? "on" : ""}" onclick="S.rotaFiltro='${v}';S.rotaFora=new Set();S.rotaOtim=null;render()">${l}</button>`).join("")}</div>
     ${paradas.length ? `
-    <div class="card rota-go">
-      <div class="rg-top">
-        <div><div class="rg-n">${ativas.length} <small>parada${ativas.length === 1 ? "" : "s"}</small></div><div class="rg-sub">${nOcs} ocorrência${nOcs === 1 ? "" : "s"} · ${otim ? "ordem otimizada" : "ordem por bairro"}</div></div>
-        ${otim ? `<div class="rg-km">≈ ${Math.round(otim.km * 1.3)}<small> km</small></div>` : ""}
+    <div class="card rz-plan">
+      <div class="rz-tl">
+        <div class="rz-st"><i class="o"></i><div><small>Saída</small><b>${otim && otim.semGps ? "Base" : "Onde você estiver"}</b></div></div>
+        <div class="rz-st"><i class="p">${ativas.length}</i><div><small>Paradas</small><b>${ativas.length} selecionada${ativas.length === 1 ? "" : "s"} · ${nOcs} ocorrência${nOcs === 1 ? "" : "s"}</b><span>${otim ? "Na ordem mais curta ✓" : "Desmarque na lista abaixo as que não vai fazer"}</span></div></div>
+        <div class="rz-st"><i class="f">🏁</i><div><small>Chegada</small><b>${base ? nomeBase : "Não definida"}</b>${enderecoBase ? `<span>${enderecoBase}</span>` : ""}</div><button class="rz-edit" onclick="editarBase()">✏️ ${base ? "Trocar" : "Definir"}</button></div>
       </div>
-      <div class="rg-path"><span>${otim && !otim.semGps ? "📍 Você" : "🏁 Base"}</span><i></i><span>${ativas.length} paradas</span><i></i><button onclick="editarBase()" title="${base ? esc(base) : "Definir base"}">🏁 ${base ? nomeBase : "definir base"} ✏️</button></div>
-      ${otim && base ? `<div class="rg-acts">
-          <a class="btn" href="${urlsOtim[0]}" target="_blank" rel="noopener">🧭 Iniciar no Maps</a>
-          ${ativas[0] ? `<a class="btn ghost ico" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener" title="1ª parada no Waze">🚗<small>Waze</small></a>` : ""}
-          <button class="btn ghost ico" onclick="S.rotaOtim=null;S.otimTentado=null;otimizarRota()" title="Recalcular a partir de onde estou">↻<small>Refazer</small></button>
-        </div>${urlsOtim.length > 1 ? `<div class="rg-note">O Maps abre 9 paradas por vez — depois de visitá-las, toque em ↻ Refazer.</div>` : ""}`
-        : S.otimRodando ? `<div class="otim-run"><div class="spinner" style="width:20px;height:20px;margin:0"></div>Otimizando a partir de onde você está…</div>`
-        : `<div class="rg-pre">1️⃣ Desmarque abaixo as paradas que não vai fazer · 2️⃣ confira o ponto final (🏁) · 3️⃣ toque em Otimizar</div>
-           <div class="rg-acts"><button class="btn" onclick="S.rotaIniciada=S.rotaCidade;S.otimTentado=null;otimizarRota()">🧭 Otimizar rota</button>
-           ${ativas[0] ? `<a class="btn ghost ico" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">🚗<small>Waze</small></a>` : ""}
-           ${partes[0] ? `<a class="btn ghost ico" href="${urlRota(partes[0])}" target="_blank" rel="noopener" title="Abrir no Maps sem otimizar">🗺️<small>Maps</small></a>` : ""}</div>`}
-      ${aprox ? `<div class="rg-warn">⚠ ${aprox} com endereço aproximado (sem rua/nº)</div>` : ""}
+      ${otim && base ? `<div class="rz-res"><div><b>≈ ${Math.round(otim.km * 1.3)} km</b><span>percurso estimado</span></div><button class="rz-redo" onclick="S.rotaOtim=null;S.otimTentado=null;otimizarRota()">↻ Refazer</button></div>
+        <div class="rz-acts"><a class="btn" href="${urlsOtim[0]}" target="_blank" rel="noopener">🧭 Iniciar no Google Maps</a>
+          ${ativas[0] ? `<a class="btn ghost" href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">🚗 Waze</a>` : ""}</div>
+        ${urlsOtim.length > 1 ? `<div class="rz-note">O Maps abre 9 paradas por vez. Depois de visitá-las, toque em ↻ Refazer para seguir com as próximas.</div>` : ""}`
+        : S.otimRodando ? `<div class="otim-run"><div class="spinner" style="width:20px;height:20px;margin:0"></div>Calculando a melhor ordem a partir de onde você está…</div>`
+        : `<button class="btn block rz-go" onclick="S.rotaIniciada=S.rotaCidade;S.otimTentado=null;otimizarRota()" ${base && ativas.length ? "" : "disabled"}>🧭 Otimizar rota</button>
+           <div class="rz-alt">Sem otimizar: ${partes[0] ? `<a href="${urlRota(partes[0])}" target="_blank" rel="noopener">abrir no Maps</a>` : ""}${ativas[0] ? ` · <a href="${linkWaze(ativas[0].c)}" target="_blank" rel="noopener">1ª parada no Waze</a>` : ""}</div>`}
+      ${aprox ? `<div class="rz-warn">⚠ ${aprox} parada${aprox > 1 ? "s" : ""} só com bairro — posição aproximada</div>` : ""}
     </div>
     ${(() => { const vs = visitadasNaCidade(sel); return vs.length ? `<details class="card vis-fora"><summary>✅ <b>${vs.length}</b> visitada${vs.length > 1 ? "s" : ""} — saiu${vs.length > 1 ? "ram" : ""} da rota · falta fechar no Salesforce</summary>${vs.map(o => ocCard(o, { rota: false })).join("")}</details>` : ""; })()}
     <div class="section-title">Paradas <span class="count">${paradas.length}</span> <span style="text-transform:none;font-weight:500;letter-spacing:0;margin-left:auto">☑ = na rota</span></div>
@@ -809,12 +813,13 @@ function vRota() {
           </div></div>`}
       </div>`; }).join("")}` : `<div class="card empty">Nenhuma ocorrência aberta em ${esc(sel)} com esse filtro.</div>`}`;
   }
+  if (sel && !S.rotaTrocar) return `${btnVoltar()}${corpo}`;
   return `${btnVoltar()}
-  <h2 class="page">Rota do dia</h2>
-  ${sel && !S.rotaTrocar ? `<div class="cid-sel"><span>📍 <b>${esc(sel)}</b> · ${(cids.find(x => x.c === sel) || { n: 0 }).n} abertas</span><button class="lnk" onclick="S.rotaTrocar=true;render()">Trocar ›</button></div>`
-    : `<p class="sub">Para onde você vai hoje? Escolha a cidade.</p>`}
-  ${sel && !S.rotaTrocar ? "" : `<div class="cid-chips" style="margin-bottom:12px">${cids.map(x => `<button class="cid ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();S.rotaTrocar=false;S.rotaOtim=null;S.rotaIniciada=null;render();window.scrollTo(0,0)">
-    <b>${esc(x.c)}</b><span>${x.n ? `${x.n} aberta${x.n > 1 ? "s" : ""}` : "sem abertas"}${x.urg ? ` · <em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}</span></button>`).join("") || '<div class="card empty">Nenhuma ocorrência aberta.</div>'}</div>`}
+  <div class="ag-head"><h2 class="page">Rota</h2><span>${cids.length} cidade${cids.length === 1 ? "" : "s"}</span></div>
+  <p class="sub" style="margin-top:-4px">Escolha para onde você vai hoje.</p>
+  ${cids.length ? `<div class="card rz-list">${cids.map(x => `<button class="rz-city ${x.urg ? "hot" : ""} ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();S.rotaTrocar=false;S.rotaOtim=null;S.rotaIniciada=null;render();window.scrollTo(0,0)">
+    <i></i><div><b>${esc(x.c)}</b><span>${x.n} aberta${x.n > 1 ? "s" : ""}${x.rel ? ` · ★ ${x.rel} de relacionamento` : ""}</span></div>
+    ${x.urg ? `<em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}<u>›</u></button>`).join("")}</div>` : '<div class="card empty">Nenhuma ocorrência aberta.</div>'}
   ${sel && !S.rotaTrocar ? corpo : ""}`;
 }
 function toggleParada(i, on) {
