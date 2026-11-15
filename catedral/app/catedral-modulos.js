@@ -480,7 +480,8 @@
           <div class="cpv-dupla-btn">
             <button type="button" class="cpv-btn ouro" data-copiar-cc>Copiar Pix copia e cola</button>
             <button type="button" class="cpv-btn linha" data-copiar-chave>Copiar chave</button>
-          </div>` : `<p class="cpv-vazio">A chave Pix da igreja ainda não foi cadastrada.</p>`}
+          </div>
+          <button type="button" class="cpv-btn linha largo cpv-btn-partilhar" data-partilhar-pix><svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v6.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V12"/></svg> Compartilhar o Pix</button>` : `<p class="cpv-vazio">A chave Pix da igreja ainda não foi cadastrada.</p>`}
       </section>
       <section class="cpv-oferta">
         <div class="cpv-oferta-cab"><span class="cpv-tile">${ci("c-cartao")}</span><div><h2>Cartão</h2><small>Crédito ou débito, pelo Mercado Pago</small></div></div>
@@ -499,6 +500,27 @@
       </details>` : ""}`;
     if (temPix && window.QRCode) QRCode.toCanvas($(".cpv-qr", sc), cc, { width: 220, margin: 1, color: { dark: "#14110E", light: "#F3E7D3" } }, () => {});
     $("[data-copiar-cc]", sc)?.addEventListener("click", () => copiar(cc, "Pix copia e cola copiado. Cole no app do seu banco."));
+    $("[data-partilhar-pix]", sc)?.addEventListener("click", async () => {
+      const app = window.APP_URL || (typeof enderecoDoApp === "function" ? enderecoDoApp() : location.href);
+      const site = typeof linhaVisiteSite === "function" ? linhaVisiteSite() : "";
+      const texto = `💛 Dízimos, ofertas e doações\n${g.nome || "Catedral Pão da Vida"}\n\nPix copia e cola (é só colar no app do banco):\n${cc}\n\nOu pela chave (celular): ${chaveVer}\n${g.pix_nome || g.nome}\n\n"Cada um dê conforme determinou em seu coração... pois Deus ama quem dá com alegria." 2 Coríntios 9:7\n\n📲 Acesse o app da ${g.nome || "igreja"}: ${app}${site}`;
+      if (navigator.share) {
+        try {
+          const dados = { text: texto };
+          const cv = $(".cpv-qr", sc);
+          if (cv && navigator.canShare) {
+            try {
+              const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+              const arq = blob && new File([blob], "pix-catedral.png", { type: "image/png" });
+              if (arq && navigator.canShare({ files: [arq] })) dados.files = [arq];
+            } catch (e) { /* segue só com o texto */ }
+          }
+          await navigator.share(dados);
+          return;
+        } catch (e) { if (e && e.name === "AbortError") return; }
+      }
+      window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener");
+    });
     $("[data-copiar-chave]", sc)?.addEventListener("click", () => copiar(String(g.pix_chave).replace(/^\+55/, ""), "Chave Pix copiada."));
     $(".cpv-config form", sc)?.addEventListener("submit", async ev => {
       ev.preventDefault();

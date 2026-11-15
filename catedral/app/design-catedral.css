@@ -581,3 +581,6 @@ html.cpv .cpv-sec, html.cpv .cpv-saudacao h1, html.cpv .cpv-dia-cab h2, html.cpv
 html.cpv-claro .cpv-aba-doar b{ border-color:#FBF6EC; }
 html.cpv-claro #cpv-abas .cpv-aba-doar, html.cpv-claro #cpv-abas .cpv-aba-doar.on{ color:#9A6A12; }
 @media (prefers-reduced-motion:reduce){ .cpv-aba-doar b{ animation:none; } }
+
+.cpv-btn-partilhar{margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.cpv-btn-partilhar .ci{width:20px;height:20px}
