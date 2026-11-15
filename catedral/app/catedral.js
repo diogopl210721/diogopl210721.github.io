@@ -262,9 +262,11 @@ gl_FragColor=vec4(col,1.);}`;
     const ms = alvo - new Date();
     if (ms <= 0 && ms > -2 * 3600e3) return "Acontecendo agora";
     if (ms <= 0) return "";
-    const min = Math.round(ms / 60000), h = Math.floor(min / 60), d = Math.floor(h / 24);
+    const min = Math.round(ms / 60000), h = Math.floor(min / 60);
+    const dia0 = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+    const d = Math.round((dia0(new Date(alvo)) - dia0(new Date())) / 864e5);
     if (d >= 2) return `Em ${d} dias`;
-    if (h >= 18) return "Amanhã";
+    if (d === 1) return "Amanhã";
     if (h >= 1) return `Começa em ${h}h${String(min % 60).padStart(2, "0")}`;
     return `Começa em ${min} min`;
   }

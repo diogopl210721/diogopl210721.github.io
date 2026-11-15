@@ -7,8 +7,9 @@ function cultosVivos() {
   const NOMES = { terca: "Terça da Vitória", quarta: "Tarde da Bênção", quinta: "Cura e Libertação", domingo: "Culto de Celebração" };
   const agora = new Date();
   const prox = c => { for (let i = 0; i < 8; i++) { const d = new Date(agora); d.setDate(agora.getDate() + i); d.setHours(c.h, 0, 0, 0); if (DIAS[d.getDay()] === c.id && d > agora - 7.2e6) return d; } };
-  const falta = d => { const ms = d - agora; if (ms <= 0) return "acontecendo agora"; const mi = Math.round(ms / 6e4), h = Math.floor(mi / 60), dd = Math.floor(h / 24);
-    if (dd >= 2) return "em " + dd + " dias"; if (h >= 18) return "amanhã"; if (h >= 1) return "em " + h + "h" + String(mi % 60).padStart(2, "0"); return "em " + mi + " min"; };
+  const falta = d => { const ms = d - agora; if (ms <= 0) return "acontecendo agora"; const mi = Math.round(ms / 6e4), h = Math.floor(mi / 60);
+    const z = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()), dd = Math.round((z(d) - z(agora)) / 864e5);
+    if (dd >= 2) return "em " + dd + " dias"; if (dd === 1) return "amanhã"; if (h >= 1) return "em " + h + "h" + String(mi % 60).padStart(2, "0"); return "em " + mi + " min"; };
   CULTOS.forEach(c => { const el = document.querySelector('[data-prox="' + c.id + '"]'), d = prox(c); if (el && d) el.textContent = (DIAS[agora.getDay()] === c.id && d - agora < 864e5 ? "Hoje, " : "Próximo: ") + falta(d); });
   const dom = prox(CULTOS[3]); if (dom) { const n = Math.min(4, Math.ceil(dom.getDate() / 7)); document.querySelectorAll(".temas div").forEach((t, i) => t.classList.toggle("agora", i + 1 === n)); }
   const px = CULTOS.map(c => ({ c, d: prox(c) })).sort((a, b) => a.d - b.d)[0];
