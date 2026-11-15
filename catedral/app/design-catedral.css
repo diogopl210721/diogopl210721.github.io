@@ -584,3 +584,10 @@ html.cpv-claro #cpv-abas .cpv-aba-doar, html.cpv-claro #cpv-abas .cpv-aba-doar.o
 
 .cpv-btn-partilhar{margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
 .cpv-btn-partilhar .ci{width:20px;height:20px}
+
+/* telas com campo de escrever no rodapé: a barra de abas sai para o teclado e o campo ficarem livres */
+html[data-tela="tela-chat"] #cpv-abas{ display:none; }
+html[data-tela="tela-chat"] #tela-chat .scroll{ padding-bottom:16px!important; }
+#tela-chat .topbar{ padding:10px 14px!important; gap:12px; }
+#btn-voltar-chat{ flex:none!important; width:40px!important; height:40px; padding:0!important; display:grid!important; place-items:center; border-radius:50%; border:1px solid rgba(var(--tinta),.16); background:rgba(var(--tinta),.05); color:var(--ink); }
+#btn-voltar-chat .icon{ width:20px; height:20px; stroke:var(--ink)!important; color:var(--ink); opacity:1; }
