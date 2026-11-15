@@ -1466,7 +1466,7 @@ async function montarHomeMembro() {
   const m = state.membro;
   const primeiroNome = m.nome_completo.split(" ")[0];
   const hora = new Date().getHours();
-  const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+  const saudacao = hora < 5 ? "Boa noite" : hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
   document.getElementById("home-saudacao").innerHTML = `<small>${saudacao},</small><b>${primeiroNome}</b>`;
 
   // devocional de hoje — gerado inteiramente pela IA, conforme o temperamento da pessoa
@@ -1747,7 +1747,7 @@ function abrirDevocional() {
   const d = state.devocionalGerado;
   if (!d) return;
   const hora = new Date().getHours();
-  const saudacaoAgora = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+  const saudacaoAgora = hora < 5 ? "Boa noite" : hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
   const primeiroNome = state.membro?.nome_completo?.split(" ")[0] || "";
   document.getElementById("devo-titulo-detalhe").textContent = `${saudacaoAgora}, ${primeiroNome}!`;
   document.getElementById("devo-tema-detalhe").textContent = d.titulo || "";

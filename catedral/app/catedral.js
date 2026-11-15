@@ -383,7 +383,7 @@ gl_FragColor=vec4(col,1.);}`;
       sc.prepend(topo);
       const d = new Date();
       const nome = (membro()?.nome_completo || "").trim().split(/\s+/)[0] || "";
-      const hh = d.getHours(), sd = hh < 5 ? "Boa madrugada" : hh < 12 ? "Bom dia" : hh < 18 ? "Boa tarde" : "Boa noite";
+      const hh = d.getHours(), sd = hh < 5 ? "Boa noite" : hh < 12 ? "Bom dia" : hh < 18 ? "Boa tarde" : "Boa noite";
       topo.innerHTML = `
         <header class="cpv-saudacao">
           <p>${DIAS_LONGO[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]}</p>
