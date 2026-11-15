@@ -564,3 +564,5 @@ html.cpv .cpv-sec, html.cpv .cpv-saudacao h1, html.cpv .cpv-dia-cab h2, html.cpv
 .cpv-humor-op button:disabled:not(.on){opacity:.45}
 .cpv-humor .cpv-humor-ok{margin:0;font-weight:600}
 @keyframes cpvHumor{from{opacity:0;transform:translateY(-6px)}}
+
+.cpv-oferta-intro{margin:0 0 12px;color:var(--ink-soft);font-size:14.5px}

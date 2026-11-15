@@ -466,14 +466,17 @@
     const { data: ig } = await sb.from("igr_igrejas").select("*").eq("id", state.igreja.id).single();
     const g = ig || state.igreja;
     const temPix = !!g.pix_chave, link = g.doacao_link_cartao;
-    const cc = temPix ? pixCopiaCola(g.pix_chave, g.pix_nome || g.nome, g.pix_cidade) : "";
+    const ccBanco = String(g.pix_copia_cola || "").trim();
+    const cc = temPix ? (ccBanco && ccBanco.slice(-4) === crc16(ccBanco.slice(0, -4)) ? ccBanco : pixCopiaCola(g.pix_chave, g.pix_nome || g.nome, g.pix_cidade)) : "";
+    const chaveVer = (k => { const d = String(k || "").replace(/\D/g, ""); const t = /^\+?55\d{10,11}$/.test(String(k).replace(/[\s()-]/g, "")) ? d.slice(2) : (/^\d{10,11}$/.test(String(k).replace(/[\s()-]/g, "")) ? d : ""); return t ? `(${t.slice(0, 2)}) ${t.slice(2, -4)}-${t.slice(-4)}` : k; })(g.pix_chave);
     sc.innerHTML = topo("Ofertas e dízimos", "Contribua", t.dataset.voltar) + `
+      <p class="cpv-oferta-intro">Dízimos, ofertas e doações para a Catedral Pão da Vida.</p>
       <blockquote class="cpv-verso">Cada um dê conforme determinou em seu coração, não com tristeza nem por obrigação, pois Deus ama quem dá com alegria.<cite>2 Coríntios 9:7</cite></blockquote>
       <section class="cpv-oferta">
         <div class="cpv-oferta-cab"><span class="cpv-tile">${ci("c-pix")}</span><div><h2>Pix</h2><small>Sem taxa, cai na hora</small></div></div>
         ${temPix ? `
           <canvas class="cpv-qr" aria-label="QR Code do Pix da igreja"></canvas>
-          <p class="cpv-chave"><small>Chave Pix</small><b>${esc(g.pix_chave)}</b><small>${esc(g.pix_nome || g.nome)}</small></p>
+          <p class="cpv-chave"><small>Chave Pix</small><b>${esc(chaveVer)}</b><small>${esc(g.pix_nome || g.nome)}</small></p>
           <div class="cpv-dupla-btn">
             <button type="button" class="cpv-btn ouro" data-copiar-cc>Copiar Pix copia e cola</button>
             <button type="button" class="cpv-btn linha" data-copiar-chave>Copiar chave</button>
@@ -489,17 +492,19 @@
           <label class="cpv-rot">Chave Pix<input class="cpv-campo" name="pix_chave" value="${esc(g.pix_chave || "")}" placeholder="CNPJ, e-mail, telefone ou chave aleatória"></label>
           <label class="cpv-rot">Nome de quem recebe<input class="cpv-campo" name="pix_nome" value="${esc(g.pix_nome || "")}" maxlength="25"></label>
           <label class="cpv-rot">Cidade<input class="cpv-campo" name="pix_cidade" value="${esc(g.pix_cidade || "")}" maxlength="15"></label>
+          <label class="cpv-rot">Pix copia e cola do banco (opcional)<textarea class="cpv-campo" name="pix_copia_cola" rows="3" placeholder="Cole aqui o código gerado no app do banco">${esc(g.pix_copia_cola || "")}</textarea></label>
           <label class="cpv-rot">Link do Mercado Pago (cartão)<input class="cpv-campo" name="doacao_link_cartao" value="${esc(link || "")}" placeholder="https://mpago.la/..."></label>
           <button type="submit" class="cpv-btn ouro largo">Salvar</button>
         </form>
       </details>` : ""}`;
     if (temPix && window.QRCode) QRCode.toCanvas($(".cpv-qr", sc), cc, { width: 220, margin: 1, color: { dark: "#14110E", light: "#F3E7D3" } }, () => {});
     $("[data-copiar-cc]", sc)?.addEventListener("click", () => copiar(cc, "Pix copia e cola copiado. Cole no app do seu banco."));
-    $("[data-copiar-chave]", sc)?.addEventListener("click", () => copiar(g.pix_chave, "Chave Pix copiada."));
+    $("[data-copiar-chave]", sc)?.addEventListener("click", () => copiar(String(g.pix_chave).replace(/^\+55/, ""), "Chave Pix copiada."));
     $(".cpv-config form", sc)?.addEventListener("submit", async ev => {
       ev.preventDefault();
       const f = ev.target, p = {};
-      ["pix_chave", "pix_nome", "pix_cidade", "doacao_link_cartao"].forEach(k => p[k] = f[k].value.trim() || null);
+      ["pix_chave", "pix_nome", "pix_cidade", "pix_copia_cola", "doacao_link_cartao"].forEach(k => p[k] = f[k].value.trim() || null);
+      if (p.pix_copia_cola && p.pix_copia_cola.slice(-4) !== crc16(p.pix_copia_cola.slice(0, -4))) return aviso("Esse código Pix copia e cola está incompleto. Copie de novo no app do banco.", true);
       if (p.doacao_link_cartao && !/^https:\/\//.test(p.doacao_link_cartao)) return aviso("O link precisa começar com https://", true);
       const { error } = await sb.from("igr_igrejas").update(p).eq("id", state.igreja.id);
       if (error) return aviso("Não foi possível salvar.", true);
