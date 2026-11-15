@@ -196,6 +196,7 @@ gl_FragColor=vec4(col,1.);}`;
   const ABAS_MEMBRO = [
     { id: "hoje", rot: "Hoje", ic: "c-hoje", tela: "tela-membro-home" },
     { id: "agenda", rot: "Agenda", ic: "c-agenda", tela: "tela-calendario" },
+    { id: "ofertar", rot: "Ofertar", destaque: true, acao: () => window.cpvAbrir && window.cpvAbrir("tela-cpv-ofertas") },
     { id: "servir", rot: "Servir", ic: "c-servir", tela: "tela-cpv-servir" },
     { id: "biblia", rot: "Bíblia", ic: "c-biblia", tela: "tela-biblia" },
     { id: "eu", rot: "Eu", ic: "c-eu", acao: () => $("#btn-meu-perfil")?.click() },
@@ -203,16 +204,17 @@ gl_FragColor=vec4(col,1.);}`;
   const ABAS_VISITANTE = [
     { id: "inicio", rot: "Início", ic: "c-hoje", tela: "tela-visitante" },
     { id: "agenda", rot: "Agenda", ic: "c-agenda", tela: "tela-calendario" },
+    { id: "ofertar", rot: "Ofertar", destaque: true, acao: () => window.cpvAbrir && window.cpvAbrir("tela-cpv-ofertas") },
     { id: "biblia", rot: "Bíblia", ic: "c-biblia", tela: "tela-biblia" },
     { id: "entrar", rot: "Entrar", ic: "c-entrar", tela: "tela-login" },
   ];
-  const TELA_ABA = { "tela-membro-home": "hoje", "tela-visitante": "inicio", "tela-calendario": "agenda", "tela-cpv-servir": "servir", "tela-membro-louvor": "servir", "tela-cpv-diaconato": "servir", "tela-cpv-diac-editor": "servir", "tela-cpv-reunioes": "servir", "tela-cpv-reuniao-form": "servir", "tela-biblia": "biblia", "tela-editar-perfil": "eu", "tela-login": "entrar", "tela-cadastro": "entrar" };
+  const TELA_ABA = { "tela-membro-home": "hoje", "tela-visitante": "inicio", "tela-calendario": "agenda", "tela-cpv-servir": "servir", "tela-membro-louvor": "servir", "tela-cpv-diaconato": "servir", "tela-cpv-diac-editor": "servir", "tela-cpv-reunioes": "servir", "tela-cpv-reuniao-form": "servir", "tela-biblia": "biblia", "tela-editar-perfil": "eu", "tela-login": "entrar", "tela-cadastro": "entrar", "tela-cpv-ofertas": "ofertar" };
 
   function abas() {
     let bar = $("#cpv-abas");
     if (!bar) { bar = document.createElement("nav"); bar.id = "cpv-abas"; bar.setAttribute("aria-label", "Navegação principal"); document.body.appendChild(bar); }
     const lista = membro() ? ABAS_MEMBRO : ABAS_VISITANTE;
-    bar.innerHTML = `<i class="cpv-abas-luz"></i>` + lista.map(a => `<button type="button" data-aba="${a.id}">${ci(a.ic)}<span>${a.rot}</span></button>`).join("");
+    bar.innerHTML = `<i class="cpv-abas-luz"></i>` + lista.map(a => a.destaque ? `<button type="button" class="cpv-aba-doar" data-aba="${a.id}" aria-label="Ofertar: dízimos, ofertas e doações"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5s-4.2-2.6-4.2-5.6a2.3 2.3 0 0 1 4.2-1.3 2.3 2.3 0 0 1 4.2 1.3c0 3-4.2 5.6-4.2 5.6Z"/><path d="M3 15.5h2.6l3.2 2.2c.5.3 1 .5 1.6.5h5.3a1.6 1.6 0 0 0 0-3.2h-3.1M3 21h2.6l.9-.6c.3-.2.7-.3 1-.3h8.3c.6 0 1.2-.2 1.7-.6l3.6-3a1.5 1.5 0 0 0-2-2.2l-2.3 1.7"/></svg></b><span>${a.rot}</span></button>` : `<button type="button" data-aba="${a.id}">${ci(a.ic)}<span>${a.rot}</span></button>`).join("");
     $$("button", bar).forEach((b, i) => b.addEventListener("click", () => {
       const a = lista[i];
       if (a.acao) a.acao(); else irPara(a.tela);
@@ -225,7 +227,7 @@ gl_FragColor=vec4(col,1.);}`;
     let alvo = null;
     $$("button", bar).forEach(b => { const on = b.dataset.aba === id; b.classList.toggle("on", on); if (on) alvo = b; });
     const luz = $(".cpv-abas-luz", bar);
-    if (luz) { if (alvo) { luz.style.opacity = 1; luz.style.transform = `translateX(${alvo.offsetLeft}px)`; luz.style.width = alvo.offsetWidth + "px"; } else luz.style.opacity = 0; }
+    if (luz) { if (alvo && id !== "ofertar") { luz.style.opacity = 1; luz.style.transform = `translateX(${alvo.offsetLeft}px)`; luz.style.width = alvo.offsetWidth + "px"; } else luz.style.opacity = 0; }
   }
   function ligarNavegacao() {
     if (typeof window.mostrarTela !== "function" || window.mostrarTela.cpv) return;
