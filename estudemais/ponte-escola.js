@@ -12,7 +12,7 @@
   document.head.appendChild(css);
   const box = document.createElement('div');
   box.className = 'eu-ponte';
-  if (volta && /\/(estudeup|saidaescola)\//.test(volta)) {
+  if (volta && /\/(estudeup|saidaescola|escola)\//.test(volta)) {
     const a = document.createElement('a');
     a.href = volta; a.textContent = '← ' + (nome ? nome.slice(0, 28) : 'Minha escola');
     a.title = 'Voltar para o app da escola';
@@ -20,7 +20,7 @@
   }
   // quando a energia (IA) do dia zera, mostra o atalho para o plano
   const plano = document.createElement('a');
-  plano.className = 'plano'; plano.href = '../estudeup/#/assinar'; plano.textContent = '⚡ Mais IA'; plano.hidden = true;
+  plano.className = 'plano'; plano.href = /^\/estudemais\//.test(location.pathname) ? '../estudeup/#/assinar' : '/escola/#/assinar'; plano.textContent = '⚡ Mais IA'; plano.hidden = true;
   box.appendChild(plano);
   const confere = () => {
     const el = document.getElementById('home-energia') || document.getElementById('sidebar-energia');
