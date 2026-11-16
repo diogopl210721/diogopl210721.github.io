@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bíblia RPG — No Princípio</title>
+<meta name="description" content="A Bíblia que você vive. Comente seu nome e entre na história.">
+<meta name="theme-color" content="#07080f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080f;--bg2:#0e1020;--bg3:#161a30;--line:#262b4a;--ouro:#ffd27a;--ouro2:#ffb238;--luz:#ffe9a8;--txt:#ecebf5;--mut:#9a9ab8;--terra:#3a2414}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font-family:'VT323',monospace;font-size:20px;line-height:1.25;-webkit-font-smoothing:none}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+.px{font-family:'Press Start 2P',monospace;letter-spacing:.5px}
+.app{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+header{padding:16px 16px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.logo{font-size:12px;color:var(--ouro)}
+.logo small{display:block;color:var(--mut);font-size:8px;margin-top:6px}
+.ig{font-size:18px;color:var(--mut);text-decoration:none;border:2px solid var(--line);padding:4px 8px}
+.hud{margin:0 16px;background:var(--bg2);border:2px solid var(--line);padding:10px 12px}
+.hud-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dia{font-size:10px;color:var(--ouro)}
+.cont{font-size:20px}
+.cont b{color:var(--luz);font-weight:normal}
+.barra{height:10px;background:#1c1f36;margin:8px 0 4px;position:relative}
+.barra i{position:absolute;left:0;top:0;bottom:0;background:var(--ouro2);width:0;transition:width .8s steps(12)}
+.meta{color:var(--mut);font-size:18px}
+main{flex:1;padding:12px 16px 96px}
+.tela{display:none}.tela.on{display:block}
+.mundo{position:relative;border:2px solid var(--line);background:#04050b;overflow:hidden;touch-action:manipulation}
+canvas#ceu{display:block;width:100%;height:auto;image-rendering:pixelated}
+.busca{display:flex;gap:8px;margin-top:10px}
+.busca input{flex:1;background:var(--bg2);border:2px solid var(--line);padding:8px 10px;outline:none}
+.busca input:focus{border-color:var(--ouro2)}
+.btn{background:var(--ouro2);color:var(--terra);border:0;padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 #a86a10}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #a86a10}
+.btn.sec{background:transparent;color:var(--txt);border:2px solid var(--line);box-shadow:none}
+.reacoes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.reacao{background:var(--bg2);border:2px solid var(--line);padding:8px 4px;text-align:center;cursor:pointer;user-select:none}
+.reacao span{display:block;color:var(--mut);font-size:16px}
+.reacao.pop{border-color:var(--ouro2);color:var(--ouro)}
+.dica{color:var(--mut);font-size:18px;margin-top:10px}
+.achado{margin-top:10px;background:var(--bg2);border:2px solid var(--ouro2);padding:10px;display:none}
+.achado.on{display:block}
+h2{font-size:11px;color:var(--ouro);margin:4px 0 10px;line-height:1.6}
+.filtros{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.chip{border:2px solid var(--line);padding:2px 8px;cursor:pointer;font-size:18px;background:transparent}
+.chip.on{border-color:var(--ouro2);color:var(--ouro)}
+.letras{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.letras button{width:28px;height:28px;border:2px solid var(--line);background:transparent;cursor:pointer;font-size:16px}
+.letras button.on{border-color:var(--ouro2);color:var(--ouro)}
+.lista{border-top:2px solid var(--line)}
+.item{display:flex;justify-content:space-between;gap:8px;padding:8px 2px;border-bottom:1px solid var(--line)}
+.item .n{color:var(--luz)}
+.item .e{color:var(--mut);font-size:17px}
+.item .num{color:var(--mut);font-size:16px;white-space:nowrap}
+.tot{color:var(--mut);margin:6px 0}
+form .campo{margin-bottom:12px}
+form label{display:block;color:var(--mut);margin-bottom:4px}
+form input,form select{width:100%;background:var(--bg2);border:2px solid var(--line);padding:8px 10px;outline:none}
+form input:focus,form select:focus{border-color:var(--ouro2)}
+.erro{color:#ff8a7a;min-height:22px}
+.ok{background:var(--bg2);border:2px solid var(--ouro2);padding:14px;text-align:center;display:none}
+.ok.on{display:block}
+.ok .big{font-size:14px;color:var(--ouro);margin:8px 0;line-height:1.6}
+.carta-wrap{display:flex;justify-content:center}
+canvas#carta{width:100%;max-width:300px;height:auto;border:2px solid var(--line);image-rendering:pixelated}
+.acoes{display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:2px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav button{background:none;border:0;padding:12px 4px;cursor:pointer;color:var(--mut);font-size:18px}
+nav button.on{color:var(--ouro)}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ouro2);color:var(--terra);padding:8px 14px;display:none;z-index:9}
+.toast.on{display:block}
+.vazio{color:var(--mut);text-align:center;padding:24px 8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo px">BÍBLIA RPG<small>T1 · NO PRINCÍPIO</small></div>
+    <a class="ig" href="https://instagram.com/biblia.rpg" target="_blank" rel="noopener">@biblia.rpg</a>
+  </header>
+
+  <section class="hud">
+    <div class="hud-top"><span class="dia px" id="dia">DIA 1 · A LUZ</span><span class="cont"><b id="nLuzes">0</b> luzes</span></div>
+    <div class="barra"><i id="barra"></i></div>
+    <div class="meta" id="meta">carregando…</div>
+  </section>
+
+  <main>
+    <!-- MUNDO -->
+    <section class="tela on" id="t-mundo">
+      <div class="mundo"><canvas id="ceu" width="240" height="300"></canvas></div>
+      <div class="busca">
+        <input id="qMundo" placeholder="ache sua luz pelo nome…" autocomplete="off">
+        <button class="btn px" style="font-size:10px" id="bMundo">ACHAR</button>
+      </div>
+      <div class="achado" id="achado"></div>
+      <div class="reacoes">
+        <div class="reacao" data-t="haja_luz">Haja luz<span id="r-haja_luz">0</span></div>
+        <div class="reacao" data-t="amem">Amém<span id="r-amem">0</span></div>
+        <div class="reacao" data-t="gloria">Glória<span id="r-gloria">0</span></div>
+      </div>
+      <p class="dica">Toque numa luz para ver de quem é. Ainda não tem a sua? Comente seu nome no último episódio ou <a href="#" data-ir="entrar" style="color:var(--ouro)">entre pelo site</a>.</p>
+    </section>
+
+    <!-- LIVRO -->
+    <section class="tela" id="t-livro">
+      <h2 class="px">O LIVRO DA VIDA</h2>
+      <p class="dica" style="margin-top:0">Todo mundo que entrou na história até agora. Atualizado a cada novo nome.</p>
+      <div class="busca"><input id="qLivro" placeholder="digite seu nome…" autocomplete="off"></div>
+      <div class="filtros" id="fPlat">
+        <button class="chip on" data-p="">Todas</button>
+        <button class="chip" data-p="instagram">Instagram</button>
+        <button class="chip" data-p="tiktok">TikTok</button>
+        <button class="chip" data-p="youtube">YouTube</button>
+        <button class="chip" data-p="site">Site</button>
+      </div>
+      <div class="letras" id="letras"></div>
+      <div class="tot" id="totLivro"></div>
+      <div class="lista" id="lista"></div>
+    </section>
+
+    <!-- ENTRAR -->
+    <section class="tela" id="t-entrar">
+      <h2 class="px">ENTRE NA HISTÓRIA</h2>
+      <p class="dica" style="margin:0 0 12px">Seu nome vira uma das luzes da criação e aparece no próximo episódio.</p>
+      <form id="form" autocomplete="off">
+        <div class="campo"><label for="fNome">Seu nome</label><input id="fNome" maxlength="32" placeholder="Diogo" required></div>
+        <div class="campo"><label for="fPlat">Onde você nos segue</label>
+          <select id="fPlat2"><option value="instagram">Instagram</option><option value="tiktok">TikTok</option><option value="youtube">YouTube</option><option value="site">Só pelo site</option></select></div>
+        <div class="campo"><label for="fArroba">Seu @ (opcional)</label><input id="fArroba" maxlength="40" placeholder="@seuperfil"></div>
+        <div class="erro" id="fErro"></div>
+        <button class="btn px" style="font-size:11px;width:100%;padding:12px" type="submit" id="fBtn">ACENDER MINHA LUZ</button>
+      </form>
+      <div class="ok" id="fOk">
+        <div class="px" style="font-size:10px;color:var(--mut)">HAJA LUZ</div>
+        <div class="big px" id="okTxt"></div>
+        <p class="dica" style="margin-top:4px">Siga @biblia.rpg para ver seu nome no próximo episódio.</p>
+        <div class="acoes"><button class="btn px" style="font-size:10px" data-ir="mundo">VER MINHA LUZ</button><button class="btn sec px" style="font-size:10px" data-ir="carta">MINHA CARTA</button></div>
+      </div>
+    </section>
+
+    <!-- CARTA -->
+    <section class="tela" id="t-carta">
+      <h2 class="px">SUA CARTA</h2>
+      <div class="busca" style="margin-bottom:10px"><input id="qCarta" placeholder="seu nome como está no Livro…" autocomplete="off"><button class="btn px" style="font-size:10px" id="bCarta">GERAR</button></div>
+      <div class="erro" id="cErro"></div>
+      <div class="carta-wrap"><canvas id="carta" width="270" height="480"></canvas></div>
+      <div class="acoes"><button class="btn px" style="font-size:10px" id="baixar">BAIXAR PARA O STORY</button></div>
+      <p class="dica" style="text-align:center">Poste no story marcando @biblia.rpg</p>
+    </section>
+  </main>
+</div>
+
+<nav><div class="in">
+  <button class="on" data-ir="mundo">Mundo</button>
+  <button data-ir="livro">Livro</button>
+  <button data-ir="entrar">Entrar</button>
+  <button data-ir="carta">Carta</button>
+</div></nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL='https://arffptuclrrzuzdrcmuc.supabase.co';
+const SB_KEY='sb_publishable_XCY3BoeUR_jzDSRrtlibyg_Os7lIrVi';
+const H={apikey:SB_KEY,'Content-Type':'application/json'};
+const $=s=>document.querySelector(s);
+const PLAT={instagram:'IG',tiktok:'TT',youtube:'YT',site:'site'};
+let luzes=[],estado={dia:1,titulo:'O vazio e a luz',seguidores:0,meta:50},foco=null,meuId=null;
+try{meuId=Number(localStorage.getItem('biblia_meu_id'))||null}catch(e){}
+
+async function api(path,opt={}){
+  const r=await fetch(SB_URL+'/rest/v1/'+path,{...opt,headers:{...H,...(opt.headers||{})}});
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok)throw new Error((j&&(j.message||j.hint))||('erro '+r.status));
+  return j;
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._);toast._=setTimeout(()=>t.classList.remove('on'),2200)}
+const norm=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+
+/* ---------- navegação ---------- */
+function ir(t){
+  document.querySelectorAll('.tela').forEach(s=>s.classList.toggle('on',s.id==='t-'+t));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.ir===t));
+  if(t==='carta'&&!cartaFeita)autoCarta();
+  window.scrollTo(0,0);
+}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-ir]');if(a){e.preventDefault();ir(a.dataset.ir)}});
+
+/* ---------- dados ---------- */
+async function carregar(){
+  try{
+    const [l,e,r]=await Promise.all([
+      api('biblia_luzes?select=id,nome,escolha,plataforma,episodio&order=id.asc&limit=10000'),
+      api('biblia_estado?select=*&id=eq.1'),
+      api('biblia_reacoes?select=tipo,total')
+    ]);
+    luzes=l||[];if(e&&e[0])estado=e[0];
+    (r||[]).forEach(x=>{const el=$('#r-'+x.tipo);if(el)el.textContent=x.total.toLocaleString('pt-BR')});
+    posicionar();hud();livro();
+  }catch(err){$('#meta').textContent='não foi possível carregar agora — tente de novo';console.error(err)}
+}
+function hud(){
+  const dias=['','A LUZ','AS ÁGUAS','A TERRA','AS ESTRELAS','PEIXES E AVES','OS ANIMAIS','O DESCANSO'];
+  $('#dia').textContent='DIA '+estado.dia+' · '+(dias[estado.dia]||estado.titulo.toUpperCase());
+  $('#nLuzes').textContent=luzes.length.toLocaleString('pt-BR');
+  const s=estado.seguidores,m=estado.meta,p=m?Math.min(100,Math.round(s/m*100)):0;
+  $('#barra').style.width=p+'%';
+  const falta=Math.max(0,m-s);
+  $('#meta').textContent=falta>0?('faltam '+falta.toLocaleString('pt-BR')+' seguidores para o Dia '+(estado.dia+1)):'meta batida — o próximo dia vem aí';
+}
+
+/* ---------- céu (canvas) ---------- */
+const cv=$('#ceu'),cx=cv.getContext('2d');const W=cv.width,HH=cv.height,MAR=230;
+let pontos=[];
+function hash(n){let x=(n*2654435761)>>>0;x^=x>>>16;x=Math.imul(x,2246822507)>>>0;x^=x>>>13;return x>>>0}
+function posicionar(){
+  pontos=luzes.map(l=>{const h=hash(l.id),h2=hash(l.id+99991);
+    return{l,x:6+(h%(W-12)),y:8+(h2%(MAR-24)),f:(h%628)/100,v:.6+(h2%100)/100}});
+}
+let t0=0;
+function desenhar(t){
+  const s=t/1000;cx.fillStyle='#04050b';cx.fillRect(0,0,W,HH);
+  // águas
+  for(let i=0;i<6;i++){const y=MAR+8+i*11;cx.fillStyle=['#101a33','#0d1630','#0b132a','#091025','#080d20','#060a1a'][i];
+    for(let x=0;x<W;x+=6){const o=Math.round(Math.sin(s*.7+x*.05+i)*2);cx.fillRect(x,y+o,4,2)}}
+  // luzes
+  for(const p of pontos){const b=.55+.45*Math.sin(s*p.v*2+p.f);
+    const meu=p.l.id===meuId,fo=foco&&p.l.id===foco.id;
+    const sz=(meu||fo)?3:2;cx.globalAlpha=(meu||fo)?1:(.35+.65*b);
+    cx.fillStyle=(meu||fo)?'#ffd27a':'#ffe9a8';cx.fillRect(Math.round(p.x),Math.round(p.y),sz,sz);
+    if(meu||fo){cx.globalAlpha=.25+.2*b;cx.fillRect(p.x-2,p.y-2,sz+4,sz+4)}}
+  cx.globalAlpha=1;
+  // rótulos
+  const alvo=[];if(foco)alvo.push(pontos.find(p=>p.l.id===foco.id));if(meuId&&(!foco||foco.id!==meuId))alvo.push(pontos.find(p=>p.l.id===meuId));
+  alvo.filter(Boolean).forEach(p=>rotulo(p,p.l.id===meuId&&(!foco||foco.id===meuId)?'você · '+p.l.nome:p.l.nome));
+  if(!pontos.length){cx.fillStyle='#9a9ab8';cx.font='16px VT323';cx.textAlign='center';cx.fillText('o vazio espera a primeira luz',W/2,MAR/2)}
+  requestAnimationFrame(desenhar);
+}
+function rotulo(p,txt){cx.font='14px VT323';const w=Math.ceil(cx.measureText(txt).width)+8;
+  let x=Math.round(p.x-w/2),y=Math.round(p.y-16);x=Math.max(2,Math.min(W-w-2,x));if(y<2)y=p.y+8;
+  cx.fillStyle='#ffb238';cx.fillRect(x,y,w,12);cx.fillStyle='#3a2414';cx.textAlign='left';cx.fillText(txt,x+4,y+10)}
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*HH/r.height;
+  let best=null,d=1e9;for(const p of pontos){const dd=(p.x-x)**2+(p.y-y)**2;if(dd<d){d=dd;best=p}}
+  if(best&&d<200){foco=best.l;mostrarAchado(best.l)}});
+function mostrarAchado(l){const a=$('#achado');a.classList.add('on');
+  a.innerHTML='<span class="px" style="font-size:9px;color:var(--mut)">LUZ Nº '+String(l.id).padStart(4,'0')+'</span><br><span style="font-size:24px;color:var(--luz)">'+esc(l.nome)+'</span> <span style="color:var(--mut)">· entrou no Dia '+l.episodio+' · '+(PLAT[l.plataforma]||'')+'</span>'}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function acharMundo(){const q=norm($('#qMundo').value);if(!q)return;
+  const l=luzes.find(x=>norm(x.nome)===q)||luzes.find(x=>norm(x.nome).startsWith(q))||luzes.find(x=>norm(x.nome).includes(q));
+  if(l){foco=l;mostrarAchado(l)}else{$('#achado').classList.add('on');$('#achado').innerHTML='Ainda não achamos esse nome. Ele entra no próximo episódio — ou <a href="#" data-ir="entrar" style="color:var(--ouro)">entre pelo site</a>.'}}
+$('#bMundo').onclick=acharMundo;$('#qMundo').addEventListener('keydown',e=>{if(e.key==='Enter')acharMundo()});
+
+/* ---------- reações ---------- */
+document.querySelectorAll('.reacao').forEach(b=>b.addEventListener('click',async()=>{
+  const t=b.dataset.t,el=$('#r-'+t);b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);
+  el.textContent=(Number(el.textContent.replace(/\D/g,''))+1).toLocaleString('pt-BR');
+  try{await api('rpc/biblia_reagir',{method:'POST',body:JSON.stringify({p_tipo:t})})}catch(e){}
+}));
+
+/* ---------- livro ---------- */
+let fP='',fL='';
+const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+$('#letras').innerHTML=L.map(c=>'<button data-l="'+c+'">'+c+'</button>').join('');
+$('#letras').onclick=e=>{const b=e.target.closest('button');if(!b)return;fL=fL===b.dataset.l?'':b.dataset.l;
+  document.querySelectorAll('#letras button').forEach(x=>x.classList.toggle('on',x.dataset.l===fL));livro()};
+$('#fPlat').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;fP=b.dataset.p;
+  document.querySelectorAll('#fPlat .chip').forEach(x=>x.classList.toggle('on',x===b));livro()};
+$('#qLivro').addEventListener('input',livro);
+function livro(){const q=norm($('#qLivro').value);
+  const r=luzes.filter(l=>(!fP||l.plataforma===fP)&&(!fL||norm(l.nome).startsWith(fL.toLowerCase()))&&(!q||norm(l.nome).includes(q)))
+    .sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome)));
+  $('#totLivro').textContent=r.length.toLocaleString('pt-BR')+' '+(r.length===1?'nome':'nomes');
+  $('#lista').innerHTML=r.length?r.slice(0,500).map(l=>'<div class="item"><div><div class="n">'+esc(l.nome)+(l.id===meuId?' <span style="color:var(--ouro2)">· você</span>':'')+'</div><div class="e">Dia '+l.episodio+' · '+(PLAT[l.plataforma]||'')+'</div></div><div class="num">Nº '+String(l.id).padStart(4,'0')+'</div></div>').join('')
+    :'<div class="vazio">'+(luzes.length?'Nenhum nome encontrado.':'O livro ainda está em branco. Seja o primeiro nome.')+'</div>';
+}
+
+/* ---------- entrar ---------- */
+$('#form').onsubmit=async e=>{e.preventDefault();const nome=$('#fNome').value.trim(),err=$('#fErro');err.textContent='';
+  if(nome.length<2){err.textContent='Digite seu nome (2 a 32 letras).';return}
+  const b=$('#fBtn');b.disabled=true;b.textContent='ACENDENDO…';
+  try{const id=await api('rpc/biblia_entrar',{method:'POST',body:JSON.stringify({p_nome:nome,p_escolha:null,p_plataforma:$('#fPlat2').value,p_arroba:$('#fArroba').value||null})});
+    meuId=Number(id);try{localStorage.setItem('biblia_meu_id',meuId);localStorage.setItem('biblia_meu_nome',nome)}catch(e){}
+    await carregar();foco=luzes.find(l=>l.id===meuId)||null;
+    $('#form').style.display='none';$('#fOk').classList.add('on');$('#okTxt').textContent=nome.toUpperCase()+' · LUZ Nº '+String(meuId).padStart(4,'0');
+    cartaFeita=false;
+  }catch(x){err.textContent=/nome_invalido/.test(x.message)?'Use só letras no nome, sem palavrão (2 a 32 caracteres).':'Não deu certo agora. Tente de novo em instantes.'}
+  finally{b.disabled=false;b.textContent='ACENDER MINHA LUZ'}
+};
+
+/* ---------- carta ---------- */
+const cc=$('#carta').getContext('2d');let cartaFeita=false,cartaLuz=null;
+function autoCarta(){let n='';try{n=localStorage.getItem('biblia_meu_nome')||''}catch(e){}
+  const l=meuId?luzes.find(x=>x.id===meuId):null;if(l){$('#qCarta').value=l.nome;desenharCarta(l)}else if(n){$('#qCarta').value=n;gerarCarta()}else desenharCarta(null)}
+function gerarCarta(){const q=norm($('#qCarta').value);$('#cErro').textContent='';if(!q)return;
+  const l=luzes.find(x=>norm(x.nome)===q)||luzes.find(x=>norm(x.nome).startsWith(q));
+  if(!l){$('#cErro').textContent='Esse nome ainda não está no Livro.';return}desenharCarta(l)}
+$('#bCarta').onclick=gerarCarta;$('#qCarta').addEventListener('keydown',e=>{if(e.key==='Enter')gerarCarta()});
+function desenharCarta(l){cartaLuz=l;cartaFeita=true;const c=cc,w=270,h=480;
+  c.imageSmoothingEnabled=false;c.fillStyle='#07080f';c.fillRect(0,0,w,h);
+  c.fillStyle='#262b4a';c.fillRect(8,8,w-16,2);c.fillRect(8,h-10,w-16,2);c.fillRect(8,8,2,h-16);c.fillRect(w-10,8,2,h-16);
+  const sd=(l?l.id:7);for(let i=0;i<70;i++){const a=hash(sd*131+i),b=hash(sd*977+i);c.fillStyle=i%5?'#3a3f66':'#ffe9a8';c.fillRect(16+a%(w-32),16+b%230,i%9?1:2,i%9?1:2)}
+  for(let i=0;i<5;i++){c.fillStyle=['#101a33','#0d1630','#0b132a','#091025','#080d20'][i];for(let x=16;x<w-16;x+=6)c.fillRect(x,300+i*10+(x%12?0:2),4,2)}
+  c.fillStyle='#ffd27a';c.fillRect(w/2-6,140,12,12);c.globalAlpha=.25;c.fillRect(w/2-14,132,28,28);c.globalAlpha=.1;c.fillRect(w/2-24,122,48,48);c.globalAlpha=1;
+  c.textAlign='center';c.fillStyle='#9a9ab8';c.font='8px "Press Start 2P"';c.fillText('BÍBLIA RPG · NO PRINCÍPIO',w/2,36);
+  c.fillStyle='#ffd27a';c.font='9px "Press Start 2P"';c.fillText(l?'LUZ Nº '+String(l.id).padStart(4,'0'):'LUZ Nº ????',w/2,200);
+  c.fillStyle='#ecebf5';let nm=(l?l.nome:'SEU NOME').toUpperCase(),fs=14;c.font=fs+'px "Press Start 2P"';while(c.measureText(nm).width>w-40&&fs>8){fs--;c.font=fs+'px "Press Start 2P"'}c.fillText(nm,w/2,232);
+  c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText(l?(l.episodio<=1?'uma das primeiras luzes':'entrou no Dia '+l.episodio):'entre pelo site ou comente',w/2,262);
+  c.fillStyle='#ecebf5';c.font='20px VT323';c.fillText('"Haja luz; e houve luz."',w/2,390);c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText('Gênesis 1:3',w/2,410);
+  c.fillStyle='#ffb238';c.fillRect(w/2-70,436,140,20);c.fillStyle='#3a2414';c.font='8px "Press Start 2P"';c.fillText('@BIBLIA.RPG',w/2,450);
+}
+$('#baixar').onclick=()=>{if(!cartaLuz){toast('Gere sua carta primeiro');return}
+  const big=document.createElement('canvas');big.width=1080;big.height=1920;const b=big.getContext('2d');b.imageSmoothingEnabled=false;b.drawImage($('#carta'),0,0,1080,1920);
+  const a=document.createElement('a');a.download='carta-biblia-rpg-'+cartaLuz.id+'.png';a.href=big.toDataURL('image/png');a.click()};
+
+document.fonts.ready.then(()=>{desenharCarta(null);cartaFeita=false});
+requestAnimationFrame(desenhar);carregar();setInterval(carregar,60000);
+</script>
+</body>
+</html>
