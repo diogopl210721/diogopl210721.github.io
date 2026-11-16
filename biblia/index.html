@@ -79,7 +79,7 @@ form .campo{margin-bottom:12px}form label{display:block;color:var(--mut);margin-
 canvas#carta{width:100%;max-width:300px;height:auto;border:2px solid var(--line)}
 .acoes{display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:2px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:10}
-nav .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
 nav button{background:none;border:0;padding:12px 4px;cursor:pointer;color:var(--mut);font-size:18px}nav button.on{color:var(--ouro)}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ouro2);color:var(--terra);padding:8px 14px;display:none;z-index:60}.toast.on{display:block}
 .vazio{color:var(--mut);text-align:center;padding:24px 8px}
@@ -108,12 +108,7 @@ body.travado{overflow:hidden}
       <div class="abaixo">
         <div class="dica" id="meta" style="margin:0 0 10px">carregando…</div>
         <div class="busca"><input id="qMundo" placeholder="ache sua luz pelo nome…" autocomplete="off"><button class="btn px" style="font-size:10px" id="bMundo">ACHAR</button></div>
-        <div class="reacoes">
-          <div class="reacao" data-t="haja_luz">Haja luz<span id="r-haja_luz">0</span></div>
-          <div class="reacao" data-t="amem">Amém<span id="r-amem">0</span></div>
-          <div class="reacao" data-t="gloria">Glória<span id="r-gloria">0</span></div>
-        </div>
-        <p class="dica">Toque numa luz para ver de quem é. Ainda não tem a sua? Comente seu nome no último episódio ou <a href="#" data-ir="entrar" style="color:var(--ouro)">entre pelo site</a>.</p>
+        <p class="dica">Toque numa luz para ver de quem é. Para entrar: <span style="color:var(--ouro)">siga @biblia.rpg e comente seu nome</span> no último episódio. Seu nome aparece aqui e no próximo vídeo.</p>
       </div>
     </section>
 
@@ -129,26 +124,6 @@ body.travado{overflow:hidden}
       <div class="lista" id="lista"></div>
     </section>
 
-    <section class="tela" id="t-entrar">
-      <h2 class="px">ENTRE NA HISTÓRIA</h2>
-      <p class="dica" style="margin:0 0 12px" id="entrarTxt">Seu nome vira uma das luzes da criação e aparece no próximo episódio.</p>
-      <form id="form" autocomplete="off">
-        <div class="campo"><label for="fNome">Seu nome</label><input id="fNome" maxlength="32" placeholder="Diogo" required></div>
-        <div class="campo" id="campoForma" style="display:none"><label for="fForma" id="lForma">O que você quer ser neste episódio?</label><input id="fForma" maxlength="30"></div>
-        <div class="campo"><label for="fPlat2">Onde você nos segue</label>
-          <select id="fPlat2"><option value="instagram">Instagram</option><option value="tiktok">TikTok</option><option value="youtube">YouTube</option><option value="site">Só pelo site</option></select></div>
-        <div class="campo"><label for="fArroba">Seu @ (guarda sua história de um episódio para o outro)</label><input id="fArroba" maxlength="40" placeholder="@seuperfil"></div>
-        <div class="erro" id="fErro"></div>
-        <button class="btn px" style="font-size:11px;width:100%;padding:12px" type="submit" id="fBtn">ENTRAR NA HISTÓRIA</button>
-      </form>
-      <div class="ok" id="fOk">
-        <div class="px" style="font-size:10px;color:var(--mut)">HAJA LUZ</div>
-        <div class="big px" id="okTxt"></div>
-        <p class="dica" style="margin-top:4px">Siga @biblia.rpg para ver seu nome no próximo episódio.</p>
-        <div class="acoes"><button class="btn px" style="font-size:10px" data-ir="mundo" data-eu="1">VER NO MUNDO</button><button class="btn sec px" style="font-size:10px" data-ir="carta">MINHA CARTA</button></div>
-      </div>
-    </section>
-
     <section class="tela" id="t-carta">
       <h2 class="px">SUA CARTA</h2>
       <div class="busca" style="margin-bottom:10px"><input id="qCarta" placeholder="seu nome como está no Livro…" autocomplete="off"><button class="btn px" style="font-size:10px" id="bCarta">GERAR</button></div>
@@ -159,7 +134,7 @@ body.travado{overflow:hidden}
     </section>
   </main>
 </div>
-<nav><div class="in"><button class="on" data-ir="mundo">Mundo</button><button data-ir="livro">Livro</button><button data-ir="entrar">Entrar</button><button data-ir="carta">Carta</button></div></nav>
+<nav><div class="in"><button class="on" data-ir="mundo">Mundo</button><button data-ir="livro">Livro</button><button data-ir="carta">Carta</button></div></nav>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -192,10 +167,10 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-ir]');if(a
 
 /* dados */
 async function carregar(){try{
-  const [l,e,r,f]=await Promise.all([api('biblia_luzes?select=id,nome,plataforma,episodio&order=id.asc&limit=20000'),api('biblia_estado?select=*&id=eq.1'),api('biblia_reacoes?select=tipo,total'),api('biblia_formas?select=luz_id,episodio,forma&order=episodio.asc&limit=50000')]);
+  const [l,e,r,f]=await Promise.all([api('biblia_luzes?select=id,nome,plataforma,episodio&order=id.asc&limit=20000'),api('biblia_estado?select=*&id=eq.1'),Promise.resolve([]),api('biblia_formas?select=luz_id,episodio,forma&order=episodio.asc&limit=50000')]);
   luzes=l||[];if(e&&e[0])estado=e[0];formas={};(f||[]).forEach(x=>{(formas[x.luz_id]=formas[x.luz_id]||[]).push(x)});
-  (r||[]).forEach(x=>{const el=$('#r-'+x.tipo);if(el)el.textContent=x.total.toLocaleString('pt-BR')});
-  posicionar();hud();livro();formEntrar();
+  
+  posicionar();hud();livro();
 }catch(err){$('#meta').textContent='não foi possível carregar agora — tente de novo';console.error(err)}}
 function hud(){$('#dia').textContent='DIA '+estado.dia+' · '+(DIAS[estado.dia]||estado.titulo.toUpperCase());
   $('#nLuzes').textContent=luzes.length.toLocaleString('pt-BR');
@@ -225,7 +200,7 @@ $('#expandir').onclick=abrir;$('#fechar').onclick=()=>{try{if(history.state&&his
 window.addEventListener('popstate',()=>{if(cheio)fechar()});
 function zoomEm(f,sx,sy){const z0=cam.z,z1=Math.max(zFit(),Math.min(8,z0*f));const wx=cam.x+sx/z0,wy=cam.y+sy/z0;cam.z=z1;cam.x=wx-sx/z1;cam.y=wy-sy/z1;limitar()}
 $('#zmais').onclick=()=>zoomEm(1.5,cw/2,ch/2);$('#zmenos').onclick=()=>zoomEm(1/1.5,cw/2,ch/2);
-$('#zeu').onclick=()=>{const p=pontos.find(p=>p.l.id===meuId);if(p){foco=p.l;mostrarAchado(p.l);cam.z=Math.max(cam.z,zFit()*3);centrar(p.x,p.y)}else toast('Entre na história para ter sua luz')};
+$('#zeu').onclick=()=>{const p=pontos.find(p=>p.l.id===meuId);if(p){foco=p.l;mostrarAchado(p.l);cam.z=Math.max(cam.z,zFit()*3);centrar(p.x,p.y)}else toast('Siga @biblia.rpg e comente seu nome para ganhar sua luz')};
 const pts=new Map();let gesto=null,moveu=0;
 cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moveu=0;inicioGesto()});
 cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const a=pts.get(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -277,12 +252,8 @@ function mostrarAchado(l){const a=$('#achado');a.classList.add('on');const t=tri
 function acharMundo(){const q=norm($('#qMundo').value);if(!q)return;
   const l=luzes.find(x=>norm(x.nome)===q)||luzes.find(x=>norm(x.nome).startsWith(q))||luzes.find(x=>norm(x.nome).includes(q));
   if(l){foco=l;mostrarAchado(l);const p=pontos.find(p=>p.l.id===l.id);if(cheio&&p){cam.z=Math.max(cam.z,zFit()*3);centrar(p.x,p.y)}}
-  else{toast('Esse nome ainda não está no mundo')}}
+  else{toast('Ainda não está no mundo. Siga e comente seu nome no último episódio.')}}
 $('#bMundo').onclick=acharMundo;$('#qMundo').addEventListener('keydown',e=>{if(e.key==='Enter')acharMundo()});
-
-/* reações */
-document.querySelectorAll('.reacao').forEach(b=>b.addEventListener('click',async()=>{const t=b.dataset.t,el=$('#r-'+t);b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);
-  el.textContent=(Number(el.textContent.replace(/\D/g,''))+1).toLocaleString('pt-BR');try{await api('rpc/biblia_reagir',{method:'POST',body:JSON.stringify({p_tipo:t})})}catch(e){}}));
 
 /* livro */
 let fP='',fL='';$('#letras').innerHTML='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(c=>'<button data-l="'+c+'">'+c+'</button>').join('');
@@ -294,22 +265,6 @@ function livro(){const q=norm($('#qLivro').value);
   $('#totLivro').textContent=r.length.toLocaleString('pt-BR')+' '+(r.length===1?'nome':'nomes');
   $('#lista').innerHTML=r.length?r.slice(0,500).map(l=>{const t=trilha(l.id);return '<div class="item"><div><div class="n">'+esc(l.nome)+(l.id===meuId?' <span style="color:var(--ouro2)">· você</span>':'')+'</div><div class="trilha">'+(t.length?t.map(esc).join(' → '):'Luz')+'</div><div class="e">entrou no Dia '+l.episodio+' · '+(PLAT[l.plataforma]||'')+'</div></div><div class="num">Nº '+num(l.id)+'</div></div>'}).join('')
   :'<div class="vazio">'+(luzes.length?'Nenhum nome encontrado.':'O livro ainda está em branco. Seja o primeiro nome.')+'</div>'}
-
-/* entrar */
-function formEntrar(){const fd=FORMA_DIA[estado.dia]||{};const c=$('#campoForma');
-  if(fd.fixo){c.style.display='none';$('#entrarTxt').textContent='Neste episódio, seu nome vira '+(fd.fixo==='Luz'?'uma das luzes':fd.fixo==='Estrela'?'uma estrela':'parte')+' da criação e aparece no próximo vídeo.'}
-  else{c.style.display='block';$('#lForma').textContent=fd.l||'O que você quer ser neste episódio?';$('#fForma').placeholder=fd.p||'';$('#entrarTxt').textContent='A cada episódio você vira uma coisa nova na criação. Use o mesmo @ para guardar sua história.'}}
-$('#form').onsubmit=async e=>{e.preventDefault();const nome=$('#fNome').value.trim(),err=$('#fErro');err.textContent='';
-  const fd=FORMA_DIA[estado.dia]||{};const forma=fd.fixo||$('#fForma').value.trim();
-  if(nome.length<2){err.textContent='Digite seu nome (2 a 32 letras).';return}
-  if(!fd.fixo&&!forma){err.textContent='Escolha o que você quer ser neste episódio.';return}
-  const b=$('#fBtn');b.disabled=true;b.textContent='ENTRANDO…';
-  try{const id=await api('rpc/biblia_entrar',{method:'POST',body:JSON.stringify({p_nome:nome,p_escolha:forma,p_plataforma:$('#fPlat2').value,p_arroba:$('#fArroba').value||null})});
-    meuId=Number(id);try{localStorage.setItem('biblia_meu_id',meuId);localStorage.setItem('biblia_meu_nome',nome)}catch(e){}
-    await carregar();foco=luzes.find(l=>l.id===meuId)||null;$('#form').style.display='none';$('#fOk').classList.add('on');
-    $('#okTxt').textContent=nome.toUpperCase()+' · '+formaAtual(meuId).toUpperCase()+' · Nº '+num(meuId);cartaFeita=false}
-  catch(x){err.textContent=/nome_invalido|escolha_invalida/.test(x.message)?'Use só letras, sem palavrão.':'Não deu certo agora. Tente de novo em instantes.'}
-  finally{b.disabled=false;b.textContent='ENTRAR NA HISTÓRIA'}};
 
 /* carta */
 const cc=$('#carta').getContext('2d');let cartaFeita=false,cartaLuz=null;
@@ -327,7 +282,7 @@ function desenharCarta(l){cartaLuz=l;cartaFeita=true;const c=cc,w=270,h=480;c.fi
   c.fillStyle='#ffd27a';c.font='9px "Press Start 2P"';c.fillText(l?'Nº '+num(l.id):'Nº ????',w/2,186);
   c.fillStyle='#ecebf5';let nm=(l?l.nome:'SEU NOME').toUpperCase(),fs=14;c.font=fs+'px "Press Start 2P"';while(c.measureText(nm).width>w-40&&fs>8){fs--;c.font=fs+'px "Press Start 2P"'}c.fillText(nm,w/2,216);
   const t=l?trilha(l.id):[];c.fillStyle='#ffd27a';c.font='20px VT323';let linha=(t.length?t:['Luz']).join(' → ');while(c.measureText(linha).width>w-30&&t.length>1){t.shift();linha='… → '+t.join(' → ')}c.fillText(linha,w/2,246);
-  c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText(l?(l.episodio<=1?'uma das primeiras luzes':'entrou no Dia '+l.episodio):'comente seu nome no episódio',w/2,272);
+  c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText(l?(l.episodio<=1?'uma das primeiras luzes':'entrou no Dia '+l.episodio):'siga e comente seu nome',w/2,272);
   c.fillStyle='#ecebf5';c.font='20px VT323';c.fillText('"Haja luz; e houve luz."',w/2,398);c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText('Gênesis 1:3',w/2,418);
   c.fillStyle='#ffb238';c.fillRect(w/2-70,436,140,20);c.fillStyle='#3a2414';c.font='8px "Press Start 2P"';c.fillText('@BIBLIA.RPG',w/2,450)}
 $('#baixar').onclick=()=>{if(!cartaLuz){toast('Gere sua carta primeiro');return}const big=document.createElement('canvas');big.width=1080;big.height=1920;const b=big.getContext('2d');b.imageSmoothingEnabled=false;b.drawImage($('#carta'),0,0,1080,1920);
