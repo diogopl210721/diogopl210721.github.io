@@ -90,7 +90,7 @@ body.travado{overflow:hidden}
 <div class="app">
   <header>
     <div class="logo px">BÍBLIA RPG<small>T1 · NO PRINCÍPIO</small></div>
-    <a class="ig" href="https://instagram.com/biblia.rpg" target="_blank" rel="noopener">@biblia.rpg</a>
+    <a class="ig" href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">@bibliarpg</a>
   </header>
   <main>
     <section class="tela on" id="t-mundo">
@@ -108,7 +108,7 @@ body.travado{overflow:hidden}
       <div class="abaixo">
         <div class="dica" id="meta" style="margin:0 0 10px">carregando…</div>
         <div class="busca"><input id="qMundo" placeholder="ache sua luz pelo nome…" autocomplete="off"><button class="btn px" style="font-size:10px" id="bMundo">ACHAR</button></div>
-        <p class="dica">Toque numa luz para ver de quem é. Para entrar: <span style="color:var(--ouro)">siga @biblia.rpg e comente seu nome</span> no último episódio. Seu nome aparece aqui e no próximo vídeo.</p>
+        <p class="dica">Toque numa luz para ver de quem é. Para entrar: <span style="color:var(--ouro)">siga @bibliarpg e comente seu nome</span> no último episódio. Seu nome aparece aqui e no próximo vídeo.</p>
       </div>
     </section>
 
@@ -130,7 +130,7 @@ body.travado{overflow:hidden}
       <div class="erro" id="cErro"></div>
       <div class="carta-wrap"><canvas id="carta" width="270" height="480"></canvas></div>
       <div class="acoes"><button class="btn px" style="font-size:10px" id="baixar">BAIXAR PARA O STORY</button></div>
-      <p class="dica" style="text-align:center">Poste no story marcando @biblia.rpg</p>
+      <p class="dica" style="text-align:center">Poste no story marcando @bibliarpg</p>
     </section>
   </main>
 </div>
@@ -200,7 +200,7 @@ $('#expandir').onclick=abrir;$('#fechar').onclick=()=>{try{if(history.state&&his
 window.addEventListener('popstate',()=>{if(cheio)fechar()});
 function zoomEm(f,sx,sy){const z0=cam.z,z1=Math.max(zFit(),Math.min(8,z0*f));const wx=cam.x+sx/z0,wy=cam.y+sy/z0;cam.z=z1;cam.x=wx-sx/z1;cam.y=wy-sy/z1;limitar()}
 $('#zmais').onclick=()=>zoomEm(1.5,cw/2,ch/2);$('#zmenos').onclick=()=>zoomEm(1/1.5,cw/2,ch/2);
-$('#zeu').onclick=()=>{const p=pontos.find(p=>p.l.id===meuId);if(p){foco=p.l;mostrarAchado(p.l);cam.z=Math.max(cam.z,zFit()*3);centrar(p.x,p.y)}else toast('Siga @biblia.rpg e comente seu nome para ganhar sua luz')};
+$('#zeu').onclick=()=>{const p=pontos.find(p=>p.l.id===meuId);if(p){foco=p.l;mostrarAchado(p.l);cam.z=Math.max(cam.z,zFit()*3);centrar(p.x,p.y)}else toast('Siga @bibliarpg e comente seu nome para ganhar sua luz')};
 const pts=new Map();let gesto=null,moveu=0;
 cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moveu=0;inicioGesto()});
 cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const a=pts.get(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -284,7 +284,7 @@ function desenharCarta(l){cartaLuz=l;cartaFeita=true;const c=cc,w=270,h=480;c.fi
   const t=l?trilha(l.id):[];c.fillStyle='#ffd27a';c.font='20px VT323';let linha=(t.length?t:['Luz']).join(' → ');while(c.measureText(linha).width>w-30&&t.length>1){t.shift();linha='… → '+t.join(' → ')}c.fillText(linha,w/2,246);
   c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText(l?(l.episodio<=1?'uma das primeiras luzes':'entrou no Dia '+l.episodio):'siga e comente seu nome',w/2,272);
   c.fillStyle='#ecebf5';c.font='20px VT323';c.fillText('"Haja luz; e houve luz."',w/2,398);c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText('Gênesis 1:3',w/2,418);
-  c.fillStyle='#ffb238';c.fillRect(w/2-70,436,140,20);c.fillStyle='#3a2414';c.font='8px "Press Start 2P"';c.fillText('@BIBLIA.RPG',w/2,450)}
+  c.fillStyle='#ffb238';c.fillRect(w/2-70,436,140,20);c.fillStyle='#3a2414';c.font='8px "Press Start 2P"';c.fillText('@BIBLIARPG',w/2,450)}
 $('#baixar').onclick=()=>{if(!cartaLuz){toast('Gere sua carta primeiro');return}const big=document.createElement('canvas');big.width=1080;big.height=1920;const b=big.getContext('2d');b.imageSmoothingEnabled=false;b.drawImage($('#carta'),0,0,1080,1920);
   const a=document.createElement('a');a.download='carta-biblia-rpg-'+cartaLuz.id+'.png';a.href=big.toDataURL('image/png');a.click()};
 
