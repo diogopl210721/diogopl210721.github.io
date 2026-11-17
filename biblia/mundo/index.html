@@ -138,10 +138,10 @@ function cena(){return CENAS[ci]}
 function limitar(){cam=Math.max(0,Math.min(cena().larg-VW,cam))}
 function irCena(i,quieto){ci=(i+CENAS.length)%CENAS.length;cam=cena().cam0||0;
   const k=cena();$('#chip').innerHTML=esc(k.nome.toUpperCase())+'<span>'+esc(k.ref)+'</span>';
-  $('#breve').style.display=k.status==='agora'?'none':'block';
+  $('#breve').style.display=k.status==='breve'?'block':'none';
   document.querySelectorAll('.fase').forEach((f,j)=>f.classList.toggle('on',j===ci));
   if(foco){const q=lugares(k,dados.pessoas).find(q=>q.p.id===foco.id);if(q){cam=q.x-VW/2;limitar()}}
-  if(!quieto)dizer(k.status==='agora'?'AGORA · '+k.ref.toUpperCase():'EM BREVE · '+k.ref.toUpperCase(),k.texto+' '+k.voce)}
+  if(!quieto)dizer((k.status==='agora'?'AGORA · ':k.status==='feito'?'EP. 1 · ':'EM BREVE · ')+k.ref.toUpperCase(),k.texto+' '+k.voce)}
 function frame(ms){const t=ms/1000,k=cena();
   c.setTransform(2,0,0,2,-cam*2,0);c.imageSmoothingEnabled=false;
   lug=desenhar(c,k,t,dados.pessoas,{foco:foco&&foco.id});
@@ -155,12 +155,12 @@ function rotulos(t){const k=cena(),cx=cam+VW/2,ocup=[];
   const vis=lug.filter(q=>q.x>cam-4&&q.x<cam+VW+4);
   const pri=vis.filter(q=>(foco&&q.p.id===foco.id)||q.p.id===meuId);
   const resto=vis.filter(q=>!pri.includes(q)).sort((a,b)=>Math.abs(a.x-cx)-Math.abs(b.x-cx));
-  [...pri,...resto].slice(0,22).forEach((q,i)=>{const forte=pri.includes(q);
-    const txt=(q.p.id===meuId?'você · ':'')+q.p.nome+(k.tipo==='luzes'||forte?' · '+q.p.escolha:'');
+  [...pri,...resto].sort((a,b)=>(pri.includes(b)?2:b.p.pioneiro?1:0)-(pri.includes(a)?2:a.p.pioneiro?1:0)).slice(0,22).forEach((q,i)=>{const forte=pri.includes(q);
+    const pio=q.p.pioneiro,txt=(pio?'★ ':'')+(q.p.id===meuId?'você · ':'')+q.p.nome+(k.tipo==='luzes'||forte||pio?' · '+(k.tipo==='formas'?q.p.forma:q.p.escolha):'');
     c.font='16px VT323';const w=Math.ceil(c.measureText(txt).width)+8,h=14;
-    let x=Math.round((q.x-cam)*2-w/2),y=Math.round(q.y*2-(k.tipo==='luzes'?24:34));x=Math.max(2,Math.min(510-w,x));
+    const ceu=k.tipo==='formas'&&q.y<80;let x=Math.round((q.x-cam)*2-w/2),y=Math.round(q.y*2-(k.tipo==='luzes'||ceu?24:34));x=Math.max(2,Math.min(510-w,x));
     if(!forte&&ocup.some(r=>x<r[0]+r[2]&&x+w>r[0]&&y<r[1]+r[3]&&y+h>r[1]))return;ocup.push([x,y,w,h]);
-    c.fillStyle=forte?'#ffb238':'rgba(4,5,11,.78)';c.fillRect(x,y,w,h);c.fillStyle=forte?'#3a2414':'#ffe9a8';c.textAlign='left';c.fillText(txt,x+4,y+11)})}
+    c.fillStyle=forte?'#ffb238':pio?'rgba(58,36,20,.9)':'rgba(4,5,11,.78)';c.fillRect(x,y,w,h);if(pio&&!forte){c.fillStyle='#ffb238';c.fillRect(x,y+h-2,w,2)}c.fillStyle=forte?'#3a2414':pio?'#ffd27a':'#ffe9a8';c.textAlign='left';c.fillText(txt,x+4,y+11)})}
 
 /* arrastar para andar */
 let arr=null,moveu=0;
@@ -174,7 +174,7 @@ function tocar(e){const r=cv.getBoundingClientRect(),wx=cam+(e.clientX-r.left)*(
   let best=null,d=1e9;for(const q of lug){const dd=(q.x-wx)**2+((q.y-(k.tipo==='luzes'?0:6))-wy)**2;if(dd<d){d=dd;best=q}}
   if(best&&d<120){mostrar(best.p)}}
 function mostrar(p){foco=p;const tr=(p.trilha||['Luz']).join(' → ');
-  dizer(p.nome.toUpperCase()+' · Nº '+String(p.id).padStart(4,'0'),'Escolheu ser '+p.escolha+'. Trilha: '+tr+'. Entrou no Dia '+p.episodio+' pelo '+(p.plataforma==='youtube'?'YouTube':'Instagram')+'.'+(p.id!==meuId?' É você? Toque em ACHAR de novo para marcar.':''))}
+  dizer(p.nome.toUpperCase()+' · Nº '+String(p.id).padStart(4,'0'),(p.pioneiro?'★ Pioneiro: um dos 12 primeiros. ':'')+'Escolheu ser '+p.escolha+'. Trilha: '+tr+'. Entrou no Ep. '+p.episodio+' pelo '+(p.plataforma==='youtube'?'YouTube':'Instagram')+'.'+(p.id!==meuId?' É você? Toque em ACHAR de novo para marcar.':''))}
 let andando=0;
 function seg(dir){andando=dir}
 ['esq','dir'].forEach((id,i)=>{const b=$('#'+id),d=i?1:-1;b.addEventListener('pointerdown',e=>{e.stopPropagation();seg(d)});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>seg(0)))});
@@ -198,7 +198,7 @@ document.querySelectorAll('.menu button').forEach(b=>b.onclick=()=>abrir(b.datas
 /* mapa de cenas com miniaturas */
 function montarFases(){const box=$('#fases');box.innerHTML='';
   CENAS.forEach((k,i)=>{const d=document.createElement('button');d.className='fase'+(i===ci?' on':'');
-    d.innerHTML='<canvas width="160" height="96"></canvas><div class="t"><b>'+esc(k.nome.toUpperCase())+'</b><span>'+esc(k.ref)+'</span></div><span class="tag px '+(k.status==='agora'?'':'lock')+'">'+(k.status==='agora'?'AGORA':'EM BREVE')+'</span>';
+    d.innerHTML='<canvas width="160" height="96"></canvas><div class="t"><b>'+esc(k.nome.toUpperCase())+'</b><span>'+esc(k.ref)+'</span></div><span class="tag px '+(k.status==='breve'?'lock':'')+'">'+(k.status==='agora'?'AGORA':k.status==='feito'?'EP. 1':'EM BREVE')+'</span>';
     d.onclick=()=>{irCena(i);window.scrollTo({top:0,behavior:'smooth'})};box.appendChild(d)});
   miniaturas(0)}
 function miniaturas(ms){const t=ms/1000;document.querySelectorAll('.fase canvas').forEach((m,i)=>{const k=CENAS[i],x=m.getContext('2d');x.imageSmoothingEnabled=false;
@@ -231,11 +231,11 @@ $('#baixar').onclick=()=>{if(!cartaP){toast('Gere sua carta primeiro');return}co
 /* carregar */
 async function iniciar(){try{dados=await BRPG.carregar(demo)}catch(e){console.error(e)}
   $('#demo').style.display=dados.demo?'block':'none';
-  const e=dados.estado;$('#dia').textContent='DIA '+e.dia+' · '+(DIAS[e.dia]||'');$('#nLuzes').textContent=dados.pessoas.length;
+  const e=dados.estado;$('#dia').textContent='EP. '+e.dia+' · '+(e.titulo||DIAS[e.dia]||'').toUpperCase();$('#nLuzes').textContent=dados.pessoas.length;
   $('#barra').style.width=(e.meta?Math.min(100,Math.round(e.seguidores/e.meta*100)):0)+'%';
-  const f=Math.max(0,e.meta-e.seguidores);$('#meta').textContent=f>0?'faltam '+f+' seguidores para o Dia '+(e.dia+1):'meta batida — o próximo dia vem aí';
+  const f=Math.max(0,e.meta-e.seguidores);$('#meta').textContent=f>0?'faltam '+f+' seguidores para o Ep. '+(e.dia+1):'meta batida — o próximo dia vem aí';
   livro()}
-montarFases();irCena(0);requestAnimationFrame(frame);document.fonts.ready.then(()=>carta(null));
+montarFases();irCena(Math.max(0,CENAS.findIndex(k=>k.status==='agora')));requestAnimationFrame(frame);document.fonts.ready.then(()=>carta(null));
 iniciar().then(()=>{if(meuId){const p=dados.pessoas.find(x=>x.id===meuId);if(p)mostrar(p)}});setInterval(()=>iniciar(),60000);
 </script>
 </body>

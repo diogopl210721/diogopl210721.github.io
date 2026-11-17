@@ -179,7 +179,7 @@ function heroFrame(ms){const t=ms/1000,k=CENAS.find(x=>x.id==='deserto'),d=Math.
 
 /* cards das cenas */
 function montarCenas(){const box=document.getElementById('listaCenas');
-  box.innerHTML=CENAS.map((k,i)=>'<article class="cena'+(k.id==='deserto'?' destaque':'')+'"><canvas data-i="'+i+'" width="'+(k.id==='deserto'?960:480)+'" height="288"></canvas><div class="c"><span class="st '+(k.status==='agora'?'':'breve')+'">'+(k.status==='agora'?'AGORA':'EM BREVE')+'</span><h3>'+esc(k.nome.toUpperCase())+'</h3><div class="ref">'+esc(k.ref)+'</div><p>'+esc(k.texto)+'</p><p class="voce">'+esc(k.voce)+'</p></div></article>').join('');
+  box.innerHTML=CENAS.map((k,i)=>'<article class="cena'+(k.id==='deserto'?' destaque':'')+'"><canvas data-i="'+i+'" width="'+(k.id==='deserto'?960:480)+'" height="288"></canvas><div class="c"><span class="st '+(k.status==='breve'?'breve':'')+'">'+(k.status==='agora'?'AGORA':k.status==='feito'?'EP. 1':'EM BREVE')+'</span><h3>'+esc(k.nome.toUpperCase())+'</h3><div class="ref">'+esc(k.ref)+'</div><p>'+esc(k.texto)+'</p><p class="voce">'+esc(k.voce)+'</p></div></article>').join('');
   requestAnimationFrame(cards)}
 function cards(ms){const t=ms/1000;document.querySelectorAll('#listaCenas canvas').forEach(cv=>{
     const r=cv.getBoundingClientRect();if(cv._ok&&(r.bottom<-50||r.top>innerHeight+50))return;cv._ok=1;
@@ -193,10 +193,10 @@ async function iniciar(){try{real=await BRPG.carregar(false)}catch(e){}
   const exemplo=(await BRPG.carregar(true)).pessoas,usaExemplo=real.pessoas.length<12;pessoas=usaExemplo?exemplo:real.pessoas;
   document.getElementById('aviso').textContent=usaExemplo?'* As prévias usam nomes de exemplo até os primeiros seguidores entrarem. Depois, quem aparece aqui é você.':'';
   document.getElementById('heroRod').textContent=usaExemplo?'o povo no deserto · prévia com nomes de exemplo':'o povo no deserto · com os nomes reais';
-  const e=real.estado;document.getElementById('mDia').textContent='DIA '+e.dia+' · '+(DIAS[e.dia]||'');
+  const e=real.estado;document.getElementById('mDia').textContent='EP. '+e.dia+' · '+(e.titulo||DIAS[e.dia]||'').toUpperCase();
   document.getElementById('nPessoas').textContent=real.pessoas.length;document.getElementById('nSeg').textContent=e.seguidores;document.getElementById('nMeta').textContent=e.meta;
   document.getElementById('mBar').style.width=(e.meta?Math.min(100,Math.round(e.seguidores/e.meta*100)):0)+'%';
-  const f=Math.max(0,e.meta-e.seguidores);document.getElementById('mTxt').textContent=f>0?'faltam '+f+' seguidores para o Dia '+(e.dia+1):'meta batida: o próximo dia vem aí!'}
+  const f=Math.max(0,e.meta-e.seguidores);document.getElementById('mTxt').textContent=f>0?'faltam '+f+' seguidores para o Ep. '+(e.dia+1):'meta batida: o próximo dia vem aí!'}
 montarCenas();requestAnimationFrame(heroFrame);iniciar();
 </script>
 </body>

@@ -42,6 +42,45 @@
     s = s || 1; R(c, x - 1, y - 10 * s, 3, 10 * s, '#6e4a24');
     R(c, x - 6 * s, y - 18 * s, 13 * s, 7 * s, cor || '#4f7a2a'); R(c, x - 4 * s, y - 21 * s, 9 * s, 3 * s, cor || '#4f7a2a'); R(c, x - 5 * s, y - 12 * s, 11 * s, 2 * s, '#3b5e1f');
   }
+  // mapas de pixels para as formas (episódio 2+)
+  const M = {
+    camelo: ['11..............', '111.............', '.11......111....', '.11.....11111...', '.11....1111111..', '.1111111111111..', '..111111111111..', '...1.1....1.1...', '...1.1....1.1...'],
+    raposa: ['1.1.........', '111.........', '1311.....22.', '.11111112222', '..11111112..', '..1.1..1.1..'],
+    tigre: ['11.........', '1311111111.', '.1212121211', '.1111111112', '.1.1...1.1.', '.1.1...1.1.'],
+    onca: ['11.........', '1311111111.', '.1212121211', '.1121212112', '.1.1...1.1.', '.1.1...1.1.'],
+    cao: ['11.........', '131........', '.1111111..1', '..11111111.', '..1.1..1.1.', '..1.1..1.1.'],
+    serpente: ['....11..', '...1311.', '...11...', '..11....', '.11.....', '11..1111', '1111..11'],
+    aguia: ['1............1', '11..........11', '.111......111.', '..111.22.111..', '...11122111...', '.....1221.....', '......11......'],
+    leao: ['.2222......', '222211111..', '2232111111.', '.22111111.1', '..1.1..1.1.', '..1.1..1.1.'],
+    ovelha: ['.22222222..', '2222222222.', '122222222..', '.2.2..2.2..'],
+    pomba: ['..11....', '.1311111', '1111111.', '...11...']
+  };
+  const CORES = {
+    camelo: { 1: '#c4965a' }, raposa: { 1: '#dc6e28', 2: '#f5f0e6', 3: '#141414' }, tigre: { 1: '#eb8c28', 2: '#1e140a', 3: '#141414' },
+    onca: { 1: '#e1b446', 2: '#3c2814', 3: '#141414' }, cao: { 1: '#cd8c46', 3: '#141414' }, serpente: { 1: '#3caa3c', 3: '#f0dc28' },
+    aguia: { 1: '#96643a', 2: '#ece6d7' }, leao: { 1: '#d9a650', 2: '#8a5a24', 3: '#141414' }, ovelha: { 1: '#3a3a3a', 2: '#f2efe6' }, pomba: { 1: '#f4f4f4', 3: '#141414' }
+  };
+  function mapa(c, m, x, y, cores) { for (let r = 0; r < m.length; r++) for (let k = 0; k < m[r].length; k++) { const cor = cores[m[r][k]]; if (cor) R(c, x + k, y + r, 1, 1, cor); } }
+  function chave(forma) {
+    const f = (forma || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (/camel/.test(f)) return 'camelo'; if (/raposa/.test(f)) return 'raposa'; if (/tigre/.test(f)) return 'tigre';
+    if (/onca|jaguar|leopardo/.test(f)) return 'onca'; if (/vira|cao|cachorro|dog/.test(f)) return 'cao'; if (/serpente|cobra/.test(f)) return 'serpente';
+    if (/aguia|falcao|gaviao/.test(f)) return 'aguia'; if (/leao|leoa/.test(f)) return 'leao'; if (/ovelha|cordeiro/.test(f)) return 'ovelha'; if (/pomba|passaro|ave/.test(f)) return 'pomba';
+    if (/^sol$/.test(f)) return 'sol'; if (/cosmo|galaxia|universo/.test(f)) return 'cosmos'; if (/estrela|luz/.test(f)) return 'estrela';
+    return 'gente';
+  }
+  // desenha a forma do personagem; pés/base em (x, y). Formas do céu usam a própria posição no céu.
+  function ser(c, q, t) {
+    const k = chave(q.p.forma), x = Math.round(q.x), y = Math.round(q.y);
+    if (k === 'sol') { c.globalAlpha = .3; R(c, x - 9, y - 9, 18, 18, '#ffb238'); c.globalAlpha = 1; R(c, x - 6, y - 6, 12, 12, '#ffd25a'); R(c, x - 4, y - 8, 8, 16, '#ffd25a'); R(c, x - 8, y - 4, 16, 8, '#ffd25a'); return; }
+    if (k === 'cosmos') { for (let i = 0; i < 60; i++) { const a = i * .3 + t * .5, r = i * .22; c.globalAlpha = 1 - i / 70; R(c, x + Math.cos(a) * r, y + Math.sin(a) * r * .55, 1, 1, ['#9678ff', '#ff8cc8', '#78c8ff', '#ffecb4'][i % 4]); } c.globalAlpha = 1; R(c, x - 1, y - 1, 2, 2, '#fffae6'); return; }
+    if (k === 'estrela') { luz(c, x, y, t, q.f, true); return; }
+    if (k === 'gente') { pessoa(c, x, y, q.p.id, t, true); return; }
+    const m = M[k], dx = Math.round(Math.sin(t * .8 + q.f) * 2);
+    mapa(c, m, x - (m[0].length >> 1) + dx, y - m.length, CORES[k]);
+  }
+  function noCeu(k) { return k === 'sol' || k === 'cosmos' || k === 'estrela'; }
+
   function tenda(c, x, y, cor) {
     for (let i = 0; i < 9; i++) R(c, x - i, y - 9 + i, i * 2 + 1, 1, cor || '#c9a46a'); R(c, x - 1, y - 4, 3, 4, '#3a2414');
   }
@@ -49,14 +88,14 @@
   // ---------- as cenas ----------
   // banda = onde as pessoas ficam [x0, x1, y0, y1]; placas = anúncios {x,y,w,h,txt}
   const CENAS = [
-    { id: 'criacao', nome: 'No Princípio', ref: 'Gênesis 1', status: 'agora', larg: 384, banda: [12, 372, 22, 122], tipo: 'luzes',
+    { id: 'criacao', nome: 'No Princípio', ref: 'Gênesis 1', status: 'feito', larg: 384, banda: [12, 372, 22, 122], tipo: 'luzes',
       voce: 'Você é uma luz com seu nome. No dia certo, vira o que escolheu.',
       texto: 'O vazio, as águas e a primeira luz. Cada seguidor acende uma luz no céu da criação.',
       placas: [],
       fundo(c, t, L) { R(c, 0, 0, L, ALT, '#04050b'); estrelas(c, L, 120, 7, t); ondas(c, L, 138, ['#101a33', '#0e1830', '#0c152b', '#0b1327', '#091023', '#080e1f', '#070c1b', '#060a17', '#050914'], t); } },
-    { id: 'eden', cam0: 130, nome: 'O Jardim do Éden', ref: 'Gênesis 2–3', status: 'breve', larg: 512, banda: [20, 492, 150, 184],
-      voce: 'Você caminha no jardim com seu nome e o que escolheu ser.',
-      texto: 'Rios, árvores e a árvore da vida no centro. O mundo novo cheio de vida.',
+    { id: 'eden', cam0: 130, nome: 'O Jardim do Éden', ref: 'Gênesis 1–3', status: 'agora', tipo: 'formas', larg: 512, banda: [20, 492, 150, 184],
+      voce: 'As luzes viraram o que escolheram: o sol, o cosmos, os animais, Adão e a serpente. Os 12 pioneiros têm a estrela dourada.',
+      texto: 'Episódio 2: a criação, o jardim, a serpente e a expulsão. Próxima meta: 200 seguidores para Caim e Abel.',
       placas: [{ x: 60, y: 118, w: 46, h: 16 }],
       fundo(c, t, L) {
         R(c, 0, 0, L, 110, '#7ec8e3'); R(c, 0, 90, L, 20, '#a8dcef');
@@ -149,20 +188,26 @@
       fetch(SB_URL + '/rest/v1/biblia_estado?select=*&id=eq.1', { headers: H }).then(r => r.json())
     ]);
     const formas = {}; (f || []).forEach(x => (formas[x.luz_id] = formas[x.luz_id] || []).push(x.forma));
-    const pessoas = (l || []).map(p => ({ ...p, trilha: formas[p.id] || ['Luz'], escolha: p.escolha && p.escolha !== 'Luz' ? p.escolha : (formas[p.id] || []).slice(-1)[0] || 'Luz' }));
+    const pessoas = (l || []).map(p => ({ ...p, pioneiro: p.episodio === 1, forma: (formas[p.id] || []).slice(-1)[0] || 'Luz', trilha: formas[p.id] || ['Luz'], escolha: p.escolha && p.escolha !== 'Luz' ? p.escolha : (formas[p.id] || []).slice(-1)[0] || 'Luz' }));
     return { pessoas, estado: (e && e[0]) || { dia: 1, seguidores: 0, meta: 50 }, demo: false };
   }
   function demoPessoas() {
     const N = ['Ana', 'Lucas', 'Maria', 'João', 'Bia', 'Pedro', 'Davi', 'Rute', 'Sara', 'Tiago', 'Lia', 'Caleb', 'Ester', 'Gabriel', 'Júlia', 'Miguel', 'Raquel', 'Samuel', 'Débora', 'Elias', 'Noemi', 'Paulo', 'Isabel', 'André', 'Talita', 'Rafael', 'Marta', 'Felipe', 'Joana', 'Daniel', 'Priscila', 'Mateus', 'Lídia', 'Josué', 'Rebeca', 'Arthur', 'Helena', 'Enzo', 'Laura', 'Benjamim', 'Alice', 'Heitor', 'Clara', 'Bernardo', 'Vitória', 'Diogo', 'Sofia', 'Levi', 'Eva', 'Natã'];
     const E = ['Estrela', 'Águia', 'Leão', 'Oliveira', 'Pomba', 'Baleia', 'Cedro', 'Ovelha', 'Lírio', 'Camelo', 'Golfinho', 'Girassol', 'Cervo', 'Videira', 'Coruja'];
-    const pessoas = N.map((n, i) => ({ id: i + 1, nome: n, escolha: n === 'Diogo' ? 'Águia' : E[hash(i + 3) % E.length], plataforma: i % 3 ? 'instagram' : 'youtube', episodio: 1, trilha: ['Luz'] }));
-    return { pessoas, estado: { dia: 1, seguidores: 50, meta: 50 }, demo: true };
+    const pessoas = N.map((n, i) => { const e = n === 'Diogo' ? 'Águia' : E[hash(i + 3) % E.length]; return { id: i + 1, pioneiro: i < 12, forma: e, nome: n, escolha: e, plataforma: i % 3 ? 'instagram' : 'youtube', episodio: 1, trilha: ['Luz', e] }; });
+    return { pessoas, estado: { dia: 2, titulo: 'O Jardim', seguidores: 54, meta: 200 }, demo: true };
   }
 
   // posições determinísticas de cada pessoa na cena
   function lugares(cena, pessoas) {
     const [x0, x1, y0, y1] = cena.banda, ci = CENAS.indexOf(cena) + 1;
-    return pessoas.map(p => { const h = hash(p.id * 31 + ci), h2 = hash(p.id * 77 + ci * 13); return { p, x: x0 + (h % Math.max(1, x1 - x0)), y: y0 + (h2 % Math.max(1, y1 - y0)), f: (h % 628) / 100 }; })
+    return pessoas.map(p => { const h = hash(p.id * 31 + ci), h2 = hash(p.id * 77 + ci * 13);
+        const q = { p, x: x0 + (h % Math.max(1, x1 - x0)), y: y0 + (h2 % Math.max(1, y1 - y0)), f: (h % 628) / 100 };
+        if (cena.tipo === 'formas') { const k = chave(p.forma);
+          if (noCeu(k)) { q.x = 40 + (h % (cena.larg - 80)); q.y = 16 + (h2 % 50); if (k === 'sol') { q.x = 380; q.y = 26; } }
+          else if (k === 'serpente') { q.x = 264; q.y = 98; }
+          else if (/adao/.test((p.forma || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())) { q.x = 236; q.y = 160; } }
+        return q; })
       .sort((a, b) => a.y - b.y);
   }
 
@@ -175,6 +220,7 @@
     for (const q of lug) {
       const forte = op.foco && q.p.id === op.foco;
       if (cena.tipo === 'luzes') luz(c, q.x, q.y, t, q.f, forte);
+      else if (cena.tipo === 'formas') ser(c, q, t);
       else { pessoa(c, q.x + Math.sin(t * .6 + q.f) * (op.anda === false ? 0 : 2), q.y, q.p.id, t, op.anda !== false); }
     }
     return lug;
@@ -186,5 +232,5 @@
     const b = .5 + .5 * Math.sin(t * 3); c.globalAlpha = .25 * b; R(c, pl.x, pl.y, pl.w, pl.h, '#ffb238'); c.globalAlpha = 1;
   }
 
-  G.BRPG = { CENAS, ALT, WA, hash, carregar, lugares, desenhar, pessoa, luz };
+  G.BRPG = { CENAS, ALT, WA, hash, carregar, lugares, desenhar, pessoa, luz, chave };
 })(window);
