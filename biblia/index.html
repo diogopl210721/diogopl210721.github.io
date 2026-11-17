@@ -3,293 +3,201 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Bíblia RPG — No Princípio</title>
-<meta name="description" content="A Bíblia que você vive. Comente seu nome e entre na história.">
+<title>Bíblia RPG — A Bíblia que você vive</title>
+<meta name="description" content="Série interativa em pixel art: comente seu nome e o que quer ser, apareça nos episódios e viva no mundo bíblico.">
 <meta name="theme-color" content="#07080f">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta property="og:title" content="Bíblia RPG — A Bíblia que você vive">
+<meta property="og:description" content="Comente seu nome e entre na história. Seu nome aparece nos vídeos e no mundo.">
+<meta property="og:image" content="img/bibliarpg-logo-1280.png">
+<link rel="icon" href="img/bibliarpg-perfil-1080.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#07080f;--bg2:#0e1020;--line:#262b4a;--ouro:#ffd27a;--ouro2:#ffb238;--luz:#ffe9a8;--txt:#ecebf5;--mut:#9a9ab8;--terra:#3a2414}
+:root{--bg:#07080f;--bg2:#0e1124;--line:#2b3160;--line2:#4a5294;--ouro:#ffd27a;--ouro2:#ffb238;--luz:#ffe9a8;--txt:#ecebf5;--mut:#a3a3c2;--terra:#3a2414}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--txt);font-family:'VT323',monospace;font-size:20px;line-height:1.25}
-button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:'VT323',monospace;font-size:22px;line-height:1.3}
+a{color:inherit}
 .px{font-family:'Press Start 2P',monospace;letter-spacing:.5px}
-.app{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
-header{padding:14px 14px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.logo{font-size:12px;color:var(--ouro)}.logo small{display:block;color:var(--mut);font-size:8px;margin-top:6px}
-.ig{font-size:18px;color:var(--mut);text-decoration:none;border:2px solid var(--line);padding:4px 8px}
-main{flex:1;padding:0 0 90px}
-.tela{display:none;padding:0 14px}.tela.on{display:block}
-#t-mundo{padding:0}
-/* mundo */
-.mundo{position:relative;background:#04050b;border-top:2px solid var(--line);border-bottom:2px solid var(--line);touch-action:pan-y;user-select:none;-webkit-user-select:none}
-.mundo canvas{display:block;width:100%;height:100%}
-.mundo:not(.cheio){height:min(72dvh,150vw)}
-.mundo.cheio{position:fixed;inset:0;z-index:50;border:0;touch-action:none}
-.ov{position:absolute;pointer-events:none;font-size:18px}
-.ov *{pointer-events:auto}
-.ov-hud{left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.tag{background:rgba(7,8,15,.82);border:2px solid var(--line);padding:6px 8px;line-height:1.2}
-.tag .px{font-size:9px;color:var(--ouro)}
-.barra{height:6px;background:#1c1f36;margin-top:6px;position:relative;width:150px}
-.barra i{position:absolute;left:0;top:0;bottom:0;background:var(--ouro2);width:0}
-.ib{width:42px;height:42px;background:rgba(7,8,15,.85);border:2px solid var(--line);color:var(--ouro);cursor:pointer;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center}
-.ov-zoom{right:10px;bottom:calc(14px + env(safe-area-inset-bottom));display:none;flex-direction:column;gap:8px}
-.cheio .ov-zoom{display:flex}
-.ov-dica{left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));text-align:center;color:var(--mut);display:none}
-.cheio .ov-dica{display:block}
-.ov-expandir{right:10px;bottom:10px}
-.cheio .ov-expandir{display:none}
-.fechar{display:none}.cheio .fechar{display:flex}
-.cheio .ov-meta{display:block}
-.ov-meta{display:none;color:var(--mut);font-size:16px;margin-top:4px}
-.achado{position:absolute;left:10px;right:60px;bottom:10px;background:rgba(7,8,15,.92);border:2px solid var(--ouro2);padding:8px 10px;display:none;font-size:18px;line-height:1.25}
-.cheio .achado{bottom:calc(60px + env(safe-area-inset-bottom));right:66px}
-.achado.on{display:block}
-.abaixo{padding:10px 14px 0}
-.busca{display:flex;gap:8px}
-.busca input,form input,form select{flex:1;width:100%;background:var(--bg2);border:2px solid var(--line);padding:8px 10px;outline:none}
-.busca input:focus,form input:focus{border-color:var(--ouro2)}
-.btn{background:var(--ouro2);color:var(--terra);border:0;padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 #a86a10}
-.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #a86a10}
-.btn.sec{background:transparent;color:var(--txt);border:2px solid var(--line);box-shadow:none}
-.reacoes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.reacao{background:var(--bg2);border:2px solid var(--line);padding:8px 4px;text-align:center;cursor:pointer;user-select:none}
-.reacao span{display:block;color:var(--mut);font-size:16px}
-.reacao.pop{border-color:var(--ouro2);color:var(--ouro)}
-.dica{color:var(--mut);font-size:18px;margin-top:10px}
-h2{font-size:11px;color:var(--ouro);margin:4px 0 10px;line-height:1.6}
-.filtros{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
-.chip{border:2px solid var(--line);padding:2px 8px;cursor:pointer;font-size:18px;background:transparent}
-.chip.on{border-color:var(--ouro2);color:var(--ouro)}
-.letras{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
-.letras button{width:28px;height:28px;border:2px solid var(--line);background:transparent;cursor:pointer;font-size:16px}
-.letras button.on{border-color:var(--ouro2);color:var(--ouro)}
-.lista{border-top:2px solid var(--line)}
-.item{display:flex;justify-content:space-between;gap:8px;padding:8px 2px;border-bottom:1px solid var(--line)}
-.item .n{color:var(--luz)}.item .e{color:var(--mut);font-size:17px}.item .num{color:var(--mut);font-size:16px;white-space:nowrap}
-.trilha{color:var(--ouro);font-size:17px}
-.tot{color:var(--mut);margin:6px 0}
-form .campo{margin-bottom:12px}form label{display:block;color:var(--mut);margin-bottom:4px}
-.erro{color:#ff8a7a;min-height:22px}
-.ok{background:var(--bg2);border:2px solid var(--ouro2);padding:14px;text-align:center;display:none}.ok.on{display:block}
-.ok .big{font-size:13px;color:var(--ouro);margin:8px 0;line-height:1.6}
-.carta-wrap{display:flex;justify-content:center}
-canvas#carta{width:100%;max-width:300px;height:auto;border:2px solid var(--line)}
-.acoes{display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap}
-nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:2px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:10}
-nav .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
-nav button{background:none;border:0;padding:12px 4px;cursor:pointer;color:var(--mut);font-size:18px}nav button.on{color:var(--ouro)}
-.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ouro2);color:var(--terra);padding:8px 14px;display:none;z-index:60}.toast.on{display:block}
-.vazio{color:var(--mut);text-align:center;padding:24px 8px}
-body.travado{overflow:hidden}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+nav.top{position:sticky;top:0;z-index:20;background:rgba(7,8,15,.92);border-bottom:3px solid var(--line)}
+nav.top .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;gap:10px}
+nav.top .marca{display:flex;align-items:center;gap:10px;text-decoration:none;font-size:11px;color:var(--ouro)}
+nav.top .marca img{width:32px;height:32px;image-rendering:pixelated}
+nav.top .links{display:flex;gap:16px;font-size:18px}
+nav.top .links a{text-decoration:none;color:var(--mut)}
+@media(max-width:640px){nav.top .links{display:none}nav.top .marca span{display:none}}
+.btn{display:inline-block;background:var(--ouro2);color:var(--terra);text-decoration:none;padding:13px 16px;font-family:'Press Start 2P';font-size:10px;box-shadow:inset -4px -4px 0 #a86a10,0 4px 0 #000;border:0;cursor:pointer}
+.btn:active{transform:translateY(2px)}
+.btn.ig{background:#c13584;color:#fff;box-shadow:inset -4px -4px 0 #7a1f53,0 4px 0 #000}
+.btn.yt{background:#d62a2a;color:#fff;box-shadow:inset -4px -4px 0 #861515,0 4px 0 #000}
+.hero{position:relative;overflow:hidden;border-bottom:4px solid #000}
+.hero canvas{display:block;width:100%;height:min(80vh,640px);image-rendering:pixelated}
+.hero .sobre{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:7vh 18px 0;text-align:center;pointer-events:none;background:linear-gradient(rgba(7,8,15,.85),rgba(7,8,15,.3) 55%,rgba(7,8,15,0))}
+.hero h1{font-size:clamp(26px,6vw,56px);color:var(--ouro);text-shadow:4px 4px 0 #000;line-height:1.2}
+.hero .tag{font-size:clamp(22px,3.4vw,30px);margin:16px 0 6px;text-shadow:2px 2px 0 #000}
+.hero .sub{color:var(--luz);font-size:clamp(19px,2.8vw,24px);max-width:680px;text-shadow:2px 2px 0 #000}
+.hero .ctas{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:22px;pointer-events:auto}
+.hero .rodape{position:absolute;left:0;right:0;bottom:10px;text-align:center;color:var(--mut);font-size:18px;text-shadow:2px 2px 0 #000;pointer-events:none}
+section{padding:70px 0}
+section.alt{background:var(--bg2);border-top:4px solid #000;border-bottom:4px solid #000}
+h2{font-size:clamp(14px,2.4vw,20px);color:var(--ouro);line-height:1.6;margin-bottom:14px}
+.lead{color:var(--mut);max-width:760px;margin-bottom:30px}
+.passos{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.passo{background:#000;border:3px solid var(--line2);padding:18px;box-shadow:0 6px 0 #000}
+.passo .n{display:inline-block;background:var(--ouro2);color:var(--terra);font-size:12px;padding:8px 10px;margin-bottom:12px}
+.passo b{display:block;font-family:'Press Start 2P';font-size:10px;line-height:1.6;margin-bottom:8px;font-weight:normal}
+.passo p{color:var(--mut)}
+.coment{display:inline-block;background:#10132a;border:2px solid var(--line);padding:4px 10px;margin-top:8px;color:var(--luz)}
+.meta{display:grid;gap:18px;background:#000;border:3px solid var(--line2);padding:22px;box-shadow:0 6px 0 #000}
+.meta .lin{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.meta .dia{font-size:12px;color:var(--ouro)}
+.bar{height:18px;background:#1c1f36;border:3px solid #000;position:relative}.bar i{position:absolute;inset:0 auto 0 0;background:var(--ouro2);width:0;transition:width 1s steps(16)}
+.numeros{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}
+.numeros b{display:block;font-family:'Press Start 2P';font-size:clamp(16px,3vw,24px);color:var(--luz);font-weight:normal;margin-bottom:6px}
+.numeros span{color:var(--mut);font-size:18px}
+.cenas{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.cena{background:#000;border:3px solid var(--line2);box-shadow:0 6px 0 #000;display:flex;flex-direction:column}
+.cena canvas{display:block;width:100%;image-rendering:pixelated;border-bottom:3px solid var(--line2)}
+.cena .c{padding:14px 16px 16px}
+.cena .st{font-family:'Press Start 2P';font-size:8px;color:var(--terra);background:var(--ouro2);padding:4px 6px;display:inline-block;margin-bottom:10px}
+.cena .st.breve{background:#1c2048;color:var(--mut)}
+.cena h3{font-family:'Press Start 2P';font-size:11px;color:var(--ouro);line-height:1.6;font-weight:normal}
+.cena .ref{color:var(--mut);font-size:18px;margin-bottom:8px}
+.cena .voce{color:var(--luz);margin-top:8px}
+.destaque{grid-column:1/-1}
+.trilha{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.trilha span{background:#000;border:2px solid var(--line2);padding:6px 10px}
+.trilha .seta{border:0;background:none;color:var(--ouro);padding:0}
+.patro{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:24px 0}
+.patro div{background:#000;border:3px dashed var(--ouro2);padding:16px}
+.patro b{display:block;font-family:'Press Start 2P';font-size:9px;color:var(--ouro);line-height:1.6;margin-bottom:8px;font-weight:normal}
+.patro p{color:var(--mut)}
+.final{text-align:center}
+.final .ctas{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+footer{border-top:4px solid #000;background:#000;padding:26px 0 calc(26px + env(safe-area-inset-bottom));color:var(--mut);font-size:18px;text-align:center}
+footer a{color:var(--ouro)}
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="logo px">BÍBLIA RPG<small>T1 · NO PRINCÍPIO</small></div>
-    <a class="ig" href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">@bibliarpg</a>
-  </header>
-  <main>
-    <section class="tela on" id="t-mundo">
-      <div class="mundo" id="mundo">
-        <canvas id="ceu"></canvas>
-        <div class="ov ov-hud">
-          <div class="tag"><div class="px" id="dia">DIA 1 · A LUZ</div><div><b id="nLuzes" style="font-weight:normal;color:var(--luz)">0</b> luzes</div><div class="barra"><i id="barra"></i></div><div class="ov-meta" id="meta2"></div></div>
-          <button class="ib fechar" id="fechar" aria-label="Fechar">✕</button>
-        </div>
-        <div class="ov ov-expandir"><button class="ib" id="expandir" aria-label="Expandir o mundo">⛶</button></div>
-        <div class="ov ov-zoom"><button class="ib" id="zmais" aria-label="Aproximar">+</button><button class="ib" id="zmenos" aria-label="Afastar">−</button><button class="ib" id="zeu" aria-label="Ir até minha luz" style="font-size:16px">◎</button></div>
-        <div class="ov ov-dica" id="dicaArraste">arraste para explorar · pinça para aproximar</div>
-        <div class="achado" id="achado"></div>
-      </div>
-      <div class="abaixo">
-        <div class="dica" id="meta" style="margin:0 0 10px">carregando…</div>
-        <div class="busca"><input id="qMundo" placeholder="ache sua luz pelo nome…" autocomplete="off"><button class="btn px" style="font-size:10px" id="bMundo">ACHAR</button></div>
-        <p class="dica">Toque numa luz para ver de quem é. Para entrar: <span style="color:var(--ouro)">siga @bibliarpg e comente seu nome</span> no último episódio. Seu nome aparece aqui e no próximo vídeo.</p>
-      </div>
-    </section>
+<nav class="top"><div class="wrap">
+  <a class="marca px" href="#"><img src="img/bibliarpg-perfil-1080.png" alt=""><span>BÍBLIA RPG</span></a>
+  <div class="links"><a href="#como">Como funciona</a><a href="#cenas">Cenas</a><a href="#anuncie">Anuncie</a></div>
+  <a class="btn" href="mundo/">ENTRAR NO MUNDO</a>
+</div></nav>
 
-    <section class="tela" id="t-livro">
-      <h2 class="px">O LIVRO DA VIDA</h2>
-      <p class="dica" style="margin-top:0">Todo mundo que entrou na história, e o que cada um foi em cada episódio.</p>
-      <div class="busca" style="margin-top:8px"><input id="qLivro" placeholder="digite seu nome…" autocomplete="off"></div>
-      <div class="filtros" id="fPlat">
-        <button class="chip on" data-p="">Todas</button><button class="chip" data-p="instagram">Instagram</button><button class="chip" data-p="youtube">YouTube</button>
-      </div>
-      <div class="letras" id="letras"></div>
-      <div class="tot" id="totLivro"></div>
-      <div class="lista" id="lista"></div>
-    </section>
+<header class="hero">
+  <canvas id="heroCv"></canvas>
+  <div class="sobre">
+    <h1 class="px">BÍBLIA RPG</h1>
+    <p class="tag">A Bíblia que você vive.</p>
+    <p class="sub">Comente seu nome e entre na história. Você aparece nos episódios com seu nome sobre a cabeça e vive no mundo bíblico.</p>
+    <div class="ctas"><a class="btn" href="mundo/">ENTRAR NO MUNDO</a><a class="btn ig" href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">INSTAGRAM</a><a class="btn yt" href="https://youtube.com/@bibliarpg" target="_blank" rel="noopener">YOUTUBE</a></div>
+  </div>
+  <div class="rodape" id="heroRod">o povo no deserto · prévia</div>
+</header>
 
-    <section class="tela" id="t-carta">
-      <h2 class="px">SUA CARTA</h2>
-      <div class="busca" style="margin-bottom:10px"><input id="qCarta" placeholder="seu nome como está no Livro…" autocomplete="off"><button class="btn px" style="font-size:10px" id="bCarta">GERAR</button></div>
-      <div class="erro" id="cErro"></div>
-      <div class="carta-wrap"><canvas id="carta" width="270" height="480"></canvas></div>
-      <div class="acoes"><button class="btn px" style="font-size:10px" id="baixar">BAIXAR PARA O STORY</button></div>
-      <p class="dica" style="text-align:center">Poste no story marcando @bibliarpg</p>
-    </section>
-  </main>
-</div>
-<nav><div class="in"><button class="on" data-ir="mundo">Mundo</button><button data-ir="livro">Livro</button><button data-ir="carta">Carta</button></div></nav>
-<div class="toast" id="toast"></div>
+<section id="como"><div class="wrap">
+  <h2 class="px">NÃO É SÓ UM VÍDEO. É UM JOGO.</h2>
+  <p class="lead">O Bíblia RPG conta a Bíblia desde Gênesis em episódios curtos de pixel art. A diferença: quem segue vira personagem. Seu nome entra na história, aparece nos vídeos e fica vivo no mundo, cena após cena.</p>
+  <div class="passos">
+    <div class="passo"><span class="n px">1</span><b>SIGA O PERFIL</b><p>Siga @bibliarpg no Instagram ou se inscreva no YouTube.</p></div>
+    <div class="passo"><span class="n px">2</span><b>COMENTE NOME + O QUE QUER SER</b><p>No último episódio, diga quem você é na criação.</p><span class="coment">Diogo, águia 🦅</span></div>
+    <div class="passo"><span class="n px">3</span><b>APAREÇA NO PRÓXIMO EPISÓDIO</b><p>Seu nome aparece na cena, sobre a cabeça do seu personagem.</p></div>
+    <div class="passo"><span class="n px">4</span><b>VIVA NO MUNDO</b><p>Ache seu nome no mundo, veja sua trilha pelas cenas e baixe sua Carta para o story.</p></div>
+  </div>
+</div></section>
 
+<section class="alt" id="metas"><div class="wrap">
+  <h2 class="px">AS METAS LIBERAM A HISTÓRIA</h2>
+  <p class="lead">Cada meta de seguidores (Instagram + YouTube) libera um novo dia, uma nova cena e um novo episódio. Quanto mais gente entra, mais rápido a Bíblia avança.</p>
+  <div class="meta">
+    <div class="lin"><span class="dia px" id="mDia">DIA 1 · A LUZ</span><span id="mTxt">carregando…</span></div>
+    <div class="bar"><i id="mBar"></i></div>
+    <div class="numeros"><div><b id="nPessoas">0</b><span>no mundo</span></div><div><b id="nSeg">0</b><span>seguidores</span></div><div><b id="nMeta">50</b><span>próxima meta</span></div></div>
+  </div>
+</div></section>
+
+<section id="cenas"><div class="wrap">
+  <h2 class="px">AS CENAS QUE VÊM POR AÍ</h2>
+  <p class="lead">Você atravessa a Bíblia com todo mundo. Em cada cena, os seguidores aparecem juntos, cada um com o nome sobre a cabeça, no vídeo e no mundo.</p>
+  <div class="cenas" id="listaCenas"></div>
+  <p class="lead" id="aviso" style="margin-top:18px;font-size:18px"></p>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2 class="px">SUA HISTÓRIA ATRAVESSA A BÍBLIA</h2>
+  <p class="lead">Seu personagem guarda tudo o que você foi em cada episódio. No futuro, você vai poder andar com ele pelas cenas, ter sua tenda, sua casa e seu ofício.</p>
+  <div class="trilha"><span>Luz</span><span class="seta px">▶</span><span>Águia</span><span class="seta px">▶</span><span>Filho de Adão</span><span class="seta px">▶</span><span>Passageiro da Arca</span><span class="seta px">▶</span><span>Construtor em Babel</span><span class="seta px">▶</span><span>Peregrino no deserto</span></div>
+</div></section>
+
+<section id="anuncie"><div class="wrap">
+  <h2 class="px">SUA MARCA DENTRO DA HISTÓRIA</h2>
+  <p class="lead">Cada cena tem placas de patrocinador integradas ao cenário. Sua marca aparece no mundo e nos episódios assistidos por toda a comunidade.</p>
+  <div class="patro">
+    <div><b>NA ARCA DE NOÉ</b><p>Uma placa no casco da Arca, vista por todo mundo que embarca.</p></div>
+    <div><b>NA TORRE DE BABEL</b><p>Na caixa de tijolos dos construtores.</p></div>
+    <div><b>NO MONTE MORIÁ</b><p>Na lenha que Isaque carrega monte acima.</p></div>
+    <div><b>NO DESERTO</b><p>Nas tendas do povo, a caminho da terra prometida.</p></div>
+  </div>
+  <a class="btn" id="wa" target="_blank" rel="noopener">QUERO ANUNCIAR</a>
+</div></section>
+
+<section class="alt final"><div class="wrap">
+  <h2 class="px">A PRÓXIMA LUZ PODE SER VOCÊ</h2>
+  <p class="lead" style="margin:0 auto">Siga, comente seu nome e o que quer ser, e entre na história.</p>
+  <div class="ctas"><a class="btn" href="mundo/">ENTRAR NO MUNDO</a><a class="btn ig" href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">@BIBLIARPG</a><a class="btn yt" href="https://youtube.com/@bibliarpg" target="_blank" rel="noopener">YOUTUBE</a></div>
+</div></section>
+
+<footer><div class="wrap">Bíblia RPG · uma criação <a href="https://www.ddsinovacao.com.br" target="_blank" rel="noopener">DDS Inovação</a></div></footer>
+
+<script src="cenas.js"></script>
 <script>
-const SB_URL='https://arffptuclrrzuzdrcmuc.supabase.co',SB_KEY='sb_publishable_XCY3BoeUR_jzDSRrtlibyg_Os7lIrVi';
-const H={apikey:SB_KEY,'Content-Type':'application/json'};
-const $=s=>document.querySelector(s);
-const PLAT={instagram:'IG',tiktok:'TikTok',youtube:'YT',site:'site'};
-const DIAS=['','A LUZ','AS ÁGUAS','A TERRA','AS ESTRELAS','PEIXES E AVES','OS ANIMAIS','O DESCANSO'];
-// o que cada pessoa vira ao comentar em cada dia (fixo = preenchido sozinho)
-const FORMA_DIA={1:{fixo:'Luz'},2:{p:'oliveira, lírio, cedro…',l:'Que árvore ou flor você quer ser?'},3:{fixo:'Estrela'},4:{p:'águia, pomba, baleia…',l:'Que ave ou peixe você quer ser?'},5:{p:'camelo, leão, ovelha…',l:'Que animal você quer ser?'},6:{fixo:'Criação'},7:{fixo:'Criação'}};
-let luzes=[],formas={},estado={temporada:1,dia:1,titulo:'O vazio e a luz',seguidores:0,meta:50},foco=null,meuId=null;
-try{meuId=Number(localStorage.getItem('biblia_meu_id'))||null}catch(e){}
-
-async function api(path,opt={}){const r=await fetch(SB_URL+'/rest/v1/'+path,{...opt,headers:{...H,...(opt.headers||{})}});
-  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error((j&&(j.message||j.hint))||('erro '+r.status));return j}
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._);toast._=setTimeout(()=>t.classList.remove('on'),2200)}
-const norm=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+const {CENAS,ALT,WA,desenhar}=BRPG;
+document.getElementById('wa').href=WA;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const num=id=>String(id).padStart(4,'0');
-const trilha=id=>(formas[id]||[]).map(f=>f.forma);
-const formaAtual=id=>{const t=trilha(id);return t.length?t[t.length-1]:'Luz'};
+const DIAS=['','A LUZ','AS ÁGUAS','A TERRA','AS ESTRELAS','PEIXES E AVES','OS ANIMAIS','O DESCANSO'];
+let real={pessoas:[],estado:{dia:1,seguidores:0,meta:50}},pessoas=[];
 
-/* navegação */
-function ir(t,eu){document.querySelectorAll('.tela').forEach(s=>s.classList.toggle('on',s.id==='t-'+t));
-  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.ir===t));
-  if(t==='carta'&&!cartaFeita)autoCarta();
-  if(t==='mundo'){requestAnimationFrame(()=>{redim();if(eu&&meuId){foco=luzes.find(l=>l.id===meuId)||null;if(foco)mostrarAchado(foco)}})}
-  window.scrollTo(0,0)}
-document.addEventListener('click',e=>{const a=e.target.closest('[data-ir]');if(a){e.preventDefault();ir(a.dataset.ir,a.dataset.eu)}});
+function rotulos(c,lug,cam,s,max,tipo,W){const cx=cam+W/2/s,ocup=[];c.setTransform(1,0,0,1,0,0);
+  const fs=Math.max(14,Math.round(s*5));
+  lug.filter(q=>q.x>cam&&q.x<cam+W/s).sort((a,b)=>Math.abs(a.x-cx)-Math.abs(b.x-cx)).slice(0,max).forEach(q=>{
+    const txt=q.p.nome+(tipo==='luzes'?' · '+q.p.escolha:'');c.font=fs+'px VT323';
+    const w=Math.ceil(c.measureText(txt).width)+8,h=fs;
+    const x=Math.round((q.x-cam)*s-w/2),y=Math.round(q.y*s-(tipo==='luzes'?5:14)*s-h);
+    if(ocup.some(r=>x<r[0]+r[2]&&x+w>r[0]&&y<r[1]+r[3]&&y+h>r[1]))return;ocup.push([x,y,w,h]);
+    c.fillStyle='rgba(4,5,11,.8)';c.fillRect(x,y,w,h);c.fillStyle='#ffe9a8';c.textAlign='left';c.fillText(txt,x+4,y+h-Math.round(fs*.22))})}
+function placas(c,k,cam,s){c.setTransform(1,0,0,1,0,0);(k.placas||[]).forEach(pl=>{const x=(pl.x-cam)*s,y=pl.y*s;c.fillStyle='#3a2414';c.font=Math.round(Math.min(pl.h*.8,10)*s)+'px VT323';c.textAlign='center';c.fillText('SEU ANÚNCIO',x+pl.w*s/2,y+pl.h*s*.75)})}
 
-/* dados */
-async function carregar(){try{
-  const [l,e,r,f]=await Promise.all([api('biblia_luzes?select=id,nome,plataforma,episodio&order=id.asc&limit=20000'),api('biblia_estado?select=*&id=eq.1'),Promise.resolve([]),api('biblia_formas?select=luz_id,episodio,forma&order=episodio.asc&limit=50000')]);
-  luzes=l||[];if(e&&e[0])estado=e[0];formas={};(f||[]).forEach(x=>{(formas[x.luz_id]=formas[x.luz_id]||[]).push(x)});
-  
-  posicionar();hud();livro();
-}catch(err){$('#meta').textContent='não foi possível carregar agora — tente de novo';console.error(err)}}
-function hud(){$('#dia').textContent='DIA '+estado.dia+' · '+(DIAS[estado.dia]||estado.titulo.toUpperCase());
-  $('#nLuzes').textContent=luzes.length.toLocaleString('pt-BR');
-  const s=estado.seguidores,m=estado.meta;$('#barra').style.width=(m?Math.min(100,Math.round(s/m*100)):0)+'%';
-  const falta=Math.max(0,m-s);const txt=falta>0?('faltam '+falta.toLocaleString('pt-BR')+' seguidores para o Dia '+(estado.dia+1)):'meta batida — o próximo dia vem aí';
-  $('#meta').textContent=txt;$('#meta2').textContent=txt}
+/* hero: o povo no deserto, câmera passeando */
+const hero=document.getElementById('heroCv'),hc=hero.getContext('2d');
+function heroFrame(ms){const t=ms/1000,k=CENAS.find(x=>x.id==='deserto'),d=Math.min(2,devicePixelRatio||1);
+  const W=Math.round(hero.clientWidth*d),H=Math.round(hero.clientHeight*d);if(hero.width!==W)hero.width=W;if(hero.height!==H)hero.height=H;
+  const s=H/ALT,vis=W/s,meio=Math.max(0,(k.larg-vis)/2),cam=meio+Math.sin(t*.07)*meio;
+  hc.imageSmoothingEnabled=false;hc.setTransform(s,0,0,s,-cam*s,0);
+  const lug=desenhar(hc,k,t,pessoas,{});placas(hc,k,cam,s);rotulos(hc,lug,cam,s,16,k.tipo,W);requestAnimationFrame(heroFrame)}
 
-/* ===== MUNDO: câmera, arrastar, pinça ===== */
-const WW=600,WH=900,ABISMO=720;           // tamanho do mundo em "pixels do mundo"
-const REGIOES=[{n:'O VAZIO',x:300,y:120},{n:'A LUZ',x:300,y:420},{n:'O ABISMO',x:300,y:790}];
-const mundo=$('#mundo'),cv=$('#ceu'),cx=cv.getContext('2d');
-let dpr=1,cw=1,ch=1,cam={x:0,y:0,z:1},cheio=false,pontos=[];
-function hash(n){let x=(n*2654435761)>>>0;x^=x>>>16;x=Math.imul(x,2246822507)>>>0;x^=x>>>13;return x>>>0}
-function posicionar(){pontos=luzes.map(l=>{const h=hash(l.id),h2=hash(l.id+99991);return{l,x:14+(h%(WW-28)),y:30+(h2%(ABISMO-70)),f:(h%628)/100,v:.6+(h2%100)/100}})}
-function zFit(){return Math.min(cw/WW,ch/WH)}
-function limitar(){const vw=cw/cam.z,vh=ch/cam.z;
-  cam.x=vw>=WW?(WW-vw)/2:Math.max(0,Math.min(WW-vw,cam.x));cam.y=vh>=WH?(WH-vh)/2:Math.max(0,Math.min(WH-vh,cam.y))}
-function centrar(wx,wy){cam.x=wx-cw/cam.z/2;cam.y=wy-ch/cam.z/2;limitar()}
-function redim(){dpr=Math.min(window.devicePixelRatio||1,2);cw=mundo.clientWidth;ch=mundo.clientHeight;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);
-  if(!cheio){cam.z=zFit();cam.x=0;cam.y=0;limitar()}else limitar()}
-window.addEventListener('resize',redim);
-function abrir(){cheio=true;mundo.classList.add('cheio');document.body.classList.add('travado');redim();cam.z=Math.max(zFit()*2.4,1.2);
-  const alvo=pontos.find(p=>p.l.id===(foco?foco.id:meuId));alvo?centrar(alvo.x,alvo.y):centrar(WW/2,ABISMO/2);
-  try{history.pushState({mundo:1},'')}catch(e){}}
-function fechar(){cheio=false;mundo.classList.remove('cheio');document.body.classList.remove('travado');redim()}
-$('#expandir').onclick=abrir;$('#fechar').onclick=()=>{try{if(history.state&&history.state.mundo){history.back();return}}catch(e){}fechar()};
-window.addEventListener('popstate',()=>{if(cheio)fechar()});
-function zoomEm(f,sx,sy){const z0=cam.z,z1=Math.max(zFit(),Math.min(8,z0*f));const wx=cam.x+sx/z0,wy=cam.y+sy/z0;cam.z=z1;cam.x=wx-sx/z1;cam.y=wy-sy/z1;limitar()}
-$('#zmais').onclick=()=>zoomEm(1.5,cw/2,ch/2);$('#zmenos').onclick=()=>zoomEm(1/1.5,cw/2,ch/2);
-$('#zeu').onclick=()=>{const p=pontos.find(p=>p.l.id===meuId);if(p){foco=p.l;mostrarAchado(p.l);cam.z=Math.max(cam.z,zFit()*3);centrar(p.x,p.y)}else toast('Siga @bibliarpg e comente seu nome para ganhar sua luz')};
-const pts=new Map();let gesto=null,moveu=0;
-cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moveu=0;inicioGesto()});
-cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const a=pts.get(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(!cheio)return;const r=cv.getBoundingClientRect();
-  if(pts.size===1){const dx=e.clientX-a.x,dy=e.clientY-a.y;moveu+=Math.abs(dx)+Math.abs(dy);cam.x-=dx/cam.z;cam.y-=dy/cam.z;limitar()}
-  else if(pts.size===2&&gesto){const [p1,p2]=[...pts.values()];const d=Math.hypot(p1.x-p2.x,p1.y-p2.y);const mx=(p1.x+p2.x)/2-r.left,my=(p1.y+p2.y)/2-r.top;
-    zoomEm(d/gesto.d,mx,my);cam.x-= (mx-gesto.mx)/cam.z;cam.y-=(my-gesto.my)/cam.z;limitar();gesto={d,mx,my};moveu+=99}});
-function inicioGesto(){if(pts.size===2){const [p1,p2]=[...pts.values()];const r=cv.getBoundingClientRect();gesto={d:Math.hypot(p1.x-p2.x,p1.y-p2.y),mx:(p1.x+p2.x)/2-r.left,my:(p1.y+p2.y)/2-r.top}}}
-function fimPtr(e){if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);gesto=null;inicioGesto();
-  if(pts.size===0&&moveu<10){const r=cv.getBoundingClientRect();tocar(e.clientX-r.left,e.clientY-r.top)}}
-cv.addEventListener('pointerup',fimPtr);cv.addEventListener('pointercancel',e=>{pts.delete(e.pointerId);gesto=null});
-cv.addEventListener('wheel',e=>{if(!cheio)return;e.preventDefault();const r=cv.getBoundingClientRect();zoomEm(e.deltaY<0?1.15:1/1.15,e.clientX-r.left,e.clientY-r.top)},{passive:false});
-function tocar(sx,sy){const wx=cam.x+sx/cam.z,wy=cam.y+sy/cam.z;let best=null,d=1e9;for(const p of pontos){const dd=(p.x-wx)**2+(p.y-wy)**2;if(dd<d){d=dd;best=p}}
-  const raio=22/cam.z;if(best&&d<raio*raio){foco=best.l;mostrarAchado(best.l)}else{foco=null;$('#achado').classList.remove('on')}}
+/* cards das cenas */
+function montarCenas(){const box=document.getElementById('listaCenas');
+  box.innerHTML=CENAS.map((k,i)=>'<article class="cena'+(k.id==='deserto'?' destaque':'')+'"><canvas data-i="'+i+'" width="'+(k.id==='deserto'?960:480)+'" height="288"></canvas><div class="c"><span class="st '+(k.status==='agora'?'':'breve')+'">'+(k.status==='agora'?'AGORA':'EM BREVE')+'</span><h3>'+esc(k.nome.toUpperCase())+'</h3><div class="ref">'+esc(k.ref)+'</div><p>'+esc(k.texto)+'</p><p class="voce">'+esc(k.voce)+'</p></div></article>').join('');
+  requestAnimationFrame(cards)}
+function cards(ms){const t=ms/1000;document.querySelectorAll('#listaCenas canvas').forEach(cv=>{
+    const r=cv.getBoundingClientRect();if(cv._ok&&(r.bottom<-50||r.top>innerHeight+50))return;cv._ok=1;
+    const k=CENAS[+cv.dataset.i],c=cv.getContext('2d'),s=cv.height/ALT,vis=cv.width/s;
+    const cam=Math.max(0,Math.min(k.larg-vis,(k.cam0||0)+128-vis/2));
+    c.imageSmoothingEnabled=false;c.setTransform(s,0,0,s,-cam*s,0);
+    const lug=desenhar(c,k,t,pessoas,{});placas(c,k,cam,s);rotulos(c,lug,cam,s,k.id==='deserto'?14:7,k.tipo,cv.width)});
+  requestAnimationFrame(cards)}
 
-function desenhar(t){const s=t/1000,z=cam.z;
-  cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle='#02030a';cx.fillRect(0,0,cw,ch);
-  cx.setTransform(dpr*z,0,0,dpr*z,-cam.x*dpr*z,-cam.y*dpr*z);
-  cx.fillStyle='#04050b';cx.fillRect(0,0,WW,WH);
-  // névoa do vazio (textura para sentir o movimento ao arrastar)
-  for(let i=0;i<260;i++){const a=hash(i*7+3),b=hash(i*13+5);cx.fillStyle=i%3?'#0b0e1c':'#10142a';cx.fillRect(a%WW,b%ABISMO,2,2)}
-  // abismo: águas
-  const cores=['#101a33','#0e1830','#0c152b','#0b1327','#091023','#080e1f','#070c1b','#060a17','#050914','#040711','#03060e','#03050c','#02040a','#020309','#020308','#010207'];
-  for(let i=0;i<16;i++){const y=ABISMO+6+i*11;cx.fillStyle=cores[i];for(let x=0;x<WW;x+=6){const o=Math.round(Math.sin(s*.7+x*.04+i*.8)*2);cx.fillRect(x,y+o,4,2)}}
-  // bordas do mundo
-  cx.fillStyle='#262b4a';cx.fillRect(0,0,WW,2);cx.fillRect(0,WH-2,WW,2);cx.fillRect(0,0,2,WH);cx.fillRect(WW-2,0,2,WH);
-  // luzes
-  for(const p of pontos){const b=.55+.45*Math.sin(s*p.v*2+p.f),meu=p.l.id===meuId,fo=foco&&p.l.id===foco.id,sz=(meu||fo)?4:3;
-    cx.globalAlpha=(meu||fo)?1:(.35+.65*b);cx.fillStyle=(meu||fo)?'#ffd27a':'#ffe9a8';cx.fillRect(Math.round(p.x),Math.round(p.y),sz,sz);
-    if(meu||fo){cx.globalAlpha=.22+.18*b;cx.fillRect(p.x-3,p.y-3,sz+6,sz+6);cx.globalAlpha=.08;cx.fillRect(p.x-8,p.y-8,sz+16,sz+16)}}
-  cx.globalAlpha=1;
-  // textos em escala de tela
-  cx.setTransform(dpr,0,0,dpr,0,0);
-  const S=(wx,wy)=>[(wx-cam.x)*z,(wy-cam.y)*z];
-  cx.textAlign='center';cx.font='9px "Press Start 2P"';
-  for(const r of REGIOES){const [x,y]=S(r.x,r.y);if(x<-100||x>cw+100||y<-20||y>ch+20)continue;cx.fillStyle='rgba(154,154,184,.45)';cx.fillText(r.n,x,y)}
-  if(!pontos.length){const [x,y]=S(WW/2,ABISMO/2+40);cx.fillStyle='#9a9ab8';cx.font='18px VT323';cx.fillText('o vazio espera a primeira luz',x,y)}
-  // nomes: com zoom alto mostra todos os visíveis; sempre mostra você e o foco
-  const mostrarTodos=cheio&&z>=zFit()*3.2;
-  for(const p of pontos){const meu=p.l.id===meuId,fo=foco&&p.l.id===foco.id;if(!(meu||fo||mostrarTodos))continue;
-    const [x,y]=S(p.x,p.y);if(x<-60||x>cw+60||y<-20||y>ch+20)continue;
-    rotulo(x+2*z,y,(meu?'você · ':'')+p.l.nome+' · '+formaAtual(p.l.id),meu||fo)}
-  requestAnimationFrame(desenhar)}
-function rotulo(x,y,txt,forte){cx.font='15px VT323';const w=Math.ceil(cx.measureText(txt).width)+8;let lx=Math.round(x-w/2),ly=Math.round(y-20);
-  lx=Math.max(2,Math.min(cw-w-2,lx));if(ly<2)ly=y+10;cx.fillStyle=forte?'#ffb238':'rgba(7,8,15,.8)';cx.fillRect(lx,ly,w,14);
-  cx.fillStyle=forte?'#3a2414':'#ffe9a8';cx.textAlign='left';cx.fillText(txt,lx+4,ly+11);cx.textAlign='center'}
-function mostrarAchado(l){const a=$('#achado');a.classList.add('on');const t=trilha(l.id);
-  a.innerHTML='<span class="px" style="font-size:8px;color:var(--mut)">Nº '+num(l.id)+' · '+(PLAT[l.plataforma]||'')+'</span><br><span style="font-size:24px;color:var(--luz)">'+esc(l.nome)+'</span><br><span class="trilha">'+(t.length?t.map(esc).join(' → '):'Luz')+'</span>'}
-function acharMundo(){const q=norm($('#qMundo').value);if(!q)return;
-  const l=luzes.find(x=>norm(x.nome)===q)||luzes.find(x=>norm(x.nome).startsWith(q))||luzes.find(x=>norm(x.nome).includes(q));
-  if(l){foco=l;mostrarAchado(l);const p=pontos.find(p=>p.l.id===l.id);if(cheio&&p){cam.z=Math.max(cam.z,zFit()*3);centrar(p.x,p.y)}}
-  else{toast('Ainda não está no mundo. Siga e comente seu nome no último episódio.')}}
-$('#bMundo').onclick=acharMundo;$('#qMundo').addEventListener('keydown',e=>{if(e.key==='Enter')acharMundo()});
-
-/* livro */
-let fP='',fL='';$('#letras').innerHTML='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(c=>'<button data-l="'+c+'">'+c+'</button>').join('');
-$('#letras').onclick=e=>{const b=e.target.closest('button');if(!b)return;fL=fL===b.dataset.l?'':b.dataset.l;document.querySelectorAll('#letras button').forEach(x=>x.classList.toggle('on',x.dataset.l===fL));livro()};
-$('#fPlat').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;fP=b.dataset.p;document.querySelectorAll('#fPlat .chip').forEach(x=>x.classList.toggle('on',x===b));livro()};
-$('#qLivro').addEventListener('input',livro);
-function livro(){const q=norm($('#qLivro').value);
-  const r=luzes.filter(l=>(!fP||l.plataforma===fP)&&(!fL||norm(l.nome).startsWith(fL.toLowerCase()))&&(!q||norm(l.nome).includes(q))).sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome)));
-  $('#totLivro').textContent=r.length.toLocaleString('pt-BR')+' '+(r.length===1?'nome':'nomes');
-  $('#lista').innerHTML=r.length?r.slice(0,500).map(l=>{const t=trilha(l.id);return '<div class="item"><div><div class="n">'+esc(l.nome)+(l.id===meuId?' <span style="color:var(--ouro2)">· você</span>':'')+'</div><div class="trilha">'+(t.length?t.map(esc).join(' → '):'Luz')+'</div><div class="e">entrou no Dia '+l.episodio+' · '+(PLAT[l.plataforma]||'')+'</div></div><div class="num">Nº '+num(l.id)+'</div></div>'}).join('')
-  :'<div class="vazio">'+(luzes.length?'Nenhum nome encontrado.':'O livro ainda está em branco. Seja o primeiro nome.')+'</div>'}
-
-/* carta */
-const cc=$('#carta').getContext('2d');let cartaFeita=false,cartaLuz=null;
-function autoCarta(){let n='';try{n=localStorage.getItem('biblia_meu_nome')||''}catch(e){}const l=meuId?luzes.find(x=>x.id===meuId):null;
-  if(l){$('#qCarta').value=l.nome;desenharCarta(l)}else if(n){$('#qCarta').value=n;gerarCarta()}else desenharCarta(null)}
-function gerarCarta(){const q=norm($('#qCarta').value);$('#cErro').textContent='';if(!q)return;const l=luzes.find(x=>norm(x.nome)===q)||luzes.find(x=>norm(x.nome).startsWith(q));
-  if(!l){$('#cErro').textContent='Esse nome ainda não está no Livro.';return}desenharCarta(l)}
-$('#bCarta').onclick=gerarCarta;$('#qCarta').addEventListener('keydown',e=>{if(e.key==='Enter')gerarCarta()});
-function desenharCarta(l){cartaLuz=l;cartaFeita=true;const c=cc,w=270,h=480;c.fillStyle='#07080f';c.fillRect(0,0,w,h);
-  c.fillStyle='#262b4a';c.fillRect(8,8,w-16,2);c.fillRect(8,h-10,w-16,2);c.fillRect(8,8,2,h-16);c.fillRect(w-10,8,2,h-16);
-  const sd=(l?l.id:7);for(let i=0;i<70;i++){const a=hash(sd*131+i),b=hash(sd*977+i);c.fillStyle=i%5?'#3a3f66':'#ffe9a8';c.fillRect(16+a%(w-32),16+b%230,i%9?1:2,i%9?1:2)}
-  for(let i=0;i<5;i++){c.fillStyle=['#101a33','#0d1630','#0b132a','#091025','#080d20'][i];for(let x=16;x<w-16;x+=6)c.fillRect(x,322+i*10+(x%12?0:2),4,2)}
-  c.fillStyle='#ffd27a';c.fillRect(w/2-6,130,12,12);c.globalAlpha=.25;c.fillRect(w/2-14,122,28,28);c.globalAlpha=.1;c.fillRect(w/2-24,112,48,48);c.globalAlpha=1;
-  c.textAlign='center';c.fillStyle='#9a9ab8';c.font='8px "Press Start 2P"';c.fillText('BÍBLIA RPG · NO PRINCÍPIO',w/2,36);
-  c.fillStyle='#ffd27a';c.font='9px "Press Start 2P"';c.fillText(l?'Nº '+num(l.id):'Nº ????',w/2,186);
-  c.fillStyle='#ecebf5';let nm=(l?l.nome:'SEU NOME').toUpperCase(),fs=14;c.font=fs+'px "Press Start 2P"';while(c.measureText(nm).width>w-40&&fs>8){fs--;c.font=fs+'px "Press Start 2P"'}c.fillText(nm,w/2,216);
-  const t=l?trilha(l.id):[];c.fillStyle='#ffd27a';c.font='20px VT323';let linha=(t.length?t:['Luz']).join(' → ');while(c.measureText(linha).width>w-30&&t.length>1){t.shift();linha='… → '+t.join(' → ')}c.fillText(linha,w/2,246);
-  c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText(l?(l.episodio<=1?'uma das primeiras luzes':'entrou no Dia '+l.episodio):'siga e comente seu nome',w/2,272);
-  c.fillStyle='#ecebf5';c.font='20px VT323';c.fillText('"Haja luz; e houve luz."',w/2,398);c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText('Gênesis 1:3',w/2,418);
-  c.fillStyle='#ffb238';c.fillRect(w/2-70,436,140,20);c.fillStyle='#3a2414';c.font='8px "Press Start 2P"';c.fillText('@BIBLIARPG',w/2,450)}
-$('#baixar').onclick=()=>{if(!cartaLuz){toast('Gere sua carta primeiro');return}const big=document.createElement('canvas');big.width=1080;big.height=1920;const b=big.getContext('2d');b.imageSmoothingEnabled=false;b.drawImage($('#carta'),0,0,1080,1920);
-  const a=document.createElement('a');a.download='carta-biblia-rpg-'+cartaLuz.id+'.png';a.href=big.toDataURL('image/png');a.click()};
-
-document.fonts.ready.then(()=>{desenharCarta(null);cartaFeita=false});
-redim();requestAnimationFrame(desenhar);carregar();setInterval(carregar,60000);
+async function iniciar(){try{real=await BRPG.carregar(false)}catch(e){}
+  const exemplo=(await BRPG.carregar(true)).pessoas,usaExemplo=real.pessoas.length<12;pessoas=usaExemplo?exemplo:real.pessoas;
+  document.getElementById('aviso').textContent=usaExemplo?'* As prévias usam nomes de exemplo até os primeiros seguidores entrarem. Depois, quem aparece aqui é você.':'';
+  document.getElementById('heroRod').textContent=usaExemplo?'o povo no deserto · prévia com nomes de exemplo':'o povo no deserto · com os nomes reais';
+  const e=real.estado;document.getElementById('mDia').textContent='DIA '+e.dia+' · '+(DIAS[e.dia]||'');
+  document.getElementById('nPessoas').textContent=real.pessoas.length;document.getElementById('nSeg').textContent=e.seguidores;document.getElementById('nMeta').textContent=e.meta;
+  document.getElementById('mBar').style.width=(e.meta?Math.min(100,Math.round(e.seguidores/e.meta*100)):0)+'%';
+  const f=Math.max(0,e.meta-e.seguidores);document.getElementById('mTxt').textContent=f>0?'faltam '+f+' seguidores para o Dia '+(e.dia+1):'meta batida: o próximo dia vem aí!'}
+montarCenas();requestAnimationFrame(heroFrame);iniciar();
 </script>
 </body>
 </html>
