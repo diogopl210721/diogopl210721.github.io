@@ -204,7 +204,7 @@
     return pessoas.map(p => { const h = hash(p.id * 31 + ci), h2 = hash(p.id * 77 + ci * 13);
         const q = { p, x: x0 + (h % Math.max(1, x1 - x0)), y: y0 + (h2 % Math.max(1, y1 - y0)), f: (h % 628) / 100 };
         if (cena.tipo === 'formas') { const k = chave(p.forma);
-          if (noCeu(k)) { q.x = 40 + (h % (cena.larg - 80)); q.y = 16 + (h2 % 50); if (k === 'sol') { q.x = 380; q.y = 26; } }
+          if (noCeu(k)) { q.x = 40 + (h % (cena.larg - 80)); q.y = 52 + (h2 % 30); if (k === 'sol') { q.x = 380; q.y = 40; } }
           else if (k === 'serpente') { q.x = 264; q.y = 98; }
           else if (/adao/.test((p.forma || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())) { q.x = 236; q.y = 160; } }
         return q; })

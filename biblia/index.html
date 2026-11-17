@@ -74,6 +74,10 @@ h2{font-size:clamp(14px,2.4vw,20px);color:var(--ouro);line-height:1.6;margin-bot
 .patro b{display:block;font-family:'Press Start 2P';font-size:9px;color:var(--ouro);line-height:1.6;margin-bottom:8px;font-weight:normal}
 .patro p{color:var(--mut)}
 .final{text-align:center}
+.ia{position:relative;display:inline-block}.ia::before{content:"";position:absolute;left:50%;top:-.28em;width:.25em;height:.14em;background:currentColor;transform:translateX(-10%) skewX(-30deg)}
+.btn.grande{font-size:15px;padding:18px 26px;display:inline-flex;flex-direction:column;align-items:center;gap:8px;animation:pulsa 1.6s ease-in-out infinite}.btn.grande small{font-family:VT323,monospace;font-size:20px;letter-spacing:0;text-transform:none;opacity:.85}
+@keyframes pulsa{50%{transform:translateY(-2px);box-shadow:0 0 0 6px rgba(255,178,56,.18)}}
+.redes{margin-top:14px;color:var(--mut);font-size:18px}.redes a{color:var(--ouro)}
 .final .ctas{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:20px}
 footer{border-top:4px solid #000;background:#000;padding:26px 0 calc(26px + env(safe-area-inset-bottom));color:var(--mut);font-size:18px;text-align:center}
 footer a{color:var(--ouro)}
@@ -81,7 +85,7 @@ footer a{color:var(--ouro)}
 </head>
 <body>
 <nav class="top"><div class="wrap">
-  <a class="marca px" href="#"><img src="img/bibliarpg-perfil-1080.png" alt=""><span>BÍBLIA RPG</span></a>
+  <a class="marca px" href="#"><img src="img/bibliarpg-perfil-1080.png" alt=""><span>B<span class="ia">I</span>BLIA RPG</span></a>
   <div class="links"><a href="#como">Como funciona</a><a href="#cenas">Cenas</a><a href="#anuncie">Anuncie</a></div>
   <a class="btn" href="mundo/">ENTRAR NO MUNDO</a>
 </div></nav>
@@ -89,10 +93,10 @@ footer a{color:var(--ouro)}
 <header class="hero">
   <canvas id="heroCv"></canvas>
   <div class="sobre">
-    <h1 class="px">BÍBLIA RPG</h1>
+    <h1 class="px">B<span class="ia">I</span>BLIA RPG</h1>
     <p class="tag">A Bíblia que você vive.</p>
     <p class="sub">Comente seu nome e entre na história. Você aparece nos episódios com seu nome sobre a cabeça e vive no mundo bíblico.</p>
-    <div class="ctas"><a class="btn" href="mundo/">ENTRAR NO MUNDO</a><a class="btn ig" href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">INSTAGRAM</a><a class="btn yt" href="https://youtube.com/@bibliarpg" target="_blank" rel="noopener">YOUTUBE</a></div>
+    <div class="ctas"><a class="btn grande" href="mundo/">ENTRAR NO MUNDO<small>ache seu nome na história</small></a></div>
   </div>
   <div class="rodape" id="heroRod">o povo no deserto · prévia</div>
 </header>
@@ -146,7 +150,7 @@ footer a{color:var(--ouro)}
 <section class="alt final"><div class="wrap">
   <h2 class="px">A PRÓXIMA LUZ PODE SER VOCÊ</h2>
   <p class="lead" style="margin:0 auto">Siga, comente seu nome e o que quer ser, e entre na história.</p>
-  <div class="ctas"><a class="btn" href="mundo/">ENTRAR NO MUNDO</a><a class="btn ig" href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">@BIBLIARPG</a><a class="btn yt" href="https://youtube.com/@bibliarpg" target="_blank" rel="noopener">YOUTUBE</a></div>
+  <div class="ctas"><a class="btn grande" href="mundo/">ENTRAR NO MUNDO<small>ache seu nome na história</small></a></div><p class="redes">comente nos vídeos: <a href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">Instagram</a> · <a href="https://youtube.com/@bibliarpg" target="_blank" rel="noopener">YouTube</a></p>
 </div></section>
 
 <footer><div class="wrap">Bíblia RPG · uma criação <a href="https://www.ddsinovacao.com.br" target="_blank" rel="noopener">DDS Inovação</a></div></footer>
