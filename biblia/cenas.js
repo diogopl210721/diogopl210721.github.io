@@ -215,13 +215,24 @@
   function desenhar(c, cena, t, pessoas, op) {
     op = op || {};
     const L = cena.larg; cena.fundo(c, t, L);
-    (cena.placas || []).forEach(pl => placa(c, pl, t));
-    const lug = lugares(cena, pessoas);
+    if (op.anuncios) (cena.placas || []).forEach(pl => placa(c, pl, t));
+    const lug = lugares(cena, pessoas), [bx0, bx1] = cena.banda;
+    for (const q of lug) {
+      const fixo = op.pos && op.pos[q.p.id];
+      if (fixo) { q.x = fixo.x; q.y = fixo.y; }
+      else if (cena.tipo !== 'luzes' && op.anda !== false && !(cena.tipo === 'formas' && (q.y < 90 || chave(q.p.forma) === 'serpente'))) {
+        // passeio: cada um anda para lá e para cá no seu ritmo
+        const amp = 10 + (hash(q.p.id * 5) % 22), vel = .12 + (hash(q.p.id * 9) % 10) / 60;
+        q.x = Math.max(bx0, Math.min(bx1, q.x + Math.sin(t * vel + q.f) * amp));
+      }
+      q.sx = q.x; q.sy = q.y;
+    }
+    lug.sort((a, b) => a.y - b.y);
     for (const q of lug) {
       const forte = op.foco && q.p.id === op.foco;
       if (cena.tipo === 'luzes') luz(c, q.x, q.y, t, q.f, forte);
       else if (cena.tipo === 'formas') ser(c, q, t);
-      else { pessoa(c, q.x + Math.sin(t * .6 + q.f) * (op.anda === false ? 0 : 2), q.y, q.p.id, t, op.anda !== false); }
+      else pessoa(c, q.x, q.y, q.p.id, t, op.anda !== false);
     }
     return lug;
   }
@@ -232,5 +243,5 @@
     const b = .5 + .5 * Math.sin(t * 3); c.globalAlpha = .25 * b; R(c, pl.x, pl.y, pl.w, pl.h, '#ffb238'); c.globalAlpha = 1;
   }
 
-  G.BRPG = { CENAS, ALT, WA, hash, carregar, lugares, desenhar, pessoa, luz, chave };
+  G.BRPG = { CENAS, ALT, WA, hash, carregar, lugares, desenhar, pessoa, luz, chave, noCeu };
 })(window);

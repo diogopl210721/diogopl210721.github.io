@@ -86,7 +86,7 @@ footer a{color:var(--ouro)}
 <body>
 <nav class="top"><div class="wrap">
   <a class="marca px" href="#"><img src="img/bibliarpg-perfil-1080.png" alt=""><span>B<span class="ia">I</span>BLIA RPG</span></a>
-  <div class="links"><a href="#como">Como funciona</a><a href="#cenas">Cenas</a><a href="#anuncie">Anuncie</a></div>
+  <div class="links"><a href="#como">Como funciona</a><a href="#cenas">Cenas</a><a href="mundo/">O mundo</a></div>
   <a class="btn" href="mundo/">ENTRAR NO MUNDO</a>
 </div></nav>
 
@@ -135,17 +135,7 @@ footer a{color:var(--ouro)}
   <div class="trilha"><span>Luz</span><span class="seta px">▶</span><span>Águia</span><span class="seta px">▶</span><span>Filho de Adão</span><span class="seta px">▶</span><span>Passageiro da Arca</span><span class="seta px">▶</span><span>Construtor em Babel</span><span class="seta px">▶</span><span>Peregrino no deserto</span></div>
 </div></section>
 
-<section id="anuncie"><div class="wrap">
-  <h2 class="px">SUA MARCA DENTRO DA HISTÓRIA</h2>
-  <p class="lead">Cada cena tem placas de patrocinador integradas ao cenário. Sua marca aparece no mundo e nos episódios assistidos por toda a comunidade.</p>
-  <div class="patro">
-    <div><b>NA ARCA DE NOÉ</b><p>Uma placa no casco da Arca, vista por todo mundo que embarca.</p></div>
-    <div><b>NA TORRE DE BABEL</b><p>Na caixa de tijolos dos construtores.</p></div>
-    <div><b>NO MONTE MORIÁ</b><p>Na lenha que Isaque carrega monte acima.</p></div>
-    <div><b>NO DESERTO</b><p>Nas tendas do povo, a caminho da terra prometida.</p></div>
-  </div>
-  <a class="btn" id="wa" target="_blank" rel="noopener">QUERO ANUNCIAR</a>
-</div></section>
+
 
 <section class="alt final"><div class="wrap">
   <h2 class="px">A PRÓXIMA LUZ PODE SER VOCÊ</h2>
@@ -158,7 +148,6 @@ footer a{color:var(--ouro)}
 <script src="cenas.js"></script>
 <script>
 const {CENAS,ALT,WA,desenhar}=BRPG;
-document.getElementById('wa').href=WA;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const DIAS=['','A LUZ','AS ÁGUAS','A TERRA','AS ESTRELAS','PEIXES E AVES','OS ANIMAIS','O DESCANSO'];
 let real={pessoas:[],estado:{dia:1,seguidores:0,meta:50}},pessoas=[];
@@ -179,7 +168,7 @@ function heroFrame(ms){const t=ms/1000,k=CENAS.find(x=>x.id==='deserto'),d=Math.
   const W=Math.round(hero.clientWidth*d),H=Math.round(hero.clientHeight*d);if(hero.width!==W)hero.width=W;if(hero.height!==H)hero.height=H;
   const s=H/ALT,vis=W/s,meio=Math.max(0,(k.larg-vis)/2),cam=meio+Math.sin(t*.07)*meio;
   hc.imageSmoothingEnabled=false;hc.setTransform(s,0,0,s,-cam*s,0);
-  const lug=desenhar(hc,k,t,pessoas,{});placas(hc,k,cam,s);rotulos(hc,lug,cam,s,16,k.tipo,W);requestAnimationFrame(heroFrame)}
+  const lug=desenhar(hc,k,t,pessoas,{});rotulos(hc,lug,cam,s,16,k.tipo,W);requestAnimationFrame(heroFrame)}
 
 /* cards das cenas */
 function montarCenas(){const box=document.getElementById('listaCenas');
@@ -190,7 +179,7 @@ function cards(ms){const t=ms/1000;document.querySelectorAll('#listaCenas canvas
     const k=CENAS[+cv.dataset.i],c=cv.getContext('2d'),s=cv.height/ALT,vis=cv.width/s;
     const cam=Math.max(0,Math.min(k.larg-vis,(k.cam0||0)+128-vis/2));
     c.imageSmoothingEnabled=false;c.setTransform(s,0,0,s,-cam*s,0);
-    const lug=desenhar(c,k,t,pessoas,{});placas(c,k,cam,s);rotulos(c,lug,cam,s,k.id==='deserto'?14:7,k.tipo,cv.width)});
+    const lug=desenhar(c,k,t,pessoas,{});rotulos(c,lug,cam,s,k.id==='deserto'?14:7,k.tipo,cv.width)});
   requestAnimationFrame(cards)}
 
 async function iniciar(){try{real=await BRPG.carregar(false)}catch(e){}

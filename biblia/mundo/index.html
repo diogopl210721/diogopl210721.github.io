@@ -2,216 +2,282 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <title>Bíblia RPG — O Mundo</title>
-<meta name="description" content="O mundo do Bíblia RPG: ache seu nome nas cenas da Bíblia.">
+<meta name="description" content="O mundo do Bíblia RPG: ache seu nome e entre na história.">
 <meta name="theme-color" content="#07080f">
 <link rel="icon" href="../img/bibliarpg-perfil-1080.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#07080f;--bg2:#10132a;--line:#2b3160;--line2:#4a5294;--ouro:#ffd27a;--ouro2:#ffb238;--luz:#ffe9a8;--txt:#ecebf5;--mut:#9a9ab8;--terra:#3a2414}
+:root{--bg:#07080f;--line:#2b3160;--line2:#4a5294;--ouro:#ffd27a;--ouro2:#ffb238;--luz:#ffe9a8;--txt:#ecebf5;--mut:#9a9ab8;--terra:#3a2414}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--txt);font-family:'VT323',monospace;font-size:20px;line-height:1.2}
-body{background-image:linear-gradient(45deg,#0a0c18 25%,transparent 25%,transparent 75%,#0a0c18 75%),linear-gradient(45deg,#0a0c18 25%,transparent 25%,transparent 75%,#0a0c18 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+html,body{background:var(--bg);color:var(--txt);font-family:'VT323',monospace;font-size:20px;line-height:1.2;overscroll-behavior:none}
 button,input{font-family:inherit;font-size:inherit;color:inherit}
 .px{font-family:'Press Start 2P',monospace}
-.app{max-width:560px;margin:0 auto;padding:10px 10px calc(24px + env(safe-area-inset-bottom))}
-header{display:flex;justify-content:space-between;align-items:center;padding:4px 2px 10px}
+.app{max-width:620px;margin:0 auto;padding:8px 8px calc(24px + env(safe-area-inset-bottom))}
+header{display:flex;justify-content:space-between;align-items:center;padding:4px 2px 8px;gap:8px}
 header a{color:inherit;text-decoration:none}
-.logo{font-size:12px;color:var(--ouro);text-shadow:2px 2px 0 #000}.logo small{display:block;font-size:7px;color:var(--mut);margin-top:6px}
-.ig{border:2px solid var(--line);padding:3px 8px;color:var(--mut);font-size:18px;text-decoration:none}
-.hud{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;background:#000;border:3px solid var(--line2);box-shadow:inset 0 0 0 2px #000,0 4px 0 #000;padding:8px 10px;margin-bottom:10px}
-.hud .px{font-size:9px;color:var(--ouro)}
-.bar{height:10px;background:#1c1f36;border:2px solid #000;position:relative}.bar i{position:absolute;inset:0 auto 0 0;background:var(--ouro2);width:0}
-.hud .n{font-size:18px;white-space:nowrap}
-.tela{position:relative;border:4px solid #000;outline:3px solid var(--line2);background:#000;box-shadow:0 6px 0 #000;margin-bottom:12px;touch-action:none;user-select:none;-webkit-user-select:none}
-.tela canvas{display:block;width:100%;height:auto;image-rendering:pixelated;cursor:grab}
-.chip{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.75);border:2px solid var(--line2);padding:4px 6px;font-size:8px;color:var(--ouro);pointer-events:none}
+.logo{font-size:11px;color:var(--ouro);text-shadow:2px 2px 0 #000}.logo small{display:block;font-size:7px;color:var(--mut);margin-top:6px}
+.hud{flex:1;max-width:300px;background:#000;border:3px solid var(--line2);padding:5px 8px}
+.hud .l{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.hud .px{font-size:8px;color:var(--ouro)}
+.hud .n{font-size:17px;white-space:nowrap}
+.bar{height:8px;background:#1c1f36;border:2px solid #000;position:relative;margin-top:4px}.bar i{position:absolute;inset:0 auto 0 0;background:var(--ouro2);width:0}
+.meta{font-size:15px;color:var(--mut);margin-top:2px}
+.tela{position:relative;border:4px solid #000;outline:3px solid var(--line2);background:#05060d;touch-action:none;user-select:none;-webkit-user-select:none;height:min(64vh,560px);overflow:hidden}
+.tela canvas{display:block;width:100%;height:100%;image-rendering:pixelated;cursor:grab}
+.tela canvas:active{cursor:grabbing}
+.chip{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.75);border:2px solid var(--line2);padding:4px 6px;font-size:8px;color:var(--ouro);pointer-events:none;max-width:60%}
 .chip span{display:block;color:var(--mut);font-family:'VT323';font-size:16px;margin-top:3px}
-.breve{position:absolute;right:6px;top:6px;background:var(--ouro2);color:var(--terra);padding:4px 6px;font-size:8px;display:none;pointer-events:none}
-.demo{position:absolute;left:6px;bottom:6px;background:#a3402e;color:#fff;padding:3px 6px;font-size:7px;display:none;pointer-events:none}
-.seta{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:44px;background:rgba(0,0,0,.6);border:2px solid var(--line2);color:var(--ouro);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.seta.e{left:4px}.seta.d{right:4px}
-.dialogo{background:#0b0d22;border:3px solid var(--txt);box-shadow:inset 0 0 0 3px #0b0d22,inset 0 0 0 5px var(--line2),0 4px 0 #000;padding:12px 14px 14px;min-height:96px;position:relative;margin-bottom:12px}
+.zoom{position:absolute;right:6px;top:6px;display:flex;flex-direction:column;gap:4px}
+.zoom button,.dpad button,.eu{background:rgba(0,0,0,.72);border:2px solid var(--line2);color:var(--ouro);width:38px;height:38px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.zoom button:active,.dpad button:active{background:var(--ouro2);color:var(--terra)}
+.dpad{position:absolute;right:8px;bottom:8px;display:none;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:2px}
+.dpad.on{display:grid}
+.dpad button{width:40px;height:40px}
+.dpad .u{grid-column:2;grid-row:1}.dpad .l{grid-column:1;grid-row:2}.dpad .r{grid-column:3;grid-row:2}.dpad .d{grid-column:2;grid-row:3}
+.eu{position:absolute;left:6px;bottom:6px;width:auto;padding:0 10px;font-size:8px;display:none}
+.eu.on{display:flex}
+.dica0{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:rgba(0,0,0,.78);border:2px solid var(--ouro2);padding:6px 10px;font-size:17px;white-space:nowrap;pointer-events:none;transition:opacity .6s}
+.demo{position:absolute;left:6px;bottom:52px;background:#a3402e;color:#fff;padding:3px 6px;font-size:7px;display:none;pointer-events:none}
+.dialogo{background:#0b0d22;border:3px solid var(--txt);box-shadow:inset 0 0 0 3px #0b0d22,inset 0 0 0 5px var(--line2),0 4px 0 #000;padding:10px 12px 12px;min-height:88px;position:relative;margin:12px 0}
 .dialogo .quem{font-size:9px;color:var(--ouro);margin-bottom:8px}
 .dialogo p{font-size:20px;line-height:1.25}
-.dialogo .seta-b{position:absolute;right:10px;bottom:6px;color:var(--ouro);font-size:10px;animation:pis .8s steps(2) infinite}
-@keyframes pis{50%{opacity:0}}
-.ctrl{display:grid;gap:8px;margin-bottom:12px}
-.busca{display:flex;gap:6px}
+.dialogo .acoes{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.btn{background:var(--ouro2);color:var(--terra);border:0;padding:9px 12px;cursor:pointer;box-shadow:inset -3px -3px 0 #a86a10,0 3px 0 #000;font-size:9px}
+.btn:active{transform:translateY(2px)}
+.btn.sec{background:#1c2048;color:var(--txt);box-shadow:inset -3px -3px 0 #0b0d22,0 3px 0 #000}
+.busca{display:flex;gap:6px;margin-bottom:10px}
 .busca input{flex:1;min-width:0;background:#000;border:3px solid var(--line2);padding:8px 10px;outline:none}
 .busca input:focus{border-color:var(--ouro2)}
-.btn{background:var(--ouro2);color:var(--terra);border:0;padding:9px 12px;cursor:pointer;box-shadow:inset -3px -3px 0 #a86a10,0 3px 0 #000;font-size:9px}
-.btn:active{transform:translateY(2px);box-shadow:inset -3px -3px 0 #a86a10}
-.btn.sec{background:#1c2048;color:var(--txt);box-shadow:inset -3px -3px 0 #0b0d22,0 3px 0 #000}
-.ab{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.ab button{border:3px solid #000;font-size:8px;cursor:pointer;box-shadow:0 3px 0 #000;padding:10px 4px}
-.ab .a{background:#c0392b;color:#fff}.ab .b{background:#2e6aa3;color:#fff}
-.menu{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
 .menu button{background:#000;border:3px solid var(--line);padding:9px 2px;font-size:8px;cursor:pointer;color:var(--mut)}
 .menu button.on{border-color:var(--ouro2);color:var(--ouro)}
 .painel{display:none;background:#0b0d22;border:3px solid var(--line2);padding:12px}.painel.on{display:block}
 .painel h3{font-size:10px;color:var(--ouro);margin-bottom:10px;line-height:1.5}
 .fases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .fase{background:#000;border:3px solid var(--line);cursor:pointer;position:relative;text-align:left;padding:0}
-.fase.on{border-color:var(--ouro2)}
 .fase canvas{display:block;width:100%;image-rendering:pixelated}
 .fase .t{padding:6px 7px}.fase .t b{display:block;font-family:'Press Start 2P';font-size:7px;color:var(--ouro);line-height:1.5;font-weight:normal}
 .fase .t span{color:var(--mut);font-size:16px}
 .fase .tag{position:absolute;top:4px;right:4px;font-size:7px;padding:3px 4px;background:var(--ouro2);color:var(--terra)}
 .fase .tag.lock{background:#1c2048;color:var(--mut)}
-.item{display:flex;justify-content:space-between;gap:8px;padding:7px 2px;border-bottom:1px solid var(--line)}
+.item{display:flex;justify-content:space-between;gap:8px;padding:7px 2px;border-bottom:1px solid var(--line);cursor:pointer}
 .item .n{color:var(--luz)}.item .e{color:var(--ouro);font-size:17px}.item .num{color:var(--mut);font-size:16px}
 .vazio{color:var(--mut);text-align:center;padding:18px 6px}
 .dica{color:var(--mut);font-size:18px;margin:8px 0}
 canvas#carta{display:block;margin:10px auto;width:100%;max-width:280px;border:3px solid var(--line2)}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ouro2);color:var(--terra);padding:8px 14px;display:none;z-index:9;font-size:18px}.toast.on{display:block}
-a.btn{display:inline-block;text-decoration:none}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <a href="../" class="logo px">BÍBLIA RPG<small>O MUNDO</small></a>
-    <a class="ig" href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">@bibliarpg</a>
+    <a href="../" class="logo px">B&Iacute;BLIA RPG<small>O MUNDO</small></a>
+    <div class="hud"><div class="l"><span class="px" id="dia">EP. 2</span><span class="n"><b id="nLuzes" style="font-weight:normal;color:var(--luz)">0</b> no mundo</span></div>
+      <div class="bar"><i id="barra"></i></div><div class="meta" id="meta">carregando…</div></div>
   </header>
 
-  <div class="hud">
-    <span class="px" id="dia">DIA 1</span>
-    <span class="n"><b id="nLuzes" style="font-weight:normal;color:var(--luz)">0</b> no mundo</span>
-    <div style="grid-column:1/-1"><div class="bar"><i id="barra"></i></div><div style="font-size:16px;color:var(--mut);margin-top:3px" id="meta">carregando…</div></div>
-  </div>
+  <div class="busca"><input id="q" placeholder="digite seu nome…" autocomplete="off" enterkeyhint="search"><button class="btn px" id="bq">ACHAR</button></div>
 
   <div class="tela" id="tela">
-    <canvas id="cv" width="512" height="384"></canvas>
-    <div class="chip px" id="chip">NO PRINCÍPIO<span>Gênesis 1</span></div>
-    <div class="breve px" id="breve">PRÉVIA · EM BREVE</div>
+    <canvas id="cv"></canvas>
+    <div class="chip px" id="chip">O MUNDO<span></span></div>
+    <div class="zoom"><button class="px" id="zin" aria-label="Aproximar">+</button><button class="px" id="zout" aria-label="Afastar">−</button><button class="px" id="zall" aria-label="Ver o mundo todo" style="font-size:9px">▣</button></div>
+    <button class="eu px" id="eu">◎ EU</button>
+    <div class="dpad" id="dpad"><button class="u px" data-d="0,-1">▲</button><button class="l px" data-d="-1,0">◀</button><button class="r px" data-d="1,0">▶</button><button class="d px" data-d="0,1">▼</button></div>
+    <div class="dica0" id="dica0">arraste · pinça = zoom · toque</div>
     <div class="demo px" id="demo">MODO DEMONSTRAÇÃO</div>
-    <button class="seta e px" id="esq" aria-label="Andar para a esquerda">◀</button>
-    <button class="seta d px" id="dir" aria-label="Andar para a direita">▶</button>
   </div>
 
-  <div class="dialogo" id="dlg"><div class="quem px" id="dlgQuem">NARRADOR</div><p id="dlgTxt"></p><span class="seta-b px">▼</span></div>
-
-  <div class="ctrl">
-    <div class="busca"><input id="q" placeholder="ache seu nome…" autocomplete="off"><button class="btn px" id="bq">ACHAR</button></div>
-    <div class="ab"><button class="a px" id="ba">◀ CENA ANTERIOR</button><button class="b px" id="bb">PRÓXIMA CENA ▶</button></div>
-  </div>
+  <div class="dialogo" id="dlg"><div class="quem px" id="dlgQuem">NARRADOR</div><p id="dlgTxt"></p><div class="acoes" id="acoes"></div></div>
 
   <div class="menu">
-    <button class="px on" data-p="fases">CENAS</button><button class="px" data-p="livro">LIVRO</button><button class="px" data-p="carta">CARTA</button><button class="px" data-p="anuncie">ANUNCIE</button>
+    <button class="px on" data-p="fases">CENAS</button><button class="px" data-p="livro">LIVRO</button><button class="px" data-p="carta">CARTA</button>
   </div>
-
-  <section class="painel on" id="p-fases"><h3>CENAS DA SUA JORNADA</h3><div class="fases" id="fases"></div>
-    <p class="dica">As cenas marcadas "em breve" já mostram vocês lá dentro. Elas abrem conforme as metas de seguidores.</p></section>
+  <section class="painel on" id="p-fases"><h3>VIAJE PELAS CENAS</h3><div class="fases" id="fases"></div>
+    <p class="dica">As cenas "em breve" já mostram vocês lá dentro. Elas abrem conforme as metas de seguidores.</p></section>
   <section class="painel" id="p-livro"><h3>O LIVRO DA VIDA</h3><div class="busca"><input id="ql" placeholder="filtrar por nome…" autocomplete="off"></div><div class="dica" id="tot"></div><div id="lista"></div></section>
   <section class="painel" id="p-carta"><h3>SUA CARTA</h3><div class="busca"><input id="qc" placeholder="seu nome como está no Livro…" autocomplete="off"><button class="btn px" id="bc">GERAR</button></div><canvas id="carta" width="270" height="480"></canvas><div style="text-align:center"><button class="btn px" id="baixar">BAIXAR PARA O STORY</button></div></section>
-  <section class="painel" id="p-anuncie"><h3>SUA MARCA DENTRO DA BÍBLIA RPG</h3>
-    <p class="dica" style="color:var(--txt)">Cada cena tem placas de patrocinador: na Arca de Noé, na Torre de Babel, na lenha de Isaque, nas tendas do deserto… Sua marca aparece no mundo e nos vídeos dos episódios.</p>
-    <p class="dica">Toque em qualquer placa dourada na tela para reservar o espaço.</p>
-    <a class="btn px" id="wa" target="_blank" rel="noopener">QUERO ANUNCIAR</a></section>
 </div>
 <div class="toast" id="toast"></div>
 <script src="../cenas.js"></script>
 <script>
-const {CENAS,ALT,WA,desenhar,lugares}=BRPG;
+const {CENAS,ALT,desenhar,lugares,chave}=BRPG;
 const $=s=>document.querySelector(s);
 const demo=new URLSearchParams(location.search).has('demo');
-let dados={pessoas:[],estado:{dia:1,seguidores:0,meta:50}},ci=0,cam=0,foco=null,meuId=null,lug=[];
-try{meuId=Number(localStorage.getItem('biblia_meu_id'))||null}catch(e){}
-$('#wa').href=WA;
+let dados={pessoas:[],estado:{dia:1,seguidores:0,meta:50}},foco=null,meuId=null,meuPos={};
+try{meuId=Number(localStorage.getItem('biblia_meu_id'))||null;meuPos=JSON.parse(localStorage.getItem('biblia_meu_pos')||'{}')}catch(e){}
 const norm=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._);toast._=setTimeout(()=>t.classList.remove('on'),2400)}
-const DIAS=['','A LUZ','AS ÁGUAS','A TERRA','AS ESTRELAS','PEIXES E AVES','OS ANIMAIS','O DESCANSO'];
 
-/* ---------- diálogo com efeito de máquina de escrever ---------- */
-let dlgTimer=null;
-function dizer(quem,txt){$('#dlgQuem').textContent=quem;const p=$('#dlgTxt');clearInterval(dlgTimer);let i=0;p.textContent='';
-  dlgTimer=setInterval(()=>{i+=2;p.textContent=txt.slice(0,i);if(i>=txt.length)clearInterval(dlgTimer)},22)}
+/* ---------- o mundo contínuo: as cenas lado a lado ---------- */
+const GAP=24,OFF=[];let WW=0;CENAS.forEach((k,i)=>{OFF[i]=WW;WW+=k.larg+GAP});WW-=GAP;
+const AGORA=Math.max(0,CENAS.findIndex(k=>k.status==='agora'));
+const cv=$('#cv'),c=cv.getContext('2d');let DPR=1,CW=0,CH=0;
+function medir(){DPR=Math.min(2.5,window.devicePixelRatio||1);const r=cv.getBoundingClientRect();CW=Math.round(r.width*DPR);CH=Math.round(r.height*DPR);cv.width=CW;cv.height=CH;c.imageSmoothingEnabled=false}
+window.addEventListener('resize',()=>{medir();limitar()});medir();
+// câmera: centro (x,y) em pixels do mundo e zoom z em pixels CSS por pixel do mundo
+const cam={x:0,y:ALT/2,z:2},alvo={on:false,x:0,y:0,z:2};let seguir=null;
+function zFit(){return CH/DPR/ALT}
+function zMin(){return zFit()*.4}
+function zMax(){return zFit()*6}
+function limitar(){cam.z=Math.max(zMin(),Math.min(zMax(),cam.z));const hw=CW/DPR/2/cam.z,hh=CH/DPR/2/cam.z;
+  cam.x=hw*2>=WW?WW/2:Math.max(hw-40,Math.min(WW-hw+40,cam.x));cam.y=hh*2>=ALT?ALT/2:Math.max(hh,Math.min(ALT-hh,cam.y))}
+function voar(x,y,z){alvo.on=true;alvo.x=x;alvo.y=y;alvo.z=z}
+function cenaEm(x){for(let i=CENAS.length-1;i>=0;i--)if(x>=OFF[i]-GAP/2)return i;return 0}
 
-/* ---------- tela ---------- */
-const cv=$('#cv'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;
-const VW=256; // largura visível em pixels do mundo
-function cena(){return CENAS[ci]}
-function limitar(){cam=Math.max(0,Math.min(cena().larg-VW,cam))}
-function irCena(i,quieto){ci=(i+CENAS.length)%CENAS.length;cam=cena().cam0||0;
-  const k=cena();$('#chip').innerHTML=esc(k.nome.toUpperCase())+'<span>'+esc(k.ref)+'</span>';
-  $('#breve').style.display=k.status==='breve'?'block':'none';
-  document.querySelectorAll('.fase').forEach((f,j)=>f.classList.toggle('on',j===ci));
-  if(foco){const q=lugares(k,dados.pessoas).find(q=>q.p.id===foco.id);if(q){cam=q.x-VW/2;limitar()}}
-  if(!quieto)dizer((k.status==='agora'?'AGORA · ':k.status==='feito'?'EP. 1 · ':'EM BREVE · ')+k.ref.toUpperCase(),k.texto+' '+k.voce)}
-function frame(ms){const t=ms/1000,k=cena();
-  c.setTransform(2,0,0,2,-cam*2,0);c.imageSmoothingEnabled=false;
-  lug=desenhar(c,k,t,dados.pessoas,{foco:foco&&foco.id});
-  // placas e nomes em espaço de tela
+/* ---------- falas espontâneas ---------- */
+const FALAS={camelo:['Atravesso qualquer deserto!','Hrrmm… cadê a água?'],raposa:['Sou a mais esperta do Éden','Vi tudo da toca…'],tigre:['Grrr! Rei do jardim','Listras novas, quem gostou?'],
+  onca:['Rawr! Vim do Brasil pro Éden','Ninguém me alcança'],cao:['Au au! Caramelo raiz','Abana o rabo pro Ep. 3!'],serpente:['Hsss… prova o fruto?','É certo que não morrerão…'],
+  sol:['Brilhando desde o dia 4 ☀','Energia pro planeta inteiro!'],cosmos:['Sou o universo inteiro ✨','Galáxias e mais galáxias'],estrela:['Esperando minha cena…','Minha hora está chegando'],
+  aguia:['Vejo tudo lá de cima'],leao:['Rugindo no jardim'],ovelha:['Béé…'],pomba:['Paz!'],
+  gente:['Shalom!','Que lugar lindo!','Já comentou seu nome?','Bora pros 200!','Cadê a Eva?','Chama mais gente!','Marca seus amigos!']};
+let fala=null,falaT=0;
+function novaFala(t,vis){if(!vis.length)return;const q=vis[Math.floor(Math.random()*vis.length)],k=chave(q.p.forma);
+  let ops=FALAS[k]||FALAS.gente;if(norm(q.p.forma)==='adao')ops=['Sou o Adão!','Alguém viu a Eva?','Que jardim, hein'];
+  if(q.cena.tipo==='luzes')ops=['Haja luz!','Eu era só uma luz…','No princípio…'];
+  fala={id:q.p.id,ci:q.ci,txt:ops[Math.floor(Math.random()*ops.length)],t0:t}}
+
+/* ---------- desenho ---------- */
+let vis=[],ultimaFala=0,inicio=performance.now();
+function frame(ms){const t=ms/1000;
+  if(alvo.on){const k=.12;cam.x+=(alvo.x-cam.x)*k;cam.y+=(alvo.y-cam.y)*k;cam.z+=(alvo.z-cam.z)*k;if(!seguir&&Math.abs(alvo.z-cam.z)<.01&&Math.abs(alvo.x-cam.x)<.3)alvo.on=false}
+  if(meuId&&mov.x|mov.y)andarEu();
+  limitar();
+  const z=cam.z*DPR,ox=CW/2-cam.x*z,oy=CH/2-cam.y*z;
+  c.setTransform(1,0,0,1,0,0);c.fillStyle='#05060d';c.fillRect(0,0,CW,CH);
+  // estrelas de fundo (fora do mundo)
+  for(let i=0;i<80;i++){const a=BRPG.hash(i*31),b=BRPG.hash(i*77);c.fillStyle=i%7?'#232847':'#6a6f9a';c.fillRect(((a%CW)-cam.x*.2*DPR%CW+CW)%CW,b%CH,DPR,DPR)}
+  vis=[];const L=cam.x-CW/2/z,R=cam.x+CW/2/z;
+  CENAS.forEach((k,i)=>{if(OFF[i]>R||OFF[i]+k.larg<L)return;
+    c.setTransform(z,0,0,z,ox+OFF[i]*z,oy);c.save();c.beginPath();c.rect(0,0,k.larg,ALT);c.clip();
+    const pos={};if(meuId&&meuPos[k.id])pos[meuId]=meuPos[k.id];
+    const lug=desenhar(c,k,t,dados.pessoas,{foco:foco&&foco.id,pos});
+    if(k.status==='breve'){c.fillStyle='rgba(5,6,13,.5)';c.fillRect(0,0,k.larg,ALT)}
+    c.restore();
+    // moldura e placa com o nome da cena
+    c.fillStyle='#000';c.fillRect(-2,-2,k.larg+4,2);c.fillRect(-2,ALT,k.larg+4,2);
+    lug.forEach(q=>{q.ci=i;q.cena=k;q.wx=OFF[i]+q.sx;q.wy=q.sy;if(q.wx>L-10&&q.wx<R+10)vis.push(q)})});
+  if(seguir){const q=vis.find(v=>v.p.id===seguir.id&&v.ci===seguir.ci);if(q){alvo.on=true;alvo.x=q.wx;alvo.y=Math.max(20,q.wy-(q.cena.tipo==='luzes'||q.wy<90?0:14))}}
   c.setTransform(1,0,0,1,0,0);
-  (k.placas||[]).forEach(pl=>{const x=(pl.x-cam)*2,y=pl.y*2;if(x<-200||x>600)return;c.fillStyle='#3a2414';c.font='16px VT323';c.textAlign='center';c.fillText('SEU ANÚNCIO',x+pl.w,y+pl.h-(pl.h>14?8:5))});
-  rotulos(t);
-  if(!dados.pessoas.length){c.fillStyle='rgba(0,0,0,.6)';c.fillRect(56,160,400,64);c.fillStyle='#ffe9a8';c.font='20px VT323';c.textAlign='center';c.fillText('O mundo está esperando os primeiros nomes.',256,186);c.fillStyle='#9a9ab8';c.fillText('Siga @bibliarpg e comente seu nome.',256,208)}
+  // títulos das cenas em espaço de tela
+  CENAS.forEach((k,i)=>{const sx=ox+(OFF[i]+k.larg/2)*z;if(sx<-400*DPR||sx>CW+400*DPR)return;
+    if(k.status==='breve'){const fs=Math.max(8,Math.min(14,cam.z*3))*DPR;c.font=fs+'px "Press Start 2P"';c.textAlign='center';
+      const y=oy+ALT*z*.42;c.fillStyle='rgba(0,0,0,.7)';const w=c.measureText(k.nome.toUpperCase()).width+20*DPR;c.fillRect(sx-w/2,y-fs*1.6,w,fs*3.6);
+      c.fillStyle='#ffd27a';c.fillText(k.nome.toUpperCase(),sx,y);c.fillStyle='#9a9ab8';c.font=(fs*.75)+'px "Press Start 2P"';c.fillText('🔒 EM BREVE · '+k.ref,sx,y+fs*1.4)}});
+  rotulos(t,z,ox,oy);
+  // fala espontânea
+  if(t-ultimaFala>2.6){ultimaFala=t;novaFala(t,vis.filter(q=>q.cena.status!=='breve'))}
+  if(fala&&t-fala.t0<3.2){const q=vis.find(v=>v.p.id===fala.id&&v.ci===fala.ci);if(q)balao(q,z,ox,oy,q.p.nome+': '+fala.txt,false)}
+  // seta "você"
+  if(meuId){const q=vis.find(v=>v.p.id===meuId&&v.ci===cenaEm(cam.x));if(q){const x=ox+q.wx*z,y=oy+(q.wy-(q.cena.tipo==='luzes'?6:22))*z-14*DPR+Math.sin(t*5)*3*DPR;
+      c.fillStyle='#ffb238';c.beginPath();c.moveTo(x-7*DPR,y-10*DPR);c.lineTo(x+7*DPR,y-10*DPR);c.lineTo(x,y);c.fill()}}
+  // chip
+  const ci=cenaEm(cam.x),k=CENAS[ci];if(frame._ci!==ci){frame._ci=ci;$('#chip').innerHTML=esc(k.nome.toUpperCase())+'<span>'+esc(k.ref)+(k.status==='agora'?' · AGORA':k.status==='breve'?' · em breve':'')+'</span>'}
   requestAnimationFrame(frame)}
-function rotulos(t){const k=cena(),cx=cam+VW/2,ocup=[];
-  const vis=lug.filter(q=>q.x>cam-4&&q.x<cam+VW+4);
-  const pri=vis.filter(q=>(foco&&q.p.id===foco.id)||q.p.id===meuId);
-  const resto=vis.filter(q=>!pri.includes(q)).sort((a,b)=>Math.abs(a.x-cx)-Math.abs(b.x-cx));
-  [...pri,...resto].sort((a,b)=>(pri.includes(b)?2:b.p.pioneiro?1:0)-(pri.includes(a)?2:a.p.pioneiro?1:0)).slice(0,22).forEach((q,i)=>{const forte=pri.includes(q);
-    const pio=q.p.pioneiro,txt=(pio?'★ ':'')+(q.p.id===meuId?'você · ':'')+q.p.nome+(k.tipo==='luzes'||forte||pio?' · '+(k.tipo==='formas'?q.p.forma:q.p.escolha):'');
-    c.font='16px VT323';const w=Math.ceil(c.measureText(txt).width)+8,h=14;
-    const ceu=k.tipo==='formas'&&q.y<80;let x=Math.round((q.x-cam)*2-w/2),y=Math.round(q.y*2-(k.tipo==='luzes'||ceu?24:34));x=Math.max(2,Math.min(510-w,x));
-    if(!forte&&ocup.some(r=>x<r[0]+r[2]&&x+w>r[0]&&y<r[1]+r[3]&&y+h>r[1]))return;ocup.push([x,y,w,h]);
-    c.fillStyle=forte?'#ffb238':pio?'rgba(58,36,20,.9)':'rgba(4,5,11,.78)';c.fillRect(x,y,w,h);if(pio&&!forte){c.fillStyle='#ffb238';c.fillRect(x,y+h-2,w,2)}c.fillStyle=forte?'#3a2414':pio?'#ffd27a':'#ffe9a8';c.textAlign='left';c.fillText(txt,x+4,y+11)})}
 
-/* arrastar para andar */
-let arr=null,moveu=0;
-cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);arr=e.clientX;moveu=0});
-cv.addEventListener('pointermove',e=>{if(arr===null)return;const r=cv.getBoundingClientRect(),dx=(e.clientX-arr)*(512/r.width)/2;arr=e.clientX;moveu+=Math.abs(dx);cam-=dx;limitar()});
-cv.addEventListener('pointerup',e=>{arr=null;if(moveu<3)tocar(e)});
-cv.addEventListener('pointercancel',()=>arr=null);
-function tocar(e){const r=cv.getBoundingClientRect(),wx=cam+(e.clientX-r.left)*(512/r.width)/2,wy=(e.clientY-r.top)*(384/r.height)/2,k=cena();
-  const pl=(k.placas||[]).find(p=>wx>=p.x-2&&wx<=p.x+p.w+2&&wy>=p.y-2&&wy<=p.y+p.h+12);
-  if(pl){dizer('PATROCÍNIO','Este espaço pode ser da sua marca, dentro da cena "'+k.nome+'" e nos vídeos. Toque em ANUNCIE para reservar.');abrir('anuncie');return}
-  let best=null,d=1e9;for(const q of lug){const dd=(q.x-wx)**2+((q.y-(k.tipo==='luzes'?0:6))-wy)**2;if(dd<d){d=dd;best=q}}
-  if(best&&d<120){mostrar(best.p)}}
-function mostrar(p){foco=p;const tr=(p.trilha||['Luz']).join(' → ');
-  dizer(p.nome.toUpperCase()+' · Nº '+String(p.id).padStart(4,'0'),(p.pioneiro?'★ Pioneiro: um dos 12 primeiros. ':'')+'Escolheu ser '+p.escolha+'. Trilha: '+tr+'. Entrou no Ep. '+p.episodio+' pelo '+(p.plataforma==='youtube'?'YouTube':'Instagram')+'.'+(p.id!==meuId?' É você? Toque em ACHAR de novo para marcar.':''))}
-let andando=0;
-function seg(dir){andando=dir}
-['esq','dir'].forEach((id,i)=>{const b=$('#'+id),d=i?1:-1;b.addEventListener('pointerdown',e=>{e.stopPropagation();seg(d)});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>seg(0)))});
-setInterval(()=>{if(andando){cam+=andando*4;limitar()}},16);
-document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowLeft')seg(-1);if(e.key==='ArrowRight')seg(1)});
-document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight')seg(0)});
-$('#ba').onclick=()=>irCena(ci-1);$('#bb').onclick=()=>irCena(ci+1);
+function rotulos(t,z,ox,oy){const ocup=[],todos=cam.z>=zFit()*1.6;
+  const pri=q=>(q.p.id===meuId?3:foco&&q.p.id===foco.id?2:q.p.pioneiro?1:0);
+  const lista=vis.filter(q=>todos||pri(q)>0).sort((a,b)=>pri(b)-pri(a)).slice(0,40);
+  c.font=(16*DPR)+'px VT323';c.textAlign='left';
+  for(const q of lista){const forte=pri(q)>=2,pio=q.p.pioneiro;
+    const txt=(pio?'★ ':'')+(q.p.id===meuId?'VOCÊ · ':'')+q.p.nome+(cam.z>=zFit()*1.2||forte?' · '+(q.cena.tipo==='formas'?q.p.forma:q.p.escolha):'');
+    const w=c.measureText(txt).width+8*DPR,h=15*DPR;
+    const ceu=q.cena.tipo==='luzes'||(q.cena.tipo==='formas'&&q.wy<90);
+    let x=ox+q.wx*z-w/2,y=oy+(q.wy-(ceu?4:18))*z-h-2*DPR;
+    if(x+w<0||x>CW)continue;
+    if(!forte&&ocup.some(r=>x<r[0]+r[2]&&x+w>r[0]&&y<r[1]+r[3]&&y+h>r[1]))continue;ocup.push([x,y,w,h]);
+    c.globalAlpha=q.cena.status==='breve'?.6:1;
+    c.fillStyle=forte?'#ffb238':pio?'rgba(58,36,20,.92)':'rgba(4,5,11,.8)';c.fillRect(x,y,w,h);
+    if(pio&&!forte){c.fillStyle='#ffb238';c.fillRect(x,y+h-2*DPR,w,2*DPR)}
+    c.fillStyle=forte?'#3a2414':pio?'#ffd27a':'#ffe9a8';c.fillText(txt,x+4*DPR,y+11.5*DPR);c.globalAlpha=1}}
 
-/* achar nome */
-function achar(){const q=norm($('#q').value);if(!q)return;
-  if(foco&&norm(foco.nome)===q&&foco.id!==meuId){meuId=foco.id;try{localStorage.setItem('biblia_meu_id',meuId)}catch(e){}toast('Marcado! Agora você aparece em dourado.');return}
+function balao(q,z,ox,oy,txt,forte){c.font=(17*DPR)+'px VT323';const w=Math.min(c.measureText(txt).width+14*DPR,CW*.9),h=20*DPR;
+  const ceu=q.cena.tipo==='luzes'||(q.cena.tipo==='formas'&&q.wy<90);
+  let x=ox+q.wx*z-w/2,y=oy+(q.wy-(ceu?4:18))*z-h-22*DPR;x=Math.max(4,Math.min(CW-w-4,x));y=Math.max(4,y);
+  c.fillStyle='#000';c.fillRect(x-2*DPR,y-2*DPR,w+4*DPR,h+4*DPR);c.fillStyle='#fff';c.fillRect(x,y,w,h);
+  const px=Math.max(x+8*DPR,Math.min(x+w-8*DPR,ox+q.wx*z));c.fillRect(px-4*DPR,y+h,8*DPR,5*DPR);
+  c.fillStyle='#111';c.textAlign='left';c.fillText(txt,x+7*DPR,y+14.5*DPR,w-14*DPR)}
+
+/* ---------- toque, arrastar, pinça, roda ---------- */
+const ptr=new Map();let gesto=null,moveu=0;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});moveu=0;alvo.on=false;seguir=null;esconderDica()});
+cv.addEventListener('pointermove',e=>{if(!ptr.has(e.pointerId))return;const p0=ptr.get(e.pointerId),p1={x:e.clientX,y:e.clientY};
+  if(ptr.size===1){cam.x-=(p1.x-p0.x)/cam.z;cam.y-=(p1.y-p0.y)/cam.z;moveu+=Math.abs(p1.x-p0.x)+Math.abs(p1.y-p0.y)}
+  else if(ptr.size===2){const o=[...ptr.entries()].find(([id])=>id!==e.pointerId)[1];
+    const d0=Math.hypot(p0.x-o.x,p0.y-o.y),d1=Math.hypot(p1.x-o.x,p1.y-o.y);
+    const r=cv.getBoundingClientRect(),mx=(p1.x+o.x)/2-r.left,my=(p1.y+o.y)/2-r.top;zoomEm(d1/Math.max(1,d0),mx,my);moveu+=99}
+  ptr.set(e.pointerId,p1);limitar()});
+function fim(e){if(ptr.size===1&&moveu<8)tocar(e);ptr.delete(e.pointerId)}
+cv.addEventListener('pointerup',fim);cv.addEventListener('pointercancel',e=>ptr.delete(e.pointerId));
+cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();zoomEm(Math.exp(-e.deltaY*.0015),e.clientX-r.left,e.clientY-r.top);alvo.on=false},{passive:false});
+function zoomEm(f,mx,my){const r=cv.getBoundingClientRect(),wx=cam.x+(mx-r.width/2)/cam.z,wy=cam.y+(my-r.height/2)/cam.z;
+  cam.z=Math.max(zMin(),Math.min(zMax(),cam.z*f));cam.x=wx-(mx-r.width/2)/cam.z;cam.y=wy-(my-r.height/2)/cam.z;limitar()}
+$('#zin').onclick=()=>voar(cam.x,cam.y,Math.min(zMax(),cam.z*1.6));$('#zout').onclick=()=>voar(cam.x,cam.y,Math.max(zMin(),cam.z/1.6));
+$('#zall').onclick=()=>{seguir=null;voar(cam.x,ALT/2,zMin())};
+function tocar(e){const r=cv.getBoundingClientRect(),wx=cam.x+(e.clientX-r.left-r.width/2)/cam.z,wy=cam.y+(e.clientY-r.top-r.height/2)/cam.z;
+  let best=null,d=1e9;for(const q of vis){const dd=(q.wx-wx)**2+((q.wy-(q.cena.tipo==='luzes'?0:6))-wy)**2;if(dd<d){d=dd;best=q}}
+  if(best&&Math.sqrt(d)*cam.z<34){mostrar(best.p,best);fala={id:best.p.id,ci:best.ci,txt:best.p.id===meuId?'Sou eu! 👋':'Oi! 👋',t0:performance.now()/1000}}
+  else{const k=CENAS[cenaEm(wx)];if(wx>=0&&wx<=WW)dizer(k.status==='breve'?'EM BREVE · '+k.ref.toUpperCase():k.nome.toUpperCase(),k.texto+' '+k.voce)}}
+let dicaOff=false;function esconderDica(){if(dicaOff)return;dicaOff=true;$('#dica0').style.opacity=0}
+
+/* ---------- diálogo ---------- */
+let dlgTimer=null;
+function dizer(quem,txt,acoes){$('#dlgQuem').textContent=quem;const p=$('#dlgTxt');clearInterval(dlgTimer);let i=0;p.textContent='';
+  dlgTimer=setInterval(()=>{i+=2;p.textContent=txt.slice(0,i);if(i>=txt.length)clearInterval(dlgTimer)},18);
+  const a=$('#acoes');a.innerHTML='';(acoes||[]).forEach(([rot,fn,sec])=>{const b=document.createElement('button');b.className='btn px'+(sec?' sec':'');b.textContent=rot;b.onclick=fn;a.appendChild(b)})}
+function mostrar(p,q){foco=p;const tr=(p.trilha||['Luz']).join(' → ');
+  const ac=p.id===meuId?[['ANDAR COM MEU PERSONAGEM',()=>{ativarEu();toast('Use as setas para andar')}]]:[['SOU EU ✋',()=>souEu(p)],['VER CARTA',()=>{$('#qc').value=p.nome;abrir('carta');carta(p);$('#p-carta').scrollIntoView({behavior:'smooth'})},true]];
+  dizer((p.pioneiro?'★ ':'')+p.nome.toUpperCase()+' · Nº '+String(p.id).padStart(4,'0'),(p.pioneiro?'Pioneiro: um dos 12 primeiros. ':'')+'Escolheu ser '+p.escolha+'. Trilha: '+tr+'.',ac)}
+function souEu(p){meuId=p.id;try{localStorage.setItem('biblia_meu_id',meuId)}catch(e){}ativarEu();mostrar(p);toast('Agora é você! Use as setas para andar.')}
+
+/* ---------- achar o nome: a câmera voa até o personagem ---------- */
+function achar(){const q=norm($('#q').value);if(!q)return;$('#q').blur();
   const p=dados.pessoas.find(x=>norm(x.nome)===q)||dados.pessoas.find(x=>norm(x.nome).startsWith(q))||dados.pessoas.find(x=>norm(x.nome).includes(q));
-  if(!p){dizer('NARRADOR','Ainda não achei esse nome. Siga @bibliarpg e comente seu nome + o que quer ser no último episódio.');return}
-  mostrar(p);const k=lugares(cena(),dados.pessoas).find(x=>x.p.id===p.id);if(k){cam=k.x-VW/2;limitar()}}
+  if(!p){dizer('NARRADOR','Ainda não achei "'+$('#q').value+'". Siga @bibliarpg e comente seu nome + o que quer ser no último episódio. No próximo vídeo você aparece aqui!');return}
+  irAte(p);$('#tela').scrollIntoView({behavior:'smooth',block:'center'})}
+function irAte(p){const k=CENAS[AGORA],pos=meuId===p.id&&meuPos[k.id];let q=lugares(k,dados.pessoas).find(x=>x.p.id===p.id);if(!q)return;
+  const x=pos?pos.x:q.x,y=pos?pos.y:q.y;voar(OFF[AGORA]+x,Math.max(30,y-12),zFit()*2.6);seguir={id:p.id,ci:AGORA};mostrar(p);
+  fala={id:p.id,ci:AGORA,txt:p.id===meuId?'Voltei! 👋':'Aqui! Sou '+p.nome+' 👋',t0:performance.now()/1000+.8}}
 $('#bq').onclick=achar;$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')achar()});
 
-/* painéis */
+/* ---------- andar com o próprio personagem ---------- */
+const mov={x:0,y:0};
+function ativarEu(){$('#dpad').classList.add('on');$('#eu').classList.add('on')}
+function andarEu(){const k=CENAS[AGORA],[x0,x1,y0,y1]=k.banda;let p=meuPos[k.id];
+  if(!p){const q=lugares(k,dados.pessoas).find(x=>x.p.id===meuId);if(!q)return;p={x:q.x,y:q.y}}
+  const ceu=k.tipo==='formas'&&p.y<90;
+  p={x:Math.max(x0,Math.min(x1,p.x+mov.x*1.2)),y:ceu?Math.max(10,Math.min(90,p.y+mov.y*1.2)):Math.max(y0,Math.min(y1,p.y+mov.y*1.2))};meuPos[k.id]=p;
+  seguir={id:meuId,ci:AGORA};
+  clearTimeout(andarEu._);andarEu._=setTimeout(()=>{try{localStorage.setItem('biblia_meu_pos',JSON.stringify(meuPos))}catch(e){}},400)}
+document.querySelectorAll('.dpad button').forEach(b=>{const [dx,dy]=b.dataset.d.split(',').map(Number);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();mov.x=dx;mov.y=dy});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>{mov.x=0;mov.y=0}))});
+$('#eu').onclick=()=>{const p=dados.pessoas.find(x=>x.id===meuId);if(p)irAte(p)};
+const TECLAS={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||!TECLAS[e.key])return;e.preventDefault();
+  if(meuId&&$('#dpad').classList.contains('on')){[mov.x,mov.y]=TECLAS[e.key]}else{cam.x+=TECLAS[e.key][0]*20/cam.z*3;cam.y+=TECLAS[e.key][1]*20/cam.z*3;alvo.on=false}});
+document.addEventListener('keyup',e=>{if(TECLAS[e.key]){mov.x=0;mov.y=0}});
+
+/* ---------- painéis ---------- */
 function abrir(p){document.querySelectorAll('.menu button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));document.querySelectorAll('.painel').forEach(s=>s.classList.toggle('on',s.id==='p-'+p));if(p==='carta')autoCarta()}
 document.querySelectorAll('.menu button').forEach(b=>b.onclick=()=>abrir(b.dataset.p));
-
-/* mapa de cenas com miniaturas */
 function montarFases(){const box=$('#fases');box.innerHTML='';
-  CENAS.forEach((k,i)=>{const d=document.createElement('button');d.className='fase'+(i===ci?' on':'');
+  CENAS.forEach((k,i)=>{const d=document.createElement('button');d.className='fase';
     d.innerHTML='<canvas width="160" height="96"></canvas><div class="t"><b>'+esc(k.nome.toUpperCase())+'</b><span>'+esc(k.ref)+'</span></div><span class="tag px '+(k.status==='breve'?'lock':'')+'">'+(k.status==='agora'?'AGORA':k.status==='feito'?'EP. 1':'EM BREVE')+'</span>';
-    d.onclick=()=>{irCena(i);window.scrollTo({top:0,behavior:'smooth'})};box.appendChild(d)});
+    d.onclick=()=>{seguir=null;voar(OFF[i]+(k.cam0||0)+128,ALT/2,zFit());dizer(k.status==='breve'?'EM BREVE · '+k.ref.toUpperCase():k.nome.toUpperCase(),k.texto+' '+k.voce);$('#tela').scrollIntoView({behavior:'smooth',block:'center'})};box.appendChild(d)});
   miniaturas(0)}
 function miniaturas(ms){const t=ms/1000;document.querySelectorAll('.fase canvas').forEach((m,i)=>{const k=CENAS[i],x=m.getContext('2d');x.imageSmoothingEnabled=false;
-    const s=96/ALT,ox=Math.max(0,Math.min(k.larg-160/s,(k.cam0||0)+128-80/s));x.setTransform(s,0,0,s,-ox*s,0);desenhar(x,k,t,dados.pessoas.slice(0,60),{})});
-  setTimeout(()=>requestAnimationFrame(miniaturas),120)}
-
-/* livro */
+    const s=96/ALT,o=Math.max(0,Math.min(k.larg-160/s,(k.cam0||0)+128-80/s));x.setTransform(s,0,0,s,-o*s,0);desenhar(x,k,t,dados.pessoas.slice(0,60),{})});
+  setTimeout(()=>requestAnimationFrame(miniaturas),150)}
 $('#ql').addEventListener('input',livro);
-function livro(){const q=norm($('#ql').value);const r=dados.pessoas.filter(p=>!q||norm(p.nome).includes(q)).sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome)));
-  $('#tot').textContent=r.length+' '+(r.length===1?'nome':'nomes');
-  $('#lista').innerHTML=r.length?r.slice(0,500).map(p=>'<div class="item"><div><div class="n">'+esc(p.nome)+(p.id===meuId?' <span style="color:var(--ouro2)">· você</span>':'')+'</div><div class="e">'+esc((p.trilha||['Luz']).join(' → '))+' → '+esc(p.escolha)+'</div></div><div class="num">Nº '+String(p.id).padStart(4,'0')+'</div></div>').join('')
-  :'<div class="vazio">O livro ainda está em branco. Seja o primeiro nome.</div>'}
-
+function livro(){const q=norm($('#ql').value);const r=dados.pessoas.filter(p=>!q||norm(p.nome).includes(q)).sort((a,b)=>(b.pioneiro-a.pioneiro)||norm(a.nome).localeCompare(norm(b.nome)));
+  $('#tot').textContent=r.length+' '+(r.length===1?'nome':'nomes')+' · toque para ir até a pessoa';
+  $('#lista').innerHTML=r.length?r.slice(0,500).map(p=>'<div class="item" data-id="'+p.id+'"><div><div class="n">'+(p.pioneiro?'★ ':'')+esc(p.nome)+(p.id===meuId?' <span style="color:var(--ouro2)">· você</span>':'')+'</div><div class="e">'+esc((p.trilha||['Luz']).join(' → '))+'</div></div><div class="num">Nº '+String(p.id).padStart(4,'0')+'</div></div>').join('')
+  :'<div class="vazio">O livro ainda está em branco. Seja o primeiro nome.</div>';
+  document.querySelectorAll('#lista .item').forEach(el=>el.onclick=()=>{const p=dados.pessoas.find(x=>x.id===+el.dataset.id);if(p){irAte(p);$('#tela').scrollIntoView({behavior:'smooth',block:'center'})}})}
 /* carta */
 const cc=$('#carta').getContext('2d');let cartaP=null;
 function autoCarta(){const p=meuId?dados.pessoas.find(x=>x.id===meuId):null;if(p){$('#qc').value=p.nome;carta(p)}else carta(null)}
@@ -219,24 +285,28 @@ $('#bc').onclick=()=>{const q=norm($('#qc').value);const p=dados.pessoas.find(x=
 function carta(p){cartaP=p;const c=cc,w=270,h=480;c.fillStyle='#07080f';c.fillRect(0,0,w,h);c.fillStyle='#2b3160';c.fillRect(6,6,w-12,3);c.fillRect(6,h-9,w-12,3);c.fillRect(6,6,3,h-12);c.fillRect(w-9,6,3,h-12);
   for(let i=0;i<60;i++){const a=BRPG.hash((p?p.id:7)*131+i),b=BRPG.hash((p?p.id:7)*977+i);c.fillStyle=i%5?'#3a3f66':'#ffe9a8';c.fillRect(16+a%(w-32),16+b%200,1,1)}
   c.save();c.translate(w/2,170);c.scale(4,4);BRPG.pessoa(c,0,0,p?p.id:7,0,false);c.restore();
-  c.textAlign='center';c.fillStyle='#9a9ab8';c.font='8px "Press Start 2P"';c.fillText('BÍBLIA RPG',w/2,34);
-  c.fillStyle='#ffd27a';c.font='9px "Press Start 2P"';c.fillText(p?'Nº '+String(p.id).padStart(4,'0'):'Nº ????',w/2,206);
+  c.textAlign='center';c.fillStyle='#9a9ab8';c.font='8px "Press Start 2P"';c.fillText('BIBLIA RPG',w/2,34);
+  c.fillStyle='#ffd27a';c.font='9px "Press Start 2P"';c.fillText(p?(p.pioneiro?'★ PIONEIRO · ':'')+'Nº '+String(p.id).padStart(4,'0'):'Nº ????',w/2,206);
   c.fillStyle='#ecebf5';let nm=(p?p.nome:'SEU NOME').toUpperCase(),fs=14;c.font=fs+'px "Press Start 2P"';while(c.measureText(nm).width>w-40&&fs>8){fs--;c.font=fs+'px "Press Start 2P"'}c.fillText(nm,w/2,234);
-  c.fillStyle='#ffd27a';c.font='22px VT323';c.fillText(p?'quer ser: '+p.escolha:'comente nome + o que quer ser',w/2,262);
+  c.fillStyle='#ffd27a';c.font='22px VT323';c.fillText(p?'no Éden: '+p.forma:'comente nome + o que quer ser',w/2,262);
   c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText(p?(p.trilha||['Luz']).join(' → '):'',w/2,286);
-  c.fillStyle='#ecebf5';c.font='20px VT323';c.fillText('"Haja luz; e houve luz."',w/2,392);c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText('Gênesis 1:3',w/2,412);
+  c.fillStyle='#ecebf5';c.font='20px VT323';c.fillText('"E viu Deus que era muito bom."',w/2,392);c.fillStyle='#9a9ab8';c.font='18px VT323';c.fillText('Gênesis 1:31',w/2,412);
   c.fillStyle='#ffb238';c.fillRect(w/2-70,432,140,20);c.fillStyle='#3a2414';c.font='8px "Press Start 2P"';c.fillText('@BIBLIARPG',w/2,446)}
 $('#baixar').onclick=()=>{if(!cartaP){toast('Gere sua carta primeiro');return}const b=document.createElement('canvas');b.width=1080;b.height=1920;const x=b.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage($('#carta'),0,0,1080,1920);const a=document.createElement('a');a.download='carta-biblia-rpg-'+cartaP.id+'.png';a.href=b.toDataURL('image/png');a.click()};
 
-/* carregar */
+/* ---------- carregar ---------- */
 async function iniciar(){try{dados=await BRPG.carregar(demo)}catch(e){console.error(e)}
   $('#demo').style.display=dados.demo?'block':'none';
-  const e=dados.estado;$('#dia').textContent='EP. '+e.dia+' · '+(e.titulo||DIAS[e.dia]||'').toUpperCase();$('#nLuzes').textContent=dados.pessoas.length;
+  const e=dados.estado;$('#dia').textContent='EP. '+e.dia+' · '+(e.titulo||'').toUpperCase();$('#nLuzes').textContent=dados.pessoas.length;
   $('#barra').style.width=(e.meta?Math.min(100,Math.round(e.seguidores/e.meta*100)):0)+'%';
-  const f=Math.max(0,e.meta-e.seguidores);$('#meta').textContent=f>0?'faltam '+f+' seguidores para o Ep. '+(e.dia+1):'meta batida — o próximo dia vem aí';
+  const f=Math.max(0,e.meta-e.seguidores);$('#meta').textContent=f>0?'faltam '+f+' seguidores para o Ep. '+(e.dia+1):'meta batida — o próximo episódio vem aí';
   livro()}
-montarFases();irCena(Math.max(0,CENAS.findIndex(k=>k.status==='agora')));requestAnimationFrame(frame);document.fonts.ready.then(()=>carta(null));
-iniciar().then(()=>{if(meuId){const p=dados.pessoas.find(x=>x.id===meuId);if(p)mostrar(p)}});setInterval(()=>iniciar(),60000);
+cam.z=zFit();cam.x=OFF[AGORA]+(CENAS[AGORA].cam0||0)+128;limitar();
+montarFases();requestAnimationFrame(frame);document.fonts.ready.then(()=>carta(null));
+dizer('NARRADOR','Bem-vindo ao mundo do Bíblia RPG! Digite seu nome lá em cima e a câmera vai até você. Arraste para passear, use a pinça ou o + / − para dar zoom e toque nas pessoas.');
+iniciar().then(()=>{const q=new URLSearchParams(location.search).get('nome');
+  if(q){$('#q').value=q;achar()}else if(meuId){const p=dados.pessoas.find(x=>x.id===meuId);if(p){irAte(p);ativarEu()}}});
+setInterval(()=>iniciar(),60000);
 </script>
 </body>
 </html>
