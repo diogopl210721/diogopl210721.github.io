@@ -69,6 +69,17 @@ header a{color:inherit;text-decoration:none}
 .dica{color:var(--mut);font-size:18px;margin:8px 0}
 canvas#carta{display:block;margin:10px auto;width:100%;max-width:280px;border:3px solid var(--line2)}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ouro2);color:var(--terra);padding:8px 14px;display:none;z-index:9;font-size:18px}.toast.on{display:block}
+body.cheia{overflow:hidden}
+body.cheia .tela{position:fixed;inset:0;z-index:50;height:100vh;height:100dvh;border:0;outline:0}
+body.cheia .dica0{bottom:calc(10px + env(safe-area-inset-bottom))}
+body.cheia .zoom{top:calc(6px + env(safe-area-inset-top))}body.cheia .chip{top:calc(6px + env(safe-area-inset-top))}
+body.cheia #dlg{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:51;margin:0;min-height:0;max-height:34vh;overflow:auto;display:none}
+body.cheia #dlg.ver{display:block}
+body.cheia .dpad{bottom:calc(12px + env(safe-area-inset-bottom))}
+.fsbusca{display:none;position:absolute;left:6px;top:calc(62px + env(safe-area-inset-top));width:calc(100% - 64px);max-width:360px;gap:4px}
+body.cheia .fsbusca{display:flex}
+.fsbusca input{flex:1;min-width:0;background:rgba(0,0,0,.8);border:2px solid var(--line2);padding:6px 8px;outline:none;font-size:18px}
+.fsbusca button{font-size:8px;padding:6px 8px}
 </style>
 </head>
 <body>
@@ -84,7 +95,8 @@ canvas#carta{display:block;margin:10px auto;width:100%;max-width:280px;border:3p
   <div class="tela" id="tela">
     <canvas id="cv"></canvas>
     <div class="chip px" id="chip">O MUNDO<span></span></div>
-    <div class="zoom"><button class="px" id="zin" aria-label="Aproximar">+</button><button class="px" id="zout" aria-label="Afastar">−</button><button class="px" id="zall" aria-label="Ver o mundo todo" style="font-size:9px">▣</button></div>
+    <div class="zoom"><button class="px" id="zin" aria-label="Aproximar">+</button><button class="px" id="zout" aria-label="Afastar">−</button><button class="px" id="zall" aria-label="Afastar tudo" style="font-size:9px">▣</button><button class="px" id="fs" aria-label="Tela cheia" style="font-size:16px">⛶</button></div>
+    <div class="fsbusca"><input id="q2" placeholder="ache seu nome…" autocomplete="off" enterkeyhint="search"><button class="btn px" id="bq2">ACHAR</button></div>
     <button class="eu px" id="eu">◎ EU</button>
     <div class="dpad" id="dpad"><button class="u px" data-d="0,-1">▲</button><button class="l px" data-d="-1,0">◀</button><button class="r px" data-d="1,0">▶</button><button class="d px" data-d="0,1">▼</button></div>
     <div class="dica0" id="dica0">arraste · pinça = zoom · toque</div>
@@ -226,7 +238,7 @@ let dicaOff=false;function esconderDica(){if(dicaOff)return;dicaOff=true;$('#dic
 
 /* ---------- diálogo ---------- */
 let dlgTimer=null;
-function dizer(quem,txt,acoes){$('#dlgQuem').textContent=quem;const p=$('#dlgTxt');clearInterval(dlgTimer);let i=0;p.textContent='';
+function dizer(quem,txt,acoes){const D=$('#dlg');D.classList.add('ver');clearTimeout(dizer._);dizer._=setTimeout(()=>{if(document.body.classList.contains('cheia'))D.classList.remove('ver')},9000);$('#dlgQuem').textContent=quem;const p=$('#dlgTxt');clearInterval(dlgTimer);let i=0;p.textContent='';
   dlgTimer=setInterval(()=>{i+=2;p.textContent=txt.slice(0,i);if(i>=txt.length)clearInterval(dlgTimer)},18);
   const a=$('#acoes');a.innerHTML='';(acoes||[]).forEach(([rot,fn,sec])=>{const b=document.createElement('button');b.className='btn px'+(sec?' sec':'');b.textContent=rot;b.onclick=fn;a.appendChild(b)})}
 function mostrar(p,q){foco=p;const tr=(p.trilha||['Luz']).join(' → ');
@@ -238,11 +250,18 @@ function souEu(p){meuId=p.id;try{localStorage.setItem('biblia_meu_id',meuId)}cat
 function achar(){const q=norm($('#q').value);if(!q)return;$('#q').blur();
   const p=dados.pessoas.find(x=>norm(x.nome)===q)||dados.pessoas.find(x=>norm(x.nome).startsWith(q))||dados.pessoas.find(x=>norm(x.nome).includes(q));
   if(!p){dizer('NARRADOR','Ainda não achei "'+$('#q').value+'". Siga @bibliarpg e comente seu nome + o que quer ser no último episódio. No próximo vídeo você aparece aqui!');return}
-  irAte(p);$('#tela').scrollIntoView({behavior:'smooth',block:'center'})}
+  irAte(p);if(!document.body.classList.contains('cheia'))$('#tela').scrollIntoView({behavior:'smooth',block:'center'})}
 function irAte(p){const k=CENAS[AGORA],pos=meuId===p.id&&meuPos[k.id];let q=lugares(k,dados.pessoas).find(x=>x.p.id===p.id);if(!q)return;
   const x=pos?pos.x:q.x,y=pos?pos.y:q.y;voar(OFF[AGORA]+x,Math.max(30,y-12),zFit()*2.6);seguir={id:p.id,ci:AGORA};mostrar(p);
   fala={id:p.id,ci:AGORA,txt:p.id===meuId?'Voltei! 👋':'Aqui! Sou '+p.nome+' 👋',t0:performance.now()/1000+.8}}
-$('#bq').onclick=achar;$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')achar()});
+$('#bq').onclick=achar;$('#bq2').onclick=()=>{$('#q').value=$('#q2').value;achar()};$('#q2').addEventListener('keydown',e=>{if(e.key==='Enter'){$('#q').value=$('#q2').value;achar()}});
+function telaCheia(on){document.body.classList.toggle('cheia',on);$('#fs').textContent=on?'✕':'⛶';const el=document.documentElement;
+  try{if(on&&el.requestFullscreen&&!document.fullscreenElement)el.requestFullscreen().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen()}catch(e){}
+  setTimeout(()=>{medir();limitar()},60);setTimeout(()=>{medir();limitar()},400)}
+$('#fs').onclick=()=>telaCheia(!document.body.classList.contains('cheia'));
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('cheia'))telaCheia(false)});
+$('#dlg').addEventListener('click',e=>{if(e.target.tagName!=='BUTTON'&&document.body.classList.contains('cheia'))$('#dlg').classList.remove('ver')});
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')achar()});
 
 /* ---------- andar com o próprio personagem ---------- */
 const mov={x:0,y:0};
@@ -277,7 +296,7 @@ function livro(){const q=norm($('#ql').value);const r=dados.pessoas.filter(p=>!q
   $('#tot').textContent=r.length+' '+(r.length===1?'nome':'nomes')+' · toque para ir até a pessoa';
   $('#lista').innerHTML=r.length?r.slice(0,500).map(p=>'<div class="item" data-id="'+p.id+'"><div><div class="n">'+(p.pioneiro?'★ ':'')+esc(p.nome)+(p.id===meuId?' <span style="color:var(--ouro2)">· você</span>':'')+'</div><div class="e">'+esc((p.trilha||['Luz']).join(' → '))+'</div></div><div class="num">Nº '+String(p.id).padStart(4,'0')+'</div></div>').join('')
   :'<div class="vazio">O livro ainda está em branco. Seja o primeiro nome.</div>';
-  document.querySelectorAll('#lista .item').forEach(el=>el.onclick=()=>{const p=dados.pessoas.find(x=>x.id===+el.dataset.id);if(p){irAte(p);$('#tela').scrollIntoView({behavior:'smooth',block:'center'})}})}
+  document.querySelectorAll('#lista .item').forEach(el=>el.onclick=()=>{const p=dados.pessoas.find(x=>x.id===+el.dataset.id);if(p){irAte(p);if(!document.body.classList.contains('cheia'))$('#tela').scrollIntoView({behavior:'smooth',block:'center'})}})}
 /* carta */
 const cc=$('#carta').getContext('2d');let cartaP=null;
 function autoCarta(){const p=meuId?dados.pessoas.find(x=>x.id===meuId):null;if(p){$('#qc').value=p.nome;carta(p)}else carta(null)}
