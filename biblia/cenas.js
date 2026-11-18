@@ -215,5 +215,5 @@
     const b = .5 + .5 * Math.sin(t * 3); c.globalAlpha = .25 * b; R(c, pl.x, pl.y, pl.w, pl.h, '#ffb238'); c.globalAlpha = 1;
   }
 
-  G.BRPG = { CENAS, ALT, WA, hash, carregar, lugares, desenhar, pessoa, luz, chave, noCeu, PELES, CABELOS, ROUPAS, aparenciaPadrao, SB_URL, SB_KEY };
+  G.BRPG = { CENAS, ALT, WA, hash, rnd, carregar, lugares, desenhar, pessoa, luz, chave, noCeu, ser, arvore, tenda, PELES, CABELOS, ROUPAS, aparenciaPadrao, SB_URL, SB_KEY };
 })(window);
