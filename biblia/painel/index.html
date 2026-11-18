@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Bíblia RPG — Painel</title>
+<meta name="theme-color" content="#07080f">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080f;--line:#2b3160;--line2:#4a5294;--ouro:#ffd27a;--ouro2:#ffb238;--txt:#ecebf5;--mut:#9a9ab8;--terra:#3a2414;--verde:#8ce68c;--verm:#ff9a8a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font-family:'VT323',monospace;font-size:20px;line-height:1.25}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+.px{font-family:'Press Start 2P',monospace}
+.app{max-width:640px;margin:0 auto;padding:10px 10px 40px}
+h1{font-size:11px;color:var(--ouro);margin:6px 0 12px}
+.box{background:#0b0d22;border:3px solid var(--line2);padding:12px;margin-bottom:12px}
+input,textarea,select{width:100%;background:#000;border:2px solid var(--line2);padding:8px;outline:none}
+input:focus,textarea:focus{border-color:var(--ouro2)}
+.btn{background:var(--ouro2);color:var(--terra);border:0;padding:10px 12px;cursor:pointer;font-size:9px;box-shadow:0 3px 0 #000}
+.btn.sec{background:#1c2048;color:var(--txt)}.btn.ok{background:#2f7a3a;color:#fff}.btn.no{background:#7a2f2f;color:#fff}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px}
+.tabs button{background:#000;border:2px solid var(--line);padding:9px 2px;font-size:8px;color:var(--mut);cursor:pointer}
+.tabs button.on{border-color:var(--ouro2);color:var(--ouro)}
+.item{border-bottom:1px solid var(--line);padding:8px 0;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.item .n{color:var(--ouro)}.item .m{color:var(--mut);font-size:17px}
+.item .cod{font-family:'Press Start 2P';font-size:9px;color:#fff;background:#3a1418;padding:3px 5px;display:inline-block;margin-top:3px}
+.acoes{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.tag{font-size:8px;padding:2px 5px}.tag.p{background:#3a1418;color:var(--verm)}.tag.a{background:#143a1c;color:var(--verde)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;color:var(--mut);margin:8px 0 2px}
+.hide{display:none}
+.res{color:var(--mut);margin-top:8px;white-space:pre-wrap}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ouro2);color:var(--terra);padding:8px 14px;display:none;z-index:9}.toast.on{display:block}
+a{color:var(--ouro)}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1 class="px">BÍBLIA RPG · PAINEL</h1>
+  <div class="box" id="login">
+    <label>chave de acesso</label><input id="chave" type="password" autocomplete="current-password">
+    <button class="btn px" id="entrar" style="margin-top:10px;width:100%">ENTRAR</button>
+    <div class="res" id="loginErro"></div>
+  </div>
+  <div id="app" class="hide">
+    <div class="box" id="resumo"></div>
+    <div class="tabs"><button class="px on" data-t="pend">PENDENTES</button><button class="px" data-t="todos">TODOS</button><button class="px" data-t="add">ADICIONAR</button><button class="px" data-t="num">NÚMEROS</button></div>
+    <section id="t-pend" class="box">
+      <p class="m" style="color:var(--mut)">Quem criou o personagem no site. Confira no Instagram se a pessoa comentou o código e toque em ATIVAR.</p>
+      <input id="qp" placeholder="buscar código, nome ou @" style="margin-top:8px"><div id="listaPend"></div>
+    </section>
+    <section id="t-todos" class="box hide"><input id="qt" placeholder="buscar nome, papel ou @"><div id="listaTodos"></div></section>
+    <section id="t-add" class="box hide">
+      <label>nome</label><input id="aNome">
+      <label>o que quer ser</label><input id="aEsc">
+      <div class="row"><div><label>@ (sem o @)</label><input id="aArr" autocapitalize="none"></div>
+        <div><label>plataforma</label><select id="aPlat"><option>instagram</option><option>youtube</option></select></div></div>
+      <button class="btn px" id="add1" style="margin-top:10px;width:100%">ADICIONAR</button>
+      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+      <label>colar vários (um por linha):<br><span style="font-size:16px">@usuario Nome, o que quer ser</span></label>
+      <textarea id="lote" rows="7" placeholder="@kaioalexandre238 Kaio, Caim&#10;@lara.fabian24 Lara, povo no deserto"></textarea>
+      <button class="btn px" id="addLote" style="margin-top:10px;width:100%">ADICIONAR TODOS</button>
+      <div class="res" id="loteRes"></div>
+    </section>
+    <section id="t-num" class="box hide">
+      <div class="row"><div><label>seguidores</label><input id="nSeg" type="number"></div><div><label>meta</label><input id="nMeta" type="number"></div></div>
+      <button class="btn px" id="salvarNum" style="margin-top:10px;width:100%">SALVAR</button>
+    </section>
+    <p style="text-align:center;margin-top:10px"><a href="../mundo/">ver o mundo</a> · <a href="#" id="sair">sair</a></p>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="../cenas.js"></script>
+<script>
+const {SB_URL,SB_KEY}=BRPG;const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._);toast._=setTimeout(()=>t.classList.remove('on'),2000)}
+let CH='';try{CH=localStorage.getItem('biblia_admin')||''}catch(e){}
+let dados={pessoas:[],estado:{}};
+async function rpc(fn,body){const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(Object.assign({p_chave:CH},body||{}))});
+  const j=await r.json().catch(()=>null);if(!r.ok)throw new Error((j&&j.message)||'erro');return j}
+async function carregar(){dados=await rpc('biblia_admin_listar');render()}
+function render(){const P=dados.pessoas,pend=P.filter(p=>p.status==='pendente'),at=P.filter(p=>p.status==='ativo'),e=dados.estado||{};
+  $('#resumo').innerHTML='<span class="px" style="font-size:9px;color:var(--ouro)">EP. '+esc(e.dia)+' · '+esc(e.titulo)+'</span><br>'+at.length+' personagens ativos · <b style="color:var(--verm)">'+pend.length+' pendentes</b> · '+esc(e.seguidores)+'/'+esc(e.meta)+' seguidores';
+  $('#nSeg').value=e.seguidores;$('#nMeta').value=e.meta;
+  const qp=norm($('#qp').value);
+  $('#listaPend').innerHTML=pend.filter(p=>!qp||norm(p.codigo+' '+p.nome+' '+p.arroba).includes(qp)).map(p=>'<div class="item"><div><div class="n">'+esc(p.nome)+' · '+esc(p.escolha)+'</div><div class="m"><a href="https://instagram.com/'+esc(p.arroba)+'" target="_blank" rel="noopener">@'+esc(p.arroba)+'</a></div><span class="cod">'+esc(p.codigo)+'</span></div><div class="acoes"><button class="btn ok px" data-a="ativo" data-id="'+p.id+'">ATIVAR</button><button class="btn no px" data-a="removido" data-id="'+p.id+'">✕</button></div></div>').join('')||'<p class="m" style="padding:10px 0;color:var(--mut)">Nenhum pendente.</p>';
+  const qt=norm($('#qt').value);
+  $('#listaTodos').innerHTML=P.filter(p=>!qt||norm(p.nome+' '+p.escolha+' '+p.arroba).includes(qt)).map(p=>'<div class="item"><div><div class="n">Nº '+p.id+' · '+esc(p.nome)+' · '+esc(p.escolha)+'</div><div class="m">@'+esc(p.arroba||'—')+' · '+esc(p.plataforma)+' <span class="tag '+(p.status==='ativo'?'a':'p')+' px">'+esc(p.status)+'</span></div></div><div class="acoes"><button class="btn sec px" data-ed="'+p.id+'">EDITAR</button>'+(p.status!=='ativo'?'<button class="btn ok px" data-a="ativo" data-id="'+p.id+'">ATIVAR</button>':'')+'<button class="btn no px" data-a="removido" data-id="'+p.id+'">✕</button></div></div>').join('');
+  document.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{if(b.dataset.a==='removido'&&!confirm('Remover do mundo?'))return;
+    try{await rpc('biblia_admin_status',{p_id:+b.dataset.id,p_status:b.dataset.a});toast(b.dataset.a==='ativo'?'Ativado!':'Removido');carregar()}catch(e){toast(e.message)}});
+  document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=async()=>{const p=P.find(x=>x.id===+b.dataset.ed);const n=prompt('Nome:',p.nome);if(n==null)return;const e2=prompt('O que quer ser:',p.escolha);if(e2==null)return;
+    try{await rpc('biblia_admin_editar',{p_id:p.id,p_nome:n,p_escolha:e2});toast('Salvo');carregar()}catch(e){toast(e.message)}})}
+$('#qp').oninput=render;$('#qt').oninput=render;
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));['pend','todos','add','num'].forEach(t=>$('#t-'+t).classList.toggle('hide',t!==b.dataset.t))});
+$('#add1').onclick=async()=>{const n=$('#aNome').value.trim(),e=$('#aEsc').value.trim();if(!n||!e){toast('Preencha nome e papel');return}
+  try{await rpc('biblia_admin_adicionar',{p_nome:n,p_escolha:e,p_arroba:$('#aArr').value,p_plataforma:$('#aPlat').value});toast('Adicionado!');['aNome','aEsc','aArr'].forEach(i=>$('#'+i).value='');carregar()}catch(er){toast(er.message)}};
+$('#addLote').onclick=async()=>{const linhas=$('#lote').value.split('\n').map(l=>l.trim()).filter(Boolean);let ok=0,falha=[];
+  for(const l of linhas){const m=l.match(/^@?([A-Za-z0-9._]+)[\s:–-]+([^,–-]+)[,–-]\s*(.+)$/);if(!m){falha.push(l);continue}
+    try{await rpc('biblia_admin_adicionar',{p_nome:m[2].trim(),p_escolha:m[3].trim(),p_arroba:m[1],p_plataforma:'instagram'});ok++}catch(e){falha.push(l)}}
+  $('#loteRes').textContent=ok+' adicionados'+(falha.length?'\nNão entendi:\n'+falha.join('\n'):'');if(ok)$('#lote').value=falha.join('\n');carregar()};
+$('#salvarNum').onclick=async()=>{try{await rpc('biblia_admin_estado',{p_seguidores:+$('#nSeg').value,p_meta:+$('#nMeta').value});toast('Salvo');carregar()}catch(e){toast(e.message)}};
+async function entrar(){CH=$('#chave').value.trim()||CH;try{await carregar();try{localStorage.setItem('biblia_admin',CH)}catch(e){}$('#login').classList.add('hide');$('#app').classList.remove('hide')}
+  catch(e){$('#loginErro').textContent='Chave incorreta.'}}
+$('#entrar').onclick=entrar;$('#chave').addEventListener('keydown',e=>{if(e.key==='Enter')entrar()});
+$('#sair').onclick=e=>{e.preventDefault();try{localStorage.removeItem('biblia_admin')}catch(_){}location.reload()};
+if(CH)entrar();
+setInterval(()=>{if(!$('#app').classList.contains('hide'))carregar().catch(()=>{})},30000);
+</script>
+</body>
+</html>

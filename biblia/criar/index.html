@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bíblia RPG — Crie seu personagem</title>
+<meta name="description" content="Monte o seu personagem e entre na história do Bíblia RPG.">
+<meta name="theme-color" content="#07080f">
+<link rel="icon" href="../img/bibliarpg-perfil-1080.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080f;--line:#2b3160;--line2:#4a5294;--ouro:#ffd27a;--ouro2:#ffb238;--txt:#ecebf5;--mut:#9a9ab8;--terra:#3a2414;--verde:#8ce68c}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font-family:'VT323',monospace;font-size:20px;line-height:1.25}
+button,input{font-family:inherit;font-size:inherit;color:inherit}
+.px{font-family:'Press Start 2P',monospace}
+.app{max-width:520px;margin:0 auto;padding:10px 10px calc(30px + env(safe-area-inset-bottom))}
+header{display:flex;justify-content:space-between;align-items:center;padding:4px 2px 12px}
+header a{color:var(--ouro);text-decoration:none;font-size:10px}
+header a.sec{color:var(--mut);font-family:VT323;font-size:18px}
+h1{font-size:14px;color:var(--ouro);text-align:center;line-height:1.6;margin:4px 0}
+.sub{text-align:center;color:var(--mut);margin-bottom:12px}
+.palco{position:relative;border:4px solid #000;outline:3px solid var(--line2);background:#182a1c}
+.palco canvas{display:block;width:100%;image-rendering:pixelated}
+.passo{background:#0b0d22;border:3px solid var(--line2);padding:12px;margin-top:14px}
+.passo h2{font-size:9px;color:var(--ouro);margin-bottom:10px;line-height:1.6}
+.linha{display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:center;margin-bottom:6px}
+.linha button{background:#1c2048;border:2px solid var(--line2);height:40px;color:var(--ouro);cursor:pointer;font-size:12px}
+.linha button:active{background:var(--ouro2);color:var(--terra)}
+.linha span{background:#000;border:2px solid var(--line);height:40px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px}
+.linha i{display:inline-block;width:16px;height:16px;border:2px solid #000}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#000;border:2px solid var(--line);padding:6px 9px;cursor:pointer;font-size:18px}
+.chip.vaga{border-color:#a3402e}.chip.vaga::after{content:' · vaga';color:#ff9a8a;font-size:15px}
+.chip.on{border-color:var(--ouro2);background:#2a1c08;color:var(--ouro)}
+input[type=text]{width:100%;background:#000;border:3px solid var(--line2);padding:9px 10px;outline:none;margin-top:6px}
+input[type=text]:focus{border-color:var(--ouro2)}
+label{display:block;color:var(--mut);margin-top:10px}
+.btn{background:var(--ouro2);color:var(--terra);border:0;padding:14px;cursor:pointer;box-shadow:inset -3px -3px 0 #a86a10,0 3px 0 #000;font-size:10px;width:100%;margin-top:12px}
+.btn:active{transform:translateY(2px)}.btn.sec{background:#1c2048;color:var(--txt);box-shadow:inset -3px -3px 0 #0b0d22,0 3px 0 #000}
+.btn:disabled{opacity:.5}
+.erro{color:#ff9a8a;margin-top:8px;min-height:22px}
+.codigo{font-size:26px;color:var(--ouro);text-align:center;letter-spacing:2px;background:#000;border:3px dashed var(--ouro2);padding:16px 6px;margin:10px 0;cursor:pointer}
+.etapas{list-style:none;counter-reset:e}
+.etapas li{counter-increment:e;display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.etapas li::before{content:counter(e);font-family:'Press Start 2P';font-size:10px;background:var(--ouro2);color:var(--terra);min-width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+.etapas a{color:var(--ouro)}
+.pend{display:inline-block;background:#3a1418;color:#ff9a8a;padding:3px 8px;font-size:8px;margin-top:6px}
+.ok{display:inline-block;background:#143a1c;color:var(--verde);padding:3px 8px;font-size:8px;margin-top:6px}
+.hide{display:none}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ouro2);color:var(--terra);padding:8px 14px;display:none;z-index:9}.toast.on{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><a href="../" class="px">BÍBLIA RPG</a><a href="../mundo/" class="sec">ver o mundo →</a></header>
+  <h1 class="px">CRIE SEU PERSONAGEM</h1>
+  <p class="sub">Ele aparece no mundo na hora. Para entrar na história, siga e comente.</p>
+
+  <div class="palco"><canvas id="cv" width="180" height="150"></canvas></div>
+
+  <div id="montar">
+    <section class="passo">
+      <h2 class="px">1 · APARÊNCIA</h2>
+      <div id="linhas"></div>
+      <button class="btn sec px" id="sortear">🎲 SORTEAR</button>
+    </section>
+    <section class="passo">
+      <h2 class="px">2 · O QUE VOCÊ QUER SER?</h2>
+      <div class="chips" id="chips"></div>
+      <label>ou escreva:</label>
+      <input type="text" id="escolha" maxlength="40" placeholder="ex.: pastor, harpista, leão…">
+    </section>
+    <section class="passo">
+      <h2 class="px">3 · SEU NOME</h2>
+      <label>nome do personagem</label>
+      <input type="text" id="nome" maxlength="24" placeholder="ex.: Maria" autocomplete="given-name">
+      <label>seu @ do Instagram</label>
+      <input type="text" id="arroba" maxlength="31" placeholder="@seuusuario" autocapitalize="none" autocomplete="off">
+      <div class="erro" id="erro"></div>
+      <button class="btn px" id="criar">ENTRAR NO MUNDO</button>
+    </section>
+  </div>
+
+  <section class="passo hide" id="pronto">
+    <h2 class="px" id="prontoTit">QUASE LÁ!</h2>
+    <div id="statusTag"></div>
+    <p style="margin-top:8px">Seu personagem já está no mundo. Para ele <b style="color:var(--ouro)">entrar na história</b> e aparecer nos vídeos:</p>
+    <ol class="etapas" style="margin-top:8px">
+      <li><span>Siga <a href="https://instagram.com/bibliarpg" target="_blank" rel="noopener">@bibliarpg</a> no Instagram</span></li>
+      <li><span>Comente este código no último post:</span></li>
+    </ol>
+    <div class="codigo px" id="codigo" title="toque para copiar">BRPG-0000</div>
+    <p style="color:var(--mut);text-align:center">toque no código para copiar</p>
+    <button class="btn px" id="abrirIg">ABRIR O INSTAGRAM</button>
+    <button class="btn sec px" id="verMundo">VER MEU PERSONAGEM NO MUNDO</button>
+    <button class="btn sec px" id="editar">EDITAR APARÊNCIA</button>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<script src="../cenas.js"></script>
+<script>
+const {PELES,CABELOS,ROUPAS,pessoa,SB_URL,SB_KEY}=BRPG;
+const $=s=>document.querySelector(s);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._);toast._=setTimeout(()=>t.classList.remove('on'),2200)}
+let ap={p:1,c:0,r:0,f:7,b:0,v:0,l:0};
+try{const s=JSON.parse(localStorage.getItem('biblia_meu_ap')||'null');if(s)ap=Object.assign(ap,s)}catch(e){}
+const NOMES_ROUPA=['terra','marrom','azul','vinho','linho','verde','roxo','mostarda','turquesa','branco'];
+const LINHAS=[
+  ['PELE','p',5,i=>'<i style="background:'+PELES[i]+'"></i>'],
+  ['CABELO','c',6,i=>'<i style="background:'+CABELOS[i]+'"></i>'],
+  ['COMPRIMENTO','l',2,i=>i?'longo':'curto'],
+  ['BARBA','b',2,i=>i?'com barba':'sem barba'],
+  ['VÉU','v',2,i=>i?'com véu':'sem véu'],
+  ['ROUPA','r',10,i=>'<i style="background:'+ROUPAS[i]+'"></i>'+NOMES_ROUPA[i]],
+  ['FAIXA','f',10,i=>'<i style="background:'+ROUPAS[i]+'"></i>'+NOMES_ROUPA[i]],
+];
+function montarLinhas(){$('#linhas').innerHTML=LINHAS.map(([rot,k,n,f],i)=>'<div class="linha"><button class="px" data-i="'+i+'" data-d="-1">◀</button><span><small style="color:var(--mut)">'+rot+'</small> '+f(ap[k]%n)+'</span><button class="px" data-i="'+i+'" data-d="1">▶</button></div>').join('');
+  document.querySelectorAll('.linha button').forEach(b=>b.onclick=()=>{const [rot,k,n]=LINHAS[+b.dataset.i];ap[k]=(ap[k]+ +b.dataset.d+n)%n;montarLinhas();salvarAp()})}
+function salvarAp(){try{localStorage.setItem('biblia_meu_ap',JSON.stringify(ap))}catch(e){}}
+$('#sortear').onclick=()=>{LINHAS.forEach(([,k,n])=>ap[k]=Math.floor(Math.random()*n));if(Math.random()<.6)ap.v=0;montarLinhas();salvarAp()};
+const PAPEIS=[['Eva',1],['Jabal',1],['Jubal',1],['Tubalcaim',1],['Sete',1],'Pastor','Pastora','Agricultor','Oleiro','Construtor','Ferreiro','Tecelã','Músico','Harpista','Guerreiro','Profeta','Profetisa','Sacerdote','Anjo','Leão','Ovelha','Pomba','Águia','Camelo'];
+$('#chips').innerHTML=PAPEIS.map(p=>{const v=Array.isArray(p),n=v?p[0]:p;return '<span class="chip'+(v?' vaga':'')+'" data-v="'+n+'">'+n+'</span>'}).join('');
+document.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));ch.classList.add('on');$('#escolha').value=ch.dataset.v});
+$('#escolha').addEventListener('input',()=>document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.v===$('#escolha').value)));
+
+/* palco animado */
+const cv=$('#cv'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;
+function R(x,y,w,h,cor){c.fillStyle=cor;c.fillRect(x,y,w,h)}
+function palco(ms){const t=ms/1000;
+  for(let y=0;y<90;y+=3){const k=y/90;R(0,y,180,3,'rgb('+Math.round(230-60*k)+','+Math.round(150+40*k)+','+Math.round(100+40*k)+')')}
+  R(0,90,180,60,'#b48c5a');for(let i=0;i<70;i++){R((i*53)%180,92+(i*29)%56,2,1,'#9a7448')}
+  // casas da cidade ao fundo
+  [[20,88],[60,84],[140,86],[165,90]].forEach(([x,y],i)=>{R(x-9,y-10,18,10,'#c8a87d');R(x+3,y-10,6,10,'#a88a64');c.fillStyle=['#963c32','#8c5a32','#783c46','#963c32'][i];c.beginPath();c.moveTo(x-11,y-10);c.lineTo(x,y-17);c.lineTo(x+11,y-10);c.fill();R(x-2,y-6,4,6,'#46301a')});
+  c.save();c.translate(90,135);c.scale(5,5);pessoa(c,0,0,7,t,false,ap);c.restore();
+  const nome=$('#nome').value.trim(),esc=$('#escolha').value.trim();
+  if(nome){c.font='12px VT323';const s=nome+(esc?' · '+esc:''),w=c.measureText(s).width+8;R(90-w/2,40,w,13,'rgba(4,5,11,.85)');c.fillStyle='#ffd27a';c.textAlign='center';c.fillText(s,90,50)}
+  requestAnimationFrame(palco)}
+requestAnimationFrame(palco);
+
+/* criar */
+async function rpc(fn,body){const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>null);if(!r.ok)throw new Error((j&&j.message)||'erro');return j}
+$('#criar').onclick=async()=>{const nome=$('#nome').value.trim(),esc=$('#escolha').value.trim(),arr=$('#arroba').value.trim().replace(/^@/,'').toLowerCase();
+  $('#erro').textContent='';
+  if(nome.length<2){$('#erro').textContent='Escreva o nome do personagem.';return}
+  if(esc.length<2){$('#erro').textContent='Escolha o que você quer ser.';return}
+  if(!/^[a-z0-9._]{1,30}$/.test(arr)){$('#erro').textContent='Escreva o seu @ do Instagram (é por ele que a gente confere o comentário).';return}
+  $('#criar').disabled=true;$('#criar').textContent='CRIANDO…';
+  try{const r=await rpc('biblia_criar',{p_nome:nome,p_escolha:esc,p_arroba:arr,p_aparencia:ap});
+    try{localStorage.setItem('biblia_meu_id',r.id);localStorage.setItem('biblia_meu_codigo',r.codigo||'');localStorage.setItem('biblia_meu_nome',nome)}catch(e){}
+    mostrarPronto(r,nome)}
+  catch(e){$('#erro').textContent='Não deu certo: '+e.message+'. Tente de novo.'}
+  $('#criar').disabled=false;$('#criar').textContent='ENTRAR NO MUNDO'};
+function mostrarPronto(r,nome){$('#montar').classList.add('hide');$('#pronto').classList.remove('hide');
+  $('#codigo').textContent=r.codigo||'—';
+  const ativo=r.status==='ativo';
+  $('#prontoTit').textContent=ativo?'VOCÊ JÁ ESTÁ NA HISTÓRIA!':'QUASE LÁ!';
+  $('#statusTag').innerHTML=ativo?'<span class="ok px">✓ ATIVO · aparência atualizada</span>':'<span class="pend px">⏳ PENDENTE</span>';
+  $('#verMundo').onclick=()=>location.href='../mundo/?nome='+encodeURIComponent(nome);
+  window.scrollTo({top:0,behavior:'smooth'})}
+$('#codigo').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('#codigo').textContent).then(()=>toast('Código copiado! Agora cole no comentário.'))};
+$('#abrirIg').onclick=()=>{const cod=$('#codigo').textContent;navigator.clipboard&&navigator.clipboard.writeText(cod).catch(()=>{});window.open('https://instagram.com/bibliarpg','_blank')};
+$('#editar').onclick=()=>{$('#pronto').classList.add('hide');$('#montar').classList.remove('hide')};
+try{$('#nome').value=localStorage.getItem('biblia_meu_nome')||''}catch(e){}
+montarLinhas();
+</script>
+</body>
+</html>

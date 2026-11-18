@@ -14,14 +14,27 @@
   const ROUPA = ['#a3402e', '#2e6aa3', '#4f7a2a', '#7a4fa3', '#c08a2b', '#2e8c86', '#8c2e5a', '#d6d0c0'];
 
   // pessoa pixel (8x13), pés em (x, y)
-  function pessoa(c, x, y, id, t, anda) {
-    const h = hash(id), pele = PELE[h % 5], cab = CABELO[(h >> 3) % 5], roupa = ROUPA[(h >> 6) % 8];
-    const p = anda ? Math.floor(t * 4 + (h % 7)) % 2 : 0;
+  const PELES = ['#ffdbac', '#f1c27d', '#e0ac69', '#c68642', '#8d5524'];
+  const CABELOS = ['#2b1a0e', '#4a2c16', '#121212', '#a0522d', '#d8b26e', '#cdcdcd'];
+  const ROUPAS = ['#a17848', '#7a5c3c', '#5a6e96', '#963c32', '#cdc0a0', '#466e46', '#734673', '#b48c3c', '#2e8c86', '#f2f2f8'];
+  function escurece(hex, k) { const n = parseInt(hex.slice(1), 16); const f = v => Math.max(0, Math.min(255, Math.round(v * k))); return 'rgb(' + f(n >> 16) + ',' + f((n >> 8) & 255) + ',' + f(n & 255) + ')'; }
+  // aparência: {p:pele, c:cabelo, r:roupa, f:faixa, b:barba, v:véu, l:cabelo longo}
+  function aparenciaPadrao(id) { const h = hash(id); return { p: h % 5, c: (h >> 3) % 5, r: (h >> 6) % 9, f: (h >> 9) % 9, b: (h >> 12) % 3 === 0 ? 1 : 0, v: (h >> 14) % 5 === 0 ? 1 : 0, l: (h >> 16) % 3 === 0 ? 1 : 0 }; }
+  function pessoa(c, x, y, id, t, anda, ap) {
+    const a = Object.assign(aparenciaPadrao(id), ap || {});
+    const pele = PELES[a.p % 5], cab = CABELOS[a.c % 6], roupa = ROUPAS[a.r % 10], faixa = ROUPAS[a.f % 10];
+    const p = anda ? Math.floor(t * 4 + (hash(id) % 7)) % 2 : 0;
     x = Math.round(x); y = Math.round(y);
-    R(c, x - 3, y - 13, 6, 2, cab); R(c, x - 3, y - 11, 6, 4, pele);
-    R(c, x - 2, y - 10, 1, 1, '#2a1a10'); R(c, x + 1, y - 10, 1, 1, '#2a1a10');
-    R(c, x - 4, y - 7, 8, 5, roupa); R(c, x - 4, y - 4, 8, 1, 'rgba(0,0,0,.25)');
-    R(c, x - 3, y - 2, 2, 2 - p, '#3a2414'); R(c, x + 1, y - 2, 2, 1 + p, '#3a2414');
+    c.globalAlpha *= .35; R(c, x - 4, y, 8, 1, '#000'); c.globalAlpha /= .35;
+    R(c, x - 2, y - 2, 2, 2 - p, escurece(pele, .8)); R(c, x + 1, y - 2, 2, 1 + p, escurece(pele, .8));
+    R(c, x - 4, y - 8, 8, 6, roupa); R(c, x + 2, y - 8, 2, 6, escurece(roupa, .72)); R(c, x - 4, y - 8, 1, 5, escurece(roupa, 1.15));
+    R(c, x - 4, y - 5, 8, 1, faixa);
+    R(c, x - 5, y - 7, 1, 3, roupa); R(c, x + 4, y - 7, 1, 3, escurece(roupa, .72)); R(c, x - 5, y - 4, 1, 1, pele); R(c, x + 4, y - 4, 1, 1, pele);
+    R(c, x - 3, y - 13, 6, 5, pele); R(c, x + 2, y - 12, 1, 4, escurece(pele, .85));
+    R(c, x - 2, y - 11, 1, 1, '#2a1a10'); R(c, x + 1, y - 11, 1, 1, '#2a1a10');
+    if (a.v) { R(c, x - 4, y - 15, 8, 2, faixa); R(c, x - 4, y - 13, 1, 6, faixa); R(c, x + 3, y - 13, 1, 6, escurece(faixa, .8)); }
+    else { R(c, x - 3, y - 15, 6, 2, cab); R(c, x - 4, y - 14, 1, 3, cab); R(c, x + 3, y - 14, 1, 3, cab); if (a.l) { R(c, x - 4, y - 11, 1, 4, cab); R(c, x + 3, y - 11, 1, 4, cab); } }
+    if (a.b) { R(c, x - 3, y - 9, 6, 2, cab); R(c, x - 1, y - 7, 2, 1, cab); }
   }
   function luz(c, x, y, t, fase, forte) {
     const b = .55 + .45 * Math.sin(t * 2.4 + fase);
@@ -75,7 +88,7 @@
     if (k === 'sol') { c.globalAlpha = .3; R(c, x - 9, y - 9, 18, 18, '#ffb238'); c.globalAlpha = 1; R(c, x - 6, y - 6, 12, 12, '#ffd25a'); R(c, x - 4, y - 8, 8, 16, '#ffd25a'); R(c, x - 8, y - 4, 16, 8, '#ffd25a'); return; }
     if (k === 'cosmos') { for (let i = 0; i < 60; i++) { const a = i * .3 + t * .5, r = i * .22; c.globalAlpha = 1 - i / 70; R(c, x + Math.cos(a) * r, y + Math.sin(a) * r * .55, 1, 1, ['#9678ff', '#ff8cc8', '#78c8ff', '#ffecb4'][i % 4]); } c.globalAlpha = 1; R(c, x - 1, y - 1, 2, 2, '#fffae6'); return; }
     if (k === 'estrela') { luz(c, x, y, t, q.f, true); return; }
-    if (k === 'gente') { pessoa(c, x, y, q.p.id, t, true); return; }
+    if (k === 'gente') { pessoa(c, x, y, q.p.id, t, true, q.p.aparencia); return; }
     const m = M[k], dx = Math.round(Math.sin(t * .8 + q.f) * 2);
     mapa(c, m, x - (m[0].length >> 1) + dx, y - m.length, CORES[k]);
   }
@@ -183,12 +196,12 @@
     if (demo) return demoPessoas();
     const H = { apikey: SB_KEY };
     const [l, f, e] = await Promise.all([
-      fetch(SB_URL + '/rest/v1/biblia_luzes?select=id,nome,escolha,plataforma,episodio&order=id.asc&limit=20000', { headers: H }).then(r => r.json()),
+      fetch(SB_URL + '/rest/v1/biblia_luzes?select=id,nome,escolha,plataforma,episodio,status,codigo,aparencia&order=id.asc&limit=20000', { headers: H }).then(r => r.json()),
       fetch(SB_URL + '/rest/v1/biblia_formas?select=luz_id,episodio,forma&order=episodio.asc&limit=50000', { headers: H }).then(r => r.json()),
       fetch(SB_URL + '/rest/v1/biblia_estado?select=*&id=eq.1', { headers: H }).then(r => r.json())
     ]);
     const formas = {}; (f || []).forEach(x => (formas[x.luz_id] = formas[x.luz_id] || []).push(x.forma));
-    const pessoas = (l || []).map(p => ({ ...p, pioneiro: p.episodio === 1, forma: (formas[p.id] || []).slice(-1)[0] || 'Luz', trilha: formas[p.id] || ['Luz'], escolha: p.escolha && p.escolha !== 'Luz' ? p.escolha : (formas[p.id] || []).slice(-1)[0] || 'Luz' }));
+    const pessoas = (l || []).map(p => ({ ...p, pioneiro: p.episodio === 1, forma: (formas[p.id] || []).slice(-1)[0] || p.escolha || 'Luz', trilha: formas[p.id] || ['Luz'], escolha: p.escolha && p.escolha !== 'Luz' ? p.escolha : (formas[p.id] || []).slice(-1)[0] || 'Luz' }));
     return { pessoas, estado: (e && e[0]) || { dia: 1, seguidores: 0, meta: 50 }, demo: false };
   }
   function demoPessoas() {
@@ -230,9 +243,11 @@
     lug.sort((a, b) => a.y - b.y);
     for (const q of lug) {
       const forte = op.foco && q.p.id === op.foco;
+      if (q.p.status === 'pendente') c.globalAlpha = .5;
       if (cena.tipo === 'luzes') luz(c, q.x, q.y, t, q.f, forte);
       else if (cena.tipo === 'formas') ser(c, q, t);
-      else pessoa(c, q.x, q.y, q.p.id, t, op.anda !== false);
+      else pessoa(c, q.x, q.y, q.p.id, t, op.anda !== false, q.p.aparencia);
+      c.globalAlpha = 1;
     }
     return lug;
   }
@@ -243,5 +258,5 @@
     const b = .5 + .5 * Math.sin(t * 3); c.globalAlpha = .25 * b; R(c, pl.x, pl.y, pl.w, pl.h, '#ffb238'); c.globalAlpha = 1;
   }
 
-  G.BRPG = { CENAS, ALT, WA, hash, carregar, lugares, desenhar, pessoa, luz, chave, noCeu };
+  G.BRPG = { CENAS, ALT, WA, hash, carregar, lugares, desenhar, pessoa, luz, chave, noCeu, PELES, CABELOS, ROUPAS, aparenciaPadrao, SB_URL, SB_KEY };
 })(window);

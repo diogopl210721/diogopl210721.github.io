@@ -105,6 +105,7 @@ body.cheia .fsbusca{display:flex}
 
   <div class="dialogo" id="dlg"><div class="quem px" id="dlgQuem">NARRADOR</div><p id="dlgTxt"></p><div class="acoes" id="acoes"></div></div>
 
+  <a class="btn px" href="../criar/" style="display:block;text-align:center;text-decoration:none;margin-bottom:10px;font-size:10px;padding:13px">+ CRIAR MEU PERSONAGEM</a>
   <div class="menu">
     <button class="px on" data-p="fases">CENAS</button><button class="px" data-p="livro">LIVRO</button><button class="px" data-p="carta">CARTA</button>
   </div>
@@ -196,7 +197,7 @@ function rotulos(t,z,ox,oy){const ocup=[],todos=cam.z>=zFit()*1.6;
   const lista=vis.filter(q=>todos||pri(q)>0).sort((a,b)=>pri(b)-pri(a)).slice(0,40);
   c.font=(16*DPR)+'px VT323';c.textAlign='left';
   for(const q of lista){const forte=pri(q)>=2,pio=q.p.pioneiro;
-    const txt=(pio?'★ ':'')+(q.p.id===meuId?'VOCÊ · ':'')+q.p.nome+(cam.z>=zFit()*1.2||forte?' · '+(q.cena.tipo==='formas'?q.p.forma:q.p.escolha):'');
+    const txt=(q.p.status==='pendente'?'⏳ ':'')+(pio?'★ ':'')+(q.p.id===meuId?'VOCÊ · ':'')+q.p.nome+(cam.z>=zFit()*1.2||forte?' · '+(q.cena.tipo==='formas'?q.p.forma:q.p.escolha):'');
     const w=c.measureText(txt).width+8*DPR,h=15*DPR;
     const ceu=q.cena.tipo==='luzes'||(q.cena.tipo==='formas'&&q.wy<90);
     let x=ox+q.wx*z-w/2,y=oy+(q.wy-(ceu?4:18))*z-h-2*DPR;
@@ -242,6 +243,7 @@ function dizer(quem,txt,acoes){const D=$('#dlg');D.classList.add('ver');clearTim
   dlgTimer=setInterval(()=>{i+=2;p.textContent=txt.slice(0,i);if(i>=txt.length)clearInterval(dlgTimer)},18);
   const a=$('#acoes');a.innerHTML='';(acoes||[]).forEach(([rot,fn,sec])=>{const b=document.createElement('button');b.className='btn px'+(sec?' sec':'');b.textContent=rot;b.onclick=fn;a.appendChild(b)})}
 function mostrar(p,q){foco=p;const tr=(p.trilha||['Luz']).join(' → ');
+  if(p.status==='pendente'){dizer('⏳ '+p.nome.toUpperCase()+' · PENDENTE','Quer ser '+p.escolha+'. Para entrar na história: siga @bibliarpg e comente o código '+(p.codigo||'')+' no último post.',[['ABRIR O INSTAGRAM',()=>open('https://instagram.com/bibliarpg','_blank')],['SOU EU ✋',()=>souEu(p),true]]);return}
   const ac=p.id===meuId?[['ANDAR COM MEU PERSONAGEM',()=>{ativarEu();toast('Use as setas para andar')}]]:[['SOU EU ✋',()=>souEu(p)],['VER CARTA',()=>{$('#qc').value=p.nome;abrir('carta');carta(p);$('#p-carta').scrollIntoView({behavior:'smooth'})},true]];
   dizer((p.pioneiro?'★ ':'')+p.nome.toUpperCase()+' · Nº '+String(p.id).padStart(4,'0'),(p.pioneiro?'Pioneiro: um dos 12 primeiros. ':'')+'Escolheu ser '+p.escolha+'. Trilha: '+tr+'.',ac)}
 function souEu(p){meuId=p.id;try{localStorage.setItem('biblia_meu_id',meuId)}catch(e){}ativarEu();mostrar(p);toast('Agora é você! Use as setas para andar.')}
@@ -249,7 +251,7 @@ function souEu(p){meuId=p.id;try{localStorage.setItem('biblia_meu_id',meuId)}cat
 /* ---------- achar o nome: a câmera voa até o personagem ---------- */
 function achar(){const q=norm($('#q').value);if(!q)return;$('#q').blur();
   const p=dados.pessoas.find(x=>norm(x.nome)===q)||dados.pessoas.find(x=>norm(x.nome).startsWith(q))||dados.pessoas.find(x=>norm(x.nome).includes(q));
-  if(!p){dizer('NARRADOR','Ainda não achei "'+$('#q').value+'". Siga @bibliarpg e comente seu nome + o que quer ser no último episódio. No próximo vídeo você aparece aqui!');return}
+  if(!p){dizer('NARRADOR','Ainda não achei "'+$('#q').value+'". Crie o seu personagem agora: ele aparece no mundo e entra na história quando você segue @bibliarpg e comenta o código.',[['CRIAR MEU PERSONAGEM',()=>location.href='../criar/']]);return}
   irAte(p);if(!document.body.classList.contains('cheia'))$('#tela').scrollIntoView({behavior:'smooth',block:'center'})}
 function irAte(p){const k=CENAS[AGORA],pos=meuId===p.id&&meuPos[k.id];let q=lugares(k,dados.pessoas).find(x=>x.p.id===p.id);if(!q)return;
   const x=pos?pos.x:q.x,y=pos?pos.y:q.y;voar(OFF[AGORA]+x,Math.max(30,y-12),zFit()*2.6);seguir={id:p.id,ci:AGORA};mostrar(p);
@@ -316,7 +318,7 @@ $('#baixar').onclick=()=>{if(!cartaP){toast('Gere sua carta primeiro');return}co
 /* ---------- carregar ---------- */
 async function iniciar(){try{dados=await BRPG.carregar(demo)}catch(e){console.error(e)}
   $('#demo').style.display=dados.demo?'block':'none';
-  const e=dados.estado;$('#dia').textContent='EP. '+e.dia+' · '+(e.titulo||'').toUpperCase();$('#nLuzes').textContent=dados.pessoas.length;
+  const e=dados.estado;$('#dia').textContent='EP. '+e.dia+' · '+(e.titulo||'').toUpperCase();$('#nLuzes').textContent=dados.pessoas.filter(p=>p.status!=='pendente').length;
   $('#barra').style.width=(e.meta?Math.min(100,Math.round(e.seguidores/e.meta*100)):0)+'%';
   const f=Math.max(0,e.meta-e.seguidores);$('#meta').textContent=f>0?'faltam '+f+' seguidores para o Ep. '+(e.dia+1):'meta batida — o próximo episódio vem aí';
   livro()}
