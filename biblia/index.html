@@ -98,7 +98,7 @@ footer a{color:var(--ouro)}
     <p class="sub">Comente seu nome e entre na história. Você aparece nos episódios com seu nome sobre a cabeça e vive no mundo bíblico.</p>
     <div class="ctas"><a class="btn grande" href="mundo/">ENTRAR NO MUNDO<small>ache seu nome na história</small></a></div>
   </div>
-  <div class="rodape" id="heroRod">o povo no deserto · prévia</div>
+  <div class="rodape" id="heroRod">a cidade de Enoque · prévia</div>
 </header>
 
 <section id="como"><div class="wrap">
@@ -132,7 +132,7 @@ footer a{color:var(--ouro)}
 <section class="alt"><div class="wrap">
   <h2 class="px">SUA HISTÓRIA ATRAVESSA A BÍBLIA</h2>
   <p class="lead">Seu personagem guarda tudo o que você foi em cada episódio. No futuro, você vai poder andar com ele pelas cenas, ter sua tenda, sua casa e seu ofício.</p>
-  <div class="trilha"><span>Luz</span><span class="seta px">▶</span><span>Águia</span><span class="seta px">▶</span><span>Filho de Adão</span><span class="seta px">▶</span><span>Passageiro da Arca</span><span class="seta px">▶</span><span>Construtor em Babel</span><span class="seta px">▶</span><span>Peregrino no deserto</span></div>
+  <div class="trilha"><span>Luz</span><span class="seta px">▶</span><span>Águia</span><span class="seta px">▶</span><span>Morador de Enoque</span><span class="seta px">▶</span><span>…</span></div>
 </div></section>
 
 
@@ -162,9 +162,9 @@ function rotulos(c,lug,cam,s,max,tipo,W){const cx=cam+W/2/s,ocup=[];c.setTransfo
     c.fillStyle='rgba(4,5,11,.8)';c.fillRect(x,y,w,h);c.fillStyle='#ffe9a8';c.textAlign='left';c.fillText(txt,x+4,y+h-Math.round(fs*.22))})}
 function placas(c,k,cam,s){c.setTransform(1,0,0,1,0,0);(k.placas||[]).forEach(pl=>{const x=(pl.x-cam)*s,y=pl.y*s;c.fillStyle='#3a2414';c.font=Math.round(Math.min(pl.h*.8,10)*s)+'px VT323';c.textAlign='center';c.fillText('SEU ANÚNCIO',x+pl.w*s/2,y+pl.h*s*.75)})}
 
-/* hero: o povo no deserto, câmera passeando */
+/* hero: a cidade de Enoque, câmera passeando */
 const hero=document.getElementById('heroCv'),hc=hero.getContext('2d');
-function heroFrame(ms){const t=ms/1000,k=CENAS.find(x=>x.id==='deserto'),d=Math.min(2,devicePixelRatio||1);
+function heroFrame(ms){const t=ms/1000,k=CENAS.find(x=>x.id==='enoque'),d=Math.min(2,devicePixelRatio||1);
   const W=Math.round(hero.clientWidth*d),H=Math.round(hero.clientHeight*d);if(hero.width!==W)hero.width=W;if(hero.height!==H)hero.height=H;
   const s=H/ALT,vis=W/s,meio=Math.max(0,(k.larg-vis)/2),cam=meio+Math.sin(t*.07)*meio;
   hc.imageSmoothingEnabled=false;hc.setTransform(s,0,0,s,-cam*s,0);
@@ -172,20 +172,20 @@ function heroFrame(ms){const t=ms/1000,k=CENAS.find(x=>x.id==='deserto'),d=Math.
 
 /* cards das cenas */
 function montarCenas(){const box=document.getElementById('listaCenas');
-  box.innerHTML=CENAS.map((k,i)=>'<article class="cena'+(k.id==='deserto'?' destaque':'')+'"><canvas data-i="'+i+'" width="'+(k.id==='deserto'?960:480)+'" height="288"></canvas><div class="c"><span class="st '+(k.status==='breve'?'breve':'')+'">'+(k.status==='agora'?'AGORA':k.status==='feito'?'EP. 1':'EM BREVE')+'</span><h3>'+esc(k.nome.toUpperCase())+'</h3><div class="ref">'+esc(k.ref)+'</div><p>'+esc(k.texto)+'</p><p class="voce">'+esc(k.voce)+'</p></div></article>').join('');
+  box.innerHTML=CENAS.map((k,i)=>'<article class="cena'+(k.id==='enoque'?' destaque':'')+'"><canvas data-i="'+i+'" width="'+(k.id==='enoque'?960:480)+'" height="288"></canvas><div class="c"><span class="st '+(k.status==='breve'?'breve':'')+'">'+(k.status==='agora'?'AGORA':k.status==='feito'?'EP. 1':'EM BREVE')+'</span><h3>'+esc(k.nome.toUpperCase())+'</h3><div class="ref">'+esc(k.ref)+'</div><p>'+esc(k.texto)+'</p><p class="voce">'+esc(k.voce)+'</p></div></article>').join('');
   requestAnimationFrame(cards)}
 function cards(ms){const t=ms/1000;document.querySelectorAll('#listaCenas canvas').forEach(cv=>{
     const r=cv.getBoundingClientRect();if(cv._ok&&(r.bottom<-50||r.top>innerHeight+50))return;cv._ok=1;
     const k=CENAS[+cv.dataset.i],c=cv.getContext('2d'),s=cv.height/ALT,vis=cv.width/s;
     const cam=Math.max(0,Math.min(k.larg-vis,(k.cam0||0)+128-vis/2));
     c.imageSmoothingEnabled=false;c.setTransform(s,0,0,s,-cam*s,0);
-    const lug=desenhar(c,k,t,pessoas,{});rotulos(c,lug,cam,s,k.id==='deserto'?14:7,k.tipo,cv.width)});
+    const lug=desenhar(c,k,t,pessoas,{});rotulos(c,lug,cam,s,k.id==='enoque'?14:7,k.tipo,cv.width)});
   requestAnimationFrame(cards)}
 
 async function iniciar(){try{real=await BRPG.carregar(false)}catch(e){}
   const exemplo=(await BRPG.carregar(true)).pessoas,usaExemplo=real.pessoas.length<12;pessoas=usaExemplo?exemplo:real.pessoas;
   document.getElementById('aviso').textContent=usaExemplo?'* As prévias usam nomes de exemplo até os primeiros seguidores entrarem. Depois, quem aparece aqui é você.':'';
-  document.getElementById('heroRod').textContent=usaExemplo?'o povo no deserto · prévia com nomes de exemplo':'o povo no deserto · com os nomes reais';
+  document.getElementById('heroRod').textContent=usaExemplo?'a cidade de Enoque · prévia com nomes de exemplo':'a cidade de Enoque · com os nomes reais';
   const e=real.estado;document.getElementById('mDia').textContent='EP. '+e.dia+' · '+(e.titulo||DIAS[e.dia]||'').toUpperCase();
   document.getElementById('nPessoas').textContent=real.pessoas.length;document.getElementById('nSeg').textContent=e.seguidores;document.getElementById('nMeta').textContent=e.meta;
   document.getElementById('mBar').style.width=(e.meta?Math.min(100,Math.round(e.seguidores/e.meta*100)):0)+'%';

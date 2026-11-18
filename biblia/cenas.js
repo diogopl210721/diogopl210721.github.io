@@ -19,11 +19,12 @@
   const ROUPAS = ['#a17848', '#7a5c3c', '#5a6e96', '#963c32', '#cdc0a0', '#466e46', '#734673', '#b48c3c', '#2e8c86', '#f2f2f8'];
   function escurece(hex, k) { const n = parseInt(hex.slice(1), 16); const f = v => Math.max(0, Math.min(255, Math.round(v * k))); return 'rgb(' + f(n >> 16) + ',' + f((n >> 8) & 255) + ',' + f(n & 255) + ')'; }
   // aparência: {p:pele, c:cabelo, r:roupa, f:faixa, b:barba, v:véu, l:cabelo longo}
-  function aparenciaPadrao(id) { const h = hash(id); return { p: h % 5, c: (h >> 3) % 5, r: (h >> 6) % 9, f: (h >> 9) % 9, b: (h >> 12) % 3 === 0 ? 1 : 0, v: (h >> 14) % 5 === 0 ? 1 : 0, l: (h >> 16) % 3 === 0 ? 1 : 0 }; }
+  function aparenciaPadrao(id) { const h = hash(id) >>> 0; return { p: h % 5, c: (h >> 3) % 5, r: (h >> 6) % 9, f: (h >> 9) % 9, b: (h >> 12) % 3 === 0 ? 1 : 0, v: (h >> 14) % 5 === 0 ? 1 : 0, l: (h >> 16) % 3 === 0 ? 1 : 0 }; }
   function pessoa(c, x, y, id, t, anda, ap) {
     const a = Object.assign(aparenciaPadrao(id), ap || {});
-    const pele = PELES[a.p % 5], cab = CABELOS[a.c % 6], roupa = ROUPAS[a.r % 10], faixa = ROUPAS[a.f % 10];
-    const p = anda ? Math.floor(t * 4 + (hash(id) % 7)) % 2 : 0;
+    const m = (v, n) => ((Math.abs(Math.round(+v || 0)) % n) + n) % n;
+    const pele = PELES[m(a.p, 5)], cab = CABELOS[m(a.c, 6)], roupa = ROUPAS[m(a.r, 10)], faixa = ROUPAS[m(a.f, 10)];
+    const p = anda ? Math.abs(Math.floor(t * 4 + (hash(id) % 7))) % 2 : 0;
     x = Math.round(x); y = Math.round(y);
     c.globalAlpha *= .35; R(c, x - 4, y, 8, 1, '#000'); c.globalAlpha /= .35;
     R(c, x - 2, y - 2, 2, 2 - p, escurece(pele, .8)); R(c, x + 1, y - 2, 2, 1 + p, escurece(pele, .8));
@@ -117,77 +118,33 @@
         [30, 120, 190, 330, 400, 470].forEach((x, i) => arvore(c, x, 112, 1, i % 2 ? '#4f7a2a' : '#5e8f30'));
         arvore(c, 256, 116, 1.6, '#7aa83c'); R(c, 252, 82, 3, 3, '#ffd27a'); R(c, 262, 86, 3, 3, '#e04a3a');
       } },
-    { id: 'arca', cam0: 190, nome: 'A Arca de Noé', ref: 'Gênesis 6–9', status: 'breve', larg: 576, banda: [120, 300, 158, 186],
-      voce: 'Todo mundo que comentou embarca. Seu nome na fila da Arca.',
-      texto: 'O céu escurece, a chuva começa e a fila de pessoas e animais sobe a rampa da Arca.',
-      placas: [{ x: 330, y: 92, w: 70, h: 18 }],
+    { id: 'enoque', cam0: 130, nome: 'A Cidade de Enoque', ref: 'Gênesis 4', status: 'breve', larg: 576, banda: [20, 556, 150, 186],
+      voce: 'Cada pessoa que entra ganha uma casa na primeira cidade.',
+      texto: 'Fora do Éden, Caim constrói a primeira cidade e lhe dá o nome do filho: Enoque. Vamos construir juntos.',
+      placas: [],
       fundo(c, t, L) {
-        R(c, 0, 0, L, ALT, '#3c4a63'); const r = rnd(4);
-        for (let i = 0; i < 120; i++) { const x = (r() * L + t * 20) % L, y = (r() * 160 + t * 120) % 160; R(c, x, y, 1, 3, 'rgba(180,200,230,.45)'); }
-        chao(c, L, 150, '#6b5a44', '#5a4a36', 8);
-        R(c, 270, 70, 260, 50, '#7a4a24'); R(c, 260, 112, 280, 16, '#5e3a1c'); R(c, 300, 54, 200, 18, '#8a5a2a'); R(c, 380, 44, 60, 12, '#9a6a34');
-        for (let x = 270; x < 530; x += 10) R(c, x, 70, 1, 50, '#5e3a1c');
-        R(c, 290, 96, 18, 24, '#2a1a0e'); for (let i = 0; i < 26; i++) R(c, 262 - i, 120 + i * 1.2, 30, 2, '#6e4a24');
+        for (let y = 0; y < 120; y += 4) { const k = y / 120; R(c, 0, y, L, 4, 'rgb(' + Math.round(220 + 20 * k) + ',' + Math.round(130 + 60 * k) + ',' + Math.round(90 + 40 * k) + ')'); }
+        R(c, 470, 40, 22, 22, '#ffe08a');
+        chao(c, L, 120, '#c39a64', '#ad8452', 17);
+        for (let x = 0; x < L; x += 3) R(c, x, 140 + Math.round(Math.sin(x * .03 + t) * 1.5), 3, 4, '#4f8fc4');
+        const casas = [[40, 1], [90, 1], [150, 1], [210, .6], [270, 1], [330, .3], [390, 0], [450, .6], [510, 0]];
+        casas.forEach(([x, k], i) => {
+          if (k <= 0) { [[-9, -6], [9, -6], [-9, 0], [9, 0]].forEach(([dx, dy]) => R(c, x + dx, 120 + dy - 3, 1, 3, '#7a5a34')); return; }
+          const h = Math.round(12 * Math.min(1, k * 1.6));
+          R(c, x - 10, 124 - h, 20, h, '#d2b07e'); R(c, x + 4, 124 - h, 6, h, '#b8966a');
+          if (k > .6) { c.fillStyle = ['#963c32', '#8c5a32', '#783c46'][i % 3]; c.beginPath(); c.moveTo(x - 12, 124 - h); c.lineTo(x, 116 - h); c.lineTo(x + 12, 124 - h); c.fill(); R(c, x - 2, 117, 4, 7, '#46301a'); R(c, x - 8, 115, 3, 3, '#ffcf70'); }
+          else { R(c, x - 11, 104, 1, 20, '#8c6438'); R(c, x + 10, 104, 1, 20, '#8c6438'); R(c, x - 11, 105, 22, 1, '#8c6438'); }
+        });
+        R(c, 286, 96, 32, 10, '#6e4a26'); R(c, 301, 106, 2, 18, '#6e4a26');
       } },
-    { id: 'babel', cam0: 130, nome: 'A Torre de Babel', ref: 'Gênesis 11', status: 'breve', larg: 512, banda: [20, 492, 160, 186],
-      voce: 'Você carrega tijolos com todo mundo, com seu nome na cabeça.',
-      texto: 'Todos com uma só língua, construindo uma torre até o céu.',
-      placas: [{ x: 360, y: 134, w: 52, h: 16 }],
+    { id: 'misterio', cam0: 60, nome: 'Próximas cenas', ref: 'serão reveladas', status: 'breve', larg: 384, banda: [20, 364, 150, 186],
+      voce: 'O caminho continua conforme a comunidade cresce.',
+      texto: 'As próximas cenas serão reveladas episódio por episódio. Quanto mais gente, mais longe a história vai.',
+      placas: [],
       fundo(c, t, L) {
-        R(c, 0, 0, L, ALT, '#f0c27a'); R(c, 0, 0, L, 60, '#f6d9a0'); chao(c, L, 150, '#d8a960', '#c7954d', 5);
-        for (let i = 0; i < 8; i++) { const w = 150 - i * 16, x = 256 - w / 2, y = 150 - (i + 1) * 15; R(c, x, y, w, 15, i % 2 ? '#b07a44' : '#c08a50'); for (let k = x + 4; k < x + w; k += 10) R(c, k, y + 4, 4, 5, '#3a2414'); }
-        R(c, 340, 40, 2, 110, '#6e4a24'); R(c, 340, 70, 30, 2, '#6e4a24'); R(c, 362, 140, 14, 10, '#9a5a2a');
-      } },
-    { id: 'moria', cam0: 190, nome: 'O Monte Moriá', ref: 'Gênesis 22', status: 'breve', larg: 448, banda: [150, 290, 168, 188],
-      voce: 'Você sobe o monte com Abraão e Isaque, no meio do povo.',
-      texto: 'Abraão sobe o monte. Isaque leva a lenha nas costas. Deus proverá.',
-      placas: [{ x: 300, y: 112, w: 40, h: 12, lenha: true }],
-      fundo(c, t, L) {
-        R(c, 0, 0, L, ALT, '#e8b48a'); R(c, 0, 0, L, 70, '#f3cfa8');
-        for (let x = 0; x < L; x++) { const h = 150 - Math.max(0, 70 - Math.abs(x - 320) * .55); R(c, x, h, 1, ALT - h, '#9a7a56'); }
-        chao(c, L, 170, '#8a6a46', '#7a5a38', 9);
-        R(c, 306, 84, 26, 10, '#8a8478'); R(c, 304, 80, 30, 4, '#9a9488');
-        pessoa(c, 290, 168, 11, t, false); pessoa(c, 276, 170, 13, t, false);
-      } },
-    { id: 'egito', cam0: 140, nome: 'José no Egito', ref: 'Gênesis 41', status: 'breve', larg: 512, banda: [20, 492, 162, 188],
-      voce: 'Você chega ao Egito em tempo de fome e José dá o pão.',
-      texto: 'Os celeiros cheios, as pirâmides ao fundo e o povo chegando ao Egito.',
-      placas: [{ x: 210, y: 128, w: 54, h: 16 }],
-      fundo(c, t, L) {
-        R(c, 0, 0, L, ALT, '#f7d18a'); chao(c, L, 152, '#e2b56a', '#d0a35a', 6);
-        [[120, 70], [210, 52], [400, 64]].forEach(([x, h]) => { for (let i = 0; i < h; i++) R(c, x - h + i, 152 - i, (h - i) * 2, 1, i % 6 ? '#d9a95c' : '#c99a4f'); });
-        [300, 340].forEach(x => { R(c, x, 120, 30, 32, '#b78a50'); R(c, x + 3, 112, 24, 8, '#c99a5c'); R(c, x + 11, 136, 8, 16, '#3a2414'); });
-      } },
-    { id: 'marvermelho', cam0: 190, nome: 'O Mar Vermelho', ref: 'Êxodo 14', status: 'breve', larg: 640, banda: [20, 620, 150, 186],
-      voce: 'Você atravessa o mar a pé enxuto, com o povo inteiro.',
-      texto: 'As águas se abrem em duas muralhas e o povo atravessa no meio do mar.',
-      placas: [{ x: 560, y: 120, w: 52, h: 16 }],
-      fundo(c, t, L) {
-        R(c, 0, 0, L, ALT, '#1d2a4a'); estrelas(c, L, 60, 12, t);
-        for (let x = 0; x < L; x += 2) { const s = Math.sin(x * .05 + t * 2) * 3; R(c, x, 40 + s, 2, 100, x % 8 ? '#1e5aa0' : '#2a6ab4'); }
-        R(c, 0, 140, L, 52, '#c9a46a'); chao(c, L, 146, '#c9a46a', '#b8935a', 12);
-        for (let x = 0; x < L; x += 5) R(c, x, 136 + Math.round(Math.sin(x * .1 + t * 3)), 4, 2, '#cfe6ff');
-      } },
-    { id: 'deserto', cam0: 200, nome: 'O Povo no Deserto', ref: 'Êxodo 16', status: 'breve', larg: 640, banda: [20, 620, 150, 188],
-      voce: 'Você caminha no deserto com o povo, com seu nome sobre a cabeça.',
-      texto: 'Tendas, a coluna de fogo à noite e o maná caindo do céu. A grande caminhada.',
-      placas: [{ x: 120, y: 120, w: 52, h: 16 }, { x: 470, y: 120, w: 52, h: 16 }],
-      fundo(c, t, L) {
-        R(c, 0, 0, L, ALT, '#1a1630'); estrelas(c, L, 110, 21, t); chao(c, L, 140, '#c9965a', '#b5834a', 14);
-        for (let x = 0; x < L; x += 2) R(c, x, 134 + Math.round(Math.sin(x * .02) * 4), 2, 8, '#b5834a');
-        [60, 200, 260, 420, 560].forEach((x, i) => tenda(c, x, 140, i % 2 ? '#d6b07a' : '#c49a62'));
-        const fx = 330; for (let i = 0; i < 40; i++) { const w = 8 + Math.sin(t * 6 + i) * 3; R(c, fx - w / 2, 100 - i * 2, w, 2, i % 3 ? '#ff9d2e' : '#ffd27a'); }
-        const r = rnd(5); for (let i = 0; i < 40; i++) R(c, r() * L, (r() * 120 + t * 15) % 130, 1, 1, '#fff6d8');
-      } },
-    { id: 'jerico', cam0: 130, nome: 'Os Muros de Jericó', ref: 'Josué 6', status: 'breve', larg: 512, banda: [20, 492, 166, 188],
-      voce: 'Você marcha em volta dos muros até eles caírem.',
-      texto: 'Sete voltas, as trombetas tocam, o povo grita e os muros caem.',
-      placas: [{ x: 60, y: 126, w: 52, h: 16 }],
-      fundo(c, t, L) {
-        R(c, 0, 0, L, ALT, '#9ec9e8'); chao(c, L, 156, '#d2b07a', '#bf9c66', 15);
-        R(c, 170, 80, 180, 76, '#b88a5a'); for (let x = 170; x < 350; x += 12) R(c, x, 72, 8, 8, '#b88a5a');
-        for (let y = 86; y < 156; y += 8) for (let x = 172 + (y % 16 ? 6 : 0); x < 348; x += 12) R(c, x, y, 10, 1, '#9a6e44');
-        R(c, 248, 120, 24, 36, '#5a3a1c');
+        R(c, 0, 0, L, ALT, '#05060d'); estrelas(c, L, 140, 31, t); chao(c, L, 150, '#1a1a2a', '#141424', 9);
+        const q = ['.###.', '#...#', '....#', '...#.', '..#..', '.....', '..#..'];
+        q.forEach((ln, r) => [...ln].forEach((ch, k) => { if (ch === '#') { c.globalAlpha = .5 + .3 * Math.sin(t * 2); R(c, 180 + k * 5, 50 + r * 5, 5, 5, '#ffd27a'); c.globalAlpha = 1; } }));
       } },
   ];
 
