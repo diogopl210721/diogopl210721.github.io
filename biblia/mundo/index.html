@@ -80,6 +80,7 @@ body.cheia .dpad{bottom:calc(12px + env(safe-area-inset-bottom))}
 body.cheia .fsbusca{display:flex}
 .fsbusca input{flex:1;min-width:0;background:rgba(0,0,0,.8);border:2px solid var(--line2);padding:6px 8px;outline:none;font-size:18px}
 .fsbusca button{font-size:8px;padding:6px 8px}
+.zoom button.mudo{color:var(--mut);text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -95,7 +96,7 @@ body.cheia .fsbusca{display:flex}
   <div class="tela" id="tela">
     <canvas id="cv"></canvas>
     <div class="chip px" id="chip">O MUNDO<span></span></div>
-    <div class="zoom"><button class="px" id="zin" aria-label="Aproximar">+</button><button class="px" id="zout" aria-label="Afastar">−</button><button class="px" id="zall" aria-label="Afastar tudo" style="font-size:9px">▣</button><button class="px" id="fs" aria-label="Tela cheia" style="font-size:16px">⛶</button></div>
+    <div class="zoom"><button class="px" id="zin" aria-label="Aproximar">+</button><button class="px" id="zout" aria-label="Afastar">−</button><button class="px" id="zall" aria-label="Afastar tudo" style="font-size:9px">▣</button><button class="px" id="fs" aria-label="Tela cheia" style="font-size:16px">⛶</button><button class="px" id="som" aria-label="Som" style="font-size:15px">♪</button></div>
     <div class="fsbusca"><input id="q2" placeholder="ache seu nome…" autocomplete="off" enterkeyhint="search"><button class="btn px" id="bq2">ACHAR</button></div>
     <button class="eu px" id="eu">◎ EU</button>
     <div class="dpad" id="dpad"><button class="u px" data-d="0,-1">▲</button><button class="l px" data-d="-1,0">◀</button><button class="r px" data-d="1,0">▶</button><button class="d px" data-d="0,1">▼</button></div>
@@ -115,6 +116,7 @@ body.cheia .fsbusca{display:flex}
   <section class="painel" id="p-carta"><h3>SUA CARTA</h3><div class="busca"><input id="qc" placeholder="seu nome como está no Livro…" autocomplete="off"><button class="btn px" id="bc">GERAR</button></div><canvas id="carta" width="270" height="480"></canvas><div style="text-align:center"><button class="btn px" id="baixar">BAIXAR PARA O STORY</button></div></section>
 </div>
 <div class="toast" id="toast"></div>
+<script src="../som.js?v=1794993785"></script>
 <script src="../cenas.js?v=1794993548"></script>
 <script>
 const {CENAS,ALT,desenhar,lugares,chave}=BRPG;
@@ -189,7 +191,7 @@ function frame(ms){const t=ms/1000;
   if(meuId){const q=vis.find(v=>v.p.id===meuId&&v.ci===cenaEm(cam.x));if(q){const x=ox+q.wx*z,y=oy+(q.wy-(q.cena.tipo==='luzes'?6:22))*z-14*DPR+Math.sin(t*5)*3*DPR;
       c.fillStyle='#ffb238';c.beginPath();c.moveTo(x-7*DPR,y-10*DPR);c.lineTo(x+7*DPR,y-10*DPR);c.lineTo(x,y);c.fill()}}
   // chip
-  const ci=cenaEm(cam.x),k=CENAS[ci];if(frame._ci!==ci){frame._ci=ci;$('#chip').innerHTML=esc(k.nome.toUpperCase())+'<span>'+esc(k.ref)+(k.status==='agora'?' · AGORA':k.status==='breve'?' · em breve':'')+'</span>'}
+  const ci=cenaEm(cam.x),k=CENAS[ci];if(frame._ci!==ci){frame._ci=ci;if(window.BRPG_SOM)BRPG_SOM.cena(k.id);$('#chip').innerHTML=esc(k.nome.toUpperCase())+'<span>'+esc(k.ref)+(k.status==='agora'?' · AGORA':k.status==='breve'?' · em breve':'')+'</span>'}
   requestAnimationFrame(frame)}
 
 function rotulos(t,z,ox,oy){const ocup=[],todos=cam.z>=zFit()*1.6;
@@ -328,6 +330,12 @@ dizer('NARRADOR','Bem-vindo ao mundo do Bíblia RPG! Digite seu nome lá em cima
 iniciar().then(()=>{const q=new URLSearchParams(location.search).get('nome');
   if(q){$('#q').value=q;achar()}else if(meuId){const p=dados.pessoas.find(x=>x.id===meuId);if(p){irAte(p);ativarEu()}}});
 setInterval(()=>iniciar(),60000);
+/* som: liga no primeiro toque (regra do celular), a não ser que a pessoa tenha desligado */
+(function(){const S=window.BRPG_SOM,b=$('#som');if(!S)return;
+  const pinta=on=>{b.classList.toggle('mudo',!on);b.title=on?'Desligar som':'Ligar som'};pinta(false);S.aoMudar(pinta);
+  b.onclick=e=>{e.stopPropagation();S.alternar()};
+  const primeiro=e=>{if(e&&e.target&&e.target.closest&&e.target.closest('#som'))return;if(S.preferencia!=='off'&&!S.ligado)S.ligar();['pointerdown','touchend','keydown'].forEach(ev=>document.removeEventListener(ev,primeiro,true))};
+  ['pointerdown','touchend','keydown'].forEach(ev=>document.addEventListener(ev,primeiro,true))})();
 </script>
 </body>
 </html>
