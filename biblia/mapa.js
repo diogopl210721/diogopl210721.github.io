@@ -3,6 +3,7 @@
    Tudo fica na névoa até a comunidade chegar lá. */
 (function (G) {
   const MW = 2000, MH = 2360;
+  const LOTES = []; for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) LOTES.push([1830 + i * 20, 1080 + j * 20]);
   const { hash, rnd } = G.BRPG;
   function R(c, x, y, w, h, cor) { c.fillStyle = cor; c.fillRect(Math.round(x), Math.round(y), w, h); }
   // projeção: Israel ampliado; oeste e sul comprimidos
@@ -185,7 +186,7 @@
     // acampamento
     [[1720, 990], [1760, 1040], [1780, 985], [1710, 1040]].forEach(([x, y]) => { c.fillStyle = '#c49a62'; c.beginPath(); c.moveTo(x - 10, y); c.lineTo(x, y - 12); c.lineTo(x + 10, y); c.fill(); R(c, x - 2, y - 5, 4, 5, '#4a3020'); });
     // Enoque: casas e lotes
-    for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { const x = 1830 + i * 20, y = 1080 + j * 20; if ((i + j) % 3 === 0) casa(x, y); else { R(c, x - 6, y - 1, 1, 3, '#7a5a34'); R(c, x + 5, y - 1, 1, 3, '#7a5a34'); } }
+    LOTES.forEach(([x, y]) => { R(c, x - 6, y - 1, 1, 3, '#7a5a34'); R(c, x + 5, y - 1, 1, 3, '#7a5a34'); R(c, x - 6, y + 1, 12, 1, '#9a7a4e'); });
     // Ararate + arca, Babel, Ur, Nínive, Harã
     R(c, 1700, 150, 46, 12, '#6e4a24'); R(c, 1708, 142, 30, 8, '#8c5a2e');
     for (let k = 0; k < 7; k++) R(c, 1630 + k * 4, 1390 - k * 9, 44 - k * 8, 9, k % 2 ? '#c09a62' : '#b08a52');
@@ -207,6 +208,23 @@
   }
 
   // ---------- onde cada pessoa fica ----------
+  function obra(c, feitas, t) {
+    const n = Math.max(0, Math.min(LOTES.length, feitas | 0));
+    for (let i = 0; i < n; i++) { const [x, y] = LOTES[i]; R(c, x - 5, y - 5, 10, 5, '#d2b07e'); R(c, x + 2, y - 5, 3, 5, '#b8966a'); R(c, x - 6, y - 8, 12, 3, i % 4 === 1 ? '#7a4a2a' : '#963c32'); R(c, x - 1, y - 3, 2, 3, '#46301a'); }
+    if (n < LOTES.length) { const [x, y] = LOTES[n], k = (t * .6) % 1;
+      R(c, x - 6, y - 10, 1, 10, '#8a6a3e'); R(c, x + 5, y - 10, 1, 10, '#8a6a3e'); R(c, x - 6, y - 10, 12, 1, '#8a6a3e');
+      R(c, x - 5, y - Math.round(2 + k * 3), 10, Math.round(2 + k * 3), '#c8a470'); }
+  }
+  // ofício pelo papel escolhido
+  function oficio(p, z) {
+    const e = (p.escolha || '') + ' ' + (p.forma || ''), h = hash(p.id * 13 + 5) >>> 0;
+    if (/caim|lavrad|agricul|ro[cç]a/i.test(e)) return 'enxada';
+    if (/abel|pastor|jabal|ovelh/i.test(e)) return 'pastor';
+    if (/jubal|music|levita|harpa|louvor/i.test(e)) return 'harpa';
+    if (/enoque|constru|pedreir|carpint|tubalcaim|ferreir|obreir/i.test(e)) return 'martelo';
+    if (z !== 'acampamento') return '';
+    return ['martelo', 'tijolo', 'martelo', ''][h % 4];
+  }
   function zona(p, k) {
     if (p.status === 'pendente') return 'portao';
     if (k === 'sol' || k === 'cosmos') return k;
@@ -218,7 +236,7 @@
   function posicionar(pessoas) {
     const ch = G.BRPG.chave, out = [], cont = {}, E = L.eden, A = L.acampamento, N = L.enoque;
     pessoas.forEach(p => {
-      const k = ch(p.forma), z = zona(p, k), h = hash(p.id * 31 + 7), h2 = hash(p.id * 77 + 3), n = (cont[z] = (cont[z] || 0) + 1) - 1;
+      const k = ch(p.forma), z = zona(p, k), h = hash(p.id * 31 + 7) >>> 0, h2 = hash(p.id * 77 + 3) >>> 0, n = (cont[z] = (cont[z] || 0) + 1) - 1;
       let x, y, anda = true;
       if (z === 'sol') { x = E.x; y = E.y - 160; anda = false; }
       else if (z === 'cosmos') { x = E.x - 80; y = E.y - 130; anda = false; }
@@ -227,7 +245,14 @@
       else if (z === 'jardim') { const a = (h % 628) / 100, d = 40 + (h2 % 70); x = E.x + Math.cos(a) * d; y = E.y + Math.sin(a) * d * .9; }
       else if (z === 'portao') { x = N.x - 75 + (n % 6) * 9; y = N.y + 60 + Math.floor(n / 6) * 12; }
       else { const a = (h % 628) / 100, d = 10 + (h2 % 55); x = A.x + Math.cos(a) * d; y = A.y + 5 + Math.sin(a) * d * .7; }
-      out.push({ p, k, z, x, y, bx: x, by: y, f: (h % 628) / 100, anda });
+      const of = oficio(p, z);
+      if (z === 'acampamento') {
+        if (of === 'martelo' || of === 'tijolo') { const [lx, ly] = LOTES[((h2 >>> 3) % 12)]; x = lx + (h % 2 ? 9 : -9); y = ly + 3; anda = of === 'tijolo'; }
+        else if (of === 'enxada') { x = A.x + 55 + (h % 20); y = A.y + 30 + (h2 % 12); anda = false; }
+        else if (of === 'pastor') { x = A.x - 40 - (h % 25); y = A.y + 35 + (h2 % 15); }
+        else if (of === 'harpa') { x = A.x + 6; y = A.y + 14; anda = false; }
+      }
+      out.push({ p, k, z, x, y, bx: x, by: y, f: (h % 628) / 100, anda, of });
     });
     return out;
   }
@@ -237,5 +262,5 @@
     return d < 1.5 ? best : null;
   }
 
-  G.BRPG_MAPA = { MW, MH, LUGARES, L, REGIOES, montar, nevoa, posicionar, lugarEm };
+  G.BRPG_MAPA = { MW, MH, LUGARES, L, REGIOES, LOTES, montar, nevoa, posicionar, lugarEm, obra };
 })(window);

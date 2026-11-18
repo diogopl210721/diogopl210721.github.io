@@ -25,6 +25,10 @@ header a{color:inherit;text-decoration:none}
 .hud .n{font-size:17px;white-space:nowrap}
 .bar{height:8px;background:#1c1f36;border:2px solid #000;position:relative;margin-top:4px}.bar i{position:absolute;inset:0 auto 0 0;background:var(--ouro2);width:0}
 .meta{font-size:15px;color:var(--mut);margin-top:2px}
+.obra{margin-top:5px;border-top:1px dashed var(--line2);padding-top:4px;cursor:pointer}
+.obra .l{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:15px}
+.obra .px{font-size:7px;color:#ffb238}
+.bar.ob i{background:repeating-linear-gradient(90deg,#ffb238 0 6px,#c9802a 6px 12px)!important}
 .tela{position:relative;border:4px solid #000;outline:3px solid var(--line2);background:#05060d;touch-action:none;user-select:none;-webkit-user-select:none;height:min(64vh,560px);overflow:hidden}
 .tela canvas{display:block;width:100%;height:100%;image-rendering:pixelated;cursor:grab}
 .tela canvas:active{cursor:grabbing}
@@ -88,7 +92,8 @@ body.cheia .fsbusca{display:flex}
   <header>
     <a href="../" class="logo px">B&Iacute;BLIA RPG<small>O MUNDO</small></a>
     <div class="hud"><div class="l"><span class="px" id="dia">EP. 2</span><span class="n"><b id="nLuzes" style="font-weight:normal;color:var(--luz)">0</b> no mundo</span></div>
-      <div class="bar"><i id="barra"></i></div><div class="meta" id="meta">carregando…</div></div>
+      <div class="bar"><i id="barra"></i></div><div class="meta" id="meta">carregando…</div>
+      <div class="obra" id="obraBox"><div class="l"><span class="px" id="obraNome">OBRA</span><span id="obraN">0/200</span></div><div class="bar ob"><i id="obraBar"></i></div></div></div>
   </header>
 
   <div class="busca"><input id="q" placeholder="digite seu nome…" autocomplete="off" enterkeyhint="search"><button class="btn px" id="bq">ACHAR</button></div>
@@ -116,9 +121,9 @@ body.cheia .fsbusca{display:flex}
   <section class="painel" id="p-carta"><h3>SUA CARTA</h3><div class="busca"><input id="qc" placeholder="seu nome como está no Livro…" autocomplete="off"><button class="btn px" id="bc">GERAR</button></div><canvas id="carta" width="270" height="480"></canvas><div style="text-align:center"><button class="btn px" id="baixar">BAIXAR PARA O STORY</button></div></section>
 </div>
 <div class="toast" id="toast"></div>
-<script src="../som.js?v=1794995004"></script>
-<script src="../cenas.js?v=1794995004"></script>
-<script src="../mapa.js?v=1794995423"></script>
+<script src="../som.js?v=1794996900"></script>
+<script src="../cenas.js?v=1794996900"></script>
+<script src="../mapa.js?v=1794996900"></script>
 <script>
 const {chave,pessoa,ser}=BRPG, MP=BRPG_MAPA, {MW,MH,LUGARES}=MP;
 const $=s=>document.querySelector(s);
@@ -152,6 +157,17 @@ function novaFala(t){const vis=pos.filter(q=>visivel(q.x,q.y));if(!vis.length)re
   fala={id:q.p.id,txt:ops[Math.floor(Math.random()*ops.length)],t0:t}}
 function visivel(x,y){const r=cv.getBoundingClientRect(),hw=r.width/2/cam.z,hh=r.height/2/cam.z;return x>cam.x-hw&&x<cam.x+hw&&y>cam.y-hh&&y<cam.y+hh}
 
+/* ---------- ofícios ---------- */
+let obraCasas=0;
+function ovelhinha(x,y,t,f){const b=Math.sin(t*3+f)>.6?1:0;c.fillStyle='#f2efe6';c.fillRect(x-3,y-4-b,7,4);c.fillStyle='#3a3030';c.fillRect(x+3,y-4-b,2,2);c.fillRect(x-2,y,1,1);c.fillRect(x+2,y,1,1)}
+function ferramenta(q,t){const x=Math.round(q.x),y=Math.round(q.y),s=Math.sin(t*7+q.f);
+  if(q.of==='martelo'){const up=s>0;c.fillStyle='#7a5230';c.fillRect(x+4,y-(up?12:8),1,5);c.fillStyle='#8a8f9a';c.fillRect(x+3,y-(up?13:9),3,2);
+    if(!up&&s<-.9){c.fillStyle='#ffe896';c.fillRect(x+8,y-6,1,1);c.fillRect(x+9,y-8,1,1)}}
+  else if(q.of==='tijolo'){c.fillStyle='#b4643c';c.fillRect(x-3,y-15,6,3);c.fillStyle='#8a4a2a';c.fillRect(x-3,y-13,6,1)}
+  else if(q.of==='enxada'){const d=s>0?0:3;c.fillStyle='#7a5230';c.fillRect(x+4,y-11+d,1,8);c.fillStyle='#8a8f9a';c.fillRect(x+4,y-3+d,3,1);c.fillStyle='#6a8a3a';c.fillRect(x+8,y,2,1);c.fillRect(x+11,y-1,1,2)}
+  else if(q.of==='pastor'){c.fillStyle='#7a5230';c.fillRect(x+5,y-14,1,13);c.fillRect(x+5,y-15,3,1);c.fillRect(x+7,y-14,1,2)}
+  else if(q.of==='harpa'){c.fillStyle='#c9902a';c.fillRect(x+4,y-10,1,7);c.fillRect(x+4,y-10,4,1);c.fillStyle='#fff3c0';c.fillRect(x+6,y-9,1,5);
+    const n=(t*1.2+q.f)%1;c.globalAlpha=1-n;c.fillStyle='#ffe896';c.fillRect(x+9+n*6,y-14-n*10,2,2);c.globalAlpha=1}}
 /* ---------- desenho ---------- */
 function P(x,y){return [(x-cam.x)*cam.z*DPR+CW/2,(y-cam.y)*cam.z*DPR+CH/2]}
 function frame(ms){const t=ms/1000;
@@ -166,6 +182,7 @@ function frame(ms){const t=ms/1000;
   for(let i=0;i<24;i++){const a=BRPG.hash(i*7)%420+30,b=BRPG.hash(i*13)%1000+80;c.globalAlpha=.4+.4*Math.sin(t*2+i);c.fillStyle='#cfe6ff';c.fillRect(a+Math.sin(t+i)*4,b,3,1)}c.globalAlpha=1;
   const A=MP.L.acampamento,E=MP.L.eden;for(let i=0;i<5;i++){const fx=A.x+Math.sin(t*9+i)*2,h=5+3*Math.sin(t*13+i*2);c.fillStyle=['#ff7a1e','#ffb432','#ffe678'][i%3];c.beginPath();c.moveTo(fx-3,A.y+5);c.lineTo(fx,A.y+5-h);c.lineTo(fx+3,A.y+5);c.fill()}
   for(let k=0;k<10;k++){const fl=.5+.5*Math.sin(t*15+k);c.fillStyle=fl>.5?'#ffe678':'#ff6a1e';c.fillRect(E.x+117+Math.sin(t*10+k),E.y-24+k*3,2,3)}
+  MP.obra(c,obraCasas,t);
   // pessoas
   pos.forEach(q=>{if(q.anda&&!(meuId===q.p.id&&meuPos)){const amp=q.z==='portao'?2:8+(q.p.id%9);q.x=q.bx+Math.sin(t*.25+q.f)*amp;q.y=q.by+Math.cos(t*.18+q.f)*amp*.4}
     if(meuId===q.p.id&&meuPos){q.x=meuPos.x;q.y=meuPos.y}});
@@ -173,7 +190,7 @@ function frame(ms){const t=ms/1000;
   ordem.forEach(q=>{c.globalAlpha=q.p.status==='pendente'?.45:1;
     if(q.z==='querubim'){pessoa(c,q.x,q.y,q.p.id,t,false,Object.assign({r:9,f:7,p:1},q.p.aparencia||{}));c.fillStyle='#eef0ff';c.fillRect(q.x-8,q.y-9+Math.sin(t*6),3,5);c.fillRect(q.x+5,q.y-9+Math.sin(t*6),3,5);c.fillStyle='#ffe896';c.fillRect(q.x-3,q.y-17,6,1)}
     else if(q.z==='jardim'||q.z==='arvore'||q.z==='sol'||q.z==='cosmos')ser(c,{p:q.p,x:q.x,y:q.y,f:q.f},t);
-    else pessoa(c,q.x,q.y,q.p.id,t,q.anda,q.p.aparencia);
+    else{if(q.of==='pastor')ovelhinha(q.x-9,q.y,t,q.f);pessoa(c,q.x,q.y,q.p.id,t,q.anda,q.p.aparencia);ferramenta(q,t)}
     c.globalAlpha=1});
   // névoa por cima
   c.drawImage(NEVOA,0,0);
@@ -326,7 +343,12 @@ async function iniciar(){try{dados=await BRPG.carregar(demo)}catch(e){console.er
   const e=dados.estado;$('#dia').textContent='EP. '+e.dia+' · '+(e.titulo||'').toUpperCase();$('#nLuzes').textContent=dados.pessoas.filter(p=>p.status!=='pendente').length;
   $('#barra').style.width=(e.meta?Math.min(100,Math.round(e.seguidores/e.meta*100)):0)+'%';
   const f=Math.max(0,e.meta-e.seguidores);$('#meta').textContent=f>0?'faltam '+f+' seguidores para o Ep. '+(e.dia+1):'meta batida — o próximo episódio vem aí';
+  const ativos=dados.pessoas.filter(p=>p.status!=='pendente').length,om=e.obra_meta||200,feito=Math.min(om,ativos+(e.obra_extra||0));
+  obraCasas=Math.round(feito/om*MP.LOTES.length);
+  $('#obraNome').textContent='OBRA · '+(e.obra_nome||'Cidade de Enoque').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  $('#obraN').textContent=feito+'/'+om+' moradores';$('#obraBar').style.width=Math.round(feito/om*100)+'%';
   livro()}
+$('#obraBox').onclick=()=>{const N=MP.L.enoque;voar(N.x,N.y,3);dizer('NARRADOR','A obra da vez: '+(dados.estado.obra_nome||'Cidade de Enoque')+' ('+(dados.estado.obra_ref||'Gênesis 4:17')+'). Cada personagem ativo é um morador e levanta uma parte da obra. Crie o seu personagem e comente o seu código para entrar.')};
 cam.z=1.2;cam.x=1700;cam.y=1030;limitar();
 montarLugares();requestAnimationFrame(frame);document.fonts.ready.then(()=>carta(null));
 dizer('NARRADOR','Bem-vindo ao mundo do Bíblia RPG! Você está no Éden, guardado pelos querubins. A leste, o acampamento e a cidade de Enoque. Afaste o mapa para ver toda a terra de Israel, o Egito e a Mesopotâmia: tudo apagado, porque ainda não chegamos lá. Digite seu nome lá em cima ou arraste para explorar.');

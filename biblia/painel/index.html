@@ -67,12 +67,17 @@ a{color:var(--ouro)}
     <section id="t-num" class="box hide">
       <div class="row"><div><label>seguidores</label><input id="nSeg" type="number"></div><div><label>meta</label><input id="nMeta" type="number"></div></div>
       <button class="btn px" id="salvarNum" style="margin-top:10px;width:100%">SALVAR</button>
+      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+      <label>obra da vez</label><input id="oNome" placeholder="Cidade de Enoque">
+      <div class="row"><div><label>referência</label><input id="oRef" placeholder="Gênesis 4:17"></div><div><label>meta (moradores)</label><input id="oMeta" type="number"></div></div>
+      <label>extra (somar além dos ativos)</label><input id="oExtra" type="number">
+      <button class="btn px" id="salvarObra" style="margin-top:10px;width:100%">SALVAR OBRA</button>
     </section>
     <p style="text-align:center;margin-top:10px"><a href="../mundo/">ver o mundo</a> · <a href="#" id="sair">sair</a></p>
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="../cenas.js?v=1794993548"></script>
+<script src="../cenas.js?v=1794996900"></script>
 <script>
 const {SB_URL,SB_KEY}=BRPG;const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -86,6 +91,7 @@ async function carregar(){dados=await rpc('biblia_admin_listar');render()}
 function render(){const P=dados.pessoas,pend=P.filter(p=>p.status==='pendente'),at=P.filter(p=>p.status==='ativo'),e=dados.estado||{};
   $('#resumo').innerHTML='<span class="px" style="font-size:9px;color:var(--ouro)">EP. '+esc(e.dia)+' · '+esc(e.titulo)+'</span><br>'+at.length+' personagens ativos · <b style="color:var(--verm)">'+pend.length+' pendentes</b> · '+esc(e.seguidores)+'/'+esc(e.meta)+' seguidores';
   $('#nSeg').value=e.seguidores;$('#nMeta').value=e.meta;
+  $('#oNome').value=e.obra_nome||'';$('#oRef').value=e.obra_ref||'';$('#oMeta').value=e.obra_meta||200;$('#oExtra').value=e.obra_extra||0;
   const qp=norm($('#qp').value);
   $('#listaPend').innerHTML=pend.filter(p=>!qp||norm(p.codigo+' '+p.nome+' '+p.arroba).includes(qp)).map(p=>'<div class="item"><div><div class="n">'+esc(p.nome)+' · '+esc(p.escolha)+'</div><div class="m"><a href="https://instagram.com/'+esc(p.arroba)+'" target="_blank" rel="noopener">@'+esc(p.arroba)+'</a></div><span class="cod">'+esc(p.codigo)+'</span></div><div class="acoes"><button class="btn ok px" data-a="ativo" data-id="'+p.id+'">ATIVAR</button><button class="btn no px" data-a="removido" data-id="'+p.id+'">✕</button></div></div>').join('')||'<p class="m" style="padding:10px 0;color:var(--mut)">Nenhum pendente.</p>';
   const qt=norm($('#qt').value);
@@ -102,6 +108,7 @@ $('#addLote').onclick=async()=>{const linhas=$('#lote').value.split('\n').map(l=
   for(const l of linhas){const m=l.match(/^@?([A-Za-z0-9._]+)[\s:–-]+([^,–-]+)[,–-]\s*(.+)$/);if(!m){falha.push(l);continue}
     try{await rpc('biblia_admin_adicionar',{p_nome:m[2].trim(),p_escolha:m[3].trim(),p_arroba:m[1],p_plataforma:'instagram'});ok++}catch(e){falha.push(l)}}
   $('#loteRes').textContent=ok+' adicionados'+(falha.length?'\nNão entendi:\n'+falha.join('\n'):'');if(ok)$('#lote').value=falha.join('\n');carregar()};
+$('#salvarObra').onclick=async()=>{try{await rpc('biblia_admin_obra',{p_nome:$('#oNome').value,p_ref:$('#oRef').value,p_meta:+$('#oMeta').value,p_extra:+$('#oExtra').value});toast('Obra salva');carregar()}catch(e){toast(e.message)}};
 $('#salvarNum').onclick=async()=>{try{await rpc('biblia_admin_estado',{p_seguidores:+$('#nSeg').value,p_meta:+$('#nMeta').value});toast('Salvo');carregar()}catch(e){toast(e.message)}};
 async function entrar(){CH=$('#chave').value.trim()||CH;try{await carregar();try{localStorage.setItem('biblia_admin',CH)}catch(e){}$('#login').classList.add('hide');$('#app').classList.remove('hide')}
   catch(e){$('#loginErro').textContent='Chave incorreta.'}}
