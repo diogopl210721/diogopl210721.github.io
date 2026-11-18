@@ -118,7 +118,7 @@ body.cheia .fsbusca{display:flex}
 <div class="toast" id="toast"></div>
 <script src="../som.js?v=1794995004"></script>
 <script src="../cenas.js?v=1794995004"></script>
-<script src="../mapa.js?v=1794995004"></script>
+<script src="../mapa.js?v=1794995423"></script>
 <script>
 const {chave,pessoa,ser}=BRPG, MP=BRPG_MAPA, {MW,MH,LUGARES}=MP;
 const $=s=>document.querySelector(s);
@@ -135,7 +135,7 @@ const cv=$('#cv'),c=cv.getContext('2d');let DPR=1,CW=0,CH=0;
 function medir(){DPR=Math.min(2.5,window.devicePixelRatio||1);const r=cv.getBoundingClientRect();CW=Math.round(r.width*DPR);CH=Math.round(r.height*DPR);cv.width=CW;cv.height=CH;c.imageSmoothingEnabled=false}
 window.addEventListener('resize',()=>{medir();limitar()});medir();
 const cam={x:800,y:600,z:2},alvo={on:false,x:0,y:0,z:2};let seguir=null;
-function zMin(){const r=cv.getBoundingClientRect();return Math.min(r.width/MW,r.height/MH)*.98}
+function zMin(){const r=cv.getBoundingClientRect();return Math.max(r.width/MW,r.height/MH)}
 function zMax(){return 10}
 function limitar(){cam.z=Math.max(zMin(),Math.min(zMax(),cam.z));const r=cv.getBoundingClientRect(),hw=r.width/2/cam.z,hh=r.height/2/cam.z;
   cam.x=hw*2>=MW?MW/2:Math.max(hw,Math.min(MW-hw,cam.x));cam.y=hh*2>=MH?MH/2:Math.max(hh,Math.min(MH-hh,cam.y))}
@@ -163,9 +163,9 @@ function frame(ms){const t=ms/1000;
   c.setTransform(z,0,0,z,CW/2-cam.x*z,CH/2-cam.y*z);c.imageSmoothingEnabled=false;
   c.drawImage(BASE,0,0);
   // animação no mapa: brilho na água, fogo do acampamento, espada dos querubins
-  for(let i=0;i<14;i++){const a=BRPG.hash(i*7)%300+40,b=BRPG.hash(i*13)%800;c.globalAlpha=.4+.4*Math.sin(t*2+i);c.fillStyle='#cfe6ff';c.fillRect(a+Math.sin(t+i)*4,b,3,1)}c.globalAlpha=1;
-  for(let i=0;i<5;i++){const fx=985+Math.sin(t*9+i)*2,h=5+3*Math.sin(t*13+i*2);c.fillStyle=['#ff7a1e','#ffb432','#ffe678'][i%3];c.beginPath();c.moveTo(fx-3,615);c.lineTo(fx,615-h);c.lineTo(fx+3,615);c.fill()}
-  for(let k=0;k<10;k++){const fl=.5+.5*Math.sin(t*15+k);c.fillStyle=fl>.5?'#ffe678':'#ff6a1e';c.fillRect(945+Math.sin(t*10+k),578+k*3,2,3)}
+  for(let i=0;i<24;i++){const a=BRPG.hash(i*7)%420+30,b=BRPG.hash(i*13)%1000+80;c.globalAlpha=.4+.4*Math.sin(t*2+i);c.fillStyle='#cfe6ff';c.fillRect(a+Math.sin(t+i)*4,b,3,1)}c.globalAlpha=1;
+  const A=MP.L.acampamento,E=MP.L.eden;for(let i=0;i<5;i++){const fx=A.x+Math.sin(t*9+i)*2,h=5+3*Math.sin(t*13+i*2);c.fillStyle=['#ff7a1e','#ffb432','#ffe678'][i%3];c.beginPath();c.moveTo(fx-3,A.y+5);c.lineTo(fx,A.y+5-h);c.lineTo(fx+3,A.y+5);c.fill()}
+  for(let k=0;k<10;k++){const fl=.5+.5*Math.sin(t*15+k);c.fillStyle=fl>.5?'#ffe678':'#ff6a1e';c.fillRect(E.x+117+Math.sin(t*10+k),E.y-24+k*3,2,3)}
   // pessoas
   pos.forEach(q=>{if(q.anda&&!(meuId===q.p.id&&meuPos)){const amp=q.z==='portao'?2:8+(q.p.id%9);q.x=q.bx+Math.sin(t*.25+q.f)*amp;q.y=q.by+Math.cos(t*.18+q.f)*amp*.4}
     if(meuId===q.p.id&&meuPos){q.x=meuPos.x;q.y=meuPos.y}});
@@ -188,17 +188,19 @@ function frame(ms){const t=ms/1000;
     if(window.BRPG_SOM)BRPG_SOM.cena(!lg?'misterio':lg.id==='eden'?'eden':(lg.id==='enoque'||lg.id==='acampamento')?'enoque':'misterio')}
   requestAnimationFrame(frame)}
 
-function placas(t){c.textAlign='center';
-  LUGARES.forEach(l=>{if(!visivel(l.x,l.y-l.r*.6)&&!visivel(l.x,l.y))return;
-    const grande=l.r>=90,fs=(grande?11:8)*DPR*Math.min(1.6,Math.max(.8,cam.z/1.4));
-    if(!grande&&cam.z<1.3)return;
-    const [x,y]=P(l.x,l.y-l.r*(grande?.75:.9));c.font=fs+'px "Press Start 2P"';
-    const nome=l.nome.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,''),w=c.measureText(nome).width+12*DPR,h=fs+10*DPR;
-    const ab=l.status==='agora',px=l.status==='proxima';
-    c.fillStyle=ab?'rgba(58,36,20,.92)':px?'rgba(40,30,20,.85)':'rgba(10,12,26,.8)';c.fillRect(x-w/2,y-h/2,w,h);
-    c.fillStyle=ab?'#ffb238':px?'#a87a3a':'#3a3f66';c.fillRect(x-w/2,y+h/2-2*DPR,w,2*DPR);
-    c.fillStyle=ab?'#ffd27a':px?'#e8c890':'#8a8fb8';c.fillText(nome,x,y+fs*.38);
-    if(!ab&&cam.z>=1.1){c.font=(13*DPR)+'px VT323';c.fillStyle=px?'#e8c890':'#8a8fb8';c.fillText(px?'próximo · Ep. 3':'🔒 ainda não chegamos',x,y+h/2+12*DPR)}});
+function placas(t){c.textAlign='center';const ocup=[];const sa=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'');
+  if(cam.z<.9){c.font=(13*DPR)+'px "Press Start 2P"';c.fillStyle='rgba(255,236,200,.35)';MP.REGIOES.forEach(g=>{if(!visivel(g.x,g.y))return;const [x,y]=P(g.x,g.y);c.fillText(sa(g.n),x,y)})}
+  const lista=LUGARES.filter(l=>l.grande||(l.importante&&cam.z>=.42)||cam.z>=1.0).sort((a,b)=>(b.status==='agora')-(a.status==='agora')||(b.grande?1:0)-(a.grande?1:0)||(b.importante?1:0)-(a.importante?1:0));
+  for(const l of lista){if(!visivel(l.x,l.y))continue;
+    const grande=!!l.grande,fs=(grande?10:8)*DPR;
+    const [x,y0]=P(l.x,l.y);const y=y0-(grande?Math.min(l.r*cam.z*DPR*.7,60*DPR):14*DPR);c.font=fs+'px "Press Start 2P"';
+    const nome=sa(l.nome.toUpperCase()),w=c.measureText(nome).width+10*DPR,h=fs+8*DPR;
+    if(ocup.some(r=>x-w/2<r[0]+r[2]&&x+w/2>r[0]&&y-h/2<r[1]+r[3]&&y+h/2>r[1]))continue;ocup.push([x-w/2,y-h/2,w,h]);
+    const ab=l.status==='agora',pr=l.status==='proxima';
+    if(!grande){c.fillStyle=ab?'#ffb238':'#c8b088';c.fillRect(x-2*DPR,y0-2*DPR,4*DPR,4*DPR)}
+    c.fillStyle=ab?'rgba(58,36,20,.92)':pr?'rgba(40,30,20,.85)':'rgba(10,12,26,.78)';c.fillRect(x-w/2,y-h/2,w,h);
+    c.fillStyle=ab?'#ffb238':pr?'#a87a3a':'#3a3f66';c.fillRect(x-w/2,y+h/2-2*DPR,w,2*DPR);
+    c.fillStyle=ab?'#ffd27a':pr?'#e8c890':'#a8acd0';c.fillText(nome,x,y+fs*.38)}
   c.textAlign='left'}
 
 function rotulos(t,ordem){if(cam.z<2.2)return;const ocup=[];
@@ -291,7 +293,7 @@ function abrir(p){document.querySelectorAll('.menu button').forEach(b=>b.classLi
 document.querySelectorAll('.menu button').forEach(b=>b.onclick=()=>abrir(b.dataset.p));
 function montarLugares(){const ord={agora:0,proxima:1,breve:2};
   $('#fases').innerHTML=LUGARES.slice().sort((a,b)=>ord[a.status]-ord[b.status]).map(l=>'<div class="item" data-l="'+l.id+'"><div><div class="n">'+(l.status==='breve'?'🔒 ':'')+esc(l.nome)+'</div><div class="e" style="color:var(--mut)">'+esc(l.ref)+'</div></div><div class="num" style="color:'+(l.status==='agora'?'var(--ouro2)':'var(--mut)')+'">'+(l.status==='agora'?'AGORA':l.status==='proxima'?'PRÓXIMO':'em breve')+'</div></div>').join('');
-  document.querySelectorAll('#fases .item').forEach(el=>el.onclick=()=>{const l=MP.L[el.dataset.l];seguir=null;voar(l.x,l.y,Math.max(2,Math.min(4,260/l.r)));falarLugar(l);$('#tela').scrollIntoView({behavior:'smooth',block:'center'})})}
+  document.querySelectorAll('#fases .item').forEach(el=>el.onclick=()=>{const l=MP.L[el.dataset.l];seguir=null;voar(l.x,l.y,l.grande?Math.max(1.2,Math.min(3,260/l.r)):2.5);falarLugar(l);$('#tela').scrollIntoView({behavior:'smooth',block:'center'})})}
 $('#ql').addEventListener('input',livro);
 function livro(){const q=norm($('#ql').value);const r=dados.pessoas.filter(p=>!q||norm(p.nome).includes(q)).sort((a,b)=>(b.pioneiro-a.pioneiro)||norm(a.nome).localeCompare(norm(b.nome)));
   $('#tot').textContent=r.length+' '+(r.length===1?'nome':'nomes')+' · toque para ir até a pessoa';
@@ -321,9 +323,9 @@ async function iniciar(){try{dados=await BRPG.carregar(demo)}catch(e){console.er
   $('#barra').style.width=(e.meta?Math.min(100,Math.round(e.seguidores/e.meta*100)):0)+'%';
   const f=Math.max(0,e.meta-e.seguidores);$('#meta').textContent=f>0?'faltam '+f+' seguidores para o Ep. '+(e.dia+1):'meta batida — o próximo episódio vem aí';
   livro()}
-cam.z=1.25;cam.x=930;cam.y=620;limitar();
+cam.z=1.2;cam.x=1700;cam.y=1030;limitar();
 montarLugares();requestAnimationFrame(frame);document.fonts.ready.then(()=>carta(null));
-dizer('NARRADOR','Bem-vindo ao mundo do Bíblia RPG! No centro está o Éden, guardado pelos querubins. A leste, o acampamento e a cidade de Enoque. O resto do mundo está apagado: ainda não chegamos lá. Digite seu nome lá em cima ou arraste para explorar.');
+dizer('NARRADOR','Bem-vindo ao mundo do Bíblia RPG! Você está no Éden, guardado pelos querubins. A leste, o acampamento e a cidade de Enoque. Afaste o mapa para ver toda a terra de Israel, o Egito e a Mesopotâmia: tudo apagado, porque ainda não chegamos lá. Digite seu nome lá em cima ou arraste para explorar.');
 iniciar().then(()=>{const q=new URLSearchParams(location.search).get('nome');if(q){$('#q').value=q;achar()}else if(meuId){const p=dados.pessoas.find(x=>x.id===meuId);if(p){irAte(p);ativarEu()}}});
 setInterval(()=>iniciar(),60000);
 /* som */
