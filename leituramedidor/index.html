@@ -246,8 +246,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = "https://nhtibdwafajkicliukuo.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5odGliZHdhZmFqa2ljbGl1a3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwNTk0NjAsImV4cCI6MjEwNDYzNTQ2MH0.5svADlVLHozg6TezbceTZ7mjh8xgJhbpv5kKe5pIXSQ";
+const SUPABASE_URL = "https://arffptuclrrzuzdrcmuc.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyZmZwdHVjbHJyenV6ZHJjbXVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MTcxMDAsImV4cCI6MjEwMTI5MzEwMH0.n3AqYrMwv2ayVa4la6vesVJOfd_LkdmY-ikp8P8uFAg";
 function loadScriptOnce(url){
   window.__scriptCache = window.__scriptCache || {};
   if(window.__scriptCache[url]) return window.__scriptCache[url];
@@ -296,7 +296,7 @@ async function withRetry(fn, tentativas = 3){
 }
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const BUCKET = "medidores-fotos";
+const BUCKET = "lm-fotos";
 
 let state = {
   view: "inicio",        // inicio | nova_sessao | captura | revisao
@@ -331,21 +331,21 @@ async function excluirSessao(s){
     }
   } catch(e){ /* segue mesmo se falhar limpeza de fotos */ }
 
-  const { error } = await sb.from('leitura_sessoes').delete().eq('id', s.id);
+  const { error } = await sb.from('lm_sessoes').delete().eq('id', s.id);
   if(error){ showToast('Erro ao excluir: ' + error.message); return; }
   showToast('Edifício excluído ✓');
   await carregarSessoes();
 }
 
 async function carregarSessoes(){
-  const { data, error } = await withRetry(() => sb.from('leitura_sessoes').select('*').order('created_at', {ascending:false}).limit(20));
+  const { data, error } = await withRetry(() => sb.from('lm_sessoes').select('*').order('created_at', {ascending:false}).limit(20));
   if(!error) state.sessoes = data;
   else showToast('Erro ao carregar sessões: ' + mensagemErroAmigavel(error));
   render();
 }
 
 async function carregarLeituras(sessaoId){
-  const { data, error } = await withRetry(() => sb.from('leituras').select('*').eq('sessao_id', sessaoId).order('created_at', {ascending:true}));
+  const { data, error } = await withRetry(() => sb.from('lm_leituras').select('*').eq('sessao_id', sessaoId).order('created_at', {ascending:true}));
   if(!error) state.leituras = data;
   else showToast('Erro ao carregar leituras: ' + mensagemErroAmigavel(error));
 }
@@ -494,7 +494,7 @@ function sessaoHeaderCard(){
       endereco: fEnd.value.trim() || null,
       observacao_geral: fObs.value.trim() || null,
     };
-    const { data, error } = await sb.from('leitura_sessoes').update(payload).eq('id', s.id).select().single();
+    const { data, error } = await sb.from('lm_sessoes').update(payload).eq('id', s.id).select().single();
     if(error){ showToast('Erro ao salvar: ' + error.message); saveBtn.disabled=false; saveBtn.textContent='Salvar alterações'; return; }
     state.sessaoAtual = data;
     state.editandoSessao = false;
@@ -553,7 +553,7 @@ function viewNovaSessao(){
       observacao_geral: card.querySelector('#f_obs').value.trim() || null,
       status: 'aberta'
     };
-    const { data, error } = await withRetry(() => sb.from('leitura_sessoes').insert(payload).select().single());
+    const { data, error } = await withRetry(() => sb.from('lm_sessoes').insert(payload).select().single());
     btn.disabled = false; btn.textContent = 'Iniciar captura';
     if(error){ showToast('Erro ao salvar: ' + mensagemErroAmigavel(error)); return; }
     state.sessaoAtual = data;
@@ -753,7 +753,7 @@ function viewCaptura(){
           tm = setTimeout(async () => {
             const campo = inp.dataset.f;
             const valor = inp.value.trim();
-            await sb.from('leituras').update({ [campo]: valor }).eq('id', l.id);
+            await sb.from('lm_leituras').update({ [campo]: valor }).eq('id', l.id);
             l[campo] = valor;
             row.querySelector('.apto-badge').textContent = (l.bloco ? l.bloco+'-' : '') + l.apartamento;
             row.querySelector('.info .l1').textContent = `${l.leitura||'—'} m³`;
@@ -764,7 +764,7 @@ function viewCaptura(){
       editGrid.querySelectorAll('.corte-toggle button').forEach(b=>{
         b.onclick = async () => {
           const v = b.dataset.v;
-          await sb.from('leituras').update({ corte: v }).eq('id', l.id);
+          await sb.from('lm_leituras').update({ corte: v }).eq('id', l.id);
           l.corte = v;
           editGrid.querySelectorAll('.corte-toggle button').forEach(x=>x.className='');
           b.className = v==='SIM' ? 'active-sim' : 'active-nao';
@@ -775,7 +775,7 @@ function viewCaptura(){
         if(!confirm(`Excluir a leitura do apto ${l.apartamento}?`)) return;
         e.target.textContent = '⏳';
         e.target.disabled = true;
-        await sb.from('leituras').delete().eq('id', l.id);
+        await sb.from('lm_leituras').delete().eq('id', l.id);
         await carregarLeituras(state.sessaoAtual.id);
         render();
       };
@@ -796,7 +796,7 @@ function viewCaptura(){
       if(jaFinalizada) return;
       if(!confirm('Marcar esse edifício como finalizado?')) return;
       finalizarBtn.disabled = true; finalizarBtn.textContent = 'Salvando...';
-      const { data, error } = await sb.from('leitura_sessoes').update({ status: 'finalizada' }).eq('id', s.id).select().single();
+      const { data, error } = await sb.from('lm_sessoes').update({ status: 'finalizada' }).eq('id', s.id).select().single();
       if(error){ showToast('Erro: ' + error.message); finalizarBtn.disabled=false; finalizarBtn.textContent='✓ Marcar edifício como finalizado'; return; }
       state.sessaoAtual = data;
       showToast('Edifício marcado como finalizado ✓');
@@ -849,7 +849,7 @@ async function compressImage(file){
 async function processarFoto(){
   state.processando = true; render();
   try{
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/extrair-medidor`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/lm-extrair-medidor`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -886,7 +886,7 @@ async function confirmarLeitura(numeroSerie, leitura){
     foto_path: path,
     corte: 'NÃO',
   };
-  const { error } = await withRetry(() => sb.from('leituras').insert(payload));
+  const { error } = await withRetry(() => sb.from('lm_leituras').insert(payload));
   if(error){ showToast('Erro ao salvar: ' + mensagemErroAmigavel(error)); return; }
 
   showToast(`${bloco ? 'Bloco ' + bloco + ' - ' : ''}Apto ${apto} salvo ✓`);
@@ -961,7 +961,7 @@ function viewRevisao(){
 
     const salvarCampo = async (campo, valor) => {
       const patch = {}; patch[campo] = valor.trim();
-      await sb.from('leituras').update(patch).eq('id', l.id);
+      await sb.from('lm_leituras').update(patch).eq('id', l.id);
       l[campo] = valor.trim();
       viewOnly.textContent = `${l.leitura} m³ · ${l.medidor||'sem série'} · ${l.marca||''}`;
       row.querySelector('.head .l1').textContent = `Apto ${l.apartamento}`;
@@ -977,7 +977,7 @@ function viewRevisao(){
     row.querySelectorAll('.corte-toggle button').forEach(b=>{
       b.onclick = async () => {
         const v = b.dataset.v;
-        await sb.from('leituras').update({ corte: v }).eq('id', l.id);
+        await sb.from('lm_leituras').update({ corte: v }).eq('id', l.id);
         l.corte = v;
         row.querySelectorAll('.corte-toggle button').forEach(x=>x.className='');
         b.className = v==='SIM' ? 'active-sim' : 'active-nao';
@@ -987,7 +987,7 @@ function viewRevisao(){
     row.querySelector('textarea').oninput = (e) => {
       clearTimeout(obsTimer);
       obsTimer = setTimeout(async () => {
-        await sb.from('leituras').update({ observacao: e.target.value }).eq('id', l.id);
+        await sb.from('lm_leituras').update({ observacao: e.target.value }).eq('id', l.id);
         l.observacao = e.target.value;
       }, 500);
     };
@@ -1013,7 +1013,7 @@ function viewRevisao(){
     if(jaFinalizada) return;
     if(!confirm('Marcar esse edifício como finalizado? Ele ainda pode ser reaberto e editado se precisar.')) return;
     finalizarBtn.disabled = true; finalizarBtn.textContent = 'Salvando...';
-    const { data, error } = await sb.from('leitura_sessoes').update({ status: 'finalizada' }).eq('id', state.sessaoAtual.id).select().single();
+    const { data, error } = await sb.from('lm_sessoes').update({ status: 'finalizada' }).eq('id', state.sessaoAtual.id).select().single();
     if(error){ showToast('Erro: ' + error.message); finalizarBtn.disabled=false; finalizarBtn.textContent='✓ Marcar edifício como finalizado'; return; }
     state.sessaoAtual = data;
     showToast('Edifício marcado como finalizado ✓');
