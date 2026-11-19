@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Leitura de Medidores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#f6f7f9;
+    --panel:#ffffff;
+    --panel-2:#f1f2f5;
+    --line:#e3e6eb;
+    --text:#1a1d23;
+    --muted:#6b7280;
+    --blue:#2563eb;
+    --blue-strong:#1d4ed8;
+    --blue-dim:#eff6ff;
+    --blue-border:#bfdbfe;
+    --teal:#0d9488;
+    --teal-strong:#0f766e;
+    --teal-dim:#f0fdfa;
+    --teal-border:#99f6e4;
+    --danger:#dc2626;
+    --danger-strong:#b91c1c;
+    --danger-dim:#fef2f2;
+    --danger-border:#fecaca;
+    --success:#16a34a;
+    --success-strong:#15803d;
+    --success-dim:#f0fdf4;
+    --success-border:#bbf7d0;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 2px 8px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif; margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .app{max-width:520px; margin:0 auto; padding:18px 16px 8px;}
+
+  header.top{
+    display:flex; align-items:center; gap:10px;
+    padding:14px 4px 20px;
+  }
+  .flame{
+    width:36px;height:36px;border-radius:9px;
+    background:linear-gradient(160deg,var(--blue),#1e40af);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .flame svg{width:20px; height:20px;}
+  .flame svg *{stroke:#ffffff !important;}
+  header.top .title{font-size:16px; font-weight:600; line-height:1.15;}
+  header.top .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+  }
+  .card h2{font-size:15px; font-weight:600; margin-bottom:14px; letter-spacing:.01em;}
+  label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px; margin-top:14px;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], input[type=date], input[type=tel], textarea, select{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    padding:12px 13px; border-radius:10px; font-size:15px; font-family:inherit;
+  }
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--blue); outline-offset:1px; border-color:var(--blue);}
+  textarea{resize:vertical; min-height:64px;}
+
+  .btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; padding:15px 16px; border-radius:12px; border:none;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px;
+    cursor:pointer; transition:transform .08s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btn-primary{background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#ffffff; box-shadow:0 2px 8px rgba(29,78,216,.28);}
+  .btn-secondary{background:var(--panel-2); color:var(--text); border:1px solid var(--line);}
+  .btn-teal{background:linear-gradient(135deg,#14b8a6,#0d9488); color:#ffffff; box-shadow:0 2px 8px rgba(13,148,136,.28);}
+  .btn-ghost{background:transparent; color:var(--muted); border:1px dashed var(--line);}
+  .btn-danger{background:var(--danger-dim); color:var(--danger-strong); border:1px solid var(--danger-border);}
+  .btn-row{display:flex; gap:10px; margin-top:14px;}
+  .btn-row .btn{width:auto; flex:1;}
+  .btn-icon{
+    width:34px; height:34px; flex-shrink:0; border-radius:9px; border:1px solid var(--line);
+    background:var(--panel-2); color:var(--muted); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:14px; padding:0;
+  }
+  .btn-icon:active{background:var(--line);}
+
+  .pill{display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:4px 10px; border-radius:999px; font-weight:600;}
+  .pill-open{background:var(--success-dim); color:var(--success-strong);}
+  .pill-closed{background:var(--panel-2); color:var(--muted);}
+
+  .session-item{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:13px 14px; margin-bottom:8px; cursor:pointer; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .session-item:active{background:var(--panel-2);}
+  .session-item .name{font-weight:600; font-size:14px;}
+  .session-item .meta{font-size:12px; color:var(--muted); margin-top:3px;}
+  .session-item .del{
+    background:none; border:none; color:var(--muted); font-size:17px; cursor:pointer;
+    padding:8px; flex-shrink:0; border-radius:8px;
+  }
+  .session-item .del:active{background:var(--danger-dim); color:var(--danger-strong);}
+
+  .hidden{display:none !important;}
+
+  /* captura screen */
+  .apto-row{display:flex; gap:10px; align-items:flex-end;}
+  .apto-row > div{flex:1;}
+  .cam-btn{
+    background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#ffffff; border:none; border-radius:12px;
+    box-shadow:0 2px 8px rgba(29,78,216,.28);
+    width:100%; padding:18px; font-family:'Space Grotesk'; font-weight:700; font-size:15px;
+    display:flex; align-items:center; justify-content:center; gap:10px; margin-top:14px;
+    cursor:pointer;
+  }
+  .cam-btn:disabled{opacity:.4;}
+  .btn-row .cam-btn{width:auto; flex:1; padding:15px 10px; font-size:13.5px;}
+  @media (max-width:360px){ .btn-row{flex-direction:column;} }
+  #fotoInputCam, #fotoInputGaleria{display:none;}
+
+  .preview-wrap{margin-top:14px; border-radius:12px; overflow:hidden; border:1px solid var(--line); position:relative;}
+  .preview-wrap img{width:100%; display:block;}
+  .preview-overlay{
+    position:absolute; inset:0; background:rgba(10,12,15,.72);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    color:#ffffff; font-size:13px; text-align:center; padding:20px;
+  }
+  .spinner{width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:var(--blue);animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .alerta{
+    background:var(--danger-dim); border:1px solid var(--danger-border); color:var(--danger-strong);
+    border-radius:12px; padding:14px; font-size:13.5px; margin-top:14px; line-height:1.5;
+  }
+
+  .readout{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;
+  }
+  .readout .box{border-radius:12px; padding:13px 14px;}
+  .box-serie{background:var(--teal-dim); border:1px solid var(--teal-border);}
+  .box-leitura{background:var(--blue-dim); border:1px solid var(--blue-border);}
+  .box .lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; font-weight:600;}
+  .box-serie .lbl{color:var(--teal-strong);}
+  .box-leitura .lbl{color:var(--blue-strong);}
+  .box input{
+    background:transparent; border:none; padding:6px 0 0; font-size:19px; width:100%;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--text);
+  }
+  .box input:focus{outline:none;}
+  .marca-cap{font-size:12px; color:var(--muted); margin-top:10px;}
+
+  .lista-title{
+    display:flex; justify-content:space-between; align-items:center; margin:22px 0 10px;
+    padding:0 2px;
+  }
+  .lista-title h3{font-size:13px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.05em;}
+  .lista-title .count{font-family:'IBM Plex Mono'; font-size:13px; color:var(--blue-strong);}
+
+  .row-leitura{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; margin-bottom:8px; box-shadow:var(--shadow);
+  }
+  .row-leitura .row-top{display:flex; align-items:center; gap:12px;}
+  .row-leitura .apto-badge{
+    width:40px; height:40px; border-radius:9px; background:var(--panel-2);
+    display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono';
+    font-weight:700; font-size:13px; flex-shrink:0; border:1px solid var(--line);
+  }
+  .row-leitura .info{flex:1; min-width:0;}
+  .row-leitura .info .l1{font-family:'IBM Plex Mono'; font-size:14px; font-weight:600;}
+  .row-leitura .info .l2{font-size:11.5px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .row-leitura .actions{display:flex; gap:2px; flex-shrink:0;}
+  .row-leitura .del, .row-leitura .edt{background:none; border:none; color:var(--muted); font-size:17px; cursor:pointer; padding:6px; border-radius:8px;}
+  .row-leitura .del:active{background:var(--danger-dim); color:var(--danger-strong);}
+  .row-leitura .edt:active{background:var(--blue-dim); color:var(--blue-strong);}
+  .row-leitura .edit-grid{margin-top:12px; padding-top:12px; border-top:1px solid var(--line);}
+
+  .empty-state{
+    text-align:center; padding:30px 10px; color:var(--muted); font-size:13px;
+  }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:#1a1d23; color:#ffffff; border:1px solid #1a1d23;
+    padding:11px 18px; border-radius:999px; font-size:13px; font-weight:600;
+    box-shadow:0 8px 24px rgba(16,24,40,.25); z-index:50; opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+  .field-edit{display:flex; gap:8px; align-items:center;}
+  .corte-toggle{
+    display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; flex-shrink:0;
+  }
+  .corte-toggle button{
+    border:none; background:var(--panel-2); color:var(--muted); font-size:11px; font-weight:700;
+    padding:8px 10px; font-family:'Space Grotesk'; cursor:pointer;
+  }
+  .corte-toggle button.active-sim{background:var(--danger-dim); color:var(--danger-strong);}
+  .corte-toggle button.active-nao{background:var(--success-dim); color:var(--success-strong);}
+
+  .review-row{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:13px 14px; margin-bottom:10px; box-shadow:var(--shadow);}
+  .review-row .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .review-row .head .l1{font-family:'IBM Plex Mono'; font-weight:700; font-size:14px;}
+  .review-row .head .l2{font-size:12px; color:var(--muted);}
+  .review-row textarea{margin-top:8px; font-size:13px;}
+  .review-row .edit-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .review-row .edit-grid label{margin:0 0 4px;}
+  .review-row .edit-grid input{font-size:13.5px; padding:9px 10px;}
+  .foto-link{
+    display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--blue-strong);
+    text-decoration:none; font-weight:600; margin-top:2px;
+  }
+  .foto-link:active{opacity:.7;}
+
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; color:var(--text); font-size:13px; font-weight:600;
+    background:var(--panel); border:1px solid var(--line); cursor:pointer; padding:9px 14px 9px 12px;
+    margin-bottom:14px; border-radius:10px; box-shadow:var(--shadow); font-family:'Inter';
+  }
+  .back-link:active{background:var(--panel-2);}
+  .foot-note{font-size:11.5px; color:var(--muted); text-align:center; margin-top:18px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = "https://nhtibdwafajkicliukuo.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5odGliZHdhZmFqa2ljbGl1a3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwNTk0NjAsImV4cCI6MjEwNDYzNTQ2MH0.5svADlVLHozg6TezbceTZ7mjh8xgJhbpv5kKe5pIXSQ";
+function loadScriptOnce(url){
+  window.__scriptCache = window.__scriptCache || {};
+  if(window.__scriptCache[url]) return window.__scriptCache[url];
+  window.__scriptCache[url] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = url;
+    s.onload = resolve;
+    s.onerror = () => { delete window.__scriptCache[url]; reject(new Error('Falha ao carregar ' + url)); };
+    document.head.appendChild(s);
+  });
+  return window.__scriptCache[url];
+}
+
+function mensagemErroAmigavel(err){
+  const msg = (err && (err.message || String(err))) || '';
+  if(/load failed|failed to fetch|network|fetch/i.test(msg)){
+    return 'Falha de conexão. Verifique o sinal e tente novamente.';
+  }
+  return msg;
+}
+
+async function withRetry(fn, tentativas = 3){
+  let ultimoErro;
+  for(let i = 0; i < tentativas; i++){
+    try{
+      const resultado = await fn();
+      if(resultado && resultado.error){
+        const msg = resultado.error.message || '';
+        if(/load failed|failed to fetch|network/i.test(msg) && i < tentativas - 1){
+          ultimoErro = resultado.error;
+          await new Promise(r => setTimeout(r, 600 * (i + 1)));
+          continue;
+        }
+      }
+      return resultado;
+    } catch(e){
+      ultimoErro = e;
+      if(i < tentativas - 1){
+        await new Promise(r => setTimeout(r, 600 * (i + 1)));
+        continue;
+      }
+      return { data: null, error: e };
+    }
+  }
+  return { data: null, error: ultimoErro };
+}
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const BUCKET = "medidores-fotos";
+
+let state = {
+  view: "inicio",        // inicio | nova_sessao | captura | revisao
+  sessoes: [],
+  sessaoAtual: null,
+  leituras: [],
+  fotoAtual: null,       // { base64, mediaType, previewUrl }
+  extracao: null,        // { numero_serie, leitura, marca, status_foto, motivo }
+  aptoInput: "",
+  blocoInput: "",
+  processando: false,
+  editandoSessao: false,
+  abrindoSessao: false,
+};
+
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._tm);
+  showToast._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+async function excluirSessao(s){
+  showToast('Excluindo...');
+  try{
+    const { data: arquivos } = await sb.storage.from(BUCKET).list(s.id);
+    if(arquivos && arquivos.length){
+      const paths = arquivos.map(f => `${s.id}/${f.name}`);
+      await sb.storage.from(BUCKET).remove(paths);
+    }
+  } catch(e){ /* segue mesmo se falhar limpeza de fotos */ }
+
+  const { error } = await sb.from('leitura_sessoes').delete().eq('id', s.id);
+  if(error){ showToast('Erro ao excluir: ' + error.message); return; }
+  showToast('Edifício excluído ✓');
+  await carregarSessoes();
+}
+
+async function carregarSessoes(){
+  const { data, error } = await withRetry(() => sb.from('leitura_sessoes').select('*').order('created_at', {ascending:false}).limit(20));
+  if(!error) state.sessoes = data;
+  else showToast('Erro ao carregar sessões: ' + mensagemErroAmigavel(error));
+  render();
+}
+
+async function carregarLeituras(sessaoId){
+  const { data, error } = await withRetry(() => sb.from('leituras').select('*').eq('sessao_id', sessaoId).order('created_at', {ascending:true}));
+  if(!error) state.leituras = data;
+  else showToast('Erro ao carregar leituras: ' + mensagemErroAmigavel(error));
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = "";
+  app.appendChild(header());
+  if(state.view === 'inicio') app.appendChild(viewInicio());
+  else if(state.view === 'nova_sessao') app.appendChild(viewNovaSessao());
+  else if(state.view === 'captura') app.appendChild(viewCaptura());
+  else if(state.view === 'revisao') app.appendChild(viewRevisao());
+}
+
+function header(){
+  return el(`
+    <header class="top">
+      <div class="flame">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="13" r="8" stroke="#1a1204" stroke-width="1.8"/>
+          <path d="M12 13 L12 8.2" stroke="#1a1204" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M12 13 L15.2 15" stroke="#1a1204" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M8.5 3.5 L9.7 5.6" stroke="#1a1204" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M15.5 3.5 L14.3 5.6" stroke="#1a1204" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M12 2.6 L12 4.8" stroke="#1a1204" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="title">Leitura de Medidores</div>
+        <div class="sub">captura de dados em campo</div>
+      </div>
+    </header>
+  `);
+}
+
+// ---------- TELA INICIAL ----------
+function viewInicio(){
+  const wrap = el(`<div></div>`);
+  const novaBtn = el(`<button class="btn btn-primary">+ Nova sessão de leitura</button>`);
+  novaBtn.onclick = () => { state.view = 'nova_sessao'; render(); };
+  wrap.appendChild(novaBtn);
+
+  const listWrap = el(`<div class="lista-title"><h3>Sessões recentes</h3></div>`);
+  wrap.appendChild(listWrap);
+
+  if(!state.sessoes.length){
+    wrap.appendChild(el(`<div class="empty-state">Nenhuma sessão ainda. Toque em "Nova sessão" pra começar.</div>`));
+  } else {
+    state.sessoes.forEach(s => {
+      const item = el(`
+        <div class="session-item">
+          <div style="min-width:0; flex:1;">
+            <div class="name">${escapeHtml(s.cliente || 'Sem nome')}</div>
+            <div class="meta">${escapeHtml(s.endereco || '')} · ${formatDate(s.data_leitura)}
+              <span class="pill ${s.status==='aberta'?'pill-open':'pill-closed'}" style="margin-left:6px;">${s.status==='aberta'?'ABERTA':'FINALIZADA'}</span>
+            </div>
+          </div>
+          <button class="del" title="Excluir edifício">🗑</button>
+        </div>
+      `);
+      item.onclick = async () => {
+        state.sessaoAtual = s;
+        state.view = 'captura';
+        state.leituras = [];
+        state.abrindoSessao = true;
+        render();
+        await carregarLeituras(s.id);
+        state.abrindoSessao = false;
+        render();
+      };
+      item.querySelector('.del').onclick = async (e) => {
+        e.stopPropagation();
+        if(!confirm(`Excluir "${s.cliente || 'esta sessão'}" e todas as leituras e fotos dela? Essa ação não pode ser desfeita.`)) return;
+        await excluirSessao(s);
+      };
+      wrap.appendChild(item);
+    });
+  }
+  return wrap;
+}
+
+function formatDate(d){
+  if(!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+function escapeHtml(s){
+  if(s==null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- CABEÇALHO DA SESSÃO (com edição) ----------
+function sessaoHeaderCard(){
+  const s = state.sessaoAtual;
+
+  if(!state.editandoSessao){
+    const box = el(`
+      <div class="card" style="padding:14px 16px; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div style="min-width:0;">
+          <div style="font-weight:600; font-size:14.5px;">${escapeHtml(s.cliente)}</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:2px;">${escapeHtml(s.endereco||'')}</div>
+        </div>
+        <button class="btn-icon" title="Editar cadastro">✎</button>
+      </div>
+    `);
+    box.querySelector('.btn-icon').onclick = () => { state.editandoSessao = true; render(); };
+    return box;
+  }
+
+  const card = el(`<div class="card"><h2>Editar cadastro</h2></div>`);
+  card.appendChild(el(`<label>Cliente</label>`));
+  const fCliente = el(`<input type="text" value="${escapeHtml(s.cliente||'')}">`);
+  card.appendChild(fCliente);
+  card.appendChild(el(`<label>Código (quando tiver)</label>`));
+  const fCodigo = el(`<input type="text" value="${escapeHtml(s.codigo||'')}">`);
+  card.appendChild(fCodigo);
+  card.appendChild(el(`<label>Data da leitura</label>`));
+  const fData = el(`<input type="date" value="${s.data_leitura||''}">`);
+  card.appendChild(fData);
+  card.appendChild(el(`<label>Representante</label>`));
+  const fRep = el(`<input type="text" value="${escapeHtml(s.representante||'')}">`);
+  card.appendChild(fRep);
+  card.appendChild(el(`<label>Telefone</label>`));
+  const fTel = el(`<input type="tel" value="${escapeHtml(s.telefone||'')}">`);
+  card.appendChild(fTel);
+  card.appendChild(el(`<label>Endereço</label>`));
+  const fEnd = el(`<input type="text" value="${escapeHtml(s.endereco||'')}">`);
+  card.appendChild(fEnd);
+  card.appendChild(el(`<label>Observação geral</label>`));
+  const fObs = el(`<textarea>${escapeHtml(s.observacao_geral||'')}</textarea>`);
+  card.appendChild(fObs);
+
+  const row = el(`<div class="btn-row"></div>`);
+  const cancelBtn = el(`<button class="btn btn-secondary">Cancelar</button>`);
+  cancelBtn.onclick = () => { state.editandoSessao = false; render(); };
+  const saveBtn = el(`<button class="btn btn-primary">Salvar alterações</button>`);
+  saveBtn.onclick = async () => {
+    if(!fCliente.value.trim()){ showToast('Informe o nome do cliente'); return; }
+    saveBtn.disabled = true; saveBtn.textContent = 'Salvando...';
+    const payload = {
+      cliente: fCliente.value.trim(),
+      codigo: fCodigo.value.trim() || null,
+      data_leitura: fData.value || null,
+      representante: fRep.value.trim() || null,
+      telefone: fTel.value.trim() || null,
+      endereco: fEnd.value.trim() || null,
+      observacao_geral: fObs.value.trim() || null,
+    };
+    const { data, error } = await sb.from('leitura_sessoes').update(payload).eq('id', s.id).select().single();
+    if(error){ showToast('Erro ao salvar: ' + error.message); saveBtn.disabled=false; saveBtn.textContent='Salvar alterações'; return; }
+    state.sessaoAtual = data;
+    state.editandoSessao = false;
+    showToast('Cadastro atualizado ✓');
+    render();
+  };
+  row.appendChild(cancelBtn);
+  row.appendChild(saveBtn);
+  card.appendChild(row);
+  return card;
+}
+
+// ---------- NOVA SESSÃO ----------
+function viewNovaSessao(){
+  const wrap = el(`<div></div>`);
+  const back = el(`<button class="back-link">← Voltar</button>`);
+  back.onclick = () => { state.view = 'inicio'; render(); };
+  wrap.appendChild(back);
+
+  const card = el(`
+    <div class="card">
+      <h2>Dados do prédio / cliente</h2>
+      <label>Cliente</label>
+      <input type="text" id="f_cliente" placeholder="Ex: Condomínio Edifício Ana Paula">
+      <label>Código (quando tiver)</label>
+      <input type="text" id="f_codigo" placeholder="Ex: 401040">
+      <label>Data da leitura</label>
+      <input type="date" id="f_data">
+      <label>Representante</label>
+      <input type="text" id="f_representante" placeholder="Nome de quem está fazendo a leitura">
+      <label>Telefone</label>
+      <input type="tel" id="f_telefone" placeholder="(41) 99999-9999">
+      <label>Endereço</label>
+      <input type="text" id="f_endereco" placeholder="Rua, número, bairro, cidade">
+      <label>Observação geral (opcional)</label>
+      <textarea id="f_obs" placeholder="Ex: Fornecimento de GLP a granel, tanques, abrigos..."></textarea>
+      <button class="btn btn-primary" id="salvarSessao" style="margin-top:18px;">Iniciar captura</button>
+    </div>
+  `);
+  wrap.appendChild(card);
+
+  card.querySelector('#f_data').value = new Date().toISOString().slice(0,10);
+
+  card.querySelector('#salvarSessao').onclick = async (e) => {
+    const btn = e.target;
+    const cliente = card.querySelector('#f_cliente').value.trim();
+    if(!cliente){ showToast('Informe o nome do cliente'); return; }
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    const payload = {
+      cliente,
+      codigo: card.querySelector('#f_codigo').value.trim() || null,
+      data_leitura: card.querySelector('#f_data').value || null,
+      representante: card.querySelector('#f_representante').value.trim() || null,
+      telefone: card.querySelector('#f_telefone').value.trim() || null,
+      endereco: card.querySelector('#f_endereco').value.trim() || null,
+      observacao_geral: card.querySelector('#f_obs').value.trim() || null,
+      status: 'aberta'
+    };
+    const { data, error } = await withRetry(() => sb.from('leitura_sessoes').insert(payload).select().single());
+    btn.disabled = false; btn.textContent = 'Iniciar captura';
+    if(error){ showToast('Erro ao salvar: ' + mensagemErroAmigavel(error)); return; }
+    state.sessaoAtual = data;
+    state.leituras = [];
+    state.view = 'captura';
+    render();
+  };
+  return wrap;
+}
+
+// ---------- CAPTURA ----------
+function viewCaptura(){
+  const wrap = el(`<div></div>`);
+  const s = state.sessaoAtual;
+  const back = el(`<button class="back-link">← Sessões</button>`);
+  back.onclick = () => { state.view = 'inicio'; state.fotoAtual=null; state.extracao=null; carregarSessoes(); };
+  wrap.appendChild(back);
+
+  wrap.appendChild(sessaoHeaderCard());
+
+  const card = el(`<div class="card"><h2>Captura de leitura</h2></div>`);
+
+  const aptoRow = el(`
+    <div class="apto-row">
+      <div style="flex:0 0 38%;">
+        <label>Bloco / Torre</label>
+        <input type="text" id="f_bloco" placeholder="Ex: A" value="${escapeHtml(state.blocoInput)}">
+      </div>
+      <div>
+        <label>Nº do apartamento / unidade</label>
+        <input type="text" id="f_apto" placeholder="Ex: 41" inputmode="numeric" value="${escapeHtml(state.aptoInput)}">
+      </div>
+    </div>
+  `);
+  card.appendChild(aptoRow);
+
+  const blocoField = aptoRow.querySelector('#f_bloco');
+  blocoField.oninput = () => { state.blocoInput = blocoField.value; };
+  const aptoField = aptoRow.querySelector('#f_apto');
+  aptoField.oninput = () => { state.aptoInput = aptoField.value; };
+
+  const fileInputCam = el(`<input type="file" id="fotoInputCam" accept="image/*" capture="environment">`);
+  const fileInputGaleria = el(`<input type="file" id="fotoInputGaleria" accept="image/*">`);
+  card.appendChild(fileInputCam);
+  card.appendChild(fileInputGaleria);
+
+  const btnGroup = el(`<div class="btn-row" style="margin-top:14px;"></div>`);
+  const camBtn = el(`<button class="cam-btn" style="margin-top:0;">📷 &nbsp;Tirar foto</button>`);
+  const galBtn = el(`<button class="cam-btn" style="margin-top:0; background:var(--panel-2); color:var(--text); border:1px solid var(--line);">🖼️ &nbsp;Enviar da galeria</button>`);
+  camBtn.disabled = state.processando;
+  galBtn.disabled = state.processando;
+  camBtn.onclick = () => {
+    if(!state.aptoInput.trim()){ showToast('Informe o número do apartamento primeiro'); aptoField.focus(); return; }
+    fileInputCam.click();
+  };
+  galBtn.onclick = () => {
+    if(!state.aptoInput.trim()){ showToast('Informe o número do apartamento primeiro'); aptoField.focus(); return; }
+    fileInputGaleria.click();
+  };
+  btnGroup.appendChild(camBtn);
+  btnGroup.appendChild(galBtn);
+  card.appendChild(btnGroup);
+
+  const onFotoEscolhida = async (ev) => {
+    const file = ev.target.files[0];
+    if(!file) return;
+    state.extracao = null;
+    const { base64, mediaType, previewUrl } = await compressImage(file);
+    state.fotoAtual = { base64, mediaType, previewUrl };
+    render();
+    await processarFoto();
+  };
+  fileInputCam.onchange = onFotoEscolhida;
+  fileInputGaleria.onchange = onFotoEscolhida;
+
+  // preview + resultado
+  if(state.fotoAtual){
+    const previewWrap = el(`<div class="preview-wrap"><img src="${state.fotoAtual.previewUrl}"></div>`);
+    if(state.processando){
+      previewWrap.appendChild(el(`
+        <div class="preview-overlay">
+          <div class="spinner"></div>
+          <div>Lendo número de série e consumo...</div>
+        </div>
+      `));
+    }
+    card.appendChild(previewWrap);
+
+    if(!state.processando && state.extracao){
+      if(state.extracao.status_foto === 'ILEGIVEL' || state.extracao.erro){
+        card.appendChild(el(`
+          <div class="alerta">
+            ⚠️ ${state.extracao.erro ? 'Não foi possível processar a foto.' : 'Leitura ilegível, foto ficou desfocada, escura ou com reflexo.'}
+            ${state.extracao.motivo ? '<br><br>' + escapeHtml(state.extracao.motivo) : ''}
+            ${state.extracao.detalhe ? '<br><br>' + escapeHtml(String(state.extracao.detalhe)).slice(0,200) : ''}
+            <br><br>Tire a foto novamente, com boa iluminação e sem reflexo no acrílico.
+          </div>
+        `));
+        const retryBtn = el(`<button class="btn btn-secondary" style="margin-top:12px;">Tirar outra foto</button>`);
+        retryBtn.onclick = () => { state.fotoAtual=null; state.extracao=null; render(); };
+        card.appendChild(retryBtn);
+      } else {
+        const readout = el(`
+          <div class="readout">
+            <div class="box box-serie">
+              <div class="lbl">Nº de Série</div>
+              <input type="text" id="ed_serie" class="mono" value="${escapeHtml(state.extracao.numero_serie||'')}">
+            </div>
+            <div class="box box-leitura">
+              <div class="lbl">Leitura (m³)</div>
+              <input type="text" id="ed_leitura" class="mono" value="${escapeHtml(state.extracao.leitura||'')}">
+            </div>
+          </div>
+          <div class="marca-cap">Marca identificada: <strong>${escapeHtml(state.extracao.marca||'—')}</strong> · confira os campos acima antes de confirmar</div>
+        `);
+        card.appendChild(readout);
+
+        const btnRow = el(`<div class="btn-row"></div>`);
+        const retryBtn = el(`<button class="btn btn-secondary">Tirar outra</button>`);
+        retryBtn.onclick = () => { state.fotoAtual=null; state.extracao=null; render(); };
+        const confirmBtn = el(`<button class="btn btn-primary">✓ Confirmar e salvar</button>`);
+        confirmBtn.onclick = () => {
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Salvando...';
+          confirmarLeitura(readout.querySelector('#ed_serie').value, readout.querySelector('#ed_leitura').value)
+            .finally(() => { confirmBtn.disabled = false; confirmBtn.textContent = '✓ Confirmar e salvar'; });
+        };
+        btnRow.appendChild(retryBtn);
+        btnRow.appendChild(confirmBtn);
+        card.appendChild(btnRow);
+      }
+    }
+  }
+
+  wrap.appendChild(card);
+
+  // lista de leituras já capturadas
+  const listTitle = el(`
+    <div class="lista-title">
+      <h3>Capturadas nesta sessão</h3>
+      <span class="count">${state.leituras.length}</span>
+    </div>
+  `);
+  wrap.appendChild(listTitle);
+
+  if(!state.leituras.length){
+    wrap.appendChild(el(`<div class="empty-state">${state.abrindoSessao ? 'Carregando...' : 'Nenhuma leitura capturada ainda.'}</div>`));
+  } else {
+    [...state.leituras].reverse().forEach(l => {
+      const row = el(`
+        <div class="row-leitura">
+          <div class="row-top">
+            <div class="apto-badge">${l.bloco ? escapeHtml(l.bloco)+'-' : ''}${escapeHtml(l.apartamento)}</div>
+            <div class="info">
+              <div class="l1">${escapeHtml(l.leitura||'—')} m³</div>
+              <div class="l2">${escapeHtml(l.medidor||'sem série')} · ${escapeHtml(l.marca||'')}</div>
+            </div>
+            <div class="actions">
+              <button class="edt" title="Editar">✎</button>
+              <button class="del" title="Excluir">🗑</button>
+            </div>
+          </div>
+          <div class="edit-grid hidden">
+            <label>Bloco / Torre</label>
+            <input type="text" data-f="bloco" value="${escapeHtml(l.bloco||'')}">
+            <label>Apartamento</label>
+            <input type="text" data-f="apartamento" value="${escapeHtml(l.apartamento)}">
+            <label>Leitura (m³)</label>
+            <input type="text" class="mono" data-f="leitura" value="${escapeHtml(l.leitura||'')}">
+            <label>Nº de Série</label>
+            <input type="text" class="mono" data-f="medidor" value="${escapeHtml(l.medidor||'')}">
+            <label>Marca</label>
+            <input type="text" data-f="marca" value="${escapeHtml(l.marca||'')}">
+            <label>Corte</label>
+            <div class="corte-toggle">
+              <button data-v="NÃO" class="${(l.corte||'NÃO')==='NÃO'?'active-nao':''}">NÃO</button>
+              <button data-v="SIM" class="${l.corte==='SIM'?'active-sim':''}">SIM CORTE</button>
+            </div>
+            <label>Observação</label>
+            <textarea data-f="observacao" placeholder="Opcional">${escapeHtml(l.observacao||'')}</textarea>
+            ${l.foto_path ? `<a class="foto-link" href="${fotoPublicUrl(l.foto_path)}" target="_blank" rel="noopener" download>🖼️ Ver / baixar foto</a>` : ''}
+          </div>
+        </div>
+      `);
+
+      const editGrid = row.querySelector('.edit-grid');
+      const edtBtn = row.querySelector('.edt');
+      edtBtn.onclick = () => {
+        const abrindo = editGrid.classList.contains('hidden');
+        editGrid.classList.toggle('hidden', !abrindo);
+        edtBtn.textContent = abrindo ? '✓' : '✎';
+      };
+      editGrid.querySelectorAll('input[data-f], textarea[data-f]').forEach(inp => {
+        let tm;
+        inp.oninput = () => {
+          clearTimeout(tm);
+          tm = setTimeout(async () => {
+            const campo = inp.dataset.f;
+            const valor = inp.value.trim();
+            await sb.from('leituras').update({ [campo]: valor }).eq('id', l.id);
+            l[campo] = valor;
+            row.querySelector('.apto-badge').textContent = (l.bloco ? l.bloco+'-' : '') + l.apartamento;
+            row.querySelector('.info .l1').textContent = `${l.leitura||'—'} m³`;
+            row.querySelector('.info .l2').textContent = `${l.medidor||'sem série'} · ${l.marca||''}`;
+          }, 500);
+        };
+      });
+      editGrid.querySelectorAll('.corte-toggle button').forEach(b=>{
+        b.onclick = async () => {
+          const v = b.dataset.v;
+          await sb.from('leituras').update({ corte: v }).eq('id', l.id);
+          l.corte = v;
+          editGrid.querySelectorAll('.corte-toggle button').forEach(x=>x.className='');
+          b.className = v==='SIM' ? 'active-sim' : 'active-nao';
+        };
+      });
+
+      row.querySelector('.del').onclick = async (e) => {
+        if(!confirm(`Excluir a leitura do apto ${l.apartamento}?`)) return;
+        e.target.textContent = '⏳';
+        e.target.disabled = true;
+        await sb.from('leituras').delete().eq('id', l.id);
+        await carregarLeituras(state.sessaoAtual.id);
+        render();
+      };
+      wrap.appendChild(row);
+    });
+  }
+
+  if(state.leituras.length){
+    const ordenadas = [...state.leituras].sort((a,b)=> {
+      const na = parseInt(a.apartamento), nb = parseInt(b.apartamento);
+      if(isNaN(na)||isNaN(nb)) return a.apartamento.localeCompare(b.apartamento);
+      return na - nb;
+    });
+
+    const jaFinalizada = s.status === 'finalizada';
+    const finalizarBtn = el(`<button class="btn ${jaFinalizada ? 'btn-secondary' : 'btn-teal'}" style="margin-top:18px;" ${jaFinalizada ? 'disabled' : ''}>${jaFinalizada ? '✓ Edifício finalizado' : '✓ Marcar edifício como finalizado'}</button>`);
+    finalizarBtn.onclick = async () => {
+      if(jaFinalizada) return;
+      if(!confirm('Marcar esse edifício como finalizado?')) return;
+      finalizarBtn.disabled = true; finalizarBtn.textContent = 'Salvando...';
+      const { data, error } = await sb.from('leitura_sessoes').update({ status: 'finalizada' }).eq('id', s.id).select().single();
+      if(error){ showToast('Erro: ' + error.message); finalizarBtn.disabled=false; finalizarBtn.textContent='✓ Marcar edifício como finalizado'; return; }
+      state.sessaoAtual = data;
+      showToast('Edifício marcado como finalizado ✓');
+      render();
+    };
+    wrap.appendChild(finalizarBtn);
+
+    const exportBtn = el(`<button class="btn btn-primary" style="margin-top:10px;">⬇ Baixar planilha (.xlsx)</button>`);
+    exportBtn.onclick = async () => {
+      exportBtn.disabled = true; exportBtn.textContent = 'Gerando...';
+      await exportarXlsx(state.sessaoAtual, ordenadas);
+      exportBtn.disabled = false; exportBtn.textContent = '⬇ Baixar planilha (.xlsx)';
+      showToast('Planilha gerada ✓');
+    };
+    wrap.appendChild(exportBtn);
+
+    const fotosBtn = el(`<button class="btn btn-secondary" style="margin-top:10px;">⬇ Baixar todas as fotos (.zip)</button>`);
+    fotosBtn.onclick = () => baixarTodasFotos(state.leituras, fotosBtn);
+    wrap.appendChild(fotosBtn);
+  }
+
+  return wrap;
+}
+
+async function compressImage(file){
+  const dataUrl = await new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise((res,rej)=>{
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = rej;
+    im.src = dataUrl;
+  });
+  const maxW = 1280;
+  const scale = Math.min(1, maxW / img.width);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width * scale;
+  canvas.height = img.height * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const outUrl = canvas.toDataURL('image/jpeg', 0.78);
+  const base64 = outUrl.split(',')[1];
+  return { base64, mediaType: 'image/jpeg', previewUrl: outUrl };
+}
+
+async function processarFoto(){
+  state.processando = true; render();
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/extrair-medidor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ imagem_base64: state.fotoAtual.base64, media_type: state.fotoAtual.mediaType })
+    });
+    const data = await res.json();
+    state.extracao = data;
+  } catch(e){
+    state.extracao = { erro: 'Falha de conexão', detalhe: String(e) };
+  }
+  state.processando = false;
+  render();
+}
+
+async function confirmarLeitura(numeroSerie, leitura){
+  const apto = state.aptoInput.trim();
+  const bloco = state.blocoInput.trim();
+  const s = state.sessaoAtual;
+  const path = `${s.id}/${apto}_${Date.now()}.jpg`;
+  const blob = await (await fetch(state.fotoAtual.previewUrl)).blob();
+  const { error: upErr } = await withRetry(() => sb.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg' }));
+  if(upErr){ showToast('Erro ao enviar foto: ' + mensagemErroAmigavel(upErr)); return; }
+
+  const payload = {
+    sessao_id: s.id,
+    apartamento: apto,
+    bloco: bloco || null,
+    leitura: leitura.trim(),
+    medidor: numeroSerie.trim(),
+    marca: state.extracao.marca || null,
+    foto_path: path,
+    corte: 'NÃO',
+  };
+  const { error } = await withRetry(() => sb.from('leituras').insert(payload));
+  if(error){ showToast('Erro ao salvar: ' + mensagemErroAmigavel(error)); return; }
+
+  showToast(`${bloco ? 'Bloco ' + bloco + ' - ' : ''}Apto ${apto} salvo ✓`);
+  state.fotoAtual = null;
+  state.extracao = null;
+  state.aptoInput = '';
+  await carregarLeituras(s.id);
+  render();
+}
+
+// ---------- REVISÃO / EXPORTAÇÃO ----------
+function viewRevisao(){
+  const wrap = el(`<div></div>`);
+  const back = el(`<button class="back-link">← Voltar pra captura</button>`);
+  back.onclick = () => { state.view = 'captura'; render(); };
+  wrap.appendChild(back);
+
+  wrap.appendChild(el(`<div class="card"><h2>Revisar antes de exportar</h2><div style="font-size:12.5px; color:var(--muted);">Marque corte se necessário e adicione observações. Depois baixe a planilha.</div></div>`));
+
+  const ordenadas = [...state.leituras].sort((a,b)=> {
+    const na = parseInt(a.apartamento), nb = parseInt(b.apartamento);
+    if(isNaN(na)||isNaN(nb)) return a.apartamento.localeCompare(b.apartamento);
+    return nb - na;
+  });
+
+  ordenadas.forEach(l => {
+    const row = el(`
+      <div class="review-row">
+        <div class="head">
+          <div class="l1">Apto ${escapeHtml(l.apartamento)}</div>
+          <button class="btn-icon" title="Editar dados">✎</button>
+        </div>
+        <div class="l2" data-view-only>${escapeHtml(l.leitura)} m³ · ${escapeHtml(l.medidor||'sem série')} · ${escapeHtml(l.marca||'')}</div>
+        ${l.foto_path ? `<a class="foto-link" href="${fotoPublicUrl(l.foto_path)}" target="_blank" rel="noopener" download>🖼️ Ver / baixar foto</a>` : ''}
+        <div class="edit-grid hidden" data-edit-fields>
+          <div>
+            <label>Apartamento</label>
+            <input type="text" data-f="apartamento" value="${escapeHtml(l.apartamento)}">
+          </div>
+          <div>
+            <label>Leitura (m³)</label>
+            <input type="text" class="mono" data-f="leitura" value="${escapeHtml(l.leitura)}">
+          </div>
+          <div>
+            <label>Nº de Série</label>
+            <input type="text" class="mono" data-f="medidor" value="${escapeHtml(l.medidor||'')}">
+          </div>
+          <div>
+            <label>Marca</label>
+            <input type="text" data-f="marca" value="${escapeHtml(l.marca||'')}">
+          </div>
+        </div>
+        <div class="field-edit" style="margin-top:10px;">
+          <div class="corte-toggle">
+            <button data-v="NÃO" class="${l.corte==='NÃO'?'active-nao':''}">NÃO</button>
+            <button data-v="SIM" class="${l.corte==='SIM'?'active-sim':''}">SIM CORTE</button>
+          </div>
+        </div>
+        <textarea placeholder="Observação (opcional)">${escapeHtml(l.observacao||'')}</textarea>
+      </div>
+    `);
+
+    const editBtn = row.querySelector('.btn-icon');
+    const viewOnly = row.querySelector('[data-view-only]');
+    const editFields = row.querySelector('[data-edit-fields]');
+    editBtn.onclick = () => {
+      const abrindo = editFields.classList.contains('hidden');
+      editFields.classList.toggle('hidden', !abrindo);
+      viewOnly.classList.toggle('hidden', abrindo);
+      editBtn.textContent = abrindo ? '✓' : '✎';
+    };
+
+    const salvarCampo = async (campo, valor) => {
+      const patch = {}; patch[campo] = valor.trim();
+      await sb.from('leituras').update(patch).eq('id', l.id);
+      l[campo] = valor.trim();
+      viewOnly.textContent = `${l.leitura} m³ · ${l.medidor||'sem série'} · ${l.marca||''}`;
+      row.querySelector('.head .l1').textContent = `Apto ${l.apartamento}`;
+    };
+    editFields.querySelectorAll('input').forEach(inp => {
+      let tm;
+      inp.oninput = () => {
+        clearTimeout(tm);
+        tm = setTimeout(() => salvarCampo(inp.dataset.f, inp.value), 500);
+      };
+    });
+
+    row.querySelectorAll('.corte-toggle button').forEach(b=>{
+      b.onclick = async () => {
+        const v = b.dataset.v;
+        await sb.from('leituras').update({ corte: v }).eq('id', l.id);
+        l.corte = v;
+        row.querySelectorAll('.corte-toggle button').forEach(x=>x.className='');
+        b.className = v==='SIM' ? 'active-sim' : 'active-nao';
+      };
+    });
+    let obsTimer;
+    row.querySelector('textarea').oninput = (e) => {
+      clearTimeout(obsTimer);
+      obsTimer = setTimeout(async () => {
+        await sb.from('leituras').update({ observacao: e.target.value }).eq('id', l.id);
+        l.observacao = e.target.value;
+      }, 500);
+    };
+    wrap.appendChild(row);
+  });
+
+  const exportBtn = el(`<button class="btn btn-primary" style="margin-top:16px;">⬇ Baixar planilha (.xlsx)</button>`);
+  exportBtn.onclick = async () => {
+    exportBtn.disabled = true; exportBtn.textContent = 'Gerando...';
+    await exportarXlsx(state.sessaoAtual, ordenadas);
+    exportBtn.disabled = false; exportBtn.textContent = '⬇ Baixar planilha (.xlsx)';
+    showToast('Planilha gerada ✓');
+  };
+  wrap.appendChild(exportBtn);
+
+  const fotosBtn = el(`<button class="btn btn-secondary" style="margin-top:10px;">⬇ Baixar todas as fotos (.zip)</button>`);
+  fotosBtn.onclick = () => baixarTodasFotos(ordenadas, fotosBtn);
+  wrap.appendChild(fotosBtn);
+
+  const jaFinalizada = state.sessaoAtual.status === 'finalizada';
+  const finalizarBtn = el(`<button class="btn ${jaFinalizada ? 'btn-secondary' : 'btn-teal'}" style="margin-top:10px;" ${jaFinalizada ? 'disabled' : ''}>${jaFinalizada ? '✓ Edifício finalizado' : '✓ Marcar edifício como finalizado'}</button>`);
+  finalizarBtn.onclick = async () => {
+    if(jaFinalizada) return;
+    if(!confirm('Marcar esse edifício como finalizado? Ele ainda pode ser reaberto e editado se precisar.')) return;
+    finalizarBtn.disabled = true; finalizarBtn.textContent = 'Salvando...';
+    const { data, error } = await sb.from('leitura_sessoes').update({ status: 'finalizada' }).eq('id', state.sessaoAtual.id).select().single();
+    if(error){ showToast('Erro: ' + error.message); finalizarBtn.disabled=false; finalizarBtn.textContent='✓ Marcar edifício como finalizado'; return; }
+    state.sessaoAtual = data;
+    showToast('Edifício marcado como finalizado ✓');
+    render();
+  };
+  wrap.appendChild(finalizarBtn);
+
+  return wrap;
+}
+
+function fotoPublicUrl(path){
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function baixarTodasFotos(leituras, btn){
+  const comFoto = leituras.filter(l => l.foto_path);
+  if(!comFoto.length){ showToast('Nenhuma foto pra baixar nessa sessão'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Preparando...';
+  await loadScriptOnce('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
+  const zip = new JSZip();
+  let ok = 0;
+  for(const l of comFoto){
+    try{
+      btn.textContent = `Baixando fotos... (${ok+1}/${comFoto.length})`;
+      const { data, error } = await sb.storage.from(BUCKET).download(l.foto_path);
+      if(error) continue;
+      zip.file(`apto_${l.apartamento}.jpg`, data);
+      ok++;
+    } catch(e){ /* segue pra próxima */ }
+  }
+  if(!ok){ showToast('Não consegui baixar as fotos'); btn.disabled=false; btn.textContent='⬇ Baixar todas as fotos (.zip)'; return; }
+  btn.textContent = 'Compactando...';
+  const blob = await zip.generateAsync({ type:'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fotos_${(state.sessaoAtual.cliente||'sessao').replace(/[^a-z0-9]+/gi,'_').slice(0,40)}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  btn.disabled = false;
+  btn.textContent = '⬇ Baixar todas as fotos (.zip)';
+  showToast(`${ok} foto(s) baixadas ✓`);
+}
+
+let logoBase64Cache = null;
+async function getLogoBase64(){
+  if(logoBase64Cache) return logoBase64Cache;
+  const res = await fetch('./cabecalho-logos.png');
+  const blob = await res.blob();
+  logoBase64Cache = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+  return logoBase64Cache;
+}
+
+async function exportarXlsx(s, leituras){
+  await loadScriptOnce('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');
+
+  const NAVY = 'FF1F2A44', BLUE = 'FF2563EB', LIGHT = 'FFEFF3FA', WHITE = 'FFFFFFFF';
+  const GREY_TXT = 'FF444444', VAL_TXT = 'FF111111', BORDER_C = 'FFC9D2E0', RED = 'FFB91C1C';
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('LEITURA E CORTE', {
+    views: [{ showGridLines: false }],
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 1 }
+  });
+
+  ws.getColumn(1).width = 3;
+  ws.getColumn(2).width = 10;
+  ws.getColumn(3).width = 14;
+  ws.getColumn(4).width = 16;
+  ws.getColumn(5).width = 16;
+  ws.getColumn(6).width = 10;
+  ws.getColumn(7).width = 34;
+
+  const thin = { style: 'thin', color: { argb: BORDER_C } };
+  const borderAll = { top: thin, left: thin, bottom: thin, right: thin };
+  const labelFont = { bold: true, size: 10.5, color: { argb: GREY_TXT }, name: 'Calibri' };
+  const valueFont = { bold: false, size: 10.5, color: { argb: VAL_TXT }, name: 'Calibri' };
+  const thFont = { bold: true, size: 10.5, color: { argb: WHITE }, name: 'Calibri' };
+  const titleFont = { bold: true, size: 14, color: { argb: NAVY }, name: 'Calibri' };
+
+  // logo
+  try{
+    const base64 = await getLogoBase64();
+    const imgId = wb.addImage({ base64, extension: 'png' });
+    const imgW = 420, imgH = 109;
+    ws.getRow(1).height = imgH * 0.75;
+    ws.addImage(imgId, { tl: { col: 1, row: 0 }, ext: { width: imgW, height: imgH } });
+  } catch(e){ /* segue sem logo se falhar o fetch */ }
+
+  let row = 3;
+  ws.mergeCells(row, 2, row, 7);
+  ws.getCell(row, 2).value = 'RELATÓRIO DE LEITURA';
+  ws.getCell(row, 2).font = titleFont;
+  row += 2;
+
+  function field(r, col, label, value){
+    ws.getCell(r, col).value = label;
+    ws.getCell(r, col).font = labelFont;
+    ws.getCell(r, col + 1).value = value;
+    ws.getCell(r, col + 1).font = valueFont;
+  }
+  field(row, 2, 'Cliente:', s.cliente || ''); row++;
+  field(row, 2, 'Cód.:', s.codigo || '—'); field(row, 4, 'Data Leitura:', formatDate(s.data_leitura)); row++;
+  field(row, 2, 'Representante:', s.representante || ''); field(row, 4, 'Telefone:', s.telefone || ''); row++;
+  field(row, 2, 'Endereço:', s.endereco || ''); row += 2;
+
+  const headers = ['Bloco', 'Nº Apartamento', 'Leitura', 'Medidor', 'Corte', 'Observação'];
+  const headerRow = row;
+  headers.forEach((h, i) => {
+    const c = ws.getCell(headerRow, 2 + i);
+    c.value = h;
+    c.font = thFont;
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BLUE } };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.border = borderAll;
+  });
+  ws.getRow(headerRow).height = 22;
+  row++;
+
+  leituras.forEach((l, idx) => {
+    const vals = [l.bloco || '', l.apartamento, l.leitura, l.medidor, l.corte || 'NÃO', l.observacao || ''];
+    vals.forEach((val, i) => {
+      const c = ws.getCell(row, 2 + i);
+      c.value = val;
+      c.font = (i === 4 && val === 'SIM') ? { bold: true, size: 10.5, color: { argb: RED } } : valueFont;
+      c.border = borderAll;
+      c.alignment = { horizontal: i !== 5 ? 'center' : 'left', vertical: 'middle' };
+      if(idx % 2 === 1) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LIGHT } };
+    });
+    row++;
+  });
+
+  row++;
+  if(s.observacao_geral){
+    ws.getCell(row, 2).value = 'Obs:';
+    ws.getCell(row, 2).font = labelFont;
+    ws.getCell(row, 3).value = s.observacao_geral;
+    ws.getCell(row, 3).font = valueFont;
+  }
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Leitura_${(s.cliente||'sessao').replace(/[^a-z0-9]+/gi,'_').slice(0,40)}_${s.data_leitura||''}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// init
+document.getElementById('app').innerHTML = `
+  <div style="padding:60px 0; text-align:center; color:#6b7280; font-size:13.5px;">
+    Carregando sessões...
+  </div>
+`;
+carregarSessoes();
+</script>
+</body>
+</html>
