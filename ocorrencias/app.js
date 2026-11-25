@@ -464,6 +464,7 @@ function ocCard(o, opts = {}) {
       ${!fin ? tool("📟", `Medidor${nMed ? " " + nMed : ""}`, `onclick="abrirMedidores(${jsArg(o.chave_cliente)},${o.numero})"`) : ""}
       ${tool("📷", `Fotos${stF.n ? ` ${stF.ok}/${stF.total}` : ""}`, `onclick="abrirFotos(${jsArg(o.chave_cliente)},${o.numero})"`)}
       ${tool("✏️", "Editar", `onclick="abrirFicha(${jsArg(o.chave_cliente)},true)"`)}
+      ${tool("🗑️", "Excluir", `onclick="excluirOc(${o.numero})"`, " del")}
     </div>
   </div>`;
 }
@@ -1788,7 +1789,7 @@ function vImportar() {
   <p class="sub">Exporte “Minhas Ocorrências Pós-Vendas” e envie aqui todo dia. Só o que é novo ou mudou é atualizado — suas edições de endereço e telefone nunca são apagadas.</p>
   <label class="drop" id="drop"><input type="file" id="fileIn" accept=".xls,.xlsx,.csv,.html,.htm" class="hidden">
     <b>📄 Toque para escolher o arquivo</b><span style="color:var(--muted);font-size:14px">ou arraste aqui (.xls / .xlsx)</span></label>
-  <div id="impRes"></div>
+  <div id="impRes">${(S.ausentes || []).length ? `<div id="ausBox">${ausentesHtml()}</div>` : ""}</div>
   <div class="section-title">Histórico de importações</div>
   <div class="card" style="padding:4px 14px">${S.importacoes.length ? `<table class="t"><thead><tr><th>Quando</th><th>Novas</th><th>Atualiz.</th><th>Iguais</th><th>Reab.</th></tr></thead><tbody>
     ${S.importacoes.map(i => `<tr><td>${fmtDH(i.em)}</td><td><b>${i.novas}</b></td><td>${i.atualizadas}</td><td style="color:var(--muted)">${i.iguais}</td><td style="color:${i.reabertas ? "var(--red)" : "var(--muted)"};font-weight:700">${i.reabertas || 0}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">Nenhuma importação ainda.</div>'}</div>
@@ -1907,10 +1908,49 @@ async function enviarLinhas(linhas, nome, progresso) {
   const antesAb = new Set(abertas().map(o => o.numero));
   await carregar();
   tot.fechadas = finalizadas().filter(o => antesAb.has(o.numero)).length;
+  const naPlanilha = new Set(linhas.map(l => l.numero));
+  S.ausentes = abertas().filter(o => !naPlanilha.has(o.numero)).sort((x, y) => (x._pz || 0) - (y._pz || 0));
+  tot.ausentes = S.ausentes.length;
   return tot;
 }
 function resumoImport(tot) {
   return `<div class="stats"><span class="pill p-green">${tot.novas} novas</span><span class="pill p-blue">${tot.atualizadas} atualizadas</span><span class="pill p-gray">${tot.iguais} sem mudança (ignoradas)</span>${tot.reabertas ? `<span class="pill p-red">↺ ${tot.reabertas} reabertura${tot.reabertas > 1 ? "s" : ""} detectada${tot.reabertas > 1 ? "s" : ""}</span>` : ""}${tot.fechadas ? `<span class="pill p-purple">${tot.fechadas} fecharam desde a última</span>` : ""}</div>`;
+}
+/* abertas no painel que não vieram na planilha (já baixadas no Salesforce) */
+function ausentesHtml() {
+  const L = S.ausentes || [];
+  if (!L.length) return "";
+  return `<div class="card aus-card">
+    <b>⚠️ ${L.length} ocorrência${L.length > 1 ? "s" : ""} aberta${L.length > 1 ? "s" : ""} no painel não ${L.length > 1 ? "vieram" : "veio"} nesta planilha</b>
+    <p class="sub">Provavelmente já foram baixadas no Salesforce. Confira e escolha o que fazer.</p>
+    <label class="aus-all"><input type="checkbox" checked onchange="document.querySelectorAll('.aus-chk').forEach(c=>c.checked=this.checked)"> Selecionar todas</label>
+    <div class="aus-list">${L.map(o => `<label class="aus-it"><input type="checkbox" class="aus-chk" value="${o.numero}" checked>
+      <span><b>${o.numero}</b> · ${esc(o.cliente_nome || "")}<small>${esc(subCurta(o.subclassificacao))} · prazo ${fmtDH(o.prazo)}</small></span></label>`).join("")}</div>
+    <div class="aus-acts">
+      <button class="btn" style="background:var(--green)" onclick="tratarAusentes('fin')">✔ Finalizar selecionadas</button>
+      <button class="btn ghost" style="color:var(--red)" onclick="tratarAusentes('del')">🗑️ Excluir do painel</button>
+    </div></div>`;
+}
+async function tratarAusentes(acao) {
+  const nums = [...document.querySelectorAll(".aus-chk:checked")].map(c => +c.value);
+  if (!nums.length) return toast("Selecione pelo menos uma.");
+  if (acao === "del" && !confirm(`Excluir ${nums.length} ocorrência${nums.length > 1 ? "s" : ""} do painel?`)) return;
+  try {
+    await rpc(acao === "fin" ? "ocv_finalizar" : "ocv_ocultar", { p_token: S.token, p_numeros: nums });
+    await carregar();
+    S.ausentes = (S.ausentes || []).filter(o => !nums.includes(o.numero));
+    const box = document.getElementById("ausBox"); if (box) box.innerHTML = ausentesHtml();
+    toast(`${nums.length} ${acao === "fin" ? "finalizada" : "excluída"}${nums.length > 1 ? "s" : ""} ✅`);
+  } catch (e) { toast(e.message); }
+}
+async function excluirOc(numero) {
+  if (!confirm(`Excluir a ocorrência ${numero} do painel?\n\nEla some das listas e da rota. Se for reaberta no Salesforce, volta a aparecer na próxima importação.`)) return;
+  try {
+    await rpc("ocv_ocultar", { p_token: S.token, p_numeros: [numero] });
+    S.ocs = S.ocs.filter(o => o.numero !== numero);
+    if (S.ausentes) S.ausentes = S.ausentes.filter(o => o.numero !== numero);
+    render(); toast(`Ocorrência ${numero} excluída`);
+  } catch (e) { toast(e.message); }
 }
 async function importarArquivo(file) {
   const out = document.getElementById("impRes");
@@ -1921,7 +1961,7 @@ async function importarArquivo(file) {
     render();
     document.getElementById("impRes").innerHTML = `<div class="card" style="margin-top:12px">
       <b style="font-size:16px">✅ Importação concluída</b>${resumoImport(tot)}
-      <button class="btn block" onclick="go('inicio')">Ver meu painel</button></div>`;
+      <button class="btn block" onclick="go('inicio')">Ver meu painel</button></div><div id="ausBox">${ausentesHtml()}</div>`;
   } catch (e) {
     out.innerHTML = `<div class="card" style="margin-top:12px;color:var(--red)">⚠️ ${esc(e.message)}</div>`;
   }
@@ -1942,7 +1982,7 @@ window.addEventListener("message", async ev => {
     const nome = "Salesforce automático " + new Date().toLocaleString("pt-BR");
     const tot = await enviarLinhas(linhas, nome);
     S.ultimoAuto = { em: new Date(), ...tot };
-    render(); toast(`Atualizado pelo Salesforce: ${tot.novas} novas, ${tot.atualizadas} atualizadas`, 5000);
+    render(); toast(`Atualizado pelo Salesforce: ${tot.novas} novas, ${tot.atualizadas} atualizadas${tot.ausentes ? ` · ${tot.ausentes} abertas não vieram na planilha (veja em Importar)` : ""}`, 6000);
     responder({ ok: true, ...tot, linhas: linhas.length });
   } catch (e) { responder({ ok: false, erro: e.message }); }
 });

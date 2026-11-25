@@ -604,6 +604,18 @@ select.d-mes option{color:#000}
 .rz-nav b{font-size:14px}
 .rz-nav span{font-size:11.5px;color:var(--muted);font-weight:600}
 .rz-nav.off a,.rz-nav.off button{opacity:.55}
+
+/* ausentes + excluir */
+.oc .tools{grid-template-columns:repeat(auto-fit,minmax(46px,1fr))}
+.oc .tool.del i,.oc .tool.del span{color:var(--red)}
+.aus-card{margin-top:12px;border-left:4px solid var(--amber,#d97706)}
+.aus-card .sub{margin:4px 0 8px;color:var(--muted,#64748b);font-size:13px}
+.aus-all{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600;padding:6px 0}
+.aus-list{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.aus-it{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px}
+.aus-it:last-child{border-bottom:0}
+.aus-it small{display:block;color:var(--muted,#64748b);font-size:12px}
+.aus-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -643,6 +655,6 @@ select.d-mes option{color:#000}
 
 <div id="modalRoot"></div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="app.js?v=20261114f"></script>
+<script src="app.js?v=20261124a"></script>
 </body>
 </html>
