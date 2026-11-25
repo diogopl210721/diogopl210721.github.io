@@ -394,7 +394,7 @@ function vInicio() {
   const porSub = Object.entries(ab.reduce((m, o) => { m[o.subclassificacao] = (m[o.subclassificacao] || 0) + 1; return m; }, {}))
     .sort((a, b) => (isRel({ subclassificacao: b[0] }) - isRel({ subclassificacao: a[0] })) || b[1] - a[1]);
   const maxS = porSub[0] ? Math.max(...porSub.map(x => x[1])) : 1;
-  return `
+  return `${bannerAusentes()}
   <section class="d-hero">
     <div class="d-top"><div><small>${saud}${nome ? ", " + esc(nome) : ""}</small><h2>${atual ? "Seu mês" : "Mês fechado"}</h2></div>
       <select class="d-mes" onchange="S.mesMeta=this.value;render()">${mesesDisponiveis().map(m => `<option value="${m}" ${m === mk ? "selected" : ""}>${mesNome(m)}</option>`).join("")}</select></div>
@@ -510,7 +510,7 @@ function vPrazos() {
   const stBtn = (k, l, n) => `<button class="${f.st === k ? "on" : ""}" onclick="S.prazoFiltro.st='${k}';${k === "fin" ? "S.prazoFiltro.janela='todas';" : ""}render()">${l} <small>${n}</small></button>`;
   const porMes = {}; listaFin.forEach(o => { const k = mesKey(o._fe); (porMes[k] = porMes[k] || []).push(o); });
   return `
-  ${btnVoltar()}<div class="ag-head"><h2 class="page">Ocorrências</h2><span>${total} na lista</span></div>
+  ${btnVoltar()}<div class="ag-head"><h2 class="page">Ocorrências</h2><span>${total} na lista</span></div>${bannerAusentes()}
   <div class="seg st">${stBtn("ab", "Abertas", ab.length)}${stBtn("fin", "Finalizadas", fins.length)}${stBtn("todas", "Todas", ab.length + fins.length)}</div>
   ${f.st !== "fin" ? `<div class="ag-strip">
     ${grupos.map(([, g, c, l]) => tile("g" + g, cnt(g), l, c)).join("")}
@@ -1825,7 +1825,7 @@ function vImportar() {
   <p class="sub">Exporte “Minhas Ocorrências Pós-Vendas” e envie aqui todo dia. Só o que é novo ou mudou é atualizado — suas edições de endereço e telefone nunca são apagadas.</p>
   <label class="drop" id="drop"><input type="file" id="fileIn" accept=".xls,.xlsx,.csv,.html,.htm" class="hidden">
     <b>📄 Toque para escolher o arquivo</b><span style="color:var(--muted);font-size:14px">ou arraste aqui (.xls / .xlsx)</span></label>
-  <div id="impRes">${(S.ausentes || []).length ? `<div id="ausBox">${ausentesHtml()}</div>` : ""}</div>
+  <div id="impRes">${calcAusentes().length ? `<div id="ausBox">${ausentesHtml()}</div>` : ""}</div>
   <div class="section-title">Histórico de importações</div>
   <div class="card" style="padding:4px 14px">${S.importacoes.length ? `<table class="t"><thead><tr><th>Quando</th><th>Novas</th><th>Atualiz.</th><th>Iguais</th><th>Reab.</th></tr></thead><tbody>
     ${S.importacoes.map(i => `<tr><td>${fmtDH(i.em)}</td><td><b>${i.novas}</b></td><td>${i.atualizadas}</td><td style="color:var(--muted)">${i.iguais}</td><td style="color:${i.reabertas ? "var(--red)" : "var(--muted)"};font-weight:700">${i.reabertas || 0}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">Nenhuma importação ainda.</div>'}</div>
@@ -1945,16 +1945,35 @@ async function enviarLinhas(linhas, nome, progresso) {
   await carregar();
   tot.fechadas = finalizadas().filter(o => antesAb.has(o.numero)).length;
   const naPlanilha = new Set(linhas.map(l => l.numero));
-  S.ausentes = abertas().filter(o => !naPlanilha.has(o.numero)).sort((x, y) => (x._pz || 0) - (y._pz || 0));
-  tot.ausentes = S.ausentes.length;
+  // guarda os números da última planilha para avisar em qualquer aparelho até você resolver
+  S.config.ultima_planilha = { em: new Date().toISOString(), numeros: [...naPlanilha] };
+  try { await rpc("ocv_salvar_config", { p_token: S.token, p_chave: "ultima_planilha", p_valor: S.config.ultima_planilha }); } catch (e) {}
+  // painel = planilha: abertas que não vieram na planilha são finalizadas automaticamente
+  const aus = calcAusentes(), nAb = abertas().length;
+  if (aus.length && aus.length <= Math.max(5, nAb * 0.6)) {
+    try {
+      await rpc("ocv_finalizar", { p_token: S.token, p_numeros: aus.map(o => o.numero), p_auto: true });
+      tot.autoFin = aus.length; await carregar();
+    } catch (e) { tot.ausentes = aus.length; }
+  } else tot.ausentes = aus.length; // planilha parece incompleta: só avisa, não mexe
   return tot;
 }
 function resumoImport(tot) {
-  return `<div class="stats"><span class="pill p-green">${tot.novas} novas</span><span class="pill p-blue">${tot.atualizadas} atualizadas</span><span class="pill p-gray">${tot.iguais} sem mudança (ignoradas)</span>${tot.reabertas ? `<span class="pill p-red">↺ ${tot.reabertas} reabertura${tot.reabertas > 1 ? "s" : ""} detectada${tot.reabertas > 1 ? "s" : ""}</span>` : ""}${tot.fechadas ? `<span class="pill p-purple">${tot.fechadas} fecharam desde a última</span>` : ""}</div>`;
+  return `<div class="stats"><span class="pill p-green">${tot.novas} novas</span><span class="pill p-blue">${tot.atualizadas} atualizadas</span><span class="pill p-gray">${tot.iguais} sem mudança (ignoradas)</span>${tot.reabertas ? `<span class="pill p-red">↺ ${tot.reabertas} reabertura${tot.reabertas > 1 ? "s" : ""} detectada${tot.reabertas > 1 ? "s" : ""}</span>` : ""}${tot.fechadas ? `<span class="pill p-purple">${tot.fechadas} fecharam desde a última</span>` : ""}${tot.autoFin ? `<span class="pill p-purple">✔ ${tot.autoFin} saíram da planilha → finalizadas</span>` : ""}</div>`;
 }
 /* abertas no painel que não vieram na planilha (já baixadas no Salesforce) */
+function calcAusentes() {
+  const u = S.config && S.config.ultima_planilha; if (!u || !u.numeros) return [];
+  const set = new Set(u.numeros), em = new Date(u.em);
+  return abertas().filter(o => !set.has(o.numero) && (!o._ab || o._ab < em)).sort((x, y) => (x._pz || 0) - (y._pz || 0));
+}
+function bannerAusentes() {
+  const n = calcAusentes().length; if (!n) return "";
+  return `<button class="aus-banner" onclick="abrirAusentes()"><b>⚠️ ${n} aberta${n > 1 ? "s" : ""} no painel não ${n > 1 ? "estão" : "está"} mais na planilha do Salesforce</b><span>Provavelmente já foram finalizadas · Revisar ›</span></button>`;
+}
+function abrirAusentes() { modal(`<button class="x" onclick="fecharModal()">×</button><div id="ausBox">${ausentesHtml()}</div>`); }
 function ausentesHtml() {
-  const L = S.ausentes || [];
+  const L = calcAusentes();
   if (!L.length) return "";
   return `<div class="card aus-card">
     <b>⚠️ ${L.length} ocorrência${L.length > 1 ? "s" : ""} aberta${L.length > 1 ? "s" : ""} no painel não ${L.length > 1 ? "vieram" : "veio"} nesta planilha</b>
@@ -1963,8 +1982,8 @@ function ausentesHtml() {
     <div class="aus-list">${L.map(o => `<label class="aus-it"><input type="checkbox" class="aus-chk" value="${o.numero}" checked>
       <span><b>${o.numero}</b> · ${esc(o.cliente_nome || "")}<small>${esc(subCurta(o.subclassificacao))} · prazo ${fmtDH(o.prazo)}</small></span></label>`).join("")}</div>
     <div class="aus-acts">
-      <button class="btn" style="background:var(--green)" onclick="tratarAusentes('fin')">✔ Finalizar selecionadas</button>
-      <button class="btn ghost" style="color:var(--red)" onclick="tratarAusentes('del')">🗑️ Excluir do painel</button>
+      <button class="btn" style="background:var(--green)" onclick="tratarAusentes('fin')">✔ Finalizar</button>
+      <button class="btn ghost" style="color:var(--red)" onclick="tratarAusentes('del')">🗑️ Excluir</button>
     </div></div>`;
 }
 async function tratarAusentes(acao) {
@@ -1974,8 +1993,9 @@ async function tratarAusentes(acao) {
   try {
     await rpc(acao === "fin" ? "ocv_finalizar" : "ocv_ocultar", { p_token: S.token, p_numeros: nums });
     await carregar();
-    S.ausentes = (S.ausentes || []).filter(o => !nums.includes(o.numero));
     const box = document.getElementById("ausBox"); if (box) box.innerHTML = ausentesHtml();
+    if (!calcAusentes().length && document.getElementById("modalRoot").innerHTML) fecharModal();
+    if (S.view !== "importar") render();
     toast(`${nums.length} ${acao === "fin" ? "finalizada" : "excluída"}${nums.length > 1 ? "s" : ""} ✅`);
   } catch (e) { toast(e.message); }
 }
@@ -1984,7 +2004,6 @@ async function excluirOc(numero) {
   try {
     await rpc("ocv_ocultar", { p_token: S.token, p_numeros: [numero] });
     S.ocs = S.ocs.filter(o => o.numero !== numero);
-    if (S.ausentes) S.ausentes = S.ausentes.filter(o => o.numero !== numero);
     render(); toast(`Ocorrência ${numero} excluída`);
   } catch (e) { toast(e.message); }
 }
@@ -2018,7 +2037,7 @@ window.addEventListener("message", async ev => {
     const nome = "Salesforce automático " + new Date().toLocaleString("pt-BR");
     const tot = await enviarLinhas(linhas, nome);
     S.ultimoAuto = { em: new Date(), ...tot };
-    render(); toast(`Atualizado pelo Salesforce: ${tot.novas} novas, ${tot.atualizadas} atualizadas${tot.ausentes ? ` · ${tot.ausentes} abertas não vieram na planilha (veja em Importar)` : ""}`, 6000);
+    render(); toast(`Atualizado pelo Salesforce: ${tot.novas} novas, ${tot.atualizadas} atualizadas${tot.autoFin ? ` · ${tot.autoFin} finalizadas (saíram da planilha)` : ""}`, 6000);
     responder({ ok: true, ...tot, linhas: linhas.length });
   } catch (e) { responder({ ok: false, erro: e.message }); }
 });
