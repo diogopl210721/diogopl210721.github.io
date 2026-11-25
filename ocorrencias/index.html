@@ -616,6 +616,21 @@ select.d-mes option{color:#000}
 .aus-it:last-child{border-bottom:0}
 .aus-it small{display:block;color:var(--muted,#64748b);font-size:12px}
 .aus-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+
+/* rota por vencimento */
+.vd-card{padding:12px}
+.vd-t{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}.vd-t span{color:var(--muted);font-size:12.5px}
+.vd-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.vd-chips button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 11px;font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+.vd-chips button i{font-style:normal;background:#eef2f8;border-radius:999px;padding:1px 7px;margin-left:3px;font-size:12px}
+.vd-chips button.on{background:#0b1f3a;color:#fff;border-color:#0b1f3a}.vd-chips button.on i{background:rgba(255,255,255,.2)}
+.vd-chips button:disabled{opacity:.45}
+.rz-head .vd-chips button{background:rgba(255,255,255,.08);color:inherit;border-color:rgba(255,255,255,.25)}
+.rz-head .vd-chips button.on{background:#fff;color:#0b1f3a}
+.rz-head .vd-chips button i{background:rgba(255,255,255,.18);color:#fff}.rz-head .vd-chips button.on i{background:#eef2f8;color:#0b1f3a}
+.vd-list{border:1px solid var(--line);border-radius:12px;max-height:55vh;overflow:auto}
+.vd-it{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid var(--line)}.vd-it:last-child{border-bottom:0}
+.vd-it small{color:var(--muted);font-size:12px}.vd-it em{margin-left:auto;font-style:normal;font-weight:700;background:#eef2f8;border-radius:999px;padding:2px 9px;font-size:13px}
 </style>
 </head>
 <body>
@@ -655,6 +670,6 @@ select.d-mes option{color:#000}
 
 <div id="modalRoot"></div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="app.js?v=20261124a"></script>
+<script src="app.js?v=20261125b"></script>
 </body>
 </html>

@@ -577,23 +577,55 @@ function urlRota(ends) {
   return "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + encodeURIComponent(ends[ends.length - 1]) +
     (ends.length > 1 ? "&waypoints=" + encodeURIComponent(ends.slice(0, -1).join("|")) : "");
 }
+/* ---- rota geral por vencimento (todas as cidades) ---- */
+const VENC = "📅 Por vencimento";
+function diaKey(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function diaMais(n) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return diaKey(d); }
+function vencKey(o) { if (!o._pz) return "sem"; return o._pz < new Date() ? "venc" : diaKey(o._pz); }
+function noFiltroCidade(o, cidade) { return cidade === VENC ? (S.rotaVenc || new Set()).has(vencKey(o)) : (title(o.cidade) || "Sem cidade") === cidade; }
+const ATALHOS_VENC = () => [
+  ["Vencidas + hoje", ["venc", diaMais(0)]], ["Vencidas", ["venc"]], ["Hoje", [diaMais(0)]],
+  ["Amanhã", [diaMais(1)]], ["Até 3 dias", ["venc", diaMais(0), diaMais(1), diaMais(2), diaMais(3)]],
+];
+function contaVenc(keys) { const k = new Set(keys); return abertas().filter(o => !visitada(o) && k.has(vencKey(o))).length; }
+function nomeVenc() {
+  const sel = [...(S.rotaVenc || [])].sort(), at = ATALHOS_VENC().find(([, k]) => k.slice().sort().join() === sel.join());
+  if (at) return at[0];
+  const f = k => k === "venc" ? "vencidas" : k === diaMais(0) ? "hoje" : k === diaMais(1) ? "amanhã" : k.slice(8, 10) + "/" + k.slice(5, 7);
+  return sel.map(f).join(", ");
+}
+function usarVenc(keys) {
+  S.rotaVenc = new Set(keys); S.rotaCidade = VENC; S.rotaFora = new Set(); S.rotaTrocar = false; S.rotaOtim = null; S.rotaIniciada = null;
+  fecharModal(); render(); window.scrollTo(0, 0);
+}
+function escolherDias() {
+  const atual = S.rotaVenc || new Set();
+  const dias = [["venc", "Vencidas", "prazo já passou"]];
+  for (let i = 0; i < 14; i++) { const k = diaMais(i), d = new Date(k + "T12:00"); dias.push([k, i === 0 ? "Hoje" : i === 1 ? "Amanhã" : d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }), ""]); }
+  const linhas = dias.map(([k, l, s]) => { const n = contaVenc([k]); return n || atual.has(k) ? `<label class="vd-it"><input type="checkbox" class="vd-chk" value="${k}" ${atual.has(k) ? "checked" : ""}><b>${esc(l)}</b>${s ? `<small>${s}</small>` : ""}<em>${n}</em></label>` : ""; }).join("");
+  modal(`<button class="x" onclick="fecharModal()">×</button><h3>📅 Escolher dias de vencimento</h3>
+    <p class="sub">Junta as ocorrências desses dias de todas as cidades numa rota só.</p>
+    <div class="vd-list">${linhas || '<div class="empty">Nenhuma ocorrência aberta nos próximos 14 dias.</div>'}</div>
+    <button class="btn block" style="margin-top:12px" onclick="const k=[...document.querySelectorAll('.vd-chk:checked')].map(c=>c.value);if(!k.length)return toast('Escolha pelo menos um dia.');usarVenc(k)">Montar rota</button>`);
+}
 function cidadesAbertas() {
   const m = {};
   abertas().forEach(o => { const c = title(o.cidade) || "Sem cidade"; m[c] = m[c] || { c, n: 0, urg: 0, rel: 0 }; m[c].n++; if (situacao(o).grupo <= 3) m[c].urg++; if (isRel(o)) m[c].rel++; });
   return Object.values(m).sort((a, b) => b.urg - a.urg || b.n - a.n);
 }
-function visitadasNaCidade(cidade) { return abertas().filter(o => (title(o.cidade) || "Sem cidade") === cidade && visitada(o)); }
+function visitadasNaCidade(cidade) { return abertas().filter(o => noFiltroCidade(o, cidade) && visitada(o)); }
 function paradasCidade(cidade, filtro) {
-  let ocs = abertas().filter(o => (title(o.cidade) || "Sem cidade") === cidade && !visitada(o));
+  let ocs = abertas().filter(o => noFiltroCidade(o, cidade) && !visitada(o));
   if (filtro === "urgentes") ocs = ocs.filter(o => situacao(o).grupo <= 3);
   if (filtro === "rel") ocs = ocs.filter(isRel);
   // agrupa por endereço (mesmo cliente/bairro vira 1 parada) e ordena por bairro, bairros mais urgentes primeiro
   const paradas = new Map();
-  ocs.forEach(o => { const c = cliente(o), k = enderecoTexto(c); if (!paradas.has(k)) paradas.set(k, { k, c, chave: o.chave_cliente, ocs: [] }); paradas.get(k).ocs.push(o); });
+  // cada cliente é uma parada separada (mesmo que estejam no mesmo bairro/endereço)
+  ocs.forEach(o => { const c = cliente(o), addr = enderecoTexto(c), k = o.chave_cliente ? "c:" + o.chave_cliente : "o:" + o.numero; if (!paradas.has(k)) paradas.set(k, { k, addr, c, chave: o.chave_cliente, ocs: [] }); paradas.get(k).ocs.push(o); });
   (S.rotaExtras || new Set()).forEach(ch => {
-    const ref = refCliente(ch); if (!ref || (title(ref.cidade) || "Sem cidade") !== cidade) return;
-    const c = cliente(ref), k = enderecoTexto(c);
-    if (!paradas.has(k)) paradas.set(k, { k, c, chave: ch, ocs: [], extra: true });
+    const ref = refCliente(ch); if (!ref || (cidade !== VENC && (title(ref.cidade) || "Sem cidade") !== cidade)) return;
+    const c = cliente(ref), k = "c:" + ch;
+    if (!paradas.has(k)) paradas.set(k, { k, addr: enderecoTexto(c), c, chave: ch, ocs: [], extra: true });
   });
   const arr = [...paradas.values()];
   arr.forEach(p => { p.pz = p.ocs.length ? Math.min(...p.ocs.map(o => o._pz ? +o._pz : 9e15)) : 9e15; p.bairro = norm(p.c.bairro); });
@@ -639,7 +671,7 @@ function onde() {
     navigator.geolocation.getCurrentPosition(p => ok({ lat: p.coords.latitude, lng: p.coords.longitude }), () => ok(null), { enableHighAccuracy: true, timeout: 12000, maximumAge: 120000 });
   });
 }
-function rotaSig() { return [S.rotaCidade, S.rotaFiltro, [...(S.rotaFora || [])].sort().join("|"), visitadasNaCidade(S.rotaCidade || "").map(o => o.numero).sort().join(",")].join("#"); }
+function rotaSig() { return [S.rotaCidade, S.rotaCidade === VENC ? [...(S.rotaVenc || [])].sort().join(",") : "", S.rotaFiltro, [...(S.rotaFora || [])].sort().join("|"), visitadasNaCidade(S.rotaCidade || "").map(o => o.numero).sort().join(",")].join("#"); }
 async function otimizarRota() {
   if (!baseRota()) return editarBase(true);
   const paradas = (S._paradas || []).filter(p => !S.rotaFora.has(p.k)); if (!paradas.length) return;
@@ -652,14 +684,14 @@ async function otimizarRota() {
     if (!fim) return toast("Não encontrei o endereço da base no mapa. Confira em ✏️ Base.", 5000);
     const pts = []; let n = 0;
     for (const p of paradas) {
-      const cache = geoCache()[p.k];
+      const cache = geoCache()[p.addr];
       toast(`🗺️ Localizando paradas ${++n}/${paradas.length}…`, 2500);
-      const g = cache || await geocodificar(p.k);
+      const g = cache || geoCache()[p.addr] || await geocodificar(p.addr);
       if (!cache) await new Promise(r => setTimeout(r, 1100)); // limite do serviço de mapas
       pts.push({ ...p, g });
     }
     // parada que o mapa não achou: usa o centro da cidade (não joga para a base, que embaralharia a ordem)
-    if (pts.some(p => !p.g)) { const cg = await geocodificar(`${S.rotaCidade}, PR, Brasil`); pts.forEach(p => { if (!p.g) p.g = cg || fim; }); }
+    for (const p of pts) if (!p.g) { const cid = S.rotaCidade === VENC ? (p.c.cidade || p.ocs[0]?.cidade || "") : S.rotaCidade; p.g = (cid && await geocodificar(`${cid}, PR, Brasil`)) || fim; }
     const origem = aqui || fim;
     const { ordem, km } = ordenarParadas(origem, pts, fim);
     S.rotaOtim = { sig: rotaSig(), ordem: ordem.map(p => p.k), km, origem: aqui, semGps: !aqui };
@@ -750,7 +782,7 @@ function todasCidades() {
 }
 function vRota() {
   const cids = (S.rotaModo || "rota") === "clientes" ? todasCidades() : cidadesAbertas();
-  const sel = S.rotaCidade && cids.some(x => x.c === S.rotaCidade) ? S.rotaCidade : null;
+  const sel = S.rotaCidade === VENC && (S.rotaVenc || new Set()).size ? VENC : S.rotaCidade && cids.some(x => x.c === S.rotaCidade) ? S.rotaCidade : null;
   const filtro = S.rotaFiltro || "todas";
   let corpo = "";
   const modo = "rota"; S.rotaModo = "rota";
@@ -764,19 +796,20 @@ function vRota() {
     if (otim) paradas.sort((a, b) => { const ia = otim.ordem.indexOf(a.k), ib = otim.ordem.indexOf(b.k); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
     S._paradas = paradas;
     const ativas = paradas.filter(p => !S.rotaFora.has(p.k));
-    const ends = ativas.map(p => p.k);
+    const ends = ativas.map(p => p.addr).filter((e, i, a) => i === 0 || e !== a[i - 1]);
     const partes = []; for (let i = 0; i < ends.length; i += 10) partes.push(ends.slice(i, i + 10));
     const base = baseRota(), urlsOtim = otim && base ? urlsRotaOtim(ends, otim.origem, base) : [];
     const aprox = ativas.filter(p => !enderecoCompleto(p.c)).length;
     const nomeBase = esc((S.config.base_rota || {}).nome || "Consigaz");
     const nOcs = ativas.reduce((a, p) => a + p.ocs.length, 0);
-    const infoC = cids.find(x => x.c === sel) || { n: 0, urg: 0, rel: 0 };
+    const infoC = sel === VENC ? (() => { const l = abertas().filter(o => noFiltroCidade(o, VENC)); return { n: l.length, urg: l.filter(o => situacao(o).grupo <= 3).length, rel: l.filter(isRel).length, cid: new Set(l.map(o => title(o.cidade) || "Sem cidade")).size }; })() : (cids.find(x => x.c === sel) || { n: 0, urg: 0, rel: 0 });
     const enderecoBase = base ? esc(base.replace(/^[^—]*—\s*/, "")) : "";
     corpo = `
     <section class="rz-head">
-      <div class="rz-ht"><div><small>Rota de hoje</small><h2>${esc(sel)}</h2></div>
-        <button class="rz-troca" onclick="S.rotaTrocar=true;render();window.scrollTo(0,0)">Trocar cidade</button></div>
-      <div class="rz-chips"><span>${infoC.n} aberta${infoC.n === 1 ? "" : "s"}</span>${infoC.urg ? `<span class="u">${infoC.urg} urgente${infoC.urg > 1 ? "s" : ""}</span>` : ""}${infoC.rel ? `<span class="r">★ ${infoC.rel} de relacionamento</span>` : ""}</div>
+      <div class="rz-ht"><div><small>${sel === VENC ? "Por vencimento · todas as cidades" : "Rota de hoje"}</small><h2>${sel === VENC ? esc(nomeVenc().replace(/^./, c => c.toUpperCase())) : esc(sel)}</h2></div>
+        <button class="rz-troca" onclick="S.rotaTrocar=true;render();window.scrollTo(0,0)">${sel === VENC ? "Trocar" : "Trocar cidade"}</button></div>
+      ${sel === VENC ? `<div class="vd-chips">${ATALHOS_VENC().map(([l, k]) => `<button class="${nomeVenc() === l ? "on" : ""}" onclick='usarVenc(${JSON.stringify(k)})'>${l} <i>${contaVenc(k)}</i></button>`).join("")}<button onclick="escolherDias()">📅 Escolher dias</button></div>` : ""}
+      <div class="rz-chips"><span>${infoC.n} aberta${infoC.n === 1 ? "" : "s"}</span>${infoC.cid ? `<span>${infoC.cid} cidade${infoC.cid > 1 ? "s" : ""}</span>` : ""}${infoC.urg ? `<span class="u">${infoC.urg} urgente${infoC.urg > 1 ? "s" : ""}</span>` : ""}${infoC.rel ? `<span class="r">★ ${infoC.rel} de relacionamento</span>` : ""}</div>
     </section>
     <div class="seg rf">${[["todas", "Todas"], ["urgentes", "Urgentes"], ["rel", "★ Relacionamento"]].map(([v, l]) => `<button class="${filtro === v ? "on" : ""}" onclick="S.rotaFiltro='${v}';S.rotaFora=new Set();S.rotaOtim=null;render()">${l}</button>`).join("")}</div>
     ${paradas.length ? `
@@ -819,12 +852,15 @@ function vRota() {
             <a class="btn sm soft" href="${linkWaze(p.c)}" target="_blank" rel="noopener">🚗 Waze</a>
             <button class="btn sm ghost" onclick="toggleExtra(${jsArg(p.chave)},false)">Tirar da rota</button>
           </div></div>`}
-      </div>`; }).join("")}` : `<div class="card empty">Nenhuma ocorrência aberta em ${esc(sel)} com esse filtro.</div>`}`;
+      </div>`; }).join("")}` : `<div class="card empty">Nenhuma ocorrência aberta ${sel === VENC ? "nesses dias" : "em " + esc(sel)} com esse filtro.</div>`}`;
   }
   if (sel && !S.rotaTrocar) return `${btnVoltar()}${corpo}`;
   return `${btnVoltar()}
   <div class="ag-head"><h2 class="page">Rota</h2><span>${cids.length} cidade${cids.length === 1 ? "" : "s"}</span></div>
   <p class="sub" style="margin-top:-4px">Escolha para onde você vai hoje.</p>
+  <div class="card vd-card"><div class="vd-t"><b>📅 Por vencimento</b><span>todas as cidades numa rota só</span></div>
+    <div class="vd-chips">${ATALHOS_VENC().map(([l, k]) => { const n = contaVenc(k); return `<button ${n ? "" : "disabled"} onclick='usarVenc(${JSON.stringify(k)})'>${l} <i>${n}</i></button>`; }).join("")}<button onclick="escolherDias()">📅 Escolher dias</button></div></div>
+  <div class="section-title">Por cidade</div>
   ${cids.length ? `<div class="card rz-list">${cids.map(x => `<button class="rz-city ${x.urg ? "hot" : ""} ${x.c === sel ? "on" : ""}" onclick="S.rotaCidade=${jsArg(x.c)};S.rotaFora=new Set();S.rotaTrocar=false;S.rotaOtim=null;S.rotaIniciada=null;render();window.scrollTo(0,0)">
     <i></i><div><b>${esc(x.c)}</b><span>${x.n} aberta${x.n > 1 ? "s" : ""}${x.rel ? ` · ★ ${x.rel} de relacionamento` : ""}</span></div>
     ${x.urg ? `<em>${x.urg} urgente${x.urg > 1 ? "s" : ""}</em>` : ""}<u>›</u></button>`).join("")}</div>` : '<div class="card empty">Nenhuma ocorrência aberta.</div>'}
