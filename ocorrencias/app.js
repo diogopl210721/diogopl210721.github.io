@@ -682,7 +682,8 @@ async function otimizarRota() {
     toast("📍 Pegando sua localização…", 3000);
     const aqui = await onde();
     toast("🗺️ Localizando a base…", 3000);
-    const fim = await geocodificar(baseRota());
+    const bc = S.config.base_rota || {};
+    const fim = bc.lat && bc.lng ? { lat: +bc.lat, lng: +bc.lng } : await geocodificar(baseRota());
     if (!fim) return toast("Não encontrei o endereço da base no mapa. Confira em ✏️ Base.", 5000);
     const pts = []; let n = 0;
     for (const p of paradas) {
@@ -715,18 +716,62 @@ function urlsRotaOtim(ends, origem, base) {
   if (!ends.length) urls.push("https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + encodeURIComponent(base));
   return urls;
 }
+/* busca de endereço enquanto digita (Photon/OSM, com reserva no Nominatim) */
+let _buscaT = null, _buscaN = 0;
+function rotuloEnd(p) {
+  const rua = [p.street || (p.type !== "city" ? p.name : ""), p.housenumber].filter(Boolean).join(", ");
+  const nome = p.street && p.name && p.name !== p.street ? p.name : "";
+  const loc = [p.district || p.suburb || p.locality, p.city || p.county, p.state ? (p.state === "Paraná" ? "PR" : p.state) : ""].filter(Boolean);
+  return { poi: !!nome || (!p.street && !!p.name && p.type !== "city"), titulo: nome || rua || loc[0] || "", sub: [nome ? rua : "", ...loc].filter(Boolean).join(" · "), texto: [rua || nome, ...loc].filter(Boolean).join(", ") };
+}
+function buscarEndereco(q) {
+  S._baseSel = null; clearTimeout(_buscaT);
+  const box = document.getElementById("b_sug"); if (!box) return;
+  q = q.trim(); if (q.length < 3) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="b-sug-msg">Buscando…</div>`;
+  _buscaT = setTimeout(async () => {
+    const n = ++_buscaN; let L = [];
+    try {
+      const r = await fetch(`https://photon.komoot.io/api/?limit=7&lat=-25.43&lon=-49.27&q=${encodeURIComponent(q)}`);
+      const d = await r.json();
+      L = (d.features || []).filter(f => !f.properties.countrycode || f.properties.countrycode === "BR")
+        .map(f => ({ ...rotuloEnd(f.properties), lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] }));
+    } catch (e) {}
+    if (!L.length) try {
+      const r = await fetch("https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&countrycodes=br&q=" + encodeURIComponent(q), { headers: { "Accept-Language": "pt-BR" } });
+      L = (await r.json()).map(x => { const a = x.address || {}; return { ...rotuloEnd({ name: x.name, street: a.road, housenumber: a.house_number, district: a.suburb || a.neighbourhood, city: a.city || a.town || a.village, state: a.state }), lat: +x.lat, lng: +x.lon }; });
+    } catch (e) {}
+    if (n !== _buscaN) return; // chegou resposta de uma busca mais nova
+    L = L.filter((x, i, a) => x.texto && a.findIndex(y => y.texto === x.texto) === i);
+    S._sugEnd = L;
+    const b = document.getElementById("b_sug"); if (!b) return;
+    b.innerHTML = L.length ? L.map((x, i) => `<button type="button" onclick="escolherEndereco(${i})"><b>📍 ${esc(x.titulo)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ""}</button>`).join("")
+      : `<div class="b-sug-msg">Nada encontrado. Tente rua + número + cidade.</div>`;
+  }, 400);
+}
+function escolherEndereco(i) {
+  const x = (S._sugEnd || [])[i]; if (!x) return;
+  S._baseSel = x;
+  document.getElementById("b_end").value = x.texto;
+  const nm = document.getElementById("b_nome"); if (nm && x.poi && x.titulo) nm.value = x.titulo;
+  document.getElementById("b_sug").innerHTML = `<div class="b-sug-msg ok">✓ Endereço encontrado no mapa</div>`;
+}
 function editarBase(depoisOtimizar) {
+  S._baseSel = null;
   modal(`<button class="x" onclick="fecharModal()">×</button><h3>🏁 Base de chegada</h3>
-    <p class="sub">Endereço da Consigaz para onde você volta no fim da rota. Fica salvo para todos os seus aparelhos.</p>
+    <p class="sub">Onde a rota termina. Digite e escolha na lista — fica salvo em todos os seus aparelhos.</p>
     <div class="field"><label>Nome</label><input class="input" id="b_nome" value="${esc((S.config.base_rota || {}).nome || "Consigaz")}"></div>
-    <div class="field"><label>Endereço completo</label><input class="input" id="b_end" value="${esc(baseRota())}" placeholder="Rua, número, bairro, cidade - PR"></div>
+    <div class="field b-busca"><label>Endereço</label><input class="input" id="b_end" value="${esc(baseRota())}" placeholder="Digite rua, local ou empresa…" autocomplete="off" oninput="buscarEndereco(this.value)" onfocus="this.select()">
+      <div id="b_sug" class="b-sug"></div></div>
     <div class="err" id="b_err"></div>
     <button class="btn block" onclick="salvarBase(${depoisOtimizar ? "true" : "false"})">Salvar base</button>`);
 }
 async function salvarBase(depoisOtimizar) {
   const end = document.getElementById("b_end").value.trim(), nome = document.getElementById("b_nome").value.trim() || "Consigaz";
   if (end.length < 8) { document.getElementById("b_err").textContent = "Digite o endereço completo (rua, número e cidade)."; return; }
-  const valor = { nome, endereco: end };
+  const sel = S._baseSel && S._baseSel.texto === end ? S._baseSel : null;
+  const valor = sel ? { nome, endereco: end, lat: sel.lat, lng: sel.lng } : { nome, endereco: end };
+  if (sel) { const cc = geoCache(); cc[end] = { lat: sel.lat, lng: sel.lng }; lsSet("ocv_geo", JSON.stringify(cc)); }
   const r = await rpc("ocv_salvar_config", { p_token: S.token, p_chave: "base_rota", p_valor: valor }).catch(e => ({ ok: false, erro: e.message }));
   if (!r.ok) { document.getElementById("b_err").textContent = r.erro; return; }
   S.config.base_rota = valor; S.rotaOtim = null; fecharModal(); toast("Base salva ✓");
@@ -800,7 +845,7 @@ function vRota() {
     const ativas = paradas.filter(p => !S.rotaFora.has(p.k));
     const ends = ativas.map(p => p.addr).filter((e, i, a) => i === 0 || e !== a[i - 1]);
     const partes = []; for (let i = 0; i < ends.length; i += 10) partes.push(ends.slice(i, i + 10));
-    const base = baseRota(), urlsOtim = otim && base ? urlsRotaOtim(ends, otim.origem, base) : [];
+    const base = baseRota(), urlsOtim = otim && base ? urlsRotaOtim(ends, otim.origem, (S.config.base_rota || {}).lat ? `${S.config.base_rota.lat},${S.config.base_rota.lng}` : base) : [];
     const aprox = ativas.filter(p => !enderecoCompleto(p.c)).length;
     const nomeBase = esc((S.config.base_rota || {}).nome || "Consigaz");
     const nOcs = ativas.reduce((a, p) => a + p.ocs.length, 0);
