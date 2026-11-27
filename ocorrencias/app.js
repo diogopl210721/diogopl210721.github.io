@@ -306,6 +306,7 @@ function aplicar(st) {
   if (st.ff) S.filtroFin = { ...st.ff }; if (st.mm) S.mesMeta = st.mm; if (st.rp) S.relPeriodo = st.rp; S.depth = st.d || 0;
 }
 function go(v, muda) {
+  try { if (!S.modalOpen) history.replaceState(snap(), "", location.hash || "#" + S.view); } catch (e) {}
   if (typeof muda === "function") muda();
   S.view = v; S.depth = (S.depth || 0) + 1;
   try { history.pushState(snap(), "", "#" + v); } catch (e) {}
@@ -320,6 +321,7 @@ function irAba(v, muda) {
 function voltar() { if (S.depth > 0) history.back(); else go("inicio"); }
 function btnVoltar() { return S.depth > 0 ? `<button class="back no-print" onclick="voltar()">‹ Voltar</button>` : ""; }
 window.addEventListener("popstate", e => {
+  if (S._fechandoModal) { S._fechandoModal = false; return; } // só fechou o modal: mantém tela, filtros e rolagem
   if (S.modalOpen) { fecharModal(true); return; }
   aplicar(e.state || { v: "inicio", d: 0 }); render(); window.scrollTo(0, 0);
 });
@@ -1796,13 +1798,14 @@ async function exportarMedidores(chave) {
 
 /* ---------------- modal ---------------- */
 function modal(html) {
-  if (!S.modalOpen) { S.modalOpen = true; try { history.pushState({ ...snap(), modal: true }, ""); } catch (e) {} }
+  // grava filtros/tela atuais na entrada do histórico antes de abrir, para voltar exatamente onde estava
+  if (!S.modalOpen) { S.modalOpen = true; try { history.replaceState(snap(), "", location.hash || "#" + S.view); history.pushState({ ...snap(), modal: true }, ""); } catch (e) {} }
   document.getElementById("modalRoot").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)fecharModal()"><div class="modal">${html}</div></div>`;
   document.body.style.overflow = "hidden";
 }
 function fecharModal(doHistorico) {
   document.getElementById("modalRoot").innerHTML = ""; document.body.style.overflow = "";
-  if (S.modalOpen) { S.modalOpen = false; if (!doHistorico) history.back(); }
+  if (S.modalOpen) { S.modalOpen = false; if (!doHistorico) { S._fechandoModal = true; history.back(); } }
 }
 document.addEventListener("keydown", e => { if (e.key === "Escape") fecharModal(); });
 
